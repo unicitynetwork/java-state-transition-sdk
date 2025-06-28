@@ -28,6 +28,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.testcontainers:testcontainers:1.19.8")
     testImplementation("org.testcontainers:junit-jupiter:1.19.8")
+    testImplementation("org.testcontainers:mongodb:1.19.8")
+    testImplementation("org.slf4j:slf4j-simple:2.0.13")
 }
 
 tasks.test {

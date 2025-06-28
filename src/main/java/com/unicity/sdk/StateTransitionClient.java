@@ -22,4 +22,8 @@ public class StateTransitionClient {
     public CompletableFuture<InclusionProof> getInclusionProof(Commitment commitment) {
         return aggregatorClient.getInclusionProof(commitment);
     }
+    
+    public AggregatorClient getAggregatorClient() {
+        return aggregatorClient;
+    }
 }

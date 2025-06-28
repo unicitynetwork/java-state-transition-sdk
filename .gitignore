@@ -2,3 +2,4 @@
 .idea
 .claude
 build
+src/test/resources/docker/aggregator/mongo-data
