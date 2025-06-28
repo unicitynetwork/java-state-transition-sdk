@@ -18,23 +18,13 @@ public class AggregatorClient implements IAggregatorClient {
 
     @Override
     public CompletableFuture<Commitment> submitTransaction(Transaction transaction) {
-        return transport.send("submitTransaction", transaction.toJSON())
-                .thenApply(response -> {
-                    if (response.getError() != null) {
-                        throw new RuntimeException(response.getError().getMessage());
-                    }
-                    return objectMapper.convertValue(response.getResult(), Commitment.class);
-                });
+        return transport.request("submitTransaction", transaction.toJSON())
+                .thenApply(result -> objectMapper.convertValue(result, Commitment.class));
     }
 
     @Override
     public CompletableFuture<InclusionProof> getInclusionProof(Commitment commitment) {
-        return transport.send("getInclusionProof", commitment.toJSON())
-                .thenApply(response -> {
-                    if (response.getError() != null) {
-                        throw new RuntimeException(response.getError().getMessage());
-                    }
-                    return objectMapper.convertValue(response.getResult(), InclusionProof.class);
-                });
+        return transport.request("getInclusionProof", commitment.toJSON())
+                .thenApply(result -> objectMapper.convertValue(result, InclusionProof.class));
     }
 }

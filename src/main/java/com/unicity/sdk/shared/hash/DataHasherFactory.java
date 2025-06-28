@@ -1,13 +1,23 @@
 package com.unicity.sdk.shared.hash;
 
-public class DataHasherFactory implements IDataHasherFactory {
+import java.util.function.Supplier;
+
+public class DataHasherFactory<T extends IDataHasher> implements IDataHasherFactory<T> {
+    private final HashAlgorithm algorithm;
+    private final Supplier<T> hasherConstructor;
+    
+    public DataHasherFactory(HashAlgorithm algorithm, Supplier<T> hasherConstructor) {
+        this.algorithm = algorithm;
+        this.hasherConstructor = hasherConstructor;
+    }
+    
     @Override
-    public IDataHasher create(HashAlgorithm algorithm) {
-        return new IDataHasher() {
-            @Override
-            public DataHash digest(byte[] data) {
-                return DataHasher.digest(algorithm, data);
-            }
-        };
+    public HashAlgorithm getAlgorithm() {
+        return algorithm;
+    }
+    
+    @Override
+    public T create() {
+        return hasherConstructor.get();
     }
 }

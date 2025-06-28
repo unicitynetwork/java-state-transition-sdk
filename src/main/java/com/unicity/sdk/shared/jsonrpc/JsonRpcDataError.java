@@ -1,28 +1,24 @@
 
 package com.unicity.sdk.shared.jsonrpc;
 
-public class JsonRpcDataError extends Error {
-    private final int code;
-    private final String message;
-    private final Object data;
+public class JsonRpcDataError extends Exception {
+    private final JsonRpcError error;
 
-    public JsonRpcDataError(int code, String message, Object data) {
-        super(message);
-        this.code = code;
-        this.message = message;
-        this.data = data;
+    public JsonRpcDataError(JsonRpcError error) {
+        super(error.getMessage());
+        this.error = error;
     }
 
     public int getCode() {
-        return code;
+        return error.getCode();
     }
 
     @Override
     public String getMessage() {
-        return message;
+        return error.getMessage();
     }
 
-    public Object getData() {
-        return data;
+    public JsonRpcError getError() {
+        return error;
     }
 }
