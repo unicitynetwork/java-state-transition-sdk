@@ -2,6 +2,7 @@ plugins {
     id("java-library")
     id("maven-publish")
     id("com.google.protobuf") version "0.9.4"
+    id("ru.vyarus.animalsniffer") version "2.0.1"
 }
 
 group = "com.unicity.sdk"
@@ -9,6 +10,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 // Define configurations for different flavors
@@ -29,6 +31,9 @@ dependencies {
     compileOnly("com.google.guava:guava:33.0.0-jre")
     "android"("com.google.guava:guava:33.0.0-android")
     "jvm"("com.google.guava:guava:33.0.0-jre")
+    
+    // Animal Sniffer signatures
+    signature("com.toasttab.android:gummy-bears-api-31:0.7.0@signature")
     
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
@@ -78,6 +83,7 @@ tasks.register<Jar>("jvmJar") {
         attributes["Target-Platform"] = "JVM"
     }
 }
+
 
 // Publishing configuration
 publishing {
