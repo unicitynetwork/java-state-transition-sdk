@@ -280,9 +280,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For issues and feature requests, please use the [GitHub issue tracker](https://github.com/unicity/java-state-transition-sdk/issues).
+For issues and feature requests, please use the [GitHub issue tracker](https://github.com/unicitynetwork/java-state-transition-sdk/issues).
 
-For questions about the Unicity network, visit [unicity.network](https://unicity.network).
+For questions about the Unicity Labs, visit [unicity-labs.com](https://unicity-labs.com).
 
 ## Acknowledgments
 
