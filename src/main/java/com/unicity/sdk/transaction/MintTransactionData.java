@@ -165,7 +165,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         
         root.put("tokenId", tokenId.toJSON());
         root.put("tokenType", tokenType.toJSON());
-        root.set("predicate", mapper.valueToTree(predicate.toJSON()));
+        root.set("unlockPredicate", mapper.valueToTree(predicate.toJSON()));
         root.set("tokenData", mapper.valueToTree(tokenData.toJSON()));
         if (coinData != null) {
             root.set("coinData", mapper.valueToTree(coinData.toJSON()));

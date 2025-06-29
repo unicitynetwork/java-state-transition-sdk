@@ -71,24 +71,4 @@ public class Transaction<T extends ISerializable> implements ISerializable {
         }
     }
     
-    /**
-     * Create a transaction from JSON data.
-     * @param jsonNode JSON node containing transaction data
-     * @return The deserialized transaction
-     */
-    public static Transaction<MintTransactionData<?>> fromJSON(JsonNode jsonNode) {
-        try {
-            // Deserialize transaction data
-            JsonNode dataNode = jsonNode.get("data");
-            MintTransactionData<?> data = MintTransactionData.fromJSON(dataNode);
-            
-            // Deserialize inclusion proof
-            JsonNode proofNode = jsonNode.get("inclusionProof");
-            InclusionProof inclusionProof = InclusionProof.fromJSON(proofNode);
-            
-            return new Transaction<>(data, inclusionProof);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to deserialize Transaction from JSON", e);
-        }
-    }
 }

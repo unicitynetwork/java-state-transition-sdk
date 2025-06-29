@@ -275,6 +275,7 @@ public abstract class BaseTokenTest {
         // Serialize to JSON
         String offlineTransactionJson = offlineTransaction.toJSONString();
         logger.info("Offline transaction package created, size: {} bytes", offlineTransactionJson.length());
+        logger.debug("Offline transaction JSON: {}", offlineTransactionJson);
         
         // Step 4: Simulate offline transfer (in real usage, this would be via NFC, QR code, etc.)
         logger.info("Simulating offline transfer via JSON serialization");

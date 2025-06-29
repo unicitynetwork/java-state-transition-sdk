@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 
 import java.io.ByteArrayOutputStream;
@@ -28,6 +28,10 @@ public class TokenType implements ISerializable {
 
     public static TokenType create(byte[] id) {
         return new TokenType(id);
+    }
+    
+    public static TokenType fromHex(String hex) {
+        return new TokenType(HexConverter.decode(hex));
     }
 
     @Override

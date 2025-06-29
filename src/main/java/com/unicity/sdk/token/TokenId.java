@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,6 +28,10 @@ public class TokenId implements ISerializable {
 
     public static TokenId create(byte[] id) {
         return new TokenId(id);
+    }
+    
+    public static TokenId fromHex(String hex) {
+        return new TokenId(HexConverter.decode(hex));
     }
 
     @Override

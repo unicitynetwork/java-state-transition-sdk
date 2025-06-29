@@ -2,7 +2,9 @@ package com.unicity.sdk.token;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
@@ -61,7 +63,11 @@ public class TokenState implements ISerializable {
 
     @Override
     public Object toJSON() {
-        return this;
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode root = mapper.createObjectNode();
+        root.put("data", HexConverter.encode(data != null ? data : new byte[0]));
+        root.set("unlockPredicate", mapper.valueToTree(unlockPredicate.toJSON()));
+        return root;
     }
 
     @Override
@@ -100,7 +106,7 @@ public class TokenState implements ISerializable {
         byte[] data = null;
         if (jsonNode.has("data") && !jsonNode.get("data").isNull()) {
             String dataHex = jsonNode.get("data").asText();
-            data = com.unicity.sdk.shared.util.HexConverter.decode(dataHex);
+            data = HexConverter.decode(dataHex);
         }
         
         return create(unlockPredicate, data);

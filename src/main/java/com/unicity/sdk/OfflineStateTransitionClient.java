@@ -11,6 +11,7 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.utils.InclusionProofUtils;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -89,8 +90,14 @@ public class OfflineStateTransitionClient extends StateTransitionClient {
                 offlineCommitment.getAuthenticator()
             );
             
-            // Wait for inclusion proof
-            return InclusionProofUtils.waitInclusionProof(this, commitment)
+            // Wait for inclusion proof with longer timeout for offline transactions
+            // Offline transactions may take longer to process
+            return InclusionProofUtils.waitInclusionProof(
+                    this, 
+                    commitment, 
+                    Duration.ofSeconds(30),  // Use 30 second timeout
+                    Duration.ofSeconds(1)    // Check every second
+                )
                 .thenCompose(inclusionProof -> 
                     // Create transaction with proof
                     createTransaction(commitment, inclusionProof)
