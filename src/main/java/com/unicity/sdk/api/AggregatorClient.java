@@ -50,11 +50,14 @@ public class AggregatorClient implements IAggregatorClient {
     public CompletableFuture<Long> getBlockHeight() {
         return transport.request("get_block_height", new HashMap<>())
                 .thenApply(result -> {
-                    if (result instanceof Number) {
-                        return ((Number) result).longValue();
-                    }
-                    if (result instanceof String) {
-                        return Long.parseLong((String) result);
+                    if (result instanceof Map) {
+                        Map<?, ?> map = (Map<?, ?>) result;
+                        Object blockNumber = map.get("blockNumber");
+                        if (blockNumber instanceof String) {
+                            return Long.parseLong((String) blockNumber);
+                        } else if (blockNumber instanceof Number) {
+                            return ((Number) blockNumber).longValue();
+                        }
                     }
                     return 0L;
                 });

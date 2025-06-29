@@ -142,7 +142,7 @@ public class TokenIntegrationTest {
     @Test
     @Order(2)
     void testGetBlockHeight() throws Exception {
-        Thread.sleep(5000);
+        Thread.sleep(2000);
         Long blockHeight = client.getAggregatorClient().getBlockHeight().get();
         assertNotNull(blockHeight);
         assertTrue(blockHeight > 0);

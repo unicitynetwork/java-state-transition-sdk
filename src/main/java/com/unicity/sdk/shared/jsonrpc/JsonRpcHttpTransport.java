@@ -43,7 +43,6 @@ public class JsonRpcHttpTransport {
         
         try {
             String requestBody = objectMapper.writeValueAsString(requestMap);
-            System.out.println("JSON-RPC Request: " + requestBody);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
