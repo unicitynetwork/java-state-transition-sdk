@@ -1,6 +1,8 @@
 
 package com.unicity.sdk.shared.signing;
 
-public interface ISignature {
+import com.unicity.sdk.ISerializable;
+
+public interface ISignature extends ISerializable {
     byte[] getBytes();
 }

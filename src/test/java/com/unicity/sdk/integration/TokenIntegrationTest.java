@@ -2,16 +2,36 @@ package com.unicity.sdk.integration;
 
 import com.unicity.sdk.StateTransitionClient;
 import com.unicity.sdk.api.AggregatorClient;
-import com.unicity.sdk.shared.jsonrpc.JsonRpcHttpTransport;
+import com.unicity.sdk.predicate.MaskedPredicate;
+import com.unicity.sdk.shared.hash.DataHash;
+import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.token.Token;
+import com.unicity.sdk.token.TokenId;
+import com.unicity.sdk.token.TokenState;
+import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.token.fungible.CoinId;
+import com.unicity.sdk.token.fungible.TokenCoinData;
+import com.unicity.sdk.transaction.Commitment;
+import com.unicity.sdk.transaction.InclusionProof;
+import com.unicity.sdk.transaction.MintTransactionData;
+import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.utils.InclusionProofUtils;
+import com.unicity.sdk.utils.TestTokenData;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.DockerComposeContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
-import java.io.File;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,100 +41,196 @@ import static org.junit.jupiter.api.Assertions.*;
  * 
  * Run with: ./gradlew test --tests "com.unicity.sdk.integration.*" -Pintegration
  */
-@Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag("integration")
 public class TokenIntegrationTest {
     
-    private static final int AGGREGATOR_PORT = 3000;
-    private static final String AGGREGATOR_SERVICE = "aggregator-test";
-    private static final String COMPOSE_FILE_PATH = "src/test/resources/docker/aggregator/docker-compose.yml";
+    private static final Logger logger = LoggerFactory.getLogger(TokenIntegrationTest.class);
+    private static final byte[] ownerSecret = "secret".getBytes(StandardCharsets.UTF_8);
+    private static final SecureRandom random = new SecureRandom();
     
-    @Container
-    private static final DockerComposeContainer<?> environment = 
-        new DockerComposeContainer<>(new File(COMPOSE_FILE_PATH))
-            .withExposedService(AGGREGATOR_SERVICE, AGGREGATOR_PORT, 
-                Wait.forLogMessage(".*listening on port " + AGGREGATOR_PORT + ".*", 1))
-            .withStartupTimeout(Duration.ofMinutes(3));
-    
-    private static JsonRpcHttpTransport transport;
-    private static AggregatorClient aggregatorClient;
-    private static StateTransitionClient client;
+    private Network network;
+    private GenericContainer<?> mongo1;
+    private GenericContainer<?> mongo2;
+    private GenericContainer<?> mongo3;
+    private GenericContainer<?> mongoSetup;
+    private GenericContainer<?> aggregator;
+    private StateTransitionClient client;
     
     @BeforeAll
-    public static void setUp() {
-        String host = environment.getServiceHost(AGGREGATOR_SERVICE, AGGREGATOR_PORT);
-        Integer port = environment.getServicePort(AGGREGATOR_SERVICE, AGGREGATOR_PORT);
-        String aggregatorUrl = String.format("http://%s:%d", host, port);
+    void setUp() throws Exception {
+        network = Network.newNetwork();
         
-        System.out.println("Aggregator URL: " + aggregatorUrl);
+        // Start MongoDB replica set
+        mongo1 = new GenericContainer<>(DockerImageName.parse("mongo:7.0"))
+                .withNetwork(network)
+                .withNetworkAliases("mongo1")
+                .withCommand("--replSet", "rs0", "--bind_ip_all")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(java.time.Duration.ofMinutes(2)));
+        mongo2 = new GenericContainer<>(DockerImageName.parse("mongo:7.0"))
+                .withNetwork(network)
+                .withNetworkAliases("mongo2")
+                .withCommand("--replSet", "rs0", "--bind_ip_all")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(java.time.Duration.ofMinutes(2)));
+        mongo3 = new GenericContainer<>(DockerImageName.parse("mongo:7.0"))
+                .withNetwork(network)
+                .withNetworkAliases("mongo3")
+                .withCommand("--replSet", "rs0", "--bind_ip_all")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(java.time.Duration.ofMinutes(2)));
         
-        transport = new JsonRpcHttpTransport(aggregatorUrl);
-        aggregatorClient = new AggregatorClient(aggregatorUrl);
-        client = new StateTransitionClient(aggregatorClient);
+        mongo1.start();
+        mongo2.start();
+        mongo3.start();
+        
+        // Wait for MongoDB to be ready
+        Thread.sleep(5000);
+        
+        // Initialize replica set
+        mongoSetup = new GenericContainer<>(DockerImageName.parse("mongo:7.0"))
+                .withNetwork(network)
+                .withCopyFileToContainer(
+                        org.testcontainers.utility.MountableFile.forClasspathResource("docker/aggregator/mongo-init.js"),
+                        "/mongo-init.js")
+                .withCommand("mongosh", "--host", "mongo1:27017", "--file", "/mongo-init.js");
+        
+        mongoSetup.start();
+        
+        // Start aggregator
+        aggregator = new GenericContainer<>(DockerImageName.parse("ghcr.io/unicitynetwork/aggregators_net:bbabb5f093e829fa789ed6e83f57af98df3f1752"))
+                .withNetwork(network)
+                .withNetworkAliases("aggregator-test")
+                .withExposedPorts(3000)
+                .withEnv("MONGODB_URI", "mongodb://mongo1:27017")
+                .withEnv("USE_MOCK_ALPHABILL", "true")
+                .withEnv("ALPHABILL_PRIVATE_KEY", "FF00000000000000000000000000000000000000000000000000000000000000")
+                .withEnv("DISABLE_HIGH_AVAILABILITY", "true")
+                .withEnv("PORT", "3000")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(java.time.Duration.ofMinutes(2)));
+        aggregator.start();
+        
+        // Create client
+        Integer mappedPort = aggregator.getMappedPort(3000);
+        String aggregatorUrl = "http://localhost:" + mappedPort;
+        logger.info("Aggregator URL: {}", aggregatorUrl);
+        client = new StateTransitionClient(new AggregatorClient(aggregatorUrl));
     }
     
     @AfterAll
-    public static void tearDown() {
-        // Cleanup is handled by Testcontainers
+    void tearDown() {
+        if (aggregator != null) aggregator.stop();
+        if (mongoSetup != null) mongoSetup.stop();
+        if (mongo1 != null) mongo1.stop();
+        if (mongo2 != null) mongo2.stop();
+        if (mongo3 != null) mongo3.stop();
+        if (network != null) network.close();
     }
     
     @Test
     @Order(1)
-    public void testAggregatorConnection() throws Exception {
-        // Test basic JSON-RPC connection
-        assertNotNull(transport);
-        
-        // Test that we can make a request to the aggregator
-        // Even if it fails, we should get a response
-        CompletableFuture<Object> future = transport.request("getBlockHeight", null);
-        
-        try {
-            Object result = future.get();
-            System.out.println("Block height response: " + result);
-            assertNotNull(result);
-        } catch (Exception e) {
-            // Even if the method doesn't exist, we should get an RPC error, not a connection error
-            System.out.println("RPC call failed (expected if method not implemented): " + e.getMessage());
-            assertTrue(e.getMessage().contains("JSON-RPC") || e.getMessage().contains("Method not found"));
-        }
+    void testAggregatorIsRunning() throws Exception {
+        Integer mappedPort = aggregator.getMappedPort(3000);
+        String url = "http://localhost:" + mappedPort + "/";
+        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        conn.setConnectTimeout(3000);
+        conn.setReadTimeout(3000);
+        int code = conn.getResponseCode();
+        assertTrue(code == 200 || code == 404 || code == 400, "Aggregator should respond");
+        logger.info("Aggregator health check passed with response code: {}", code);
     }
     
     @Test
     @Order(2)
-    public void testStateTransitionClientCreation() {
-        assertNotNull(client);
-        assertNotNull(aggregatorClient);
+    void testGetBlockHeight() throws Exception {
+        Thread.sleep(5000);
+        Long blockHeight = client.getAggregatorClient().getBlockHeight().get();
+        assertNotNull(blockHeight);
+        assertTrue(blockHeight > 0);
+        logger.info("Current block height: {}", blockHeight);
     }
     
     @Test
     @Order(3)
-    @Disabled("Requires full implementation of token minting and transfer")
-    public void testTokenTransferFlow() throws Exception {
-        // This will be implemented when all required classes are ready
-        System.out.println("Token transfer test disabled - requires full implementation");
-    }
-    
-    @Test
-    @Order(4)
-    @Disabled("Requires full implementation of token splitting")
-    public void testTokenSplitFlow() throws Exception {
-        // This will be implemented when all required classes are ready
-        System.out.println("Token split test disabled - requires full implementation");
-    }
-    
-    @Test
-    @Order(5)
-    public void testSimpleJsonRpcCall() throws Exception {
-        // Test a simple JSON-RPC call structure
-        CompletableFuture<Object> future = transport.request("echo", "test");
+    void testMintToken() throws Exception {
+        logger.info("Starting token minting test");
         
-        try {
-            Object result = future.get();
-            System.out.println("Echo response: " + result);
-        } catch (Exception e) {
-            // This is expected if echo method doesn't exist
-            System.out.println("Echo call failed (expected): " + e.getMessage());
-        }
+        // Create token mint data
+        TokenId tokenId = TokenId.create(randomBytes(32));
+        TokenType tokenType = TokenType.create(randomBytes(32));
+        TestTokenData tokenData = new TestTokenData(randomBytes(32));
+        
+        // Create coins
+        Map<CoinId, BigInteger> coins = new HashMap<>();
+        coins.put(new CoinId(randomBytes(32)), BigInteger.valueOf(100));
+        coins.put(new CoinId(randomBytes(32)), BigInteger.valueOf(50));
+        TokenCoinData coinData = new TokenCoinData(coins);
+        
+        byte[] data = randomBytes(32);
+        byte[] salt = randomBytes(32);
+        byte[] nonce = randomBytes(32);
+        
+        // Create predicate
+        SigningService signingService = SigningService.createFromSecret(ownerSecret, nonce).get();
+        MaskedPredicate predicate = MaskedPredicate.create(
+            tokenId,
+            tokenType,
+            signingService,
+            HashAlgorithm.SHA256,
+            nonce
+        ).get();
+        
+        // Create mint transaction data
+        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        hasher.update(data);
+        DataHash dataHash = hasher.digest().get();
+        
+        MintTransactionData<TestTokenData> mintData = new MintTransactionData<>(
+            tokenId,
+            tokenType,
+            predicate,
+            tokenData,
+            coinData,
+            data,
+            salt
+        );
+        
+        logger.info("Submitting mint transaction for token ID: {}", tokenId.toJSON());
+        
+        // Submit mint transaction
+        Commitment<MintTransactionData<TestTokenData>> commitment =
+            client.submitMintTransaction(mintData).get();
+        
+        assertNotNull(commitment);
+        logger.info("Mint transaction submitted, waiting for inclusion proof");
+        
+        // Wait for inclusion proof
+        InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(client, commitment).get();
+        assertNotNull(inclusionProof);
+        
+        // Create transaction
+        Transaction<MintTransactionData<TestTokenData>> mintTransaction =
+            client.createTransaction(commitment, inclusionProof).get();
+        assertNotNull(mintTransaction);
+        
+        // Create token state
+        TokenState tokenState = TokenState.create(predicate, data);
+        
+        // Create token
+        Token<Transaction<MintTransactionData<?>>> token =
+            new Token<>(tokenState, (Transaction) mintTransaction);
+        
+        assertEquals(tokenId, token.getId());
+        assertEquals(tokenType, token.getType());
+        assertEquals(tokenData, token.getData());
+        assertNotNull(token.getCoins());
+        assertEquals(2, token.getCoins().getCoins().size());
+        
+        logger.info("Token minted successfully!");
+    }
+    
+    private static byte[] randomBytes(int length) {
+        byte[] bytes = new byte[length];
+        random.nextBytes(bytes);
+        return bytes;
     }
 }

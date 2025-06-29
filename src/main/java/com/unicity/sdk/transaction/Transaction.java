@@ -6,25 +6,41 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.HashAlgorithm;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
-public class Transaction implements ISerializable {
-    private final ISerializable data;
+public class Transaction<T extends ISerializable> implements ISerializable {
+    private final T data;
     private final InclusionProof inclusionProof;
 
-    public Transaction(ISerializable data, InclusionProof inclusionProof) {
+    public Transaction(T data, InclusionProof inclusionProof) {
         this.data = data;
         this.inclusionProof = inclusionProof;
     }
 
-    public ISerializable getData() {
+    public T getData() {
         return data;
     }
 
     public InclusionProof getInclusionProof() {
         return inclusionProof;
+    }
+
+    public CompletableFuture<Boolean> containsData(byte[] stateData) {
+        if (!(data instanceof TransactionData)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        
+        TransactionData txData = (TransactionData) data;
+        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        hasher.update(stateData);
+        
+        return hasher.digest().thenApply(hash -> hash.equals(txData.getData()));
     }
 
     @Override

@@ -93,6 +93,11 @@ public class SigningService implements ISigningService<Signature> {
 
     @Override
     public CompletableFuture<Signature> sign(DataHash hash) {
+        return sign(hash.getHash());
+    }
+
+    @Override
+    public CompletableFuture<Signature> sign(byte[] data) {
         try {
             ECPrivateKeyParameters privKey = new ECPrivateKeyParameters(
                 new BigInteger(1, privateKey), 
@@ -102,7 +107,7 @@ public class SigningService implements ISigningService<Signature> {
             ECDSASigner signer = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()));
             signer.init(true, privKey);
             
-            BigInteger[] signature = signer.generateSignature(hash.getHash());
+            BigInteger[] signature = signer.generateSignature(data);
             
             // Convert to compact format (64 bytes)
             byte[] r = toFixedLength(signature[0], 32);

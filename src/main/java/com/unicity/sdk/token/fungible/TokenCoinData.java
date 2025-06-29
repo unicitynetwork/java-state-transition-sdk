@@ -1,8 +1,13 @@
 
 package com.unicity.sdk.token.fungible;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.cbor.CborEncoder;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -19,11 +24,36 @@ public class TokenCoinData implements ISerializable {
 
     @Override
     public Object toJSON() {
-        return this;
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode coinsNode = mapper.createObjectNode();
+        
+        for (Map.Entry<CoinId, BigInteger> entry : coins.entrySet()) {
+            coinsNode.put(entry.getKey().toJSON().toString(), entry.getValue().toString());
+        }
+        
+        ObjectNode root = mapper.createObjectNode();
+        root.set("coins", coinsNode);
+        return root;
     }
 
     @Override
     public byte[] toCBOR() {
-        return new byte[0];
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            
+            // Encode as CBOR map
+            baos.write(CborEncoder.encodeMapStart(coins.size()));
+            
+            for (Map.Entry<CoinId, BigInteger> entry : coins.entrySet()) {
+                // Write key (CoinId as byte string)
+                baos.write(entry.getKey().toCBOR());
+                // Write value (BigInteger as unsigned integer)
+                baos.write(CborEncoder.encodeUnsignedInteger(entry.getValue()));
+            }
+            
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to encode TokenCoinData to CBOR", e);
+        }
     }
 }

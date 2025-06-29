@@ -62,8 +62,16 @@ public class TokenState implements ISerializable {
 
     @Override
     public byte[] toCBOR() {
-        // Implementation depends on the CBOR library
-        return new byte[0];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            baos.write(com.unicity.sdk.shared.cbor.CborEncoder.encodeArray(
+                unlockPredicate.toCBOR(),
+                com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(data != null ? data : new byte[0])
+            ));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to encode TokenState", e);
+        }
+        return baos.toByteArray();
     }
 
     @Override

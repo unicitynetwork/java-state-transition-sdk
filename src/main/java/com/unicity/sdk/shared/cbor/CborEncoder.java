@@ -159,4 +159,59 @@ public class CborEncoder {
         System.arraycopy(rawBytes, 0, paddedBytes, paddedLength - rawBytes.length, rawBytes.length);
         return paddedBytes;
     }
+
+    /**
+     * Encode the start of a CBOR map
+     */
+    public static byte[] encodeMapStart(int length) {
+        if (length < 24) {
+            return new byte[] { (byte) (MajorType.MAP.getValue() | length) };
+        } else if (length <= 0xFF) {
+            return new byte[] { (byte) (MajorType.MAP.getValue() | 24), (byte) length };
+        } else if (length <= 0xFFFF) {
+            return new byte[] {
+                (byte) (MajorType.MAP.getValue() | 25),
+                (byte) (length >> 8),
+                (byte) length
+            };
+        } else {
+            return new byte[] {
+                (byte) (MajorType.MAP.getValue() | 26),
+                (byte) (length >> 24),
+                (byte) (length >> 16),
+                (byte) (length >> 8),
+                (byte) length
+            };
+        }
+    }
+
+    /**
+     * Encode an unsigned integer (int)
+     */
+    public static byte[] encodeUnsignedInteger(int value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Value must be non-negative");
+        }
+        
+        if (value < 24) {
+            return new byte[] { (byte) (MajorType.UNSIGNED_INTEGER.getValue() | value) };
+        } else if (value <= 0xFF) {
+            return new byte[] { (byte) (MajorType.UNSIGNED_INTEGER.getValue() | 24), (byte) value };
+        } else if (value <= 0xFFFF) {
+            return new byte[] {
+                (byte) (MajorType.UNSIGNED_INTEGER.getValue() | 25),
+                (byte) (value >> 8),
+                (byte) value
+            };
+        } else {
+            return new byte[] {
+                (byte) (MajorType.UNSIGNED_INTEGER.getValue() | 26),
+                (byte) (value >> 24),
+                (byte) (value >> 16),
+                (byte) (value >> 8),
+                (byte) value
+            };
+        }
+    }
+
 }

@@ -8,5 +8,6 @@ public interface ISigningService<T extends ISignature> {
     byte[] getPublicKey();
     String getAlgorithm();
     CompletableFuture<T> sign(DataHash hash);
+    CompletableFuture<T> sign(byte[] data);
     CompletableFuture<Boolean> verify(DataHash hash, T signature);
 }

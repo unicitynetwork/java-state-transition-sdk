@@ -20,7 +20,7 @@ public class DataHash implements ISerializable {
     }
 
     public DataHash(byte[] cbor) {
-        this.algorithm = HashAlgorithm.values()[cbor[0]];
+        this.algorithm = HashAlgorithm.values()[cbor[0] & 0xFF];
         this.hash = Arrays.copyOfRange(cbor, 1, cbor.length);
     }
 

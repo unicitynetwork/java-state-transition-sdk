@@ -22,6 +22,9 @@ dependencies {
 
     // JSON
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
+    
+    // Logging
+    implementation("org.slf4j:slf4j-api:2.0.13")
 
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
@@ -33,5 +36,16 @@ dependencies {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+    maxHeapSize = "1024m"
+}
+
+tasks.register<Test>("integrationTest") {
+    useJUnitPlatform {
+        includeTags("integration")
+    }
+    maxHeapSize = "2048m"
+    shouldRunAfter(tasks.test)
 }

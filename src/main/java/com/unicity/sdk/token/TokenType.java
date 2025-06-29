@@ -37,15 +37,7 @@ public class TokenType implements ISerializable {
 
     @Override
     public byte[] toCBOR() {
-        CBORFactory factory = new CBORFactory();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             CBORGenerator generator = factory.createGenerator(baos)) {
-            generator.writeBinary(this.bytes);
-            generator.flush();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(bytes);
     }
 
     @Override

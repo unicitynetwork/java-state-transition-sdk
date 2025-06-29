@@ -9,17 +9,22 @@ import com.unicity.sdk.identity.PublicKeyIdentity;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.transaction.Transaction;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 public class UnmaskedPredicate implements IPredicate {
     private final PublicKeyIdentity identity;
     private final DataHash hash;
+    private final DataHash reference;
 
     public UnmaskedPredicate(PublicKeyIdentity identity, HashAlgorithm algorithm) {
         this.identity = identity;
         this.hash = DataHasher.digest(algorithm, identity.toCBOR());
+        // For unmasked predicate, reference is based on the identity
+        this.reference = new DataHash(identity.toCBOR());
     }
 
     @Override
@@ -28,8 +33,20 @@ public class UnmaskedPredicate implements IPredicate {
     }
 
     @Override
-    public PublicKeyIdentity getReference() {
-        return identity;
+    public DataHash getReference() {
+        return reference;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> isOwner(byte[] publicKey) {
+        // TODO: Implement ownership check based on identity
+        return CompletableFuture.completedFuture(false);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> verify(Transaction<?> transaction) {
+        // TODO: Implement verification
+        return CompletableFuture.completedFuture(true);
     }
 
     @Override

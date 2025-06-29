@@ -32,8 +32,10 @@ public class Signature implements ISignature, ISerializable {
     }
     
     @Override
-    public String toJSON() {
-        // TODO: Implement JSON serialization
-        throw new UnsupportedOperationException("JSON serialization not yet implemented");
+    public Object toJSON() {
+        byte[] fullSignature = new byte[bytes.length + 1];
+        System.arraycopy(bytes, 0, fullSignature, 0, bytes.length);
+        fullSignature[bytes.length] = (byte) recovery;
+        return com.unicity.sdk.shared.util.HexConverter.encode(fullSignature);
     }
 }

@@ -24,6 +24,6 @@ public class CoinId implements ISerializable {
 
     @Override
     public byte[] toCBOR() {
-        return bytes;
+        return com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(bytes);
     }
 }

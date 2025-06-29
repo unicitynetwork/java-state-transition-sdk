@@ -20,7 +20,7 @@ public class OfflineStateTransitionClient extends StateTransitionClient {
     }
 
     public CompletableFuture<Commitment> submitOfflineTransaction(OfflineTransaction offlineTransaction) {
-        // This is a simplified example. In a real implementation, you would submit the offline transaction.
-        return CompletableFuture.completedFuture(new Commitment());
+        // TODO: Implement proper offline transaction submission
+        return CompletableFuture.failedFuture(new UnsupportedOperationException("Offline transaction not yet implemented"));
     }
 }
