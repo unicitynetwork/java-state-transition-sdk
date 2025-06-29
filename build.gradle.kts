@@ -26,6 +26,7 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk15on:1.70")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.slf4j:slf4j-api:2.0.13")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
     // Platform-specific Guava
     compileOnly("com.google.guava:guava:33.0.0-jre")
