@@ -16,26 +16,22 @@ import java.util.concurrent.CompletableFuture;
 public class RequestId implements ISerializable {
     private final byte[] publicKey;
     private final DataHash stateHash;
-    private final BigInteger bigIntValue;
+    private final byte[] hashValue;
 
-    private RequestId(byte[] publicKey, DataHash stateHash, BigInteger bigIntValue) {
+    private RequestId(byte[] publicKey, DataHash stateHash, byte[] hashValue) {
         this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
         this.stateHash = stateHash;
-        this.bigIntValue = bigIntValue;
+        this.hashValue = Arrays.copyOf(hashValue, hashValue.length);
     }
 
     public static CompletableFuture<RequestId> create(byte[] publicKey, DataHash stateHash) {
         JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
         hasher.update(publicKey);
-        hasher.update(stateHash.toCBOR());
+        hasher.update(stateHash.getImprint());
         
         return hasher.digest().thenApply(hash -> {
             byte[] hashBytes = hash.getHash();
-            // Take first 8 bytes for BigInteger
-            byte[] bigIntBytes = Arrays.copyOfRange(hashBytes, 0, Math.min(8, hashBytes.length));
-            BigInteger bigIntValue = new BigInteger(1, bigIntBytes);
-            
-            return new RequestId(publicKey, stateHash, bigIntValue);
+            return new RequestId(publicKey, stateHash, hashBytes);
         });
     }
 
@@ -48,18 +44,12 @@ public class RequestId implements ISerializable {
     }
 
     public BigInteger toBigInt() {
-        return bigIntValue;
+        return new BigInteger(1, hashValue);
     }
 
     @Override
     public Object toJSON() {
-        // Convert BigInteger to hex
-        byte[] bytes = bigIntValue.toByteArray();
-        // Remove leading zero byte if present (from BigInteger's two's complement representation)
-        if (bytes.length > 1 && bytes[0] == 0) {
-            bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
-        }
-        return com.unicity.sdk.shared.util.HexConverter.encode(bytes);
+        return com.unicity.sdk.shared.util.HexConverter.encode(hashValue);
     }
 
     @Override

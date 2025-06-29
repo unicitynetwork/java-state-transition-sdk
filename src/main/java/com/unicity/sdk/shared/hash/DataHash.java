@@ -19,9 +19,26 @@ public class DataHash implements ISerializable {
         this.algorithm = algorithm;
     }
 
-    public DataHash(byte[] cbor) {
-        this.algorithm = HashAlgorithm.values()[cbor[0] & 0xFF];
-        this.hash = Arrays.copyOfRange(cbor, 1, cbor.length);
+    /**
+     * Creates a DataHash from an imprint (algorithm prefix + hash bytes).
+     * The imprint format is: [algorithm_byte_1][algorithm_byte_2][hash_bytes...]
+     * 
+     * @param imprint The imprint bytes containing algorithm identifier and hash
+     * @return A new DataHash instance
+     */
+    public static DataHash fromImprint(byte[] imprint) {
+        if (imprint.length < 3) {
+            throw new IllegalArgumentException("Imprint too short");
+        }
+        
+        // Extract algorithm from first two bytes
+        int algorithmValue = ((imprint[0] & 0xFF) << 8) | (imprint[1] & 0xFF);
+        HashAlgorithm algorithm = HashAlgorithm.values()[algorithmValue];
+        
+        // Extract hash data
+        byte[] hashData = Arrays.copyOfRange(imprint, 2, imprint.length);
+        
+        return new DataHash(hashData, algorithm);
     }
 
     public byte[] getHash() {
@@ -34,15 +51,27 @@ public class DataHash implements ISerializable {
 
     @Override
     public Object toJSON() {
-        return HexConverter.encode(toCBOR());
+        // JSON representation is the hex-encoded imprint
+        return HexConverter.encode(getImprint());
     }
 
+    /**
+     * Returns the imprint of this DataHash (algorithm + hash bytes).
+     * Format: [algorithm_byte_1][algorithm_byte_2][hash_bytes...]
+     */
+    public byte[] getImprint() {
+        byte[] imprint = new byte[hash.length + 2];
+        int algValue = algorithm.getValue();
+        imprint[0] = (byte) ((algValue & 0xFF00) >> 8);
+        imprint[1] = (byte) (algValue & 0xFF);
+        System.arraycopy(hash, 0, imprint, 2, hash.length);
+        return imprint;
+    }
+    
     @Override
     public byte[] toCBOR() {
-        byte[] bytes = new byte[hash.length + 1];
-        bytes[0] = (byte) algorithm.getValue();
-        System.arraycopy(hash, 0, bytes, 1, hash.length);
-        return bytes;
+        // CBOR encoding of the imprint as a byte string
+        return com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(getImprint());
     }
 
     @Override

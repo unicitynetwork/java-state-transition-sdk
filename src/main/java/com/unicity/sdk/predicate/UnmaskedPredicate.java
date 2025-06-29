@@ -9,6 +9,7 @@ import com.unicity.sdk.identity.PublicKeyIdentity;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.shared.hash.JavaDataHasher;
 import com.unicity.sdk.transaction.Transaction;
 
 import java.io.ByteArrayOutputStream;
@@ -23,8 +24,15 @@ public class UnmaskedPredicate implements IPredicate {
     public UnmaskedPredicate(PublicKeyIdentity identity, HashAlgorithm algorithm) {
         this.identity = identity;
         this.hash = DataHasher.digest(algorithm, identity.toCBOR());
-        // For unmasked predicate, reference is based on the identity
-        this.reference = new DataHash(identity.toCBOR());
+        // Calculate reference using SHA256 hash of public key
+        // In a full implementation, this would include more predicate configuration
+        try {
+            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            hasher.update(identity.getPublicKey());
+            this.reference = hasher.digest().get();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to calculate reference", e);
+        }
     }
 
     @Override

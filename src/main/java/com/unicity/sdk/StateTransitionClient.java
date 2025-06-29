@@ -146,7 +146,7 @@ public class StateTransitionClient {
         } else if (transactionData instanceof MintTransactionData) {
             MintTransactionData<?> mintData = (MintTransactionData<?>) transactionData;
             // For mint transactions, use a zero hash for source state
-            sourceStateHash = new DataHash(new byte[32]);
+            sourceStateHash = new DataHash(new byte[32], HashAlgorithm.SHA256);
             transactionHash = mintData.getHash();
         } else {
             return CompletableFuture.failedFuture(new Exception("Unsupported transaction data type"));

@@ -3,6 +3,7 @@ package com.unicity.sdk.predicate;
 
 import com.unicity.sdk.identity.IIdentity;
 import com.unicity.sdk.shared.hash.DataHash;
+import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.transaction.Transaction;
@@ -16,7 +17,7 @@ public class BurnPredicate implements IPredicate {
     public BurnPredicate(HashAlgorithm algorithm) {
         this.hash = DataHasher.digest(algorithm, new byte[0]);
         // Burn predicate has a zero reference
-        this.reference = new DataHash(new byte[32]);
+        this.reference = new DataHash(new byte[32], HashAlgorithm.SHA256);
     }
 
     @Override
