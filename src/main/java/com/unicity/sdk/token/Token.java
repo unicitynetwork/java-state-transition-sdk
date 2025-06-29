@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class Token<T extends Transaction<MintTransactionData<?>>> implements ISerializable {
@@ -111,5 +112,32 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    /**
+     * Create a token from JSON data.
+     * @param jsonNode JSON node containing token data
+     * @return CompletableFuture with the deserialized token
+     */
+    public static CompletableFuture<Token<Transaction<MintTransactionData<?>>>> fromJSON(JsonNode jsonNode) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // Deserialize token state
+                JsonNode stateNode = jsonNode.get("state");
+                TokenState state = TokenState.fromJSON(stateNode);
+                
+                // Deserialize genesis transaction
+                JsonNode genesisNode = jsonNode.get("genesis");
+                Transaction<MintTransactionData<?>> genesis = Transaction.fromJSON(genesisNode);
+                
+                // TODO For now, we'll skip transactions and nametag tokens as they're not used in the offline flow
+                List<Transaction<?>> transactions = new ArrayList<>();
+                List<Token<?>> nametagTokens = new ArrayList<>();
+                
+                return new Token<>(state, genesis, transactions, nametagTokens);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to deserialize Token from JSON", e);
+            }
+        });
     }
 }

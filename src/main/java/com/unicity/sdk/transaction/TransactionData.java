@@ -1,6 +1,7 @@
 
 package com.unicity.sdk.transaction;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
@@ -131,5 +132,35 @@ public class TransactionData implements ISerializable {
             CborEncoder.encodeByteString(message)
             // TODO: Add nametag tokens when implemented
         );
+    }
+    
+    /**
+     * Deserialize TransactionData from JSON.
+     * @param jsonNode JSON node containing transaction data
+     * @return TransactionData instance
+     */
+    public static TransactionData fromJSON(JsonNode jsonNode) throws Exception {
+        // Deserialize source state
+        JsonNode sourceStateNode = jsonNode.get("sourceState");
+        TokenState sourceState = TokenState.fromJSON(sourceStateNode);
+        
+        // Get recipient
+        String recipient = jsonNode.get("recipient").asText();
+        
+        // Get salt
+        String saltHex = jsonNode.get("salt").asText();
+        byte[] salt = HexConverter.decode(saltHex);
+        
+        // Get data hash
+        JsonNode dataNode = jsonNode.get("data");
+        DataHash data = DataHash.fromJSON(dataNode.asText());
+        
+        // Get message
+        String messageHex = jsonNode.get("message").asText();
+        byte[] message = HexConverter.decode(messageHex);
+        
+        // TODO: Handle nametag tokens when implemented
+        
+        return create(sourceState, recipient, salt, data, message).get();
     }
 }

@@ -3,6 +3,7 @@ package com.unicity.sdk.transaction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
@@ -112,5 +113,32 @@ public class InclusionProof implements ISerializable {
             authenticator != null ? authenticator.toCBOR() : CborEncoder.encodeNull(),
             transactionHash != null ? transactionHash.toCBOR() : CborEncoder.encodeNull()
         );
+    }
+    
+    /**
+     * Deserialize InclusionProof from JSON.
+     * @param jsonNode JSON node containing inclusion proof
+     * @return InclusionProof instance
+     */
+    public static InclusionProof fromJSON(JsonNode jsonNode) throws Exception {
+        // Deserialize merkle tree path
+        JsonNode pathNode = jsonNode.get("merkleTreePath");
+        MerkleTreePath merkleTreePath = MerkleTreePath.fromJSON(pathNode);
+        
+        // Deserialize authenticator (optional)
+        Authenticator authenticator = null;
+        if (jsonNode.has("authenticator") && !jsonNode.get("authenticator").isNull()) {
+            JsonNode authNode = jsonNode.get("authenticator");
+            authenticator = Authenticator.fromJSON(authNode);
+        }
+        
+        // Deserialize transaction hash (optional)
+        DataHash transactionHash = null;
+        if (jsonNode.has("transactionHash") && !jsonNode.get("transactionHash").isNull()) {
+            String txHashHex = jsonNode.get("transactionHash").asText();
+            transactionHash = DataHash.fromJSON(txHashHex);
+        }
+        
+        return new InclusionProof(merkleTreePath, authenticator, transactionHash);
     }
 }

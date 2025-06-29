@@ -16,4 +16,19 @@ public enum HashAlgorithm {
     public int getValue() {
         return value;
     }
+    
+    /**
+     * Get HashAlgorithm from its numeric value.
+     * @param value The numeric value
+     * @return The corresponding HashAlgorithm
+     * @throws IllegalArgumentException if value is not valid
+     */
+    public static HashAlgorithm fromValue(int value) {
+        for (HashAlgorithm algorithm : HashAlgorithm.values()) {
+            if (algorithm.getValue() == value) {
+                return algorithm;
+            }
+        }
+        throw new IllegalArgumentException("Invalid HashAlgorithm value: " + value);
+    }
 }

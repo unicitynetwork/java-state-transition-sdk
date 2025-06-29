@@ -41,6 +41,14 @@ public class DataHash implements ISerializable {
         
         return new DataHash(hashData, algorithm);
     }
+    
+    /**
+     * Create DataHash from JSON representation.
+     * Expects a hex string in imprint format (algorithm prefix + hash).
+     */
+    public static DataHash fromJSON(String imprintHex) {
+        return fromImprint(HexConverter.decode(imprintHex));
+    }
 
     public byte[] getHash() {
         return Arrays.copyOf(hash, hash.length);

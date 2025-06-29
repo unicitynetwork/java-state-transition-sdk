@@ -1,11 +1,13 @@
 
 package com.unicity.sdk.predicate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.unicity.sdk.identity.IIdentity;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.token.TokenId;
+import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.Transaction;
 
 import java.util.concurrent.CompletableFuture;
@@ -50,5 +52,18 @@ public class BurnPredicate implements IPredicate {
     @Override
     public byte[] toCBOR() {
         return new byte[0];
+    }
+    
+    /**
+     * Create a burn predicate from JSON data.
+     * @param tokenId Token ID (not used for burn predicate).
+     * @param tokenType Token type (not used for burn predicate).
+     * @param jsonNode JSON node containing the burn predicate data.
+     */
+    public static CompletableFuture<BurnPredicate> fromJSON(TokenId tokenId, TokenType tokenType, JsonNode jsonNode) {
+        return CompletableFuture.supplyAsync(() -> {
+            // Burn predicate doesn't have additional data, just create a new instance
+            return new BurnPredicate(HashAlgorithm.SHA256);
+        });
     }
 }

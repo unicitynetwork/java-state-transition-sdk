@@ -1,6 +1,7 @@
 
 package com.unicity.sdk.transaction;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
@@ -67,6 +68,27 @@ public class Transaction<T extends ISerializable> implements ISerializable {
             return baos.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+    
+    /**
+     * Create a transaction from JSON data.
+     * @param jsonNode JSON node containing transaction data
+     * @return The deserialized transaction
+     */
+    public static Transaction<MintTransactionData<?>> fromJSON(JsonNode jsonNode) {
+        try {
+            // Deserialize transaction data
+            JsonNode dataNode = jsonNode.get("data");
+            MintTransactionData<?> data = MintTransactionData.fromJSON(dataNode);
+            
+            // Deserialize inclusion proof
+            JsonNode proofNode = jsonNode.get("inclusionProof");
+            InclusionProof inclusionProof = InclusionProof.fromJSON(proofNode);
+            
+            return new Transaction<>(data, inclusionProof);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize Transaction from JSON", e);
         }
     }
 }

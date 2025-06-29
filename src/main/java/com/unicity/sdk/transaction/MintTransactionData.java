@@ -1,11 +1,13 @@
 package com.unicity.sdk.transaction;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.predicate.IPredicate;
+import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.cbor.JacksonCborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
@@ -192,6 +194,77 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             CborEncoder.encodeByteString(salt),                           // Field 5: Salt
             dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(), // Field 6: Data Hash or null
             reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull() // Field 7: Reason or null
+        );
+    }
+    
+    /**
+     * Deserialize MintTransactionData from JSON.
+     * @param jsonNode JSON node containing mint transaction data
+     * @return MintTransactionData instance
+     */
+    public static MintTransactionData<?> fromJSON(JsonNode jsonNode) throws Exception {
+        // Deserialize token ID
+        String tokenIdHex = jsonNode.get("tokenId").asText();
+        TokenId tokenId = TokenId.create(HexConverter.decode(tokenIdHex));
+        
+        // Deserialize token type
+        String tokenTypeHex = jsonNode.get("tokenType").asText();
+        TokenType tokenType = TokenType.create(HexConverter.decode(tokenTypeHex));
+        
+        // Deserialize predicate
+        JsonNode predicateNode = jsonNode.get("predicate");
+        IPredicate predicate = PredicateFactory.fromJSON(predicateNode);
+        
+        // Deserialize token data - we'll use a simple wrapper for raw bytes
+        ISerializable tokenData = null;
+        if (jsonNode.has("tokenData") && !jsonNode.get("tokenData").isNull()) {
+            String tokenDataHex = jsonNode.get("tokenData").asText();
+            final byte[] tokenDataBytes = HexConverter.decode(tokenDataHex);
+            
+            // Create a simple ISerializable wrapper for the token data
+            tokenData = new ISerializable() {
+                @Override
+                public Object toJSON() {
+                    return HexConverter.encode(tokenDataBytes);
+                }
+                
+                @Override
+                public byte[] toCBOR() {
+                    return CborEncoder.encodeByteString(tokenDataBytes);
+                }
+                
+                public byte[] getData() {
+                    return tokenDataBytes;
+                }
+            };
+        }
+        
+        // Deserialize coin data
+        TokenCoinData coinData = null;
+        if (jsonNode.has("coinData") && !jsonNode.get("coinData").isNull()) {
+            JsonNode coinDataNode = jsonNode.get("coinData");
+            coinData = TokenCoinData.fromJSON(coinDataNode);
+        }
+        
+        // Deserialize salt
+        String saltHex = jsonNode.get("salt").asText();
+        byte[] salt = HexConverter.decode(saltHex);
+        
+        // Deserialize data hash (optional)
+        DataHash dataHash = null;
+        if (jsonNode.has("dataHash") && !jsonNode.get("dataHash").isNull()) {
+            String dataHashHex = jsonNode.get("dataHash").asText();
+            dataHash = DataHash.fromJSON(dataHashHex);
+        }
+        
+        return new MintTransactionData<>(
+            tokenId,
+            tokenType,
+            predicate,
+            tokenData,
+            coinData,
+            dataHash,
+            salt
         );
     }
 }

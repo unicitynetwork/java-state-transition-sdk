@@ -142,24 +142,75 @@ System.out.println("Current block height: " + blockHeight);
 
 ```java
 // Create transfer transaction data
-TransferTransactionData<TestTokenData> transferData = new TransferTransactionData<>(
-    token,
-    recipientPredicate,
-    newTokenData,
-    salt
-);
+TransactionData transferData = TransactionData.create(
+    token.getState(),
+    recipientAddress.toString(),
+    randomBytes(32),  // salt
+    dataHash,         // optional data hash
+    messageBytes      // optional message
+).get();
 
 // Submit transfer
-Commitment<TransferTransactionData<TestTokenData>> transferCommitment =
-    client.submitTransferTransaction(transferData, signingService).get();
+Commitment<TransactionData> transferCommitment =
+    client.submitTransaction(transferData, signingService).get();
 
 // Wait for inclusion proof and create transaction
 InclusionProof transferProof = InclusionProofUtils.waitInclusionProof(
     client, transferCommitment
 ).get();
 
-Transaction<TransferTransactionData<TestTokenData>> transferTransaction =
+Transaction<TransactionData> transferTransaction =
     client.createTransaction(transferCommitment, transferProof).get();
+```
+
+### Offline Token Transfer
+
+The SDK supports offline token transfers, where the transaction is prepared by the sender and can be transferred offline (e.g., via NFC, QR code, or file) to the recipient.
+
+```java
+import com.unicity.sdk.OfflineStateTransitionClient;
+import com.unicity.sdk.transaction.*;
+
+// Step 1: Sender creates offline transaction
+OfflineStateTransitionClient offlineClient = new OfflineStateTransitionClient(aggregatorClient);
+
+// Create transaction data
+TransactionData transactionData = TransactionData.create(
+    token.getState(),
+    recipientAddress.toString(),
+    randomBytes(32),
+    dataHash,
+    messageBytes
+).get();
+
+// Create offline commitment (signed by sender)
+OfflineCommitment offlineCommitment = offlineClient.createOfflineCommitment(
+    transactionData,
+    senderSigningService
+).get();
+
+// Create offline transaction package
+OfflineTransaction offlineTransaction = new OfflineTransaction(offlineCommitment, token);
+
+// Serialize to JSON for offline transfer
+String offlineTransactionJson = offlineTransaction.toJSONString();
+
+// Step 2: Transfer JSON to recipient offline (NFC, QR code, file, etc.)
+
+// Step 3: Recipient processes the offline transaction
+OfflineTransaction receivedTransaction = OfflineTransaction.fromJSON(offlineTransactionJson).get();
+
+// Submit to aggregator
+Transaction<?> confirmedTransaction = offlineClient.submitOfflineTransaction(
+    receivedTransaction.getCommitment()
+).get();
+
+// Finish transaction with recipient's state
+Token<Transaction<MintTransactionData<?>>> updatedToken = client.finishTransaction(
+    receivedTransaction.getToken(),
+    recipientTokenState,
+    confirmedTransaction
+).get();
 ```
 
 ## Building from Source

@@ -1,14 +1,18 @@
 
 package com.unicity.sdk.token.fungible;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class TokenCoinData implements ISerializable {
@@ -57,5 +61,30 @@ public class TokenCoinData implements ISerializable {
         } catch (IOException e) {
             throw new RuntimeException("Failed to encode TokenCoinData to CBOR", e);
         }
+    }
+    
+    /**
+     * Deserialize TokenCoinData from JSON.
+     * @param jsonNode JSON node containing coin data
+     * @return TokenCoinData instance
+     */
+    public static TokenCoinData fromJSON(JsonNode jsonNode) {
+        Map<CoinId, BigInteger> coins = new HashMap<>();
+        
+        JsonNode coinsNode = jsonNode.get("coins");
+        Iterator<Map.Entry<String, JsonNode>> fields = coinsNode.fields();
+        
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String coinIdHex = entry.getKey();
+            String balanceStr = entry.getValue().asText();
+            
+            CoinId coinId = new CoinId(HexConverter.decode(coinIdHex));
+            BigInteger balance = new BigInteger(balanceStr);
+            
+            coins.put(coinId, balance);
+        }
+        
+        return new TokenCoinData(coins);
     }
 }

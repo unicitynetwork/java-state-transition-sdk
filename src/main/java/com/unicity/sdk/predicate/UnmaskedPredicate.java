@@ -1,6 +1,7 @@
 
 package com.unicity.sdk.predicate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.shared.cbor.CborEncoder;
@@ -11,6 +12,7 @@ import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.Authenticator;
+import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 
@@ -187,5 +189,38 @@ public class UnmaskedPredicate extends DefaultPredicate {
         } catch (Exception e) {
             throw new RuntimeException("Failed to calculate hash", e);
         }
+    }
+    
+    /**
+     * Create an unmasked predicate from JSON data.
+     * @param tokenId Token ID.
+     * @param tokenType Token type.
+     * @param jsonNode JSON node containing the unmasked predicate data.
+     */
+    public static CompletableFuture<UnmaskedPredicate> fromJSON(TokenId tokenId, TokenType tokenType, JsonNode jsonNode) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // Check if we need to extract from "data" field
+                JsonNode dataNode = jsonNode.get("data");
+                final JsonNode predicateNode = (dataNode != null && !dataNode.isNull()) ? dataNode : jsonNode;
+                
+                String publicKeyHex = predicateNode.get("publicKey").asText();
+                String algorithm = predicateNode.get("algorithm").asText();
+                String hashAlgorithmStr = predicateNode.get("hashAlgorithm").asText();
+                String nonceHex = predicateNode.get("nonce").asText();
+                
+                byte[] publicKey = HexConverter.decode(publicKeyHex);
+                byte[] nonce = HexConverter.decode(nonceHex);
+                HashAlgorithm hashAlgorithm = HashAlgorithm.valueOf(hashAlgorithmStr);
+                
+                // Calculate reference and hash
+                DataHash reference = calculateReference(tokenType, algorithm, publicKey, hashAlgorithm);
+                DataHash hash = calculateHash(reference, tokenId.getBytes(), nonce, hashAlgorithm);
+                
+                return new UnmaskedPredicate(hash, reference, publicKey, algorithm, hashAlgorithm, nonce, tokenType);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to deserialize UnmaskedPredicate from JSON", e);
+            }
+        });
     }
 }

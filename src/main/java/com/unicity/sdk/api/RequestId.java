@@ -73,6 +73,16 @@ public class RequestId implements ISerializable {
         String hexString = "01" + HexConverter.encode(hashValue);
         return new BigInteger(hexString, 16);
     }
+    
+    /**
+     * Create RequestId from JSON representation (hex string of the hash imprint).
+     */
+    public static RequestId fromJSON(String hashImprintHex) {
+        DataHash hash = DataHash.fromJSON(hashImprintHex);
+        // TODO Create a dummy RequestId with the hash
+        // Note: We don't have the original publicKey and stateHash from just the hash
+        return new RequestId(new byte[0], hash, hash.getHash());
+    }
 
     @Override
     public Object toJSON() {

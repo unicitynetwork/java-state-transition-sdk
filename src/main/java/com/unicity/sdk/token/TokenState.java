@@ -1,12 +1,14 @@
 package com.unicity.sdk.token;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.predicate.IPredicate;
+import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.util.ByteArraySerializer;
 import com.unicity.sdk.shared.cbor.CborEncoder;
@@ -82,5 +84,25 @@ public class TokenState implements ISerializable {
                 "\n  " + unlockPredicate.toString() +
                 "\n  Data: " + (data != null ? HexConverter.encode(data) : "null") +
                 "\n  Hash: " + hash.toString();
+    }
+    
+    /**
+     * Deserialize TokenState from JSON.
+     * @param jsonNode JSON node containing token state
+     * @return TokenState instance
+     */
+    public static TokenState fromJSON(JsonNode jsonNode) throws Exception {
+        // Deserialize predicate
+        JsonNode predicateNode = jsonNode.get("unlockPredicate");
+        IPredicate unlockPredicate = PredicateFactory.fromJSON(predicateNode);
+        
+        // Get data if present
+        byte[] data = null;
+        if (jsonNode.has("data") && !jsonNode.get("data").isNull()) {
+            String dataHex = jsonNode.get("data").asText();
+            data = com.unicity.sdk.shared.util.HexConverter.decode(dataHex);
+        }
+        
+        return create(unlockPredicate, data);
     }
 }

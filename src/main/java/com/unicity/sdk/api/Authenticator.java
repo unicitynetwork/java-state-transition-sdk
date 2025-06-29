@@ -88,6 +88,22 @@ public class Authenticator implements ISerializable {
         // For now, use null which will cause issues if verify() is called
         return new Authenticator(signature, null, stateHash, publicKey);
     }
+    
+    /**
+     * Create Authenticator from JSON object.
+     */
+    public static Authenticator fromJSON(Object jsonObj) {
+        if (jsonObj instanceof java.util.Map) {
+            java.util.Map<String, Object> map = (java.util.Map<String, Object>) jsonObj;
+            return fromJson(
+                (String) map.get("algorithm"),
+                (String) map.get("publicKey"),
+                (String) map.get("signature"),
+                (String) map.get("stateHash")
+            );
+        }
+        throw new IllegalArgumentException("Invalid Authenticator JSON format");
+    }
 
     public CompletableFuture<Boolean> verify(DataHash hash) {
         // Verify that the provided hash matches our transaction hash

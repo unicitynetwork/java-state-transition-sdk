@@ -1,5 +1,6 @@
 package com.unicity.sdk.predicate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.shared.cbor.CborEncoder;
@@ -131,5 +132,41 @@ public class MaskedPredicate extends DefaultPredicate {
                 CborEncoder.encodeByteString(getNonce())
             )
         );
+    }
+
+    /**
+     * Create a masked predicate from JSON data.
+     * @param tokenId Token ID.
+     * @param tokenType Token type.
+     * @param jsonNode JSON node containing the masked predicate data.
+     */
+    public static CompletableFuture<MaskedPredicate> fromJSON(TokenId tokenId, TokenType tokenType, JsonNode jsonNode) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // Check if we need to extract from "data" field
+                JsonNode dataNode = jsonNode.get("data");
+                final JsonNode predicateNode = (dataNode != null && !dataNode.isNull()) ? dataNode : jsonNode;
+                
+                String publicKeyHex = predicateNode.get("publicKey").asText();
+                String algorithm = predicateNode.get("algorithm").asText();
+                int hashAlgorithmValue = predicateNode.get("hashAlgorithm").asInt();
+                String nonceHex = predicateNode.get("nonce").asText();
+                
+                byte[] publicKey = HexConverter.decode(publicKeyHex);
+                byte[] nonce = HexConverter.decode(nonceHex);
+                HashAlgorithm hashAlgorithm = HashAlgorithm.fromValue(hashAlgorithmValue);
+                
+                return createFromPublicKey(
+                    tokenId,
+                    tokenType,
+                    algorithm,
+                    publicKey,
+                    hashAlgorithm,
+                    nonce
+                ).get();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to deserialize MaskedPredicate from JSON", e);
+            }
+        });
     }
 }

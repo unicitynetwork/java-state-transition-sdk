@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
 public class StateTransitionClient {
     public static final byte[] MINTER_SECRET = HexConverter.decode("495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
     
-    private final AggregatorClient aggregatorClient;
+    protected final AggregatorClient aggregatorClient;
 
     public StateTransitionClient(AggregatorClient aggregatorClient) {
         this.aggregatorClient = aggregatorClient;
