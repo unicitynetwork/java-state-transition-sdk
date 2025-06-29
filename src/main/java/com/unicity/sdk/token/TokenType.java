@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.shared.cbor.CborEncoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class TokenType implements ISerializable {
 
     @Override
     public byte[] toCBOR() {
-        return com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(bytes);
+        return CborEncoder.encodeByteString(bytes);
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.unicity.sdk.shared.signing.ISignature;
 import com.unicity.sdk.shared.signing.ISigningService;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -109,10 +110,10 @@ public class MaskedPredicate extends DefaultPredicate {
         
         // Add predicate data
         ObjectNode data = mapper.createObjectNode();
-        data.put("publicKey", com.unicity.sdk.shared.util.HexConverter.encode(getPublicKey()));
+        data.put("publicKey", HexConverter.encode(getPublicKey()));
         data.put("algorithm", getAlgorithm());
         data.put("hashAlgorithm", getHashAlgorithm().getValue());
-        data.put("nonce", com.unicity.sdk.shared.util.HexConverter.encode(getNonce()));
+        data.put("nonce", HexConverter.encode(getNonce()));
         
         root.set("data", data);
         return root;

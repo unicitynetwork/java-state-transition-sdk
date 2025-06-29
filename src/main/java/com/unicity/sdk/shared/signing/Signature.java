@@ -3,6 +3,7 @@ package com.unicity.sdk.shared.signing;
 
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.util.HexConverter;
 import java.util.Arrays;
 
 public class Signature implements ISignature, ISerializable {
@@ -36,6 +37,6 @@ public class Signature implements ISignature, ISerializable {
         byte[] fullSignature = new byte[bytes.length + 1];
         System.arraycopy(bytes, 0, fullSignature, 0, bytes.length);
         fullSignature[bytes.length] = (byte) recovery;
-        return com.unicity.sdk.shared.util.HexConverter.encode(fullSignature);
+        return HexConverter.encode(fullSignature);
     }
 }

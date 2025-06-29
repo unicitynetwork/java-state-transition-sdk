@@ -8,6 +8,8 @@ import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.util.ByteArraySerializer;
+import com.unicity.sdk.shared.cbor.CborEncoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,7 +22,7 @@ public class TokenState implements ISerializable {
     @JsonProperty("unlockPredicate")
     private final IPredicate unlockPredicate;
 
-    @JsonSerialize(using = com.unicity.sdk.util.ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArraySerializer.class)
     private final byte[] data;
 
     private final DataHash hash;
@@ -64,9 +66,9 @@ public class TokenState implements ISerializable {
     public byte[] toCBOR() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            baos.write(com.unicity.sdk.shared.cbor.CborEncoder.encodeArray(
+            baos.write(CborEncoder.encodeArray(
                 unlockPredicate.toCBOR(),
-                com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(data != null ? data : new byte[0])
+                CborEncoder.encodeByteString(data != null ? data : new byte[0])
             ));
         } catch (IOException e) {
             throw new RuntimeException("Failed to encode TokenState", e);

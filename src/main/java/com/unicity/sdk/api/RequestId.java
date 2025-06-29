@@ -70,7 +70,7 @@ public class RequestId implements ISerializable {
 
     public BigInteger toBigInt() {
         // TypeScript SDK prepends "0x01" to the hash before converting to BigInt
-        String hexString = "01" + com.unicity.sdk.shared.util.HexConverter.encode(hashValue);
+        String hexString = "01" + HexConverter.encode(hashValue);
         return new BigInteger(hexString, 16);
     }
 
