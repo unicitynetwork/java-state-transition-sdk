@@ -7,6 +7,10 @@ import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.signing.ISignature;
 import com.unicity.sdk.shared.signing.ISigningService;
+import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -50,10 +54,33 @@ public class Authenticator implements ISerializable {
     public DataHash getStateHash() {
         return stateHash;
     }
+    
+    public byte[] getPublicKey() {
+        return address;
+    }
 
     public CompletableFuture<Boolean> verify(DataHash hash) {
-        // TODO: Implement verification logic
-        return CompletableFuture.completedFuture(true);
+        // Verify that the provided hash matches our transaction hash
+        if (!hash.equals(transactionHash)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        
+        // Verify the signature
+        byte[] message = new byte[transactionHash.getHash().length + stateHash.getHash().length];
+        System.arraycopy(transactionHash.getHash(), 0, message, 0, transactionHash.getHash().length);
+        System.arraycopy(stateHash.getHash(), 0, message, transactionHash.getHash().length, stateHash.getHash().length);
+        
+        // Create a hash of the message
+        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        hasher.update(message);
+        
+        return hasher.digest().thenCompose(messageHash -> 
+            SigningService.verifyWithPublicKey(
+                messageHash,
+                signature.getBytes(),
+                address
+            )
+        );
     }
 
     @Override
@@ -61,7 +88,7 @@ public class Authenticator implements ISerializable {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
         
-        root.put("publicKey", com.unicity.sdk.shared.util.HexConverter.encode(address));
+        root.put("publicKey", HexConverter.encode(address));
         root.put("signature", signature.toJSON().toString());
         
         return root;

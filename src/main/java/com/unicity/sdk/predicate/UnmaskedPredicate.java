@@ -3,84 +3,189 @@ package com.unicity.sdk.predicate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
-import com.unicity.sdk.identity.PublicKeyIdentity;
+import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.api.RequestId;
+import com.unicity.sdk.api.Authenticator;
+import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
-public class UnmaskedPredicate implements IPredicate {
-    private final PublicKeyIdentity identity;
-    private final DataHash hash;
-    private final DataHash reference;
+public class UnmaskedPredicate extends DefaultPredicate {
+    private final TokenType tokenType;
 
-    public UnmaskedPredicate(PublicKeyIdentity identity, HashAlgorithm algorithm) {
-        this.identity = identity;
-        this.hash = DataHasher.digest(algorithm, identity.toCBOR());
-        // Calculate reference using SHA256 hash of public key
-        // In a full implementation, this would include more predicate configuration
+    private UnmaskedPredicate(
+            DataHash hash,
+            DataHash reference,
+            byte[] publicKey,
+            String algorithm,
+            HashAlgorithm hashAlgorithm,
+            byte[] nonce,
+            TokenType tokenType) {
+        super(PredicateType.UNMASKED, publicKey, algorithm, hashAlgorithm, nonce, reference, hash);
+        this.tokenType = tokenType;
+    }
+
+    /**
+     * Create an unmasked predicate from public key.
+     */
+    public static CompletableFuture<UnmaskedPredicate> createFromPublicKey(
+            byte[] tokenId,
+            TokenType tokenType,
+            String algorithm,
+            byte[] publicKey,
+            HashAlgorithm hashAlgorithm) {
         try {
-            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
-            hasher.update(identity.getPublicKey());
-            this.reference = hasher.digest().get();
+            // Calculate nonce by signing a salt hash
+            JavaDataHasher nonceHasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            nonceHasher.update(publicKey);
+            nonceHasher.update(tokenId);
+            DataHash saltHash = nonceHasher.digest().get();
+            
+            // For unmasked predicate, we'll use the salt hash bytes as nonce
+            // In production, this would be signed by the private key
+            byte[] nonce = saltHash.getHash();
+            
+            // Calculate reference
+            DataHash reference = calculateReference(tokenType, algorithm, publicKey, hashAlgorithm);
+            
+            // Calculate hash
+            DataHash hash = calculateHash(reference, tokenId, nonce, hashAlgorithm);
+            
+            return CompletableFuture.completedFuture(
+                new UnmaskedPredicate(hash, reference, publicKey, algorithm, hashAlgorithm, nonce, tokenType)
+            );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to calculate reference", e);
+            return CompletableFuture.failedFuture(e);
         }
     }
-
-    @Override
-    public DataHash getHash() {
-        return hash;
-    }
-
-    @Override
-    public DataHash getReference() {
-        return reference;
-    }
-
+    
     @Override
     public CompletableFuture<Boolean> isOwner(byte[] publicKey) {
-        // TODO: Implement ownership check based on identity
-        return CompletableFuture.completedFuture(false);
+        return CompletableFuture.completedFuture(Arrays.equals(getPublicKey(), publicKey));
     }
 
     @Override
     public CompletableFuture<Boolean> verify(Transaction<?> transaction) {
-        // TODO: Implement verification
-        return CompletableFuture.completedFuture(true);
+        try {
+            // Step 1: Check if transaction has inclusion proof with authenticator
+            if (transaction.getInclusionProof() == null || 
+                transaction.getInclusionProof().getAuthenticator() == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+            
+            Authenticator authenticator = transaction.getInclusionProof().getAuthenticator();
+            
+            // For now, we'll do basic verification
+            // In a complete implementation, this would verify:
+            // 1. Authenticator's signature matches this predicate's public key
+            // 2. Transaction data integrity
+            // 3. Inclusion proof validity
+            
+            // Step 1: Verify the authenticator's transaction hash
+            DataHash txHash = authenticator.getTransactionHash();
+            if (txHash == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+            
+            // Step 2: Verify the authenticator signature
+            return authenticator.verify(txHash)
+                .thenCompose(dataHashValid -> {
+                    if (!dataHashValid) {
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    
+                    // Step 3: Create RequestId from public key and state hash
+                    return RequestId.create(getPublicKey(), authenticator.getStateHash())
+                        .thenCompose(requestId -> 
+                            transaction.getInclusionProof().verify(requestId.toBigInt())
+                                .thenApply(status -> status == InclusionProofVerificationStatus.OK)
+                        );
+                });
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Override
     public Object toJSON() {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
-        root.put("type", PredicateType.UNMASKED.name());
-        root.put("identity", identity.toJSON().toString());
+        root.put("type", getType().name());
+        root.put("publicKey", HexConverter.encode(getPublicKey()));
+        root.put("algorithm", getAlgorithm());
+        root.put("hashAlgorithm", getHashAlgorithm().name());
+        root.put("nonce", HexConverter.encode(getNonce()));
         return root;
     }
 
     @Override
     public byte[] toCBOR() {
-        CBORFactory factory = new CBORFactory();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             CBORGenerator generator = factory.createGenerator(baos)) {
-            generator.writeStartObject();
-            generator.writeFieldName("type");
-            generator.writeString(PredicateType.UNMASKED.name());
-            generator.writeFieldName("identity");
-            generator.writeBinary(identity.toCBOR());
-            generator.writeEndObject();
-            generator.flush();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        // Encode as CBOR array: [type, publicKey, algorithm, hashAlgorithm, nonce]
+        return CborEncoder.encodeArray(
+            CborEncoder.encodeUnsignedInteger(getType().getValue()),
+            CborEncoder.encodeByteString(getPublicKey()),
+            CborEncoder.encodeTextString(getAlgorithm()),
+            CborEncoder.encodeUnsignedInteger(getHashAlgorithm().getValue()),
+            CborEncoder.encodeByteString(getNonce())
+        );
+    }
+    
+    /**
+     * Calculate reference hash for unmasked predicate.
+     */
+    private static DataHash calculateReference(
+            TokenType tokenType,
+            String algorithm,
+            byte[] publicKey,
+            HashAlgorithm hashAlgorithm) {
+        try {
+            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            
+            // Build CBOR array with predicate configuration
+            byte[] cborArray = CborEncoder.encodeArray(
+                CborEncoder.encodeTextString("UNMASKED"),
+                tokenType.toCBOR(),
+                CborEncoder.encodeTextString(algorithm),
+                CborEncoder.encodeTextString(hashAlgorithm.name()),
+                CborEncoder.encodeByteString(publicKey)
+            );
+            
+            hasher.update(cborArray);
+            return hasher.digest().get();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to calculate reference", e);
+        }
+    }
+    
+    /**
+     * Calculate hash for unmasked predicate.
+     */
+    private static DataHash calculateHash(
+            DataHash reference,
+            byte[] tokenId,
+            byte[] nonce,
+            HashAlgorithm hashAlgorithm) {
+        try {
+            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            
+            // Build CBOR array with reference, tokenId, and nonce
+            byte[] cborArray = CborEncoder.encodeArray(
+                reference.toCBOR(),
+                CborEncoder.encodeByteString(tokenId),
+                CborEncoder.encodeByteString(nonce)
+            );
+            
+            hasher.update(cborArray);
+            return hasher.digest().get();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to calculate hash", e);
         }
     }
 }

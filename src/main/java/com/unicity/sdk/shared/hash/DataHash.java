@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.shared.cbor.CborEncoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -71,7 +72,7 @@ public class DataHash implements ISerializable {
     @Override
     public byte[] toCBOR() {
         // CBOR encoding of the imprint as a byte string
-        return com.unicity.sdk.shared.cbor.CborEncoder.encodeByteString(getImprint());
+        return CborEncoder.encodeByteString(getImprint());
     }
 
     @Override
