@@ -1,6 +1,8 @@
 
 package com.unicity.sdk.transaction;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
@@ -9,6 +11,7 @@ import com.unicity.sdk.api.LeafValue;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.smt.MerkleTreePath;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.math.BigInteger;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +31,22 @@ public class InclusionProof implements ISerializable {
         this.merkleTreePath = merkleTreePath;
         this.authenticator = authenticator;
         this.transactionHash = transactionHash;
+    }
+    
+    /**
+     * Factory method for Jackson deserialization from JSON.
+     * Matches TypeScript SDK's IInclusionProofJson interface.
+     */
+    @JsonCreator
+    public static InclusionProof fromJson(
+            @JsonProperty("merkleTreePath") MerkleTreePath merkleTreePath,
+            @JsonProperty("authenticator") Authenticator authenticator,
+            @JsonProperty("transactionHash") String transactionHashHex) {
+        DataHash transactionHash = null;
+        if (transactionHashHex != null) {
+            transactionHash = DataHash.fromImprint(HexConverter.decode(transactionHashHex));
+        }
+        return new InclusionProof(merkleTreePath, authenticator, transactionHash);
     }
 
     public MerkleTreePath getMerkleTreePath() {

@@ -24,7 +24,8 @@ public class AuthenticatorVerificationTest {
     @Test
     void testRequestIdCalculation() throws Exception {
         // Values from TypeScript test
-        String expectedRequestIdHex = "9399ada3bd4dfa4bce4787bbc416be1e617a734efeb9c4d70a70d4503d5637b0";
+        // Note: TypeScript test shows RequestId.fromJSON expects the value WITH algorithm prefix
+        String expectedRequestIdHex = "00009399ada3bd4dfa4bce4787bbc416be1e617a734efeb9c4d70a70d4503d5637b0";
         String publicKeyHex = "02bf8d9e7687f66c7fce1e98edbc05566f7db740030722cf6cf62aca035c5035ea";
         String stateHashHex = "0000f7f53c361c30535ed52b05f24616b5580d562ba7494e352dc2f934a51a78bb0a";
 
@@ -39,7 +40,7 @@ public class AuthenticatorVerificationTest {
         System.out.println("Public key for RequestId: " + HexConverter.encode(publicKey));
         System.out.println("State hash CBOR for RequestId: " + HexConverter.encode(stateHash.toCBOR()));
         
-        // The RequestId.toJSON() should return the hex string representation
+        // The RequestId.toJSON() should return the hex string representation with algorithm prefix
         String actualRequestIdJson = (String) requestId.toJSON();
         System.out.println("Expected RequestId: " + expectedRequestIdHex);
         System.out.println("Actual RequestId JSON: " + actualRequestIdJson);

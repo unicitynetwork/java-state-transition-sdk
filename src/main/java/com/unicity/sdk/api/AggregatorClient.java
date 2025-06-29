@@ -29,6 +29,8 @@ public class AggregatorClient implements IAggregatorClient {
         params.put("authenticator", authenticator.toJSON());
         params.put("receipt", false);
         
+        System.out.println("AggregatorClient submit_commitment params: " + objectMapper.valueToTree(params));
+        
         return transport.request("submit_commitment", params)
                 .thenApply(result -> {
                     // TODO: Properly deserialize response
@@ -40,10 +42,26 @@ public class AggregatorClient implements IAggregatorClient {
         Map<String, Object> params = new HashMap<>();
         params.put("requestId", requestId.toJSON());
         
+        System.out.println("AggregatorClient get_inclusion_proof params: " + objectMapper.valueToTree(params));
+        
         return transport.request("get_inclusion_proof", params)
                 .thenApply(result -> {
-                    // TODO: Properly deserialize InclusionProof
-                    return objectMapper.convertValue(result, InclusionProof.class);
+                    // Log the raw JSON response for debugging
+                    try {
+                        String rawJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+                        System.out.println("AggregatorClient get_inclusion_proof raw response:");
+                        System.out.println(rawJson);
+                        System.out.println("Result type: " + (result != null ? result.getClass().getName() : "null"));
+                    } catch (Exception e) {
+                        System.err.println("Error logging raw response: " + e.getMessage());
+                    }
+                    
+                    // Use custom deserializer for InclusionProof
+                    try {
+                        return InclusionProofDeserializer.deserialize(result);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to deserialize InclusionProof", e);
+                    }
                 });
     }
 

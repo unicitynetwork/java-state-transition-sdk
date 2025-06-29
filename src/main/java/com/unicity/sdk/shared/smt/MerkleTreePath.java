@@ -1,6 +1,8 @@
 
 package com.unicity.sdk.shared.smt;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 
@@ -11,7 +13,8 @@ import java.util.concurrent.CompletableFuture;
 public class MerkleTreePath implements ISerializable {
     private final List<MerkleTreePathStep> steps;
 
-    public MerkleTreePath(List<MerkleTreePathStep> steps) {
+    @JsonCreator
+    public MerkleTreePath(@JsonProperty("steps") List<MerkleTreePathStep> steps) {
         this.steps = steps;
     }
 

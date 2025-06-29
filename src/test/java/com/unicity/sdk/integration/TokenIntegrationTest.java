@@ -165,7 +165,6 @@ public class TokenIntegrationTest {
         coins.put(new CoinId(randomBytes(32)), BigInteger.valueOf(50));
         TokenCoinData coinData = new TokenCoinData(coins);
         
-        byte[] data = randomBytes(32);
         byte[] salt = randomBytes(32);
         byte[] nonce = randomBytes(32);
         
@@ -179,10 +178,8 @@ public class TokenIntegrationTest {
             nonce
         ).get();
         
-        // Create mint transaction data
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
-        hasher.update(data);
-        DataHash dataHash = hasher.digest().get();
+        // Note: dataHash field is optional for mint transactions (can be null)
+        // The data field was removed from MintTransactionData in the updated structure
         
         MintTransactionData<TestTokenData> mintData = new MintTransactionData<>(
             tokenId,
@@ -190,11 +187,13 @@ public class TokenIntegrationTest {
             predicate,
             tokenData,
             coinData,
-            data,
+            null,  // dataHash (optional)
             salt
         );
         
         logger.info("Submitting mint transaction for token ID: {}", tokenId.toJSON());
+        logger.info("MintTransactionData JSON: {}", mintData.toJSON());
+        logger.info("MintTransactionData hash: {}", mintData.getHash().toJSON());
         
         // Submit mint transaction
         Commitment<MintTransactionData<TestTokenData>> commitment =
@@ -212,8 +211,8 @@ public class TokenIntegrationTest {
             client.createTransaction(commitment, inclusionProof).get();
         assertNotNull(mintTransaction);
         
-        // Create token state
-        TokenState tokenState = TokenState.create(predicate, data);
+        // Create token state with tokenData bytes
+        TokenState tokenState = TokenState.create(predicate, tokenData.getData());
         
         // Create token
         Token<Transaction<MintTransactionData<?>>> token =

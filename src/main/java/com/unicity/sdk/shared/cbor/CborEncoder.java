@@ -116,6 +116,21 @@ public class CborEncoder {
         return new byte[] { (byte) 0xf6 };
     }
     
+    /**
+     * Encode the start of a CBOR array with the given length
+     */
+    public static byte[] encodeArrayStart(int length) {
+        if (length < 24) {
+            return new byte[] { (byte) (MajorType.ARRAY.getValue() | length) };
+        }
+        
+        byte[] lengthBytes = getUnsignedIntegerAsPaddedBytes(length);
+        byte[] result = new byte[lengthBytes.length + 1];
+        result[0] = (byte) (MajorType.ARRAY.getValue() | getAdditionalInformationBits(lengthBytes.length));
+        System.arraycopy(lengthBytes, 0, result, 1, lengthBytes.length);
+        return result;
+    }
+    
     private static int getAdditionalInformationBits(int length) {
         return 24 + (int) Math.ceil(Math.log(length) / Math.log(2));
     }

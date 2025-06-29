@@ -1,5 +1,7 @@
 package com.unicity.sdk.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
@@ -8,10 +10,12 @@ import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.signing.ISignature;
 import com.unicity.sdk.shared.signing.ISigningService;
 import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.shared.signing.Signature;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.util.HexConverter;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -35,11 +39,8 @@ public class Authenticator implements ISerializable {
             DataHash transactionHash,
             DataHash stateHash) {
         
-        byte[] message = new byte[transactionHash.getHash().length + stateHash.getHash().length];
-        System.arraycopy(transactionHash.getHash(), 0, message, 0, transactionHash.getHash().length);
-        System.arraycopy(stateHash.getHash(), 0, message, transactionHash.getHash().length, stateHash.getHash().length);
-        
-        return signingService.sign(message)
+        // TypeScript SDK signs only the transactionHash, not the concatenation
+        return signingService.sign(transactionHash.getHash())
                 .thenApply(signature -> new Authenticator(signature, transactionHash, stateHash, signingService.getPublicKey()));
     }
 
@@ -58,6 +59,35 @@ public class Authenticator implements ISerializable {
     public byte[] getPublicKey() {
         return address;
     }
+    
+    /**
+     * Factory method for Jackson deserialization from JSON.
+     * Matches TypeScript SDK's IAuthenticatorJson interface.
+     */
+    @JsonCreator
+    public static Authenticator fromJson(
+            @JsonProperty("algorithm") String algorithm,
+            @JsonProperty("publicKey") String publicKeyHex,
+            @JsonProperty("signature") String signatureHex,
+            @JsonProperty("stateHash") String stateHashHex) {
+        
+        // For now, we'll create a dummy Authenticator for deserialization
+        // In a real implementation, we'd need to properly reconstruct all fields
+        byte[] publicKey = HexConverter.decode(publicKeyHex);
+        byte[] fullSignatureBytes = HexConverter.decode(signatureHex);
+        DataHash stateHash = DataHash.fromImprint(HexConverter.decode(stateHashHex));
+        
+        // Extract signature and recovery byte (last byte is recovery)
+        byte[] signatureBytes = Arrays.copyOfRange(fullSignatureBytes, 0, fullSignatureBytes.length - 1);
+        int recovery = fullSignatureBytes[fullSignatureBytes.length - 1] & 0xFF;
+        
+        // Create signature from bytes
+        ISignature signature = new Signature(signatureBytes, recovery);
+        
+        // Note: We don't have transactionHash in the JSON, which is a problem
+        // For now, use null which will cause issues if verify() is called
+        return new Authenticator(signature, null, stateHash, publicKey);
+    }
 
     public CompletableFuture<Boolean> verify(DataHash hash) {
         // Verify that the provided hash matches our transaction hash
@@ -65,21 +95,11 @@ public class Authenticator implements ISerializable {
             return CompletableFuture.completedFuture(false);
         }
         
-        // Verify the signature
-        byte[] message = new byte[transactionHash.getHash().length + stateHash.getHash().length];
-        System.arraycopy(transactionHash.getHash(), 0, message, 0, transactionHash.getHash().length);
-        System.arraycopy(stateHash.getHash(), 0, message, transactionHash.getHash().length, stateHash.getHash().length);
-        
-        // Create a hash of the message
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
-        hasher.update(message);
-        
-        return hasher.digest().thenCompose(messageHash -> 
-            SigningService.verifyWithPublicKey(
-                messageHash,
-                signature.getBytes(),
-                address
-            )
+        // TypeScript SDK verifies signature only on transactionHash
+        return SigningService.verifyWithPublicKey(
+            transactionHash,
+            signature.getBytes(),
+            address
         );
     }
 
@@ -88,8 +108,10 @@ public class Authenticator implements ISerializable {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
         
+        root.put("algorithm", "secp256k1");
         root.put("publicKey", HexConverter.encode(address));
         root.put("signature", signature.toJSON().toString());
+        root.put("stateHash", stateHash.toJSON().toString());
         
         return root;
     }

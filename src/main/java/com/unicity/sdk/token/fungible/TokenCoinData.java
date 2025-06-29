@@ -41,14 +41,16 @@ public class TokenCoinData implements ISerializable {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             
-            // Encode as CBOR map
-            baos.write(CborEncoder.encodeMapStart(coins.size()));
+            // Encode as CBOR array of arrays [[coinId, balance], ...]
+            // This matches the TypeScript SDK structure
+            baos.write(CborEncoder.encodeArrayStart(coins.size()));
             
             for (Map.Entry<CoinId, BigInteger> entry : coins.entrySet()) {
-                // Write key (CoinId as byte string)
-                baos.write(entry.getKey().toCBOR());
-                // Write value (BigInteger as unsigned integer)
-                baos.write(CborEncoder.encodeUnsignedInteger(entry.getValue()));
+                // Each entry is an array of [coinId, balance]
+                baos.write(CborEncoder.encodeArray(
+                    CborEncoder.encodeByteString(entry.getKey().getValue().toByteArray()), // CoinId as byte string
+                    CborEncoder.encodeByteString(entry.getValue().toByteArray())           // Balance as byte string
+                ));
             }
             
             return baos.toByteArray();

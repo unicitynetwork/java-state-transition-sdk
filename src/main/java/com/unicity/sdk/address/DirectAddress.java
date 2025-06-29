@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Direct address implementation
  */
-public class DirectAddress implements ISerializable {
+public class DirectAddress implements IAddress {
     private static final int ADDRESS_LENGTH = 36;
     private static final byte ADDRESS_TYPE = 0x00;
     
@@ -42,11 +42,16 @@ public class DirectAddress implements ISerializable {
     public byte[] getBytes() {
         return Arrays.copyOf(bytes, bytes.length);
     }
+    
+    @Override
+    public String getAddress() {
+        return HexConverter.encode(bytes);
+    }
 
     @Override
     @JsonValue
-    public String toJSON() {
-        return HexConverter.encode(bytes);
+    public Object toJSON() {
+        return getAddress();
     }
 
     @Override
@@ -56,7 +61,7 @@ public class DirectAddress implements ISerializable {
 
     @Override
     public String toString() {
-        return toJSON();
+        return getAddress();
     }
 
     @Override

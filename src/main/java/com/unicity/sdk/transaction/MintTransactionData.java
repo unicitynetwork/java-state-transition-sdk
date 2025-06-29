@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.address.DirectAddress;
+import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.cbor.JacksonCborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
@@ -15,20 +17,25 @@ import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Mint transaction data with full constructor matching TypeScript
  */
 public class MintTransactionData<T extends ISerializable> implements ISerializable {
+    // TOKENID string SHA-256 hash
+    private static final byte[] MINT_SUFFIX = HexConverter.decode("9e82002c144d7c5796c50f6db50a0c7bbd7f717ae3af6c6c71a3e9eba3022730");
     private final TokenId tokenId;
     private final TokenType tokenType;
     private final IPredicate predicate;
     private final T tokenData;
     private final TokenCoinData coinData;
-    private final byte[] data;
+    private final DataHash dataHash;  // Optional data hash field
     private final byte[] salt;
     private final DirectAddress recipient;
+    private final Object reason;  // Optional reason field
     private DataHash hash;
+    private RequestId sourceState;
 
     /**
      * Constructor matching TypeScript implementation
@@ -39,15 +46,28 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             IPredicate predicate,
             T tokenData,
             TokenCoinData coinData,
-            byte[] data,
+            DataHash dataHash,
             byte[] salt) {
+        this(tokenId, tokenType, predicate, tokenData, coinData, dataHash, salt, null);
+    }
+    
+    public MintTransactionData(
+            TokenId tokenId,
+            TokenType tokenType,
+            IPredicate predicate,
+            T tokenData,
+            TokenCoinData coinData,
+            DataHash dataHash,
+            byte[] salt,
+            Object reason) {
         this.tokenId = tokenId;
         this.tokenType = tokenType;
         this.predicate = predicate;
         this.tokenData = tokenData;
         this.coinData = coinData;
-        this.data = Arrays.copyOf(data, data.length);
+        this.dataHash = dataHash;
         this.salt = Arrays.copyOf(salt, salt.length);
+        this.reason = reason;
         
         // Calculate recipient from predicate
         try {
@@ -56,14 +76,36 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             throw new RuntimeException("Failed to create recipient address", e);
         }
         
+        // Create sourceState like TypeScript: RequestId.createFromImprint(tokenId.bytes, MINT_SUFFIX)
+        try {
+            this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX).get();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create source state", e);
+        }
+        
         // Calculate hash
         this.hash = calculateHash();
     }
     
     private DataHash calculateHash() {
         try {
+            // Hash calculation is different from CBOR encoding!
+            // It uses tokenDataHash instead of raw tokenData
+            JavaDataHasher tokenDataHasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            tokenDataHasher.update(tokenData.toCBOR());
+            DataHash tokenDataHash = tokenDataHasher.digest().get();
+            
             JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
-            hasher.update(toCBOR());
+            hasher.update(CborEncoder.encodeArray(
+                tokenId.toCBOR(),
+                tokenType.toCBOR(),
+                tokenDataHash.toCBOR(),  // Hash of token data, not the data itself
+                dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(),
+                coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(),
+                CborEncoder.encodeTextString(recipient.getAddress()),
+                CborEncoder.encodeByteString(salt),
+                reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull()
+            ));
             return hasher.digest().get();
         } catch (Exception e) {
             throw new RuntimeException("Failed to calculate hash", e);
@@ -90,8 +132,12 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         return coinData;
     }
 
-    public byte[] getData() {
-        return Arrays.copyOf(data, data.length);
+    public DataHash getDataHash() {
+        return dataHash;
+    }
+    
+    public Object getReason() {
+        return reason;
     }
 
     public byte[] getSalt() {
@@ -105,6 +151,10 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
     public DataHash getHash() {
         return hash;
     }
+    
+    public RequestId getSourceState() {
+        return sourceState;
+    }
 
     @Override
     public Object toJSON() {
@@ -115,25 +165,33 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         root.put("tokenType", tokenType.toJSON());
         root.set("predicate", mapper.valueToTree(predicate.toJSON()));
         root.set("tokenData", mapper.valueToTree(tokenData.toJSON()));
-        root.set("coinData", mapper.valueToTree(coinData.toJSON()));
-        root.put("data", HexConverter.encode(data));
+        if (coinData != null) {
+            root.set("coinData", mapper.valueToTree(coinData.toJSON()));
+        }
+        if (dataHash != null) {
+            root.set("dataHash", mapper.valueToTree(dataHash.toJSON()));
+        }
         root.put("salt", HexConverter.encode(salt));
         root.set("recipient", mapper.valueToTree(recipient.toJSON()));
+        if (reason != null) {
+            root.set("reason", mapper.valueToTree(reason));
+        }
         
         return root;
     }
 
     @Override
     public byte[] toCBOR() {
+        // Match TypeScript SDK structure exactly
         return CborEncoder.encodeArray(
-            tokenId.toCBOR(),
-            tokenType.toCBOR(),
-            predicate.toCBOR(),
-            tokenData.toCBOR(),
-            coinData.toCBOR(),
-            CborEncoder.encodeByteString(data),
-            CborEncoder.encodeByteString(salt),
-            recipient.toCBOR()
+            tokenId.toCBOR(),                                              // Field 0: Token ID
+            tokenType.toCBOR(),                                            // Field 1: Token Type
+            CborEncoder.encodeByteString(tokenData.toCBOR()),             // Field 2: Token Data as byte string
+            coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(), // Field 3: Coin Data or null
+            CborEncoder.encodeTextString(recipient.getAddress()),         // Field 4: Recipient as text string
+            CborEncoder.encodeByteString(salt),                           // Field 5: Salt
+            dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(), // Field 6: Data Hash or null
+            reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull() // Field 7: Reason or null
         );
     }
 }

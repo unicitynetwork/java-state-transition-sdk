@@ -5,6 +5,7 @@ import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -34,6 +35,22 @@ public class RequestId implements ISerializable {
             return new RequestId(publicKey, stateHash, hashBytes);
         });
     }
+    
+    /**
+     * Creates a RequestId from an ID and hash imprint.
+     * This matches TypeScript's RequestId.createFromImprint method.
+     */
+    public static CompletableFuture<RequestId> createFromImprint(byte[] id, byte[] hashImprint) {
+        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        hasher.update(id);
+        hasher.update(hashImprint);
+        
+        return hasher.digest().thenApply(hash -> {
+            // For createFromImprint, the resulting hash IS the state hash
+            // We use the id as publicKey for compatibility
+            return new RequestId(id, hash, hash.getHash());
+        });
+    }
 
     public byte[] getPublicKey() {
         return Arrays.copyOf(publicKey, publicKey.length);
@@ -42,14 +59,25 @@ public class RequestId implements ISerializable {
     public DataHash getStateHash() {
         return stateHash;
     }
+    
+    /**
+     * Get the hash of this RequestId.
+     * This is the computed hash value, not the state hash.
+     */
+    public DataHash getHash() {
+        return new DataHash(hashValue, HashAlgorithm.SHA256);
+    }
 
     public BigInteger toBigInt() {
-        return new BigInteger(1, hashValue);
+        // TypeScript SDK prepends "0x01" to the hash before converting to BigInt
+        String hexString = "01" + com.unicity.sdk.shared.util.HexConverter.encode(hashValue);
+        return new BigInteger(hexString, 16);
     }
 
     @Override
     public Object toJSON() {
-        return com.unicity.sdk.shared.util.HexConverter.encode(hashValue);
+        // Return the hash imprint (algorithm prefix + hash) to match TypeScript implementation
+        return getHash().toJSON();
     }
 
     @Override
