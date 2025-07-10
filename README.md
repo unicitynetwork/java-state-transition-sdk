@@ -168,46 +168,55 @@ Transaction<TransactionData> transferTransaction =
 The SDK supports offline token transfers, where the transaction is prepared by the sender and can be transferred offline (e.g., via NFC, QR code, or file) to the recipient.
 
 ```java
-import com.unicity.sdk.OfflineStateTransitionClient;
-import com.unicity.sdk.transaction.*;
-
-// Step 1: Sender creates offline transaction
-OfflineStateTransitionClient offlineClient = new OfflineStateTransitionClient(aggregatorClient);
-
-// Create transaction data
+// Step 1: Sender creates offline commitment
 TransactionData transactionData = TransactionData.create(
     token.getState(),
     recipientAddress.toString(),
-    randomBytes(32),
-    dataHash,
-    messageBytes
+    randomBytes(32),  // salt
+    dataHash,         // optional data hash
+    messageBytes      // optional message
 ).get();
 
-// Create offline commitment (signed by sender)
-OfflineCommitment offlineCommitment = offlineClient.createOfflineCommitment(
-    transactionData,
-    senderSigningService
+// Create authenticator (signed by sender)
+Authenticator authenticator = Authenticator.create(
+    senderSigningService,
+    transactionData.getHash(),
+    transactionData.getSourceState().getHash()
 ).get();
 
-// Create offline transaction package
-OfflineTransaction offlineTransaction = new OfflineTransaction(offlineCommitment, token);
-
-// Serialize to JSON for offline transfer
-String offlineTransactionJson = offlineTransaction.toJSONString();
-
-// Step 2: Transfer JSON to recipient offline (NFC, QR code, file, etc.)
-
-// Step 3: Recipient processes the offline transaction
-OfflineTransaction receivedTransaction = OfflineTransaction.fromJSON(offlineTransactionJson).get();
-
-// Submit to aggregator
-Transaction<?> confirmedTransaction = offlineClient.submitOfflineTransaction(
-    receivedTransaction.getCommitment()
+// Create request ID
+RequestId requestId = RequestId.create(
+    senderSigningService.getPublicKey(), 
+    transactionData.getSourceState().getHash()
 ).get();
+
+// Create commitment
+Commitment<TransactionData> commitment = new Commitment<>(
+    requestId, 
+    transactionData, 
+    authenticator
+);
+
+// Step 2: Transfer commitment data offline (NFC, QR code, file, etc.)
+// In a real scenario, serialize commitment and token data for transfer
+
+// Step 3: Recipient submits the commitment online
+SubmitCommitmentResponse response = client.submitCommitment(commitment).get();
+
+// Wait for inclusion proof
+InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
+    client, 
+    commitment
+).get();
+
+// Create transaction with proof
+Transaction<TransactionData> confirmedTransaction = 
+    client.createTransaction(commitment, inclusionProof).get();
 
 // Finish transaction with recipient's state
-Token<Transaction<MintTransactionData<?>>> updatedToken = client.finishTransaction(
-    receivedTransaction.getToken(),
+TokenState recipientTokenState = TokenState.create(recipientPredicate, recipientData);
+Token<?> updatedToken = client.finishTransaction(
+    token,
     recipientTokenState,
     confirmedTransaction
 ).get();
@@ -262,10 +271,19 @@ The standard JVM version uses:
 The SDK follows a modular architecture:
 
 - **`api`**: Core API interfaces and aggregator client
-- **`token`**: Token-related classes (TokenId, TokenType, TokenState)
-- **`transaction`**: Transaction types (Mint, Transfer, Swap)
-- **`predicate`**: Ownership predicates and authorization
-- **`shared`**: Common utilities (CBOR, hashing, signing)
+- **`api`**: Core API interfaces and aggregator client
+- **`address`**: Address schemes and implementations
+- **`predicate`**: Ownership predicates (Masked, Unmasked, Burn) and authorization
+- **`serializer`**: CBOR and JSON serializers for tokens and transactions
+- **`token`**: Token-related classes (TokenId, TokenType, TokenState) and fungible token support
+- **`transaction`**: Transaction types (Mint, Transfer, Commitment) and builders
+- **`shared`**: Common utilities
+  - `cbor`: CBOR encoding/decoding
+  - `hash`: Cryptographic hashing (SHA256, SHA224, SHA384, SHA512, RIPEMD160)
+  - `jsonrpc`: JSON-RPC transport layer
+  - `signing`: Digital signature support (ECDSA secp256k1)
+  - `smt`/`smst`: Sparse Merkle Tree implementations
+  - `util`: BitString and other utilities
 - **`utils`**: Helper utilities
 
 ## Error Handling
