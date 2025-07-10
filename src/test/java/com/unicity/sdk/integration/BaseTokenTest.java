@@ -1,9 +1,11 @@
 package com.unicity.sdk.integration;
 
-import com.unicity.sdk.OfflineStateTransitionClient;
 import com.unicity.sdk.StateTransitionClient;
 import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.api.AggregatorClient;
+import com.unicity.sdk.api.Authenticator;
+import com.unicity.sdk.api.RequestId;
+import com.unicity.sdk.api.SubmitCommitmentStatus;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
@@ -15,7 +17,12 @@ import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.CoinId;
 import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.transaction.*;
+import com.unicity.sdk.transaction.Commitment;
+import com.unicity.sdk.transaction.InclusionProof;
+import com.unicity.sdk.transaction.MintTransactionData;
+import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransactionData;
+import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 import com.unicity.sdk.utils.InclusionProofUtils;
 import com.unicity.sdk.utils.TestTokenData;
 import org.junit.jupiter.api.*;
@@ -41,7 +48,6 @@ public abstract class BaseTokenTest {
     protected static final SecureRandom random = new SecureRandom();
     
     protected StateTransitionClient client;
-    protected OfflineStateTransitionClient offlineClient;
     
     /**
      * Get the aggregator URL for testing.
@@ -65,7 +71,6 @@ public abstract class BaseTokenTest {
         logger.info("Initializing client with aggregator URL: {}", aggregatorUrl);
         AggregatorClient aggregatorClient = new AggregatorClient(aggregatorUrl);
         client = new StateTransitionClient(aggregatorClient);
-        offlineClient = new OfflineStateTransitionClient(aggregatorClient);
     }
     
     @Test
@@ -263,30 +268,50 @@ public abstract class BaseTokenTest {
             "offline transfer message".getBytes(StandardCharsets.UTF_8)
         ).get();
         
-        // Create offline commitment
-        OfflineCommitment offlineCommitment = offlineClient.createOfflineCommitment(
-            transactionData,
-            initialOwnerSigningService
+        // Create offline commitment (similar to online but not submitted immediately)
+        Authenticator authenticator = Authenticator.create(
+            initialOwnerSigningService,
+            transactionData.getHash(),
+            transactionData.getSourceState().getHash()
         ).get();
         
-        // Create offline transaction package
-        OfflineTransaction offlineTransaction = new OfflineTransaction(offlineCommitment, mintedToken);
+        RequestId requestId = RequestId.create(
+            initialOwnerSigningService.getPublicKey(), 
+            transactionData.getSourceState().getHash()
+        ).get();
         
-        // Serialize to JSON
-        String offlineTransactionJson = offlineTransaction.toJSONString();
-        logger.info("Offline transaction package created, size: {} bytes", offlineTransactionJson.length());
-        logger.debug("Offline transaction JSON: {}", offlineTransactionJson);
+        Commitment<TransactionData> offlineCommitment = new Commitment<>(requestId, transactionData, authenticator);
+        
+        // In a real scenario, the commitment would be serialized and transferred offline
+        logger.info("Offline commitment created for request ID: {}", requestId.toJSON());
         
         // Step 4: Simulate offline transfer (in real usage, this would be via NFC, QR code, etc.)
-        logger.info("Simulating offline transfer via JSON serialization");
+        logger.info("Simulating offline transfer of commitment");
         
-        // Step 5: Recipient processes the offline transaction
-        // Pass the serialized JSON to simulate real-world transfer
-        Token<?> updatedToken = processReceivedOfflineTransaction(
-            offlineTransactionJson,
-            recipientPredicate,
-            recipientCustomData
-        );
+        // Step 5: Recipient submits the commitment online
+        logger.info("Recipient submitting offline commitment online");
+        var response = client.submitCommitment(offlineCommitment).get();
+        assertEquals(SubmitCommitmentStatus.SUCCESS, response.getStatus());
+        
+        // Wait for inclusion proof
+        InclusionProof offlineInclusionProof = InclusionProofUtils.waitInclusionProof(
+            client, 
+            offlineCommitment,
+            getInclusionProofTimeout(),
+            Duration.ofSeconds(1)
+        ).get();
+        
+        Transaction<TransactionData> confirmedTransaction = client.createTransaction(offlineCommitment, offlineInclusionProof).get();
+        
+        // Create recipient's token state
+        TokenState recipientTokenState = TokenState.create(recipientPredicate, recipientCustomData);
+        
+        // Finish the transaction
+        Token<?> updatedToken = client.finishTransaction(
+            mintedToken,
+            recipientTokenState,
+            confirmedTransaction
+        ).get();
         
         // Verify the token is now owned by the recipient
         assertTrue(updatedToken.getState().getUnlockPredicate().isOwner(recipientSigningService.getPublicKey()).get());
@@ -304,49 +329,7 @@ public abstract class BaseTokenTest {
         logger.info("Original token confirmed as spent");
     }
     
-    /**
-     * Simulates the recipient receiving and processing an offline transaction.
-     * This method deserializes the JSON and completes the token transfer.
-     *
-     * @param offlineTransactionJson The serialized offline transaction
-     * @param recipientPredicate The recipient's predicate
-     * @param recipientCustomData The recipient's custom data for the new token state
-     * @return The updated token after successful transfer
-     */
-    private Token<?> processReceivedOfflineTransaction(
-            String offlineTransactionJson,
-            MaskedPredicate recipientPredicate,
-            byte[] recipientCustomData) throws Exception {
-        
-        logger.info("Recipient received offline transaction JSON of {} bytes", offlineTransactionJson.length());
-        
-        // Deserialize the offline transaction from JSON
-        OfflineTransaction receivedOfflineTransaction = OfflineTransaction.fromJSON(offlineTransactionJson).get();
-        
-        // Extract the commitment and token
-        OfflineCommitment receivedCommitment = receivedOfflineTransaction.getCommitment();
-        Token<Transaction<MintTransactionData<?>>> receivedToken = receivedOfflineTransaction.getToken();
-        
-        logger.info("Deserialized offline transaction for token: {}", receivedToken.getId().toJSON());
-        
-        // Submit the offline transaction to the aggregator
-        Transaction<TransactionData> confirmedTransaction = offlineClient.submitOfflineTransaction(receivedCommitment).get();
-        logger.info("Offline transaction submitted and confirmed");
-        
-        // Create recipient's token state with the data that was hashed in the transaction
-        TokenState recipientTokenState = TokenState.create(recipientPredicate, recipientCustomData);
-        
-        // Finish the transaction
-        Token<?> updatedToken = client.finishTransaction(
-            receivedToken,
-            recipientTokenState,
-            confirmedTransaction
-        ).get();
-        
-        logger.info("Token transfer completed, new owner established");
-        
-        return updatedToken;
-    }
+    // Removed processReceivedOfflineTransaction method as it used removed offline transaction classes
     
     protected static byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];

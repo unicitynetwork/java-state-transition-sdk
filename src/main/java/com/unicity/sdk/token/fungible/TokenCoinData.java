@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.cbor.CustomCborDecoder;
 import com.unicity.sdk.shared.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
@@ -13,6 +15,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class TokenCoinData implements ISerializable {
@@ -20,6 +23,10 @@ public class TokenCoinData implements ISerializable {
 
     public TokenCoinData(Map<CoinId, BigInteger> coins) {
         this.coins = coins;
+    }
+
+    public static TokenCoinData create(Map<CoinId, BigInteger> coins) {
+        return new TokenCoinData(coins);
     }
 
     public Map<CoinId, BigInteger> getCoins() {
@@ -86,5 +93,46 @@ public class TokenCoinData implements ISerializable {
         }
         
         return new TokenCoinData(coins);
+    }
+    
+    /**
+     * Deserialize TokenCoinData from CBOR.
+     * @param cbor The CBOR-encoded bytes
+     * @return A TokenCoinData instance
+     */
+    public static TokenCoinData fromCBOR(byte[] cbor) {
+        try {
+            CustomCborDecoder.DecodeResult result = CustomCborDecoder.decode(cbor, 0);
+            if (!(result.value instanceof List)) {
+                throw new RuntimeException("Expected array for TokenCoinData");
+            }
+            
+            List<?> coinArray = (List<?>) result.value;
+            Map<CoinId, BigInteger> coins = new HashMap<>();
+            
+            for (Object coinEntry : coinArray) {
+                if (!(coinEntry instanceof List)) {
+                    throw new RuntimeException("Expected array for coin entry");
+                }
+                
+                List<?> entry = (List<?>) coinEntry;
+                if (entry.size() < 2) {
+                    throw new RuntimeException("Invalid coin entry size");
+                }
+                
+                // Decode coinId and balance from byte arrays
+                byte[] coinIdBytes = (byte[]) entry.get(0);
+                byte[] balanceBytes = (byte[]) entry.get(1);
+                
+                CoinId coinId = new CoinId(coinIdBytes);
+                BigInteger balance = new BigInteger(1, balanceBytes);
+                
+                coins.put(coinId, balance);
+            }
+            
+            return new TokenCoinData(coins);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize TokenCoinData from CBOR", e);
+        }
     }
 }

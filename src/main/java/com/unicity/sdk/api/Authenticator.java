@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.cbor.CustomCborDecoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.signing.ISignature;
 import com.unicity.sdk.shared.signing.ISigningService;
@@ -16,6 +18,7 @@ import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.util.HexConverter;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -40,7 +43,7 @@ public class Authenticator implements ISerializable {
             DataHash stateHash) {
         
         // TypeScript SDK signs only the transactionHash, not the concatenation
-        return signingService.sign(transactionHash.getHash())
+        return signingService.sign(transactionHash)
                 .thenApply(signature -> new Authenticator(signature, transactionHash, stateHash, signingService.getPublicKey()));
     }
 
@@ -139,5 +142,39 @@ public class Authenticator implements ISerializable {
             transactionHash.toCBOR(),
             stateHash.toCBOR()
         );
+    }
+    
+    /**
+     * Deserialize Authenticator from CBOR.
+     * @param cbor The CBOR-encoded bytes
+     * @return An Authenticator instance
+     */
+    public static Authenticator fromCBOR(byte[] cbor) {
+        try {
+            CustomCborDecoder.DecodeResult result = CustomCborDecoder.decode(cbor, 0);
+            if (!(result.value instanceof List)) {
+                throw new RuntimeException("Expected array for Authenticator");
+            }
+            
+            List<?> array = (List<?>) result.value;
+            if (array.size() < 3) {
+                throw new RuntimeException("Invalid Authenticator array size");
+            }
+            
+            // Deserialize signature
+            Signature signature = Signature.fromCBOR((byte[]) array.get(0));
+            
+            // Deserialize transaction hash
+            DataHash transactionHash = DataHash.fromCBOR((byte[]) array.get(1));
+            
+            // Deserialize state hash
+            DataHash stateHash = DataHash.fromCBOR((byte[]) array.get(2));
+            
+            // Note: address is not stored in CBOR format, it needs to be recovered
+            // from signature if needed
+            return new Authenticator(signature, transactionHash, stateHash, new byte[0]);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize Authenticator from CBOR", e);
+        }
     }
 }

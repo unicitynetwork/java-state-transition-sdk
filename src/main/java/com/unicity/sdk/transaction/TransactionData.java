@@ -67,7 +67,9 @@ public class TransactionData implements ISerializable {
         hasher.update(sourceState.getHash().toCBOR());
         hasher.update(HexConverter.decode(recipient));
         hasher.update(salt);
-        hasher.update(data.toCBOR());
+        if (data != null) {
+            hasher.update(data.toCBOR());
+        }
         if (message != null) {
             hasher.update(message);
         }
@@ -92,6 +94,10 @@ public class TransactionData implements ISerializable {
     }
 
     public DataHash getData() {
+        return data;
+    }
+    
+    public DataHash getDataHash() {
         return data;
     }
 

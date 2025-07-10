@@ -35,6 +35,32 @@ public class UnmaskedPredicate extends DefaultPredicate {
     }
 
     /**
+     * Create an unmasked predicate with signing service.
+     */
+    public static CompletableFuture<UnmaskedPredicate> create(
+            TokenId tokenId,
+            TokenType tokenType,
+            com.unicity.sdk.shared.signing.SigningService signingService,
+            HashAlgorithm hashAlgorithm,
+            byte[] nonce) {
+        try {
+            // Calculate reference
+            DataHash reference = calculateReference(tokenType, signingService.getAlgorithm(), 
+                signingService.getPublicKey(), hashAlgorithm);
+            
+            // Calculate hash
+            DataHash hash = calculateHash(reference, tokenId.getBytes(), nonce, hashAlgorithm);
+            
+            return CompletableFuture.completedFuture(
+                new UnmaskedPredicate(hash, reference, signingService.getPublicKey(), 
+                    signingService.getAlgorithm(), hashAlgorithm, nonce, tokenType)
+            );
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    /**
      * Create an unmasked predicate from public key.
      */
     public static CompletableFuture<UnmaskedPredicate> createFromPublicKey(
@@ -106,7 +132,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
                     // Step 3: Create RequestId from public key and state hash
                     return RequestId.create(getPublicKey(), authenticator.getStateHash())
                         .thenCompose(requestId -> 
-                            transaction.getInclusionProof().verify(requestId.toBigInt())
+                            transaction.getInclusionProof().verify(requestId)
                                 .thenApply(status -> status == InclusionProofVerificationStatus.OK)
                         );
                 });
@@ -142,7 +168,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
     /**
      * Calculate reference hash for unmasked predicate.
      */
-    private static DataHash calculateReference(
+    public static DataHash calculateReference(
             TokenType tokenType,
             String algorithm,
             byte[] publicKey,

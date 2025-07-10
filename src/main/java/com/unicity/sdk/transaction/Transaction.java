@@ -38,10 +38,21 @@ public class Transaction<T extends ISerializable> implements ISerializable {
         }
         
         TransactionData txData = (TransactionData) data;
+        
+        // If transaction has no data hash and state data is empty, they match
+        if (txData.getDataHash() == null && (stateData == null || stateData.length == 0)) {
+            return CompletableFuture.completedFuture(true);
+        }
+        
+        // If one is null but not the other, they don't match
+        if (txData.getDataHash() == null || stateData == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+        
         JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
         hasher.update(stateData);
         
-        return hasher.digest().thenApply(hash -> hash.equals(txData.getData()));
+        return hasher.digest().thenApply(hash -> hash.equals(txData.getDataHash()));
     }
 
     @Override

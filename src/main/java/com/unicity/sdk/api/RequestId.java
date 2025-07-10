@@ -1,100 +1,124 @@
 package com.unicity.sdk.api;
 
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.shared.util.BitString;
 
-import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Request ID for tracking transactions
+ * Represents a unique request identifier derived from a public key and state hash.
  */
 public class RequestId implements ISerializable {
-    private final byte[] publicKey;
-    private final DataHash stateHash;
-    private final byte[] hashValue;
+    private final DataHash hash;
 
-    private RequestId(byte[] publicKey, DataHash stateHash, byte[] hashValue) {
-        this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
-        this.stateHash = stateHash;
-        this.hashValue = Arrays.copyOf(hashValue, hashValue.length);
+    /**
+     * Constructs a RequestId instance.
+     * @param hash The DataHash representing the request ID.
+     */
+    private RequestId(DataHash hash) {
+        this.hash = hash;
     }
 
-    public static CompletableFuture<RequestId> create(byte[] publicKey, DataHash stateHash) {
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
-        hasher.update(publicKey);
-        hasher.update(stateHash.getImprint());
-        
-        return hasher.digest().thenApply(hash -> {
-            byte[] hashBytes = hash.getHash();
-            return new RequestId(publicKey, stateHash, hashBytes);
-        });
+    /**
+     * Creates a RequestId from a public key and state hash.
+     * @param id The public key as a byte array.
+     * @param stateHash The state hash.
+     * @return A CompletableFuture resolving to a RequestId instance.
+     */
+    public static CompletableFuture<RequestId> create(byte[] id, DataHash stateHash) {
+        return createFromImprint(id, stateHash.getImprint());
     }
     
     /**
-     * Creates a RequestId from an ID and hash imprint.
-     * This matches TypeScript's RequestId.createFromImprint method.
+     * Creates a RequestId from a public key and hash imprint.
+     * @param id The public key as a byte array.
+     * @param hashImprint The hash imprint as a byte array.
+     * @return A CompletableFuture resolving to a RequestId instance.
      */
     public static CompletableFuture<RequestId> createFromImprint(byte[] id, byte[] hashImprint) {
         JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
         hasher.update(id);
         hasher.update(hashImprint);
         
-        return hasher.digest().thenApply(hash -> {
-            // For createFromImprint, the resulting hash IS the state hash
-            // We use the id as publicKey for compatibility
-            return new RequestId(id, hash, hash.getHash());
-        });
+        return hasher.digest().thenApply(RequestId::new);
     }
 
-    public byte[] getPublicKey() {
-        return Arrays.copyOf(publicKey, publicKey.length);
-    }
-
-    public DataHash getStateHash() {
-        return stateHash;
-    }
-    
     /**
-     * Get the hash of this RequestId.
-     * This is the computed hash value, not the state hash.
+     * Decodes a RequestId from CBOR bytes.
+     * @param data The CBOR-encoded bytes.
+     * @return A RequestId instance.
+     */
+    public static RequestId fromCBOR(byte[] data) {
+        return new RequestId(DataHash.fromCBOR(data));
+    }
+
+    /**
+     * Creates a RequestId from a JSON string.
+     * @param data The JSON string.
+     * @return A RequestId instance.
+     */
+    public static RequestId fromJSON(String data) {
+        return new RequestId(DataHash.fromJSON(data));
+    }
+
+    /**
+     * Converts the RequestId to a BitString.
+     * @return The BitString representation of the RequestId.
+     */
+    public BitString toBitString() {
+        return BitString.fromDataHash(hash);
+    }
+
+    /**
+     * Gets the underlying DataHash.
+     * @return The DataHash.
      */
     public DataHash getHash() {
-        return new DataHash(hashValue, HashAlgorithm.SHA256);
+        return hash;
     }
 
-    public BigInteger toBigInt() {
-        // TypeScript SDK prepends "0x01" to the hash before converting to BigInt
-        String hexString = "01" + HexConverter.encode(hashValue);
-        return new BigInteger(hexString, 16);
-    }
-    
     /**
-     * Create RequestId from JSON representation (hex string of the hash imprint).
+     * Converts the RequestId to a JSON string.
+     * @return The JSON string representation.
      */
-    public static RequestId fromJSON(String hashImprintHex) {
-        DataHash hash = DataHash.fromJSON(hashImprintHex);
-        // TODO Create a dummy RequestId with the hash
-        // Note: We don't have the original publicKey and stateHash from just the hash
-        return new RequestId(new byte[0], hash, hash.getHash());
-    }
-
     @Override
     public Object toJSON() {
-        // Return the hash imprint (algorithm prefix + hash) to match TypeScript implementation
-        return getHash().toJSON();
+        return hash.toJSON();
     }
 
+    /**
+     * Encodes the RequestId to CBOR format.
+     * @return The CBOR-encoded bytes.
+     */
     @Override
     public byte[] toCBOR() {
-        return CborEncoder.encodeArray(
-            CborEncoder.encodeByteString(publicKey),
-            stateHash.toCBOR()
-        );
+        return hash.toCBOR();
+    }
+
+    /**
+     * Checks if this RequestId is equal to another.
+     * @param obj The object to compare.
+     * @return True if equal, false otherwise.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        RequestId requestId = (RequestId) obj;
+        return hash.equals(requestId.hash);
+    }
+
+    /**
+     * Returns a string representation of the RequestId.
+     * @return The string representation.
+     */
+    @Override
+    public String toString() {
+        return "RequestId[" + hash.toString() + "]";
     }
 }

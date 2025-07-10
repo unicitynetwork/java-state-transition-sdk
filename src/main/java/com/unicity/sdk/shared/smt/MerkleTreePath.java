@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 
@@ -101,5 +102,16 @@ public class MerkleTreePath implements ISerializable {
         public boolean isPathIncluded() {
             return pathIncluded;
         }
+    }
+    
+    /**
+     * Deserialize MerkleTreePath from CBOR.
+     * @param cbor The CBOR-encoded bytes
+     * @return A MerkleTreePath instance
+     */
+    public static MerkleTreePath fromCBOR(byte[] cbor) {
+        // TODO: Implement CBOR deserialization for MerkleTreePath
+        // This is a placeholder implementation
+        throw new UnsupportedOperationException("MerkleTreePath CBOR deserialization not yet implemented");
     }
 }

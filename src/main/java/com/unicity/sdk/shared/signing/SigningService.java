@@ -97,11 +97,10 @@ public class SigningService implements ISigningService<Signature> {
 
     @Override
     public CompletableFuture<Signature> sign(DataHash hash) {
-        return sign(hash.getHash());
+        return signBytes(hash.getHash());
     }
 
-    @Override
-    public CompletableFuture<Signature> sign(byte[] data) {
+    private CompletableFuture<Signature> signBytes(byte[] data) {
         try {
             ECPrivateKeyParameters privKey = new ECPrivateKeyParameters(
                 new BigInteger(1, privateKey), 

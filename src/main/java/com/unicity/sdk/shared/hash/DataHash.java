@@ -5,7 +5,9 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.cbor.CustomCborDecoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -96,5 +98,25 @@ public class DataHash implements ISerializable {
         int result = Arrays.hashCode(hash);
         result = 31 * result + (algorithm != null ? algorithm.hashCode() : 0);
         return result;
+    }
+    
+    /**
+     * Deserialize DataHash from CBOR.
+     * The CBOR format is a byte string containing the imprint (algorithm prefix + hash).
+     * 
+     * @param cbor The CBOR-encoded bytes
+     * @return A new DataHash instance
+     */
+    public static DataHash fromCBOR(byte[] cbor) {
+        try {
+            CustomCborDecoder.DecodeResult result = CustomCborDecoder.decode(cbor, 0);
+            if (!(result.value instanceof byte[])) {
+                throw new RuntimeException("Expected byte string for DataHash");
+            }
+            byte[] imprint = (byte[]) result.value;
+            return fromImprint(imprint);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize DataHash from CBOR", e);
+        }
     }
 }

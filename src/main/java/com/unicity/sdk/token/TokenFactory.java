@@ -3,17 +3,24 @@ package com.unicity.sdk.token;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unicity.sdk.predicate.IPredicateFactory;
+import com.unicity.sdk.serializer.token.TokenJsonDeserializer;
+
+import java.util.concurrent.CompletableFuture;
 
 public class TokenFactory {
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final IPredicateFactory predicateFactory;
+    private final TokenJsonDeserializer tokenDeserializer;
 
     public TokenFactory(IPredicateFactory predicateFactory) {
-        this.predicateFactory = predicateFactory;
+        // TokenJsonDeserializer doesn't use predicateFactory currently
+        this.tokenDeserializer = new TokenJsonDeserializer();
     }
 
-    public Token create(Object data) {
-        // This is a simplified example. In a real implementation, you would use the predicate factory to create the correct predicate.
-        return objectMapper.convertValue(data, Token.class);
+    public CompletableFuture<Token<?>> create(Object data) {
+        // Wrap synchronous result in CompletableFuture
+        try {
+            return CompletableFuture.completedFuture(tokenDeserializer.deserialize(data));
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
     }
 }

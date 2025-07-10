@@ -31,7 +31,11 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
     }
 
     public Token(TokenState state, T genesis, List<Transaction<?>> transactions, List<Token<?>> nametagTokens) {
-        this.version = TOKEN_VERSION;
+        this(state, genesis, transactions, nametagTokens, TOKEN_VERSION);
+    }
+    
+    public Token(TokenState state, T genesis, List<Transaction<?>> transactions, List<Token<?>> nametagTokens, String version) {
+        this.version = version;
         this.state = state;
         this.genesis = genesis;
         this.transactions = transactions;
@@ -46,6 +50,26 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
         return genesis.getData().getTokenType();
     }
 
+    public String getVersion() {
+        return version;
+    }
+    
+    public TokenState getState() {
+        return state;
+    }
+    
+    public T getGenesis() {
+        return genesis;
+    }
+    
+    public List<Transaction<?>> getTransactions() {
+        return transactions;
+    }
+    
+    public List<Token<?>> getNametagTokens() {
+        return nametagTokens;
+    }
+    
     public ISerializable getData() {
         return genesis.getData().getTokenData();
     }
@@ -54,21 +78,6 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
         return genesis.getData().getCoinData();
     }
 
-    public TokenState getState() {
-        return state;
-    }
-
-    public T getGenesis() {
-        return genesis;
-    }
-
-    public List<Transaction<?>> getTransactions() {
-        return transactions;
-    }
-
-    public List<Token<?>> getNametagTokens() {
-        return nametagTokens;
-    }
 
     @Override
     public Object toJSON() {

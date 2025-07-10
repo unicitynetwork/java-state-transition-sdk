@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Factory for creating predicates from JSON.
  */
-public class PredicateFactory {
+public class PredicateFactory implements IPredicateFactory {
     
     /**
      * Create a predicate from JSON without token context.
@@ -167,5 +167,12 @@ public class PredicateFactory {
     
     private static IPredicate deserializeUnmaskedPredicate(TokenId tokenId, TokenType tokenType, JsonNode jsonNode) throws Exception {
         return UnmaskedPredicate.fromJSON(tokenId, tokenType, jsonNode).get();
+    }
+    
+    @Override
+    public CompletableFuture<IPredicate> create(TokenId tokenId, TokenType tokenType, byte[] data) {
+        // For now, delegate to the CBOR deserializer
+        // In a real implementation, this would deserialize from CBOR bytes
+        return CompletableFuture.failedFuture(new UnsupportedOperationException("CBOR deserialization not yet implemented"));
     }
 }

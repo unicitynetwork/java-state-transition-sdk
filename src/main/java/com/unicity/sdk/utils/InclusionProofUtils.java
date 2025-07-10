@@ -65,7 +65,7 @@ public class InclusionProofUtils {
         
         client.getInclusionProof(commitment)
             .thenCompose(inclusionProof -> 
-                inclusionProof.verify(commitment.getRequestId().toBigInt())
+                inclusionProof.verify(commitment.getRequestId())
                     .thenApply(status -> new VerificationResult(inclusionProof, status))
             )
             .whenComplete((result, error) -> {

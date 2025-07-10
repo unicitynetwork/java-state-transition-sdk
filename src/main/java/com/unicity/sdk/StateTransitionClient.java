@@ -5,6 +5,7 @@ import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.api.AggregatorClient;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
+import com.unicity.sdk.api.SubmitCommitmentResponse;
 import com.unicity.sdk.api.SubmitCommitmentStatus;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
@@ -52,7 +53,7 @@ public class StateTransitionClient {
     public <T extends ISerializable> CompletableFuture<Transaction<T>> createTransaction(
             Commitment<T> commitment,
             InclusionProof inclusionProof) {
-        return inclusionProof.verify(commitment.getRequestId().toBigInt())
+        return inclusionProof.verify(commitment.getRequestId())
                 .thenCompose(status -> {
                     if (status != InclusionProofVerificationStatus.OK) {
                         return CompletableFuture.failedFuture(new Exception("Inclusion proof verification failed."));
@@ -126,10 +127,9 @@ public class StateTransitionClient {
             byte[] publicKey) {
         return RequestId.create(publicKey, token.getState().getHash())
                 .thenCompose(requestId -> aggregatorClient.getInclusionProof(requestId))
-                .thenCompose(inclusionProof -> inclusionProof.verify(
+                .thenCompose(inclusionProof -> 
                         RequestId.create(publicKey, token.getState().getHash())
-                                .thenApply(RequestId::toBigInt)
-                                .join()));
+                                .thenCompose(inclusionProof::verify));
     }
 
     public CompletableFuture<InclusionProof> getInclusionProof(Commitment<?> commitment) {
@@ -190,6 +190,26 @@ public class StateTransitionClient {
                                         });
                             })
                 );
+    }
+    
+    public CompletableFuture<SubmitCommitmentResponse> submitCommitment(Commitment<?> commitment) {
+        DataHash txHash = null;
+        ISerializable transactionData = commitment.getTransactionData();
+        if (transactionData instanceof TransactionData) {
+            txHash = ((TransactionData) transactionData).getHash();
+        } else if (transactionData instanceof MintTransactionData) {
+            txHash = ((MintTransactionData<?>) transactionData).getHash();
+        }
+        
+        if (txHash == null) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Cannot get hash from transaction data"));
+        }
+        
+        return aggregatorClient.submitTransaction(
+            commitment.getRequestId(),
+            txHash,
+            commitment.getAuthenticator()
+        );
     }
     
     public AggregatorClient getAggregatorClient() {

@@ -1,0 +1,41 @@
+package com.unicity.sdk.e2e;
+
+import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.shared.util.HexConverter;
+
+/**
+ * Test token data implementation for e2e tests.
+ */
+public class TestTokenData implements ISerializable {
+    private final byte[] data;
+
+    public TestTokenData(byte[] data) {
+        this.data = data.clone();
+    }
+
+    public byte[] getData() {
+        return data.clone();
+    }
+
+    public static TestTokenData fromJSON(String data) {
+        if (data == null) {
+            throw new IllegalArgumentException("Invalid test token data");
+        }
+        return new TestTokenData(HexConverter.decode(data));
+    }
+
+    @Override
+    public String toJson() {
+        return HexConverter.encode(data);
+    }
+
+    @Override
+    public byte[] toCBOR() {
+        return getData();
+    }
+
+    @Override
+    public String toString() {
+        return "TestTokenData: " + HexConverter.encode(data);
+    }
+}

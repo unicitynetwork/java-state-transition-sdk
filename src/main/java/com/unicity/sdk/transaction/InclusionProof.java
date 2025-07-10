@@ -9,12 +9,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.LeafValue;
+import com.unicity.sdk.api.RequestId;
+import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.unicity.sdk.shared.cbor.CustomCborDecoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.smt.MerkleTreePath;
 import com.unicity.sdk.shared.util.HexConverter;
 
-import java.math.BigInteger;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -62,7 +65,7 @@ public class InclusionProof implements ISerializable {
         return transactionHash;
     }
 
-    public CompletableFuture<InclusionProofVerificationStatus> verify(BigInteger requestId) {
+    public CompletableFuture<InclusionProofVerificationStatus> verify(RequestId requestId) {
         if (authenticator != null && transactionHash != null) {
             return authenticator.verify(transactionHash)
                     .thenCompose(verified -> {
@@ -81,8 +84,9 @@ public class InclusionProof implements ISerializable {
         return verifyPath(requestId);
     }
 
-    private CompletableFuture<InclusionProofVerificationStatus> verifyPath(BigInteger requestId) {
-        return merkleTreePath.verify(requestId)
+    private CompletableFuture<InclusionProofVerificationStatus> verifyPath(RequestId requestId) {
+        // Convert RequestId to BigInteger using BitString
+        return merkleTreePath.verify(requestId.toBitString().toBigInteger())
                 .thenApply(result -> {
                     if (!result.isPathValid()) {
                         return InclusionProofVerificationStatus.PATH_INVALID;
@@ -140,5 +144,41 @@ public class InclusionProof implements ISerializable {
         }
         
         return new InclusionProof(merkleTreePath, authenticator, transactionHash);
+    }
+    
+    /**
+     * Deserialize InclusionProof from CBOR.
+     * @param data CBOR-encoded bytes
+     * @return InclusionProof instance
+     */
+    public static InclusionProof fromCBOR(byte[] data) {
+        try {
+            CustomCborDecoder.DecodeResult result = CustomCborDecoder.decode(data, 0);
+            if (!(result.value instanceof List)) {
+                throw new RuntimeException("Expected array for InclusionProof");
+            }
+            
+            List<?> array = (List<?>) result.value;
+            if (array.size() < 3) {
+                throw new RuntimeException("Invalid InclusionProof array size");
+            }
+            
+            // Deserialize components
+            MerkleTreePath merkleTreePath = MerkleTreePath.fromCBOR((byte[]) array.get(0));
+            
+            Authenticator authenticator = null;
+            if (array.get(1) != null && array.get(1) instanceof byte[]) {
+                authenticator = Authenticator.fromCBOR((byte[]) array.get(1));
+            }
+            
+            DataHash transactionHash = null;
+            if (array.get(2) != null && array.get(2) instanceof byte[]) {
+                transactionHash = DataHash.fromCBOR((byte[]) array.get(2));
+            }
+            
+            return new InclusionProof(merkleTreePath, authenticator, transactionHash);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize InclusionProof from CBOR", e);
+        }
     }
 }

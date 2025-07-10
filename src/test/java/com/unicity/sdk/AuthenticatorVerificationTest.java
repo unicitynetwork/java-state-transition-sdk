@@ -46,7 +46,7 @@ public class AuthenticatorVerificationTest {
         System.out.println("Actual RequestId JSON: " + actualRequestIdJson);
         
         // Also check the BigInt value
-        System.out.println("RequestId BigInt: " + requestId.toBigInt().toString(16));
+        System.out.println("RequestId BitString: " + requestId.toBitString().toBigInteger().toString(16));
         
         assertEquals(expectedRequestIdHex, actualRequestIdJson, "RequestId should match TypeScript reference");
     }
@@ -130,7 +130,6 @@ public class AuthenticatorVerificationTest {
             return java.util.concurrent.CompletableFuture.completedFuture(signature);
         }
         
-        @Override
         public java.util.concurrent.CompletableFuture<Signature> sign(byte[] data) {
             return java.util.concurrent.CompletableFuture.completedFuture(signature);
         }
