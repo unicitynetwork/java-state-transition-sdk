@@ -105,9 +105,7 @@ public class TokenTransferE2ETest {
         // Step 4: Bob receives the token
         System.out.println("\n4. Bob receives the token...");
         TokenState bobTokenState_ = TokenState.create(bobPredicate, bobTokenState.getBytes(StandardCharsets.UTF_8));
-        @SuppressWarnings("unchecked")
-        Token<Transaction<MintTransactionData<?>>> bobToken = (Token<Transaction<MintTransactionData<?>>>) 
-            client.finishTransaction(aliceToken, bobTokenState_, transferTx).get();
+        Token<Transaction<MintTransactionData<?>>> bobToken = client.finishTransaction(aliceToken, bobTokenState_, transferTx).get();
         
         // Verify ownership
         assertTrue(bobToken.getState().getUnlockPredicate().isOwner(bobSigningService.getPublicKey()).get());

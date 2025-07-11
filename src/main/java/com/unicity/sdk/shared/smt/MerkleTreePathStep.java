@@ -10,13 +10,15 @@ import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.util.HexConverter;
 
+import java.math.BigInteger;
+
 public class MerkleTreePathStep implements ISerializable {
     private final DataHash hash;
     private final boolean isRight;
     private final DataHash root;
     private final DataHash sibling;
-    private final String path;
-    private final NodeBranch branch;
+    private final BigInteger path;
+    private final MerkleTreePathStepBranch branch;
 
     // Constructor for legacy compatibility
     public MerkleTreePathStep(DataHash hash, boolean isRight) {
@@ -29,7 +31,7 @@ public class MerkleTreePathStep implements ISerializable {
     }
 
     // Constructor for new implementation
-    public MerkleTreePathStep(DataHash root, DataHash sibling, String path, NodeBranch branch) {
+    public MerkleTreePathStep(DataHash root, DataHash sibling, BigInteger path, MerkleTreePathStepBranch branch) {
         this.hash = sibling; // For compatibility
         this.isRight = false; // Default value
         this.root = root;
@@ -54,11 +56,11 @@ public class MerkleTreePathStep implements ISerializable {
         return sibling;
     }
 
-    public String getPath() {
+    public BigInteger getPath() {
         return path;
     }
 
-    public NodeBranch getBranch() {
+    public MerkleTreePathStepBranch getBranch() {
         return branch;
     }
 
@@ -68,13 +70,13 @@ public class MerkleTreePathStep implements ISerializable {
         ObjectNode node = mapper.createObjectNode();
         
         if (path != null) {
-            node.put("path", path);
+            node.put("path", path.toString());
         }
         if (sibling != null) {
             node.put("sibling", sibling.toJSON().toString());
         }
         if (branch != null) {
-            node.put("branch", branch.toString());
+            node.set("branch", mapper.valueToTree(branch.toJSON()));
         }
         
         return node;
@@ -94,9 +96,9 @@ public class MerkleTreePathStep implements ISerializable {
      */
     public static MerkleTreePathStep fromJSON(JsonNode jsonNode, DataHash root) {
         // Get path
-        String path = null;
+        BigInteger path = null;
         if (jsonNode.has("path") && !jsonNode.get("path").isNull()) {
-            path = jsonNode.get("path").asText();
+            path = new BigInteger(jsonNode.get("path").asText());
         }
         
         // Get sibling
@@ -106,10 +108,9 @@ public class MerkleTreePathStep implements ISerializable {
         }
         
         // Get branch
-        NodeBranch branch = null;
+        MerkleTreePathStepBranch branch = null;
         if (jsonNode.has("branch") && !jsonNode.get("branch").isNull()) {
-            // For now, we'll skip branch deserialization as it's complex
-            // In production, this would need proper implementation
+            branch = MerkleTreePathStepBranch.fromJSON(jsonNode.get("branch"));
         }
         
         return new MerkleTreePathStep(root, sibling, path, branch);

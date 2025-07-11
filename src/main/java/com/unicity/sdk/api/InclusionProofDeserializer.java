@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.smt.MerkleTreePath;
 import com.unicity.sdk.shared.smt.MerkleTreePathStep;
+import com.unicity.sdk.shared.smt.MerkleTreePathStepBranch;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.transaction.InclusionProof;
 
@@ -59,38 +60,48 @@ public class InclusionProofDeserializer {
         List<Map<String, Object>> stepsList = (List<Map<String, Object>>) pathMap.get("steps");
         List<MerkleTreePathStep> steps = new ArrayList<>();
         
+        boolean isFirstStep = true;
         for (Map<String, Object> stepMap : stepsList) {
             // TypeScript SDK uses: path (bigint as string), sibling (hash or null), branch (array or null)
-            // We need to map this to our Java structure which uses: hash, isRight
             
             String pathStr = (String) stepMap.get("path");
             Object siblingObj = stepMap.get("sibling");
             Object branchObj = stepMap.get("branch");
             
-            // For now, create a simple mapping
-            // In the actual implementation, we'd need to properly handle the path/sibling/branch structure
-            // This is a placeholder that creates dummy steps
-            DataHash stepHash = null;
-            boolean isRight = false;
+            // Parse path
+            BigInteger path = pathStr != null ? new BigInteger(pathStr) : null;
             
+            // Parse sibling
+            DataHash sibling = null;
             if (siblingObj != null && siblingObj instanceof String) {
-                stepHash = DataHash.fromImprint(HexConverter.decode((String) siblingObj));
-                // Determine isRight based on path bit
-                if (pathStr != null) {
-                    BigInteger path = new BigInteger(pathStr);
-                    // Check least significant bit to determine if right
-                    isRight = path.testBit(0);
+                sibling = DataHash.fromImprint(HexConverter.decode((String) siblingObj));
+            }
+            
+            // Parse branch
+            MerkleTreePathStepBranch branch = null;
+            if (branchObj != null && branchObj instanceof List) {
+                List<String> branchList = (List<String>) branchObj;
+                if (!branchList.isEmpty()) {
+                    byte[] branchValue = HexConverter.decode(branchList.get(0));
+                    branch = new MerkleTreePathStepBranch(branchValue);
+                } else {
+                    branch = new MerkleTreePathStepBranch(null);
                 }
             }
             
-            if (stepHash != null) {
-                steps.add(new MerkleTreePathStep(stepHash, isRight));
-            }
+            // Create step - only first step gets the root
+            MerkleTreePathStep step = new MerkleTreePathStep(
+                isFirstStep ? root : null,
+                sibling,
+                path,
+                branch
+            );
+            steps.add(step);
+            isFirstStep = false;
         }
         
-        // Create MerkleTreePath
-        // Note: Our Java MerkleTreePath doesn't have a root field, so we'll need to update it
-        MerkleTreePath merkleTreePath = new MerkleTreePath(steps);
+        // Create MerkleTreePath with root
+        MerkleTreePath merkleTreePath = new MerkleTreePath(root, steps);
         
         return new InclusionProof(merkleTreePath, authenticator, transactionHash);
     }
