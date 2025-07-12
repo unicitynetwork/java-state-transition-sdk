@@ -60,7 +60,6 @@ public class InclusionProofDeserializer {
         List<Map<String, Object>> stepsList = (List<Map<String, Object>>) pathMap.get("steps");
         List<MerkleTreePathStep> steps = new ArrayList<>();
         
-        boolean isFirstStep = true;
         for (Map<String, Object> stepMap : stepsList) {
             // TypeScript SDK uses: path (bigint as string), sibling (hash or null), branch (array or null)
             
@@ -70,6 +69,15 @@ public class InclusionProofDeserializer {
             
             // Parse path
             BigInteger path = pathStr != null ? new BigInteger(pathStr) : null;
+            
+            // Check if this is the massive path value that's actually a RequestId
+            // The aggregator sometimes returns the full RequestId as the first step's path
+            // This is a workaround for that issue
+            if (path != null && path.bitLength() > 64) {
+                // This is likely a RequestId, not a simple path step
+                // For now, we'll log a warning but still use it
+                System.err.println("WARNING: Path value appears to be a RequestId, not a path step: " + path.bitLength() + " bits");
+            }
             
             // Parse sibling
             DataHash sibling = null;
@@ -89,15 +97,9 @@ public class InclusionProofDeserializer {
                 }
             }
             
-            // Create step - only first step gets the root
-            MerkleTreePathStep step = new MerkleTreePathStep(
-                isFirstStep ? root : null,
-                sibling,
-                path,
-                branch
-            );
+            // Create step
+            MerkleTreePathStep step = new MerkleTreePathStep(sibling, path, branch);
             steps.add(step);
-            isFirstStep = false;
         }
         
         // Create MerkleTreePath with root

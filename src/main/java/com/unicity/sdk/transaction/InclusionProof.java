@@ -17,6 +17,7 @@ import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.smt.MerkleTreePath;
 import com.unicity.sdk.shared.util.HexConverter;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -85,8 +86,11 @@ public class InclusionProof implements ISerializable {
     }
 
     private CompletableFuture<InclusionProofVerificationStatus> verifyPath(RequestId requestId) {
-        // Convert RequestId to BigInteger using BitString
-        return merkleTreePath.verify(requestId.toBitString().toBigInteger())
+        // Convert RequestId to BitString representation for merkle path verification
+        // This adds a leading 1 bit to preserve any leading zeros in the hash
+        BigInteger requestIdValue = requestId.toBitString().toBigInteger();
+        
+        return merkleTreePath.verify(requestIdValue)
                 .thenApply(result -> {
                     if (!result.isPathValid()) {
                         return InclusionProofVerificationStatus.PATH_INVALID;

@@ -15,6 +15,7 @@ import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
 import com.unicity.sdk.shared.util.BigIntegerConverter;
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,11 +50,13 @@ public class MerkleTreePath implements ISerializable {
                 
                 for (int i = 0; i < steps.size(); i++) {
                     MerkleTreePathStep step = steps.get(i);
+                    
                     byte[] hash;
                     
-                    if (step.getBranch() == null || step.getBranch().getValue() == null) {
+                    if (step.getBranch() == null) {
                         hash = new byte[]{0};
                     } else {
+                        // Branch is not null, but value might be null
                         byte[] bytes = i == 0 ? step.getBranch().getValue() : 
                                       (currentHash != null ? currentHash.getHash() : null);
                         if (bytes == null) {
@@ -67,12 +70,16 @@ public class MerkleTreePath implements ISerializable {
                         DataHash digest = hasher.digest().join();
                         hash = digest.getHash();
                         
-                        // Update current path
-                        int pathBitLength = step.getPath().bitLength();
-                        if (pathBitLength > 0) {
-                            BigInteger length = BigInteger.valueOf(pathBitLength - 1);
-                            currentPath = currentPath.shiftLeft(length.intValue())
-                                .or(step.getPath().and(BigInteger.ONE.shiftLeft(length.intValue()).subtract(BigInteger.ONE)));
+                        // Update current path after hashing (as per TypeScript implementation)
+                        // This happens when branch is not null (regardless of whether value is null)
+                        // length = step.path.toString(2).length - 1
+                        // currentPath = (currentPath << length) | (step.path & ((1 << length) - 1))
+                        String pathBinary = step.getPath().toString(2);
+                        int length = pathBinary.length() - 1;
+                        if (length > 0) {
+                            BigInteger mask = BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE);
+                            BigInteger maskedPath = step.getPath().and(mask);
+                            currentPath = currentPath.shiftLeft(length).or(maskedPath);
                         }
                     }
                     
@@ -98,6 +105,7 @@ public class MerkleTreePath implements ISerializable {
                 return new MerkleTreePathVerificationResult(pathValid, pathIncluded);
             } catch (Exception e) {
                 // In case of any error, return invalid result
+                e.printStackTrace();
                 return new MerkleTreePathVerificationResult(false, false);
             }
         });
@@ -145,11 +153,9 @@ public class MerkleTreePath implements ISerializable {
         // Get steps
         JsonNode stepsNode = jsonNode.get("steps");
         if (stepsNode != null && stepsNode.isArray()) {
-            boolean isFirstStep = true;
             for (JsonNode stepNode : stepsNode) {
-                MerkleTreePathStep step = MerkleTreePathStep.fromJSON(stepNode, isFirstStep ? root : null);
+                MerkleTreePathStep step = MerkleTreePathStep.fromJSON(stepNode);
                 steps.add(step);
-                isFirstStep = false;
             }
         }
         

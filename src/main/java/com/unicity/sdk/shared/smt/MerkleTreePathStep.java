@@ -15,7 +15,6 @@ import java.math.BigInteger;
 public class MerkleTreePathStep implements ISerializable {
     private final DataHash hash;
     private final boolean isRight;
-    private final DataHash root;
     private final DataHash sibling;
     private final BigInteger path;
     private final MerkleTreePathStepBranch branch;
@@ -24,17 +23,15 @@ public class MerkleTreePathStep implements ISerializable {
     public MerkleTreePathStep(DataHash hash, boolean isRight) {
         this.hash = hash;
         this.isRight = isRight;
-        this.root = null;
         this.sibling = null;
         this.path = null;
         this.branch = null;
     }
 
     // Constructor for new implementation
-    public MerkleTreePathStep(DataHash root, DataHash sibling, BigInteger path, MerkleTreePathStepBranch branch) {
+    public MerkleTreePathStep(DataHash sibling, BigInteger path, MerkleTreePathStepBranch branch) {
         this.hash = sibling; // For compatibility
         this.isRight = false; // Default value
-        this.root = root;
         this.sibling = sibling;
         this.path = path;
         this.branch = branch;
@@ -46,10 +43,6 @@ public class MerkleTreePathStep implements ISerializable {
 
     public boolean isRight() {
         return isRight;
-    }
-
-    public DataHash getRoot() {
-        return root;
     }
 
     public DataHash getSibling() {
@@ -91,10 +84,9 @@ public class MerkleTreePathStep implements ISerializable {
     /**
      * Deserialize MerkleTreePathStep from JSON.
      * @param jsonNode JSON node containing step data
-     * @param root The root hash (only for first step)
      * @return MerkleTreePathStep instance
      */
-    public static MerkleTreePathStep fromJSON(JsonNode jsonNode, DataHash root) {
+    public static MerkleTreePathStep fromJSON(JsonNode jsonNode) {
         // Get path
         BigInteger path = null;
         if (jsonNode.has("path") && !jsonNode.get("path").isNull()) {
@@ -113,6 +105,6 @@ public class MerkleTreePathStep implements ISerializable {
             branch = MerkleTreePathStepBranch.fromJSON(jsonNode.get("branch"));
         }
         
-        return new MerkleTreePathStep(root, sibling, path, branch);
+        return new MerkleTreePathStep(sibling, path, branch);
     }
 }

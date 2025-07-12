@@ -16,11 +16,9 @@ public class BitString {
      * @param data The input data to convert into a BitString.
      */
     public BitString(byte[] data) {
-        // Add a leading byte 1 to ensure leading zeros are retained
-        byte[] withLeadingOne = new byte[data.length + 1];
-        withLeadingOne[0] = 0x01;
-        System.arraycopy(data, 0, withLeadingOne, 1, data.length);
-        this.value = new BigInteger(1, withLeadingOne);
+        // Create hex string with "01" prefix, matching TypeScript: BigInt(`0x01${HexConverter.encode(data)}`)
+        String hexString = "01" + HexConverter.encode(data);
+        this.value = new BigInteger(hexString, 16);
     }
 
     /**
@@ -46,16 +44,13 @@ public class BitString {
      * @return The byte array representation of the bit string
      */
     public byte[] toBytes() {
-        byte[] bytes = value.toByteArray();
-        // Remove the leading 0x01 byte we added
-        if (bytes.length > 1 && bytes[0] == 0x01) {
-            return Arrays.copyOfRange(bytes, 1, bytes.length);
+        // Convert to hex string, remove the "01" prefix we added, then convert back to bytes
+        String hex = value.toString(16);
+        if (hex.startsWith("1") && hex.length() > 2) {
+            // Remove the leading "1" from "10000..."
+            hex = hex.substring(1);
         }
-        // Handle case where BigInteger added its own sign byte
-        if (bytes.length > 2 && bytes[0] == 0x00 && bytes[1] == 0x01) {
-            return Arrays.copyOfRange(bytes, 2, bytes.length);
-        }
-        return bytes;
+        return HexConverter.decode(hex);
     }
 
     /**

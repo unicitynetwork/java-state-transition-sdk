@@ -33,8 +33,34 @@ public class AggregatorClient implements IAggregatorClient {
         
         return transport.request("submit_commitment", params)
                 .thenApply(result -> {
-                    // TODO: Properly deserialize response
-                    return new SubmitCommitmentResponse(SubmitCommitmentStatus.SUCCESS);
+                    try {
+                        System.out.println("AggregatorClient submit_commitment response: " + objectMapper.writeValueAsString(result));
+                        
+                        if (result instanceof Map) {
+                            Map<?, ?> map = (Map<?, ?>) result;
+                            
+                            // Response should have a "status" field according to TypeScript SDK
+                            Object status = map.get("status");
+                            if (status != null) {
+                                try {
+                                    SubmitCommitmentStatus statusEnum = SubmitCommitmentStatus.fromString(status.toString());
+                                    return new SubmitCommitmentResponse(statusEnum);
+                                } catch (IllegalArgumentException e) {
+                                    System.err.println("Unknown status value: " + status);
+                                    throw new RuntimeException("Unknown submit commitment status: " + status);
+                                }
+                            }
+                            
+                            // If no status field, this is not a valid response
+                            throw new RuntimeException("Submit commitment response missing 'status' field");
+                        }
+                        
+                        throw new RuntimeException("Submit commitment response is not a Map");
+                        
+                    } catch (Exception e) {
+                        System.err.println("Error processing submit response: " + e.getMessage());
+                        throw new RuntimeException("Failed to parse submit commitment response", e);
+                    }
                 });
     }
 
