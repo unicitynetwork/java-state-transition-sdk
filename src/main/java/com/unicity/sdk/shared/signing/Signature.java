@@ -26,6 +26,17 @@ public class Signature implements ISignature, ISerializable {
         return recovery;
     }
     
+    /**
+     * Encodes the signature with recovery byte appended.
+     * @return The encoded signature bytes
+     */
+    public byte[] encode() {
+        byte[] fullSignature = new byte[bytes.length + 1];
+        System.arraycopy(bytes, 0, fullSignature, 0, bytes.length);
+        fullSignature[bytes.length] = (byte) recovery;
+        return fullSignature;
+    }
+    
     @Override
     public byte[] toCBOR() {
         byte[] fullSignature = new byte[bytes.length + 1];

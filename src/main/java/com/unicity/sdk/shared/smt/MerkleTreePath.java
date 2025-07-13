@@ -45,22 +45,11 @@ public class MerkleTreePath implements ISerializable {
     public CompletableFuture<MerkleTreePathVerificationResult> verify(BigInteger requestId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                System.out.println("MerkleTreePath.verify() called with requestId: " + requestId.toString(16));
-                System.out.println("MerkleTreePath root: " + (root != null ? HexConverter.encode(root.getImprint()) : "null"));
-                
                 BigInteger currentPath = BigInteger.ONE;
                 DataHash currentHash = null;
                 
                 for (int i = 0; i < steps.size(); i++) {
                     MerkleTreePathStep step = steps.get(i);
-                    
-                    System.out.println("Step " + i + ": path=" + step.getPath() + " (" + step.getPath().bitLength() + " bits)");
-                    System.out.println("  path binary: " + step.getPath().toString(2));
-                    System.out.println("  branch is " + (step.getBranch() == null ? "null" : "not null"));
-                    
-                    if (step.getPath().bitLength() > 64) {
-                        System.out.println("WARNING: Path value appears to be a RequestId, not a path step: " + step.getPath().bitLength() + " bits");
-                    }
                     
                     byte[] hash;
                     
@@ -87,16 +76,11 @@ public class MerkleTreePath implements ISerializable {
                         // currentPath = (currentPath << length) | (step.path & ((1 << length) - 1))
                         String pathBinary = step.getPath().toString(2);
                         int length = pathBinary.length() - 1;
-                        System.out.println("  path length - 1 = " + length);
                         if (length > 0) {
                             BigInteger mask = BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE);
                             BigInteger maskedPath = step.getPath().and(mask);
-                            System.out.println("  mask: " + mask.toString(16));
-                            System.out.println("  masked path: " + maskedPath.toString(16));
-                            System.out.println("  currentPath before shift: " + currentPath.toString(16));
                             currentPath = currentPath.shiftLeft(length).or(maskedPath);
                         }
-                        System.out.println("  Updated currentPath: " + currentPath.toString(16));
                     }
                     
                     // Get sibling hash
@@ -117,11 +101,6 @@ public class MerkleTreePath implements ISerializable {
                 
                 boolean pathValid = currentHash != null && root.equals(currentHash);
                 boolean pathIncluded = requestId.equals(currentPath);
-                
-                System.out.println("Final currentPath: " + currentPath.toString(16));
-                System.out.println("Final currentHash: " + (currentHash != null ? HexConverter.encode(currentHash.getImprint()) : "null"));
-                System.out.println("Path valid: " + pathValid);
-                System.out.println("Path included: " + pathIncluded + " (requestId=" + requestId.toString(16) + ", currentPath=" + currentPath.toString(16) + ")");
                 
                 return new MerkleTreePathVerificationResult(pathValid, pathIncluded);
             } catch (Exception e) {

@@ -15,6 +15,7 @@ import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.cbor.CustomCborDecoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.smt.MerkleTreePath;
+import com.unicity.sdk.shared.smt.MerkleTreePathStep;
 import com.unicity.sdk.shared.util.HexConverter;
 
 import java.math.BigInteger;
@@ -66,6 +67,24 @@ public class InclusionProof implements ISerializable {
         return transactionHash;
     }
 
+    /**
+     * Checks if this inclusion proof has suspicious large path values.
+     * Normal path values should be small integers (< 64 bits).
+     * @return true if any path step has a suspiciously large value
+     */
+    public boolean hasSuspiciousPathValues() {
+        if (merkleTreePath == null || merkleTreePath.getSteps() == null) {
+            return false;
+        }
+        
+        for (MerkleTreePathStep step : merkleTreePath.getSteps()) {
+            if (step.getPath() != null && step.getPath().bitLength() > 64) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public CompletableFuture<InclusionProofVerificationStatus> verify(RequestId requestId) {
         if (authenticator != null && transactionHash != null) {
             return authenticator.verify(transactionHash)
@@ -76,7 +95,18 @@ public class InclusionProof implements ISerializable {
 
                         return LeafValue.create(authenticator, transactionHash)
                                 .thenCompose(leafValue -> {
-                                    // TODO: Check leaf value against merkle tree path
+                                    // Check if leaf value matches the first step's branch value
+                                    if (merkleTreePath.getSteps() != null && merkleTreePath.getSteps().size() > 0) {
+                                        MerkleTreePathStep firstStep = merkleTreePath.getSteps().get(0);
+                                        if (firstStep.getBranch() != null) {
+                                            // Compare the leaf value bytes with the branch value bytes
+                                            byte[] branchValue = firstStep.getBranch().getValue();
+                                            byte[] leafBytes = leafValue.getBytes();
+                                            if (!java.util.Arrays.equals(leafBytes, branchValue)) {
+                                                return CompletableFuture.completedFuture(InclusionProofVerificationStatus.PATH_NOT_INCLUDED);
+                                            }
+                                        }
+                                    }
                                     return verifyPath(requestId);
                                 });
                     });

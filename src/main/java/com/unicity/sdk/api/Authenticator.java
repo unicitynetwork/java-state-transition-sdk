@@ -109,14 +109,18 @@ public class Authenticator implements ISerializable {
     }
 
     public CompletableFuture<Boolean> verify(DataHash hash) {
-        // Verify that the provided hash matches our transaction hash
-        if (!hash.equals(transactionHash)) {
+        // When deserialized from JSON, we don't have transactionHash
+        // In this case, verify the signature against the provided hash
+        DataHash hashToVerify = transactionHash != null ? transactionHash : hash;
+        
+        // Verify that the provided hash matches our transaction hash (if we have one)
+        if (transactionHash != null && !hash.equals(transactionHash)) {
             return CompletableFuture.completedFuture(false);
         }
         
-        // TypeScript SDK verifies signature only on transactionHash
+        // Verify signature against the hash
         return SigningService.verifyWithPublicKey(
-            transactionHash,
+            hashToVerify,
             signature.getBytes(),
             address
         );
@@ -138,9 +142,10 @@ public class Authenticator implements ISerializable {
     @Override
     public byte[] toCBOR() {
         return CborEncoder.encodeArray(
-            signature.toCBOR(),
-            transactionHash.toCBOR(),
-            stateHash.toCBOR()
+            CborEncoder.encodeTextString("secp256k1"),  // algorithm
+            CborEncoder.encodeByteString(address),   // publicKey
+            CborEncoder.encodeByteString(((Signature)signature).encode()),  // signature bytes
+            CborEncoder.encodeByteString(stateHash.getImprint())  // stateHash imprint
         );
     }
     

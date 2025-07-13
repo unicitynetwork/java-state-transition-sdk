@@ -12,38 +12,38 @@ import java.util.concurrent.CompletableFuture;
  * Leaf value for merkle tree
  */
 public class LeafValue implements ISerializable {
-    private final DataHash hash;
+    private final byte[] bytes;
 
-    private LeafValue(DataHash hash) {
-        this.hash = hash;
+    private LeafValue(byte[] bytes) {
+        this.bytes = bytes;
     }
 
     public static CompletableFuture<LeafValue> create(Authenticator authenticator, DataHash transactionHash) {
         JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
         hasher.update(authenticator.toCBOR());
-        hasher.update(transactionHash.toCBOR());
+        hasher.update(transactionHash.getImprint());
         
-        return hasher.digest().thenApply(LeafValue::new);
+        return hasher.digest().thenApply(hash -> new LeafValue(hash.getImprint()));
     }
 
-    public DataHash getHash() {
-        return hash;
+    public byte[] getBytes() {
+        return bytes;
     }
 
     public boolean equals(Object other) {
         if (this == other) return true;
         if (other == null || getClass() != other.getClass()) return false;
         LeafValue leafValue = (LeafValue) other;
-        return hash.equals(leafValue.hash);
+        return java.util.Arrays.equals(bytes, leafValue.bytes);
     }
 
     @Override
     public Object toJSON() {
-        return hash.toJSON();
+        return com.unicity.sdk.shared.util.HexConverter.encode(bytes);
     }
 
     @Override
     public byte[] toCBOR() {
-        return hash.toCBOR();
+        return CborEncoder.encodeByteString(bytes);
     }
 }
