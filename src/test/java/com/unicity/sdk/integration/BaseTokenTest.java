@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Base class for token integration tests.
  * Contains shared testing logic for both Docker-based and E2E tests.
  */
+@Tag("integration")
 public abstract class BaseTokenTest {
     protected static final Logger logger = LoggerFactory.getLogger(BaseTokenTest.class);
     protected static final byte[] ownerSecret = "test-secret".getBytes(StandardCharsets.UTF_8);

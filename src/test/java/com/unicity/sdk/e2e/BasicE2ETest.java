@@ -7,6 +7,7 @@ import com.unicity.sdk.api.SubmitCommitmentStatus;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.signing.SigningService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Basic end-to-end test to verify connectivity with aggregator.
  */
+@Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
 public class BasicE2ETest {
 

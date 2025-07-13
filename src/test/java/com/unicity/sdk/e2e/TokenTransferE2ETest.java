@@ -27,21 +27,25 @@ import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.utils.InclusionProofUtils;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * End-to-end tests for token transfers including online and offline transfers.
  */
+@Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
 public class TokenTransferE2ETest {
     
@@ -340,6 +344,11 @@ public class TokenTransferE2ETest {
 
         // Submit mint transaction
         var commitment = client.submitMintTransaction(mintData).get();
+        
+        // No need for delay when using direct leader aggregator
+        // System.out.println("Waiting 6 seconds for aggregator instances to sync...");
+        // Thread.sleep(6000);
+        
         var inclusionProof = InclusionProofUtils.waitInclusionProof(client, commitment).get();
         var mintTransaction = client.createTransaction(commitment, inclusionProof).get();
 
@@ -390,6 +399,7 @@ public class TokenTransferE2ETest {
                             );
                         }
                         
+                        // No delay needed with direct aggregator
                         return InclusionProofUtils.waitInclusionProof(client, commitment)
                             .thenCompose(inclusionProof -> 
                                 client.createTransaction(commitment, inclusionProof)

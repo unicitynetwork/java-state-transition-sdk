@@ -20,6 +20,7 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.utils.InclusionProofUtils;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -34,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Simple token transfer test to verify basic functionality.
  */
+@Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
 public class SimpleTokenTransferTest {
     
