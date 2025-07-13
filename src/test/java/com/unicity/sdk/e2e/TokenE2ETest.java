@@ -3,22 +3,24 @@ package com.unicity.sdk.e2e;
 import com.unicity.sdk.StateTransitionClient;
 import com.unicity.sdk.api.AggregatorClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * End-to-end tests for token usage examples.
- * These tests require a running aggregator service.
- * Set AGGREGATOR_URL environment variable to run these tests.
+ * End-to-end tests for token operations using CommonTestFlow.
+ * Matches TypeScript SDK's test structure.
  */
+@Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
-public class TokenUsageExampleTest {
-
+public class TokenE2ETest {
+    
     private AggregatorClient aggregatorClient;
     private StateTransitionClient client;
-
+    
     @BeforeEach
     void setUp() {
         String aggregatorUrl = System.getenv("AGGREGATOR_URL");
@@ -27,34 +29,27 @@ public class TokenUsageExampleTest {
         aggregatorClient = new AggregatorClient(aggregatorUrl);
         client = new StateTransitionClient(aggregatorClient);
     }
-
+    
     @Test
-    void testVerifyBlockHeight() throws Exception {
-        Integer blockHeight = aggregatorClient.getBlockHeight().get();
-        System.out.println("block height: " + blockHeight);
+    void testGetBlockHeight() throws Exception {
+        Long blockHeight = aggregatorClient.getBlockHeight().get();
         assertNotNull(blockHeight);
         assertTrue(blockHeight > 0);
     }
-
+    
     @Test
-    void testTokenTransfer() throws Exception {
+    void testTransferFlow() throws Exception {
         CommonTestFlow.testTransferFlow(client);
     }
-
-    @Test
-    void testOfflineTokenTransfer() throws Exception {
+    
+    @Test 
+    void testOfflineTransferFlow() throws Exception {
         CommonTestFlow.testOfflineTransferFlow(client);
     }
-
-    /*
-    @Test
-    void testSplitTokens() throws Exception {
-        CommonTestFlow.testSplitFlow(client);
-    }
-
-    @Test
-    void testSplitTokensAfterTransfer() throws Exception {
-        CommonTestFlow.testSplitFlowAfterTransfer(client);
-    }
-    */
+    
+    // Token splitting will be added once implemented
+    // @Test
+    // void testSplitFlow() throws Exception {
+    //     CommonTestFlow.testSplitFlow(client);
+    // }
 }

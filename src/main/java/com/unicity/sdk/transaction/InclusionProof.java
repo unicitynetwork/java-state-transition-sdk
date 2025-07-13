@@ -69,7 +69,7 @@ public class InclusionProof implements ISerializable {
 
     /**
      * Checks if this inclusion proof has suspicious large path values.
-     * Normal path values should be small integers (< 64 bits).
+     * Normal path values should be small integers (&lt; 64 bits).
      * @return true if any path step has a suspiciously large value
      */
     public boolean hasSuspiciousPathValues() {
