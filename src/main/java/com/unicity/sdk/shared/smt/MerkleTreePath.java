@@ -8,17 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.hash.JavaDataHasher;
-import com.unicity.sdk.shared.util.BigIntegerConverter;
-import com.unicity.sdk.shared.util.HexConverter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +59,7 @@ public class MerkleTreePath implements ISerializable {
                         
                         // Create hasher and compute hash
                         JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
-                        hasher.update(BigIntegerConverter.encode(step.getPath()));
+                        hasher.update(step.getPath().toByteArray());
                         hasher.update(bytes);
                         DataHash digest = hasher.digest().join();
                         hash = digest.getHash();
