@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
  * Mint transaction data with full constructor matching TypeScript
  */
 public class MintTransactionData<T extends ISerializable> implements ISerializable {
-    // TOKENID string SHA-256 hash
     private static final byte[] MINT_SUFFIX = HexConverter.decode("9e82002c144d7c5796c50f6db50a0c7bbd7f717ae3af6c6c71a3e9eba3022730");
     private final TokenId tokenId;
     private final TokenType tokenType;
@@ -36,8 +35,8 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
     private final byte[] salt;
     private final DirectAddress recipient;
     private final Object reason;  // Optional reason field
-    private DataHash hash;
-    private RequestId sourceState;
+    private final DataHash hash; // Hash of the encoded transaction
+    private final RequestId sourceState;
 
     /**
      * Constructor matching TypeScript implementation

@@ -27,6 +27,7 @@ import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.utils.InclusionProofUtils;
+import com.unicity.sdk.utils.TestTokenData;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -67,24 +68,13 @@ public class CommonTestFlow {
             aliceSigningService,
             HashAlgorithm.SHA256,
             aliceNonce
-        ).get();
+        ).get(); //correct
         
         DirectAddress aliceAddress = DirectAddress.create(alicePredicate.getReference()).get();
         TokenState aliceTokenState = TokenState.create(alicePredicate, new byte[0]);
-        
-        // Mint token to Alice
-        ISerializable tokenData = new ISerializable() {
-            @Override
-            public Object toJSON() {
-                return "{}";
-            }
-            
-            @Override
-            public byte[] toCBOR() {
-                return new byte[0];
-            }
-        };
-        
+
+        var tokenData = new TestTokenData(randomBytes(32));
+
         MintTransactionData<ISerializable> mintData = new MintTransactionData<>(
             tokenId,
             tokenType,
