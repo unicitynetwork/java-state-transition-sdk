@@ -57,36 +57,38 @@ public class TokenIntegrationTest {
         mongo1.start();
         mongo2.start();
         mongo3.start();
-        
-        // Setup replica set
+
+        Thread.sleep(5000);
+
+        // Initialize replica set
         mongoSetup = new GenericContainer<>(DockerImageName.parse("mongo:7.0"))
                 .withNetwork(network)
-                .withCommand("mongosh", "--host", "mongo1:27017", "--eval",
-                        "rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo1:27017'},{_id:1,host:'mongo2:27017'},{_id:2,host:'mongo3:27017'}]})")
-                .withStartupCheckStrategy(new org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy())
-                .dependsOn(mongo1, mongo2, mongo3);
+                .withCopyFileToContainer(
+                        org.testcontainers.utility.MountableFile.forClasspathResource("docker/aggregator/mongo-init.js"),
+                        "/mongo-init.js")
+                .withCommand("mongosh", "--host", "mongo1:27017", "--file", "/mongo-init.js");
+
         mongoSetup.start();
-        
+
         // Start aggregator
-        aggregator = new GenericContainer<>(
-                DockerImageName.parse("ghcr.io/unicitylabs/unicity-aggregator-node-js:v1.1.0"))
+        aggregator = new GenericContainer<>(DockerImageName.parse("ghcr.io/unicitynetwork/aggregators_net:bbabb5f093e829fa789ed6e83f57af98df3f1752"))
                 .withNetwork(network)
-                .withNetworkAliases("aggregator")
-                .withExposedPorts(8080)
-                .withEnv("MONGODB_URL", "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/test?replicaSet=rs0")
-                .withEnv("PORT", "8080")
-                .withEnv("IS_LEADER", "true")
-                .waitingFor(Wait.forHttp("/status")
-                        .forPort(8080)
-                        .withStartupTimeout(java.time.Duration.ofMinutes(2)))
-                .dependsOn(mongoSetup);
+                .withNetworkAliases("aggregator-test")
+                .withExposedPorts(3000)
+                .withEnv("MONGODB_URI", "mongodb://mongo1:27017")
+                .withEnv("USE_MOCK_ALPHABILL", "true")
+                .withEnv("ALPHABILL_PRIVATE_KEY", "FF00000000000000000000000000000000000000000000000000000000000000")
+                .withEnv("DISABLE_HIGH_AVAILABILITY", "true")
+                .withEnv("PORT", "3000")
+                .waitingFor(Wait.forListeningPort().withStartupTimeout(java.time.Duration.ofMinutes(2)));
         aggregator.start();
-        
+
+
         initializeClient();
     }
     
     private void initializeClient() {
-        String aggregatorUrl = String.format("http://localhost:%d", aggregator.getMappedPort(8080));
+        String aggregatorUrl = String.format("http://localhost:%d", aggregator.getMappedPort(3000));
         aggregatorClient = new AggregatorClient(aggregatorUrl);
         client = new StateTransitionClient(aggregatorClient);
     }
