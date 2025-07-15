@@ -1,12 +1,14 @@
 package com.unicity.sdk.predicate;
 
-import com.unicity.sdk.identity.IIdentity;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.unicity.sdk.api.Authenticator;
+import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 import com.unicity.sdk.transaction.Transaction;
 
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Base class for predicates, matching TypeScript implementation
@@ -37,45 +39,63 @@ public abstract class DefaultPredicate implements IPredicate {
         this.hash = hash;
     }
 
-    public PredicateType getType() {
-        return type;
+    @JsonProperty
+    public String getType() {
+        return this.type.getType();
     }
 
+    @JsonProperty
     public byte[] getPublicKey() {
-        return Arrays.copyOf(publicKey, publicKey.length);
+        return Arrays.copyOf(this.publicKey, this.publicKey.length);
     }
 
+    @JsonProperty
     public String getAlgorithm() {
-        return algorithm;
+        return this.algorithm;
     }
 
+    @JsonProperty
     public HashAlgorithm getHashAlgorithm() {
-        return hashAlgorithm;
+        return this.hashAlgorithm;
     }
 
+    @JsonProperty
     public byte[] getNonce() {
-        return Arrays.copyOf(nonce, nonce.length);
+        return Arrays.copyOf(this.nonce, this.nonce.length);
     }
 
     @Override
     public DataHash getHash() {
-        return hash;
+        return this.hash;
     }
 
     @Override
     public DataHash getReference() {
-        return reference;
+        return this.reference;
     }
 
     @Override
-    public CompletableFuture<Boolean> isOwner(byte[] publicKey) {
-        // Default implementation - compare public keys
-        return CompletableFuture.completedFuture(Arrays.equals(this.publicKey, publicKey));
+    public boolean isOwner(byte[] publicKey) {
+        return Arrays.equals(this.publicKey, publicKey);
     }
 
-    @Override
-    public CompletableFuture<Boolean> verify(Transaction<?> transaction) {
-        // Default implementation - subclasses should override if needed
-        return CompletableFuture.completedFuture(true);
+    public boolean verify(Transaction<?> transaction) {
+        Authenticator authenticator = transaction.getInclusionProof().getAuthenticator();
+        DataHash transactionHash = transaction.getInclusionProof().getTransactionHash();
+
+        if (authenticator == null || transactionHash == null) {
+            return false;
+        }
+
+        if (!Arrays.equals(authenticator.getPublicKey(), this.publicKey)) {
+            return false;
+        }
+
+        if (!authenticator.verify(transaction.getData().getHash())) {
+            return false;
+        }
+
+        RequestId requestId = RequestId.create(this.publicKey, transaction.getData().getSourceState().getHash());
+        return transaction.getInclusionProof().verify(requestId) == InclusionProofVerificationStatus.OK;
     }
 }

@@ -3,13 +3,13 @@ package com.unicity.sdk.serializer.json.transaction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.unicity.sdk.predicate.PredicateFactory;
+import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.transaction.TransactionData;
+import com.unicity.sdk.transaction.TransferTransactionData;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -24,7 +24,7 @@ public class TransactionDataJsonSerializer {
      * @param data The transaction data to serialize
      * @return JSON representation of the transaction data
      */
-    public static Object serialize(TransactionData data) {
+    public static Object serialize(TransferTransactionData data) {
         ObjectNode result = objectMapper.createObjectNode();
         
         result.set("sourceState", objectMapper.valueToTree(data.getSourceState().toJSON()));
@@ -52,7 +52,7 @@ public class TransactionDataJsonSerializer {
      * @param jsonNode The JSON data to deserialize
      * @return A promise that resolves to the deserialized TransactionData object
      */
-    public static CompletableFuture<TransactionData> deserialize(
+    public static CompletableFuture<TransferTransactionData> deserialize(
             TokenId tokenId, TokenType tokenType, JsonNode jsonNode) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -80,7 +80,7 @@ public class TransactionDataJsonSerializer {
                 
                 // TODO: Handle nametag tokens when implemented
                 
-                return TransactionData.create(sourceState, recipient, salt, data, message).get();
+                return TransferTransactionData.create(sourceState, recipient, salt, data, message);
                 
             } catch (Exception e) {
                 throw new RuntimeException("Failed to deserialize transaction data", e);
@@ -98,7 +98,7 @@ public class TransactionDataJsonSerializer {
         if (predicateNode == null) {
             throw new IllegalArgumentException("Missing 'unlockPredicate' in token state JSON");
         }
-        var predicate = PredicateFactory.create(tokenId, tokenType, predicateNode).get();
+        IPredicate predicate = null;
         
         return TokenState.create(predicate, data);
     }

@@ -2,7 +2,6 @@ package com.unicity.sdk.shared.hash;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.CompletableFuture;
 
 public class DataHasher {
     private final HashAlgorithm algorithm;

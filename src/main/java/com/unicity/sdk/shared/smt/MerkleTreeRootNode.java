@@ -1,12 +1,12 @@
 package com.unicity.sdk.shared.smt;
 
 import com.unicity.sdk.shared.hash.DataHash;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.smt.path.MerkleTreePath;
 import com.unicity.sdk.shared.smt.path.MerkleTreePathStep;
 
 import java.math.BigInteger;
-import java.security.MessageDigest;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -25,12 +25,8 @@ public class MerkleTreeRootNode {
     }
 
     public static MerkleTreeRootNode create(FinalizedBranch left, FinalizedBranch right, HashAlgorithm hashAlgorithm) throws Exception {
-        MessageDigest hashDigest = MessageDigest.getInstance(hashAlgorithm.getAlgorithm());
-        hashDigest.update(left == null ? new byte[]{0} : left.getHash().getData());
-        hashDigest.update(right == null ? new byte[]{0} : right.getHash().getData());
-        byte[] rootHash = hashDigest.digest();
-
-        return new MerkleTreeRootNode(left, right, new DataHash(hashAlgorithm, rootHash));
+        DataHash rootHash = new DataHasher(hashAlgorithm).update(left == null ? new byte[]{0} : left.getHash().getData()).update(right == null ? new byte[]{0} : right.getHash().getData()).digest();
+        return new MerkleTreeRootNode(left, right, rootHash);
     }
 
      public DataHash getRootHash() {

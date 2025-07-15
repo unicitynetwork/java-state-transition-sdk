@@ -27,11 +27,22 @@ public class HexConverter {
      * @return byte array
      */
     public static byte[] decode(String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Input is null");
+        }
+        if (value.length() % 2 != 0) {
+            throw new IllegalArgumentException("Hex string must have even length");
+        }
+
         int len = value.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(value.charAt(i), 16) << 4)
-                                 + Character.digit(value.charAt(i+1), 16));
+            int hi = Character.digit(value.charAt(i), 16);
+            int lo = Character.digit(value.charAt(i + 1), 16);
+            if (hi == -1 || lo == -1) {
+                throw new IllegalArgumentException("Invalid hex character at position " + i);
+            }
+            data[i / 2] = (byte) ((hi << 4) + lo);
         }
         return data;
     }

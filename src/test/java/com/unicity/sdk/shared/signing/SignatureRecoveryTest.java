@@ -23,10 +23,10 @@ public class SignatureRecoveryTest {
         byte[] testData = "Hello, Unicity!".getBytes();
         DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(testData);
-        DataHash hash = hasher.digest().get();
+        DataHash hash = hasher.digest();
         
         // Sign the hash
-        Signature signature = signingService.sign(hash).get();
+        Signature signature = signingService.sign(hash);
         
         // Verify recovery ID is 0 or 1
         assertTrue(signature.getRecovery() == 0 || signature.getRecovery() == 1, 
@@ -34,7 +34,7 @@ public class SignatureRecoveryTest {
         
         // Verify signature with known public key
         byte[] publicKey = signingService.getPublicKey();
-        assertTrue(SigningService.verifyWithPublicKey(hash, signature.getBytes(), publicKey).get());
+        assertTrue(SigningService.verifyWithPublicKey(hash, signature.getBytes(), publicKey));
     }
     
     @Test
@@ -48,13 +48,13 @@ public class SignatureRecoveryTest {
         byte[] testData = "Test public key recovery".getBytes();
         DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(testData);
-        DataHash hash = hasher.digest().get();
+        DataHash hash = hasher.digest();
         
         // Sign the hash
-        Signature signature = signingService.sign(hash).get();
+        Signature signature = signingService.sign(hash);
         
         // Verify signature using recovered public key
-        assertTrue(SigningService.verifySignatureWithRecoveredPublicKey(hash, signature).get(),
+        assertTrue(SigningService.verifySignatureWithRecoveredPublicKey(hash, signature),
                   "Signature verification with recovered public key should succeed");
     }
     
@@ -85,7 +85,7 @@ public class SignatureRecoveryTest {
         DataHash transactionHash = DataHash.fromImprint(HexConverter.decode(transactionHashHex));
         
         // Verify using recovered public key
-        assertTrue(SigningService.verifySignatureWithRecoveredPublicKey(transactionHash, signature).get(),
+        assertTrue(SigningService.verifySignatureWithRecoveredPublicKey(transactionHash, signature),
                   "Should verify with recovered public key");
     }
 }

@@ -9,12 +9,11 @@ import com.unicity.sdk.predicate.IPredicateFactory;
 import com.unicity.sdk.serializer.json.token.TokenStateJsonSerializer;
 import com.unicity.sdk.serializer.json.transaction.MintTransactionJsonSerializer;
 import com.unicity.sdk.serializer.json.transaction.TransactionJsonSerializer;
-import com.unicity.sdk.serializer.token.ITokenSerializer;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.transaction.TransactionData;
+import com.unicity.sdk.transaction.TransferTransactionData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,16 +41,16 @@ public class TokenJsonSerializer {
      * @param token The token to serialize
      * @return JSON representation of the token
      */
-    public static Object serialize(Token<Transaction<MintTransactionData<?>>> token) {
+    public static Object serialize(Token<Transaction<MintTransactionData>> token) {
         ObjectNode result = objectMapper.createObjectNode();
         
         result.put("version", token.getVersion());
-        result.set("genesis", objectMapper.valueToTree(MintTransactionJsonSerializer.serialize((Transaction<MintTransactionData<ISerializable>>) (Transaction) token.getGenesis())));
+        result.set("genesis", objectMapper.valueToTree(MintTransactionJsonSerializer.serialize(token.getGenesis())));
         
         ArrayNode transactions = objectMapper.createArrayNode();
         for (Transaction<?> tx : token.getTransactions()) {
             @SuppressWarnings("unchecked")
-            Transaction<TransactionData> txData = (Transaction<TransactionData>) tx;
+            Transaction<TransferTransactionData> txData = (Transaction<TransferTransactionData>) tx;
             transactions.add(objectMapper.valueToTree(TransactionJsonSerializer.serialize(txData)));
         }
         result.set("transactions", transactions);
@@ -70,7 +69,7 @@ public class TokenJsonSerializer {
      * @param data The JSON data to deserialize
      * @return A promise that resolves to the deserialized Token object
      */
-    public CompletableFuture<Token<Transaction<MintTransactionData<?>>>> deserialize(JsonNode data) {
+    public CompletableFuture<Token<Transaction<MintTransactionData>>> deserialize(JsonNode data) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String tokenVersion = data.get("version").asText();
@@ -79,9 +78,9 @@ public class TokenJsonSerializer {
                 }
                 
                 JsonNode genesisNode = data.get("genesis");
-                Transaction<MintTransactionData<ISerializable>> mintTransaction = mintTransactionDeserializer.deserialize(genesisNode).get();
+                Transaction<MintTransactionData> mintTransaction = mintTransactionDeserializer.deserialize(genesisNode).get();
                 
-                List<Transaction<TransactionData>> transactions = new ArrayList<>();
+                List<Transaction<TransferTransactionData>> transactions = new ArrayList<>();
                 JsonNode transactionsNode = data.get("transactions");
                 if (transactionsNode != null && transactionsNode.isArray()) {
                     for (JsonNode txNode : transactionsNode) {
@@ -105,7 +104,7 @@ public class TokenJsonSerializer {
                 // TODO: Add nametag tokens
                 List<Token<?>> nametagTokens = new ArrayList<>();
                 
-                return new Token<Transaction<MintTransactionData<?>>>(
+                return new Token<Transaction<MintTransactionData>>(
                     tokenState,
                     (Transaction) mintTransaction,
                     (List) transactions,

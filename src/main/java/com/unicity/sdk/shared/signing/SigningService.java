@@ -21,7 +21,7 @@ import java.util.Arrays;
 /**
  * Default signing service.
  */
-public class SigningService implements ISigningService<Signature> {
+public class SigningService {
     private static final String CURVE_NAME = "secp256k1";
     private static final ECParameterSpec EC_SPEC = ECNamedCurveTable.getParameterSpec(CURVE_NAME);
     private static final ECDomainParameters EC_DOMAIN_PARAMETERS = new ECDomainParameters(
@@ -31,7 +31,7 @@ public class SigningService implements ISigningService<Signature> {
             EC_SPEC.getH()
     );
 
-    private final byte[] privateKey;
+    private final ECPrivateKeyParameters privateKey;
     private final byte[] publicKey;
 
     /**
@@ -40,19 +40,28 @@ public class SigningService implements ISigningService<Signature> {
      * @param privateKey private key bytes.
      */
     public SigningService(byte[] privateKey) {
-        this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
+        if (privateKey == null) {
+            throw new IllegalArgumentException("privateKey cannot be null");
+        }
+
+        BigInteger privateKeyAsBigInt = new BigInteger(1, privateKey);
+        if (privateKeyAsBigInt.compareTo(BigInteger.ONE) < 0 || privateKeyAsBigInt.compareTo(EC_SPEC.getN()) >= 0) {
+            throw new IllegalArgumentException("Invalid private key: must be in range [1, N)");
+        }
 
         // Calculate public key
-        ECPoint Q = EC_SPEC.getG().multiply(new BigInteger(1, privateKey));
+        ECPoint Q = EC_SPEC.getG().multiply(privateKeyAsBigInt);
         this.publicKey = Q.getEncoded(true); // compressed format
+        this.privateKey = new ECPrivateKeyParameters(
+                privateKeyAsBigInt,
+                SigningService.EC_DOMAIN_PARAMETERS
+        );;
     }
 
-    @Override
     public byte[] getPublicKey() {
         return Arrays.copyOf(publicKey, publicKey.length);
     }
 
-    @Override
     public String getAlgorithm() {
         return "secp256k1";
     }
@@ -81,13 +90,8 @@ public class SigningService implements ISigningService<Signature> {
     }
 
     public Signature sign(DataHash hash) {
-        ECPrivateKeyParameters privateKeyParameters = new ECPrivateKeyParameters(
-                new BigInteger(1, this.privateKey),
-                SigningService.EC_DOMAIN_PARAMETERS
-        );
-
         ECDSASigner signer = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()));
-        signer.init(true, privateKeyParameters);
+        signer.init(true, this.privateKey);
 
         BigInteger[] signature = signer.generateSignature(hash.getData());
         BigInteger r = signature[0];
@@ -120,7 +124,6 @@ public class SigningService implements ISigningService<Signature> {
         return new Signature(signatureBytes, recoveryId);
     }
 
-    @Override
     public boolean verify(DataHash hash, Signature signature) {
         return verifyWithPublicKey(hash, signature.getBytes(), this.publicKey);
     }

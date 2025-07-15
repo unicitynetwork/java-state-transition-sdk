@@ -27,7 +27,7 @@ public class PendingNodeBranch implements PendingBranch {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        this.hash = DataHasher.digest(algorithm, baos.toByteArray());
+        this.hash = new DataHasher(algorithm).update(baos.toByteArray()).digest();
     }
 
     public PendingBranch getLeft() {

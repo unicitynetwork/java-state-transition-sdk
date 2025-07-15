@@ -1,0 +1,100 @@
+package com.unicity.sdk.serializer.json.api;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.unicity.sdk.api.Authenticator;
+import com.unicity.sdk.shared.hash.DataHash;
+import com.unicity.sdk.shared.signing.Signature;
+import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.transaction.InclusionProof;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+public class AuthenticatorJson {
+    private static final String ALGORITHM_FIELD = "algorithm";
+    private static final String PUBLIC_KEY_FIELD = "publicKey";
+    private static final String SIGNATURE_FIELD = "signature";
+    private static final String STATE_HASH_FIELD = "stateHash";
+
+    private AuthenticatorJson() {}
+
+    public static class Serializer extends JsonSerializer<Authenticator> {
+        @Override
+        public void serialize(Authenticator value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value == null) {
+                gen.writeNull();
+                return;
+            }
+
+            gen.writeStartObject();
+            gen.writeObjectField(ALGORITHM_FIELD, value.getAlgorithm());
+            gen.writeObjectField(PUBLIC_KEY_FIELD, HexConverter.encode(value.getPublicKey()));
+            gen.writeObjectField(SIGNATURE_FIELD, HexConverter.encode(value.getSignature().encode()));
+            gen.writeObjectField(STATE_HASH_FIELD, value.getStateHash());
+            gen.writeEndObject();
+        }
+    }
+
+    public static class Deserializer extends JsonDeserializer<Authenticator> {
+        @Override
+        public Authenticator deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+            String algorithm = null;
+            byte[] publicKey = null;
+            Signature signature = null;
+            DataHash stateHash = null;
+
+            Set<String> fields = new HashSet<>();
+
+            if (!p.isExpectedStartObjectToken()) {
+                ctx.handleUnexpectedToken(Authenticator.class, p);
+            }
+
+            while (p.nextToken() != JsonToken.END_OBJECT) {
+                String fieldName = p.currentName();
+
+                if (!fields.add(fieldName)) {
+                    ctx.reportInputMismatch(Authenticator.class, "Duplicate field: %s", fieldName);
+                }
+
+                p.nextToken();
+                if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
+                    ctx.reportInputMismatch(Authenticator.class, "Expected string value", fieldName);
+                }
+
+                try {
+                    switch (fieldName) {
+                        case ALGORITHM_FIELD:
+                            algorithm = p.getValueAsString();
+                            break;
+                        case PUBLIC_KEY_FIELD:
+                            publicKey = HexConverter.decode(p.getValueAsString());
+                            break;
+                        case SIGNATURE_FIELD:
+                            signature = Signature.decode(HexConverter.decode(p.getValueAsString()));
+                            break;
+                        case STATE_HASH_FIELD:
+                            stateHash = p.readValueAs(DataHash.class);
+                            break;
+                    }
+                } catch (Exception e) {
+                    ctx.reportInputMismatch(Authenticator.class, "Invalid value for field '%s': %s", fieldName, e.getMessage());
+                }
+            }
+
+            if (algorithm == null || publicKey == null || signature == null || stateHash == null) {
+                Set<String> missingFields = new HashSet<>(Set.of(ALGORITHM_FIELD, PUBLIC_KEY_FIELD, SIGNATURE_FIELD, STATE_HASH_FIELD));
+                missingFields.removeAll(fields);
+                ctx.reportInputMismatch(InclusionProof.class, "Missing required fields: %s", missingFields);
+            }
+
+            return new Authenticator(algorithm, publicKey, signature, stateHash);
+        }
+    }
+}

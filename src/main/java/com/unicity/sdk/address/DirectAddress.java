@@ -27,11 +27,11 @@ public class DirectAddress implements IAddress {
         this.bytes = Arrays.copyOf(bytes, bytes.length);
     }
 
-    public static CompletableFuture<DirectAddress> create(DataHash reference) {
+    public static DirectAddress create(DataHash reference) {
         byte[] addressBytes = new byte[ADDRESS_LENGTH];
         addressBytes[0] = ADDRESS_TYPE;
         System.arraycopy(reference.getData(), 0, addressBytes, 1, Math.min(reference.getData().length, ADDRESS_LENGTH - 1));
-        return CompletableFuture.completedFuture(new DirectAddress(addressBytes));
+        return new DirectAddress(addressBytes);
     }
 
     public static CompletableFuture<DirectAddress> fromJSON(String json) {

@@ -14,8 +14,8 @@ public interface IPredicateFactory {
      *
      * @param tokenId    Token identifier
      * @param tokenType  Token type
-     * @param data       CBOR representation of the predicate
+     * @param data       Predicate data
      * @return CompletableFuture resolving to the predicate instance
      */
-    CompletableFuture<IPredicate> create(TokenId tokenId, TokenType tokenType, byte[] data);
+    IPredicate create(TokenId tokenId, TokenType tokenType, Object data);
 }

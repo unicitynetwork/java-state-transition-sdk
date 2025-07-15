@@ -2,18 +2,17 @@
 package com.unicity.sdk.predicate;
 
 public enum PredicateType {
-    UNMASKED(0),
-    MASKED(1),
-    BURN(2),
-    DEFAULT(3);
+    UNMASKED("UNMASKED"),
+    MASKED("MASKED"),
+    BURN("BURN");
     
-    private final int value;
+    private final String type;
     
-    PredicateType(int value) {
-        this.value = value;
+    PredicateType(String value) {
+        this.type = value;
     }
     
-    public int getValue() {
-        return value;
+    public String getType() {
+        return this.type;
     }
 }

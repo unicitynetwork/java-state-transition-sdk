@@ -1,5 +1,6 @@
 package com.unicity.sdk.api;
 
+import com.unicity.sdk.Hashable;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
@@ -10,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Represents a unique request identifier derived from a public key and state hash.
  */
-public class RequestId {
+public class RequestId implements Hashable {
     private final DataHash hash;
 
     /**
@@ -27,7 +28,7 @@ public class RequestId {
      * @param stateHash The state hash.
      * @return A CompletableFuture resolving to a RequestId instance.
      */
-    public static CompletableFuture<RequestId> create(byte[] id, DataHash stateHash) {
+    public static RequestId create(byte[] id, DataHash stateHash) {
         return createFromImprint(id, stateHash.getImprint());
     }
     
@@ -37,21 +38,12 @@ public class RequestId {
      * @param hashImprint The hash imprint as a byte array.
      * @return A CompletableFuture resolving to a RequestId instance.
      */
-    public static CompletableFuture<RequestId> createFromImprint(byte[] id, byte[] hashImprint) {
+    public static RequestId createFromImprint(byte[] id, byte[] hashImprint) {
         DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(id);
         hasher.update(hashImprint);
         
-        return hasher.digest().thenApply(RequestId::new);
-    }
-
-    /**
-     * Decodes a RequestId from CBOR bytes.
-     * @param data The CBOR-encoded bytes.
-     * @return A RequestId instance.
-     */
-    public static RequestId fromCBOR(byte[] data) {
-        return new RequestId(DataHash.fromCBOR(data));
+        return new RequestId(hasher.digest());
     }
 
     /**
@@ -68,7 +60,7 @@ public class RequestId {
      * @return The BitString representation of the RequestId.
      */
     public BitString toBitString() {
-        return BitString.fromDataHash(hash);
+        return BitString.fromDataHash(this.hash);
     }
 
     /**
@@ -76,7 +68,7 @@ public class RequestId {
      * @return The DataHash.
      */
     public DataHash getHash() {
-        return hash;
+        return this.hash;
     }
 
     /**
@@ -84,7 +76,7 @@ public class RequestId {
      * @return The CBOR-encoded bytes.
      */
     public byte[] toCBOR() {
-        return hash.toCBOR();
+        return this.hash.toCBOR();
     }
 
     /**

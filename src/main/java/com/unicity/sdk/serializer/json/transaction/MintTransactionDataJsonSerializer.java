@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
@@ -26,16 +25,16 @@ public class MintTransactionDataJsonSerializer {
      * @param data The mint transaction data to serialize
      * @return JSON representation of the mint transaction data
      */
-    public static Object serialize(MintTransactionData<ISerializable> data) {
+    public static Object serialize(MintTransactionData data) {
         ObjectNode result = objectMapper.createObjectNode();
         
         result.put("tokenId", data.getTokenId().toJSON());
         result.put("tokenType", data.getTokenType().toJSON());
-        result.set("unlockPredicate", objectMapper.valueToTree(data.getPredicate().toJSON()));
+//        result.set("unlockPredicate", objectMapper.valueToTree(data.getPredicate().toJSON()));
         
         // Handle token data
         if (data.getTokenData() != null) {
-            result.set("tokenData", objectMapper.valueToTree(data.getTokenData().toJSON()));
+//            result.set("tokenData", objectMapper.valueToTree(data.getTokenData().toJSON()));
         } else {
             result.putNull("tokenData");
         }
@@ -67,13 +66,13 @@ public class MintTransactionDataJsonSerializer {
      * @param data The JSON data to deserialize
      * @return A promise that resolves to the deserialized MintTransactionData object
      */
-    public static CompletableFuture<MintTransactionData<ISerializable>> deserialize(
+    public static CompletableFuture<MintTransactionData> deserialize(
             TokenId tokenId, TokenType tokenType, JsonNode data) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // Deserialize unlock predicate with context
                 JsonNode predicateNode = data.get("unlockPredicate");
-                IPredicate unlockPredicate = PredicateFactory.create(tokenId, tokenType, predicateNode).get();
+                IPredicate unlockPredicate = null;
                 
                 // Deserialize token data
                 ISerializable tokenData = null;
@@ -110,7 +109,7 @@ public class MintTransactionDataJsonSerializer {
                     dataHash = DataHash.fromJSON(dataHashNode.asText());
                 }
                 
-                return new MintTransactionData<>(
+                return new MintTransactionData(
                     tokenId,
                     tokenType,
                     unlockPredicate,

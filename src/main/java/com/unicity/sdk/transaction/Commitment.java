@@ -11,7 +11,7 @@ import com.unicity.sdk.shared.cbor.CborEncoder;
 /**
  * Commitment representing a submitted transaction
  */
-public class Commitment<T extends ISerializable> implements ISerializable {
+public class Commitment<T extends TransactionData<?>> {
     private final RequestId requestId;
     private final T transactionData;
     private final Authenticator authenticator;
@@ -32,26 +32,5 @@ public class Commitment<T extends ISerializable> implements ISerializable {
 
     public Authenticator getAuthenticator() {
         return authenticator;
-    }
-
-    @Override
-    public Object toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
-        
-        root.set("requestId", mapper.valueToTree(requestId));
-        root.set("transactionData", mapper.valueToTree(transactionData.toJSON()));
-        root.set("authenticator", mapper.valueToTree(authenticator.toJSON()));
-        
-        return root;
-    }
-
-    @Override
-    public byte[] toCBOR() {
-        return CborEncoder.encodeArray(
-            requestId.toCBOR(),
-            transactionData.toCBOR(),
-            authenticator.toCBOR()
-        );
     }
 }
