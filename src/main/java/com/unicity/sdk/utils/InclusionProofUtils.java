@@ -65,42 +65,42 @@ public class InclusionProofUtils {
             return;
         }
         
-        client.getInclusionProof(commitment)
-            .thenCompose(inclusionProof -> {
-                // Check if we got a suspicious response
-                if (inclusionProof.hasSuspiciousPathValues()) {
-                    logger.warn("Received inclusion proof with suspicious large path values - likely from non-leader aggregator");
-                }
-                
-                return inclusionProof.verify(commitment.getRequestId())
-                    .thenApply(status -> new VerificationResult(inclusionProof, status));
-            })
-            .whenComplete((result, error) -> {
-                if (error != null) {
-                    // If it's a 404-like error, retry
-                    if (error instanceof CompletionException && error.getCause() != null) {
-                        String message = error.getCause().getMessage();
-                        if (message != null && message.contains("404")) {
-                            logger.debug("Inclusion proof not yet available, retrying...");
-                            scheduleRetry(client, commitment, future, startTime, timeoutMillis, intervalMillis);
-                            return;
-                        }
-                    }
-                    future.completeExceptionally(error);
-                } else if (result.status == InclusionProofVerificationStatus.OK) {
-                    successfulVerifications++;
-                    logger.info("Inclusion proof verified successfully (total successes: {})", successfulVerifications);
-                    future.complete(result.inclusionProof);
-                } else {
-                    failedVerifications++;
-                    long elapsedTime = System.currentTimeMillis() - startTime;
-                    logger.info("Inclusion proof verification status: {}, retrying... (attempt {}, elapsed: {}ms)", 
-                        result.status, failedVerifications, elapsedTime);
-                    
-                    // Keep retrying even if we get bad responses - we might hit the leader eventually
-                    scheduleRetry(client, commitment, future, startTime, timeoutMillis, intervalMillis);
-                }
-            });
+//        client.getInclusionProof(commitment)
+//            .thenCompose(inclusionProof -> {
+//                // Check if we got a suspicious response
+//                if (inclusionProof.hasSuspiciousPathValues()) {
+//                    logger.warn("Received inclusion proof with suspicious large path values - likely from non-leader aggregator");
+//                }
+//
+//                return inclusionProof.verify(commitment.getRequestId())
+//                    .thenApply(status -> new VerificationResult(inclusionProof, status));
+//            })
+//            .whenComplete((result, error) -> {
+//                if (error != null) {
+//                    // If it's a 404-like error, retry
+//                    if (error instanceof CompletionException && error.getCause() != null) {
+//                        String message = error.getCause().getMessage();
+//                        if (message != null && message.contains("404")) {
+//                            logger.debug("Inclusion proof not yet available, retrying...");
+//                            scheduleRetry(client, commitment, future, startTime, timeoutMillis, intervalMillis);
+//                            return;
+//                        }
+//                    }
+//                    future.completeExceptionally(error);
+//                } else if (result.status == InclusionProofVerificationStatus.OK) {
+//                    successfulVerifications++;
+//                    logger.info("Inclusion proof verified successfully (total successes: {})", successfulVerifications);
+//                    future.complete(result.inclusionProof);
+//                } else {
+//                    failedVerifications++;
+//                    long elapsedTime = System.currentTimeMillis() - startTime;
+//                    logger.info("Inclusion proof verification status: {}, retrying... (attempt {}, elapsed: {}ms)",
+//                        result.status, failedVerifications, elapsedTime);
+//
+//                    // Keep retrying even if we get bad responses - we might hit the leader eventually
+//                    scheduleRetry(client, commitment, future, startTime, timeoutMillis, intervalMillis);
+//                }
+//            });
     }
     
     private static void scheduleRetry(

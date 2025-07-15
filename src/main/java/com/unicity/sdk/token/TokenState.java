@@ -6,18 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.predicate.IPredicate;
+import com.unicity.sdk.predicate.PredicateFactory;
+import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.predicate.PredicateFactory;
-import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.util.ByteArraySerializer;
-import com.unicity.sdk.shared.cbor.CborEncoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Represents a snapshot of token ownership and associated data.
@@ -45,7 +44,7 @@ public class TokenState implements ISerializable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        DataHash hash = DataHasher.digest(HashAlgorithm.SHA256, baos.toByteArray());
+        DataHash hash = new DataHasher(HashAlgorithm.SHA256).update(baos.toByteArray()).digest();
         return new TokenState(unlockPredicate, data, hash);
     }
 

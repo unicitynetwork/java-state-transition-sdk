@@ -3,7 +3,7 @@ package com.unicity.sdk.api;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,7 +19,7 @@ public class LeafValue implements ISerializable {
     }
 
     public static CompletableFuture<LeafValue> create(Authenticator authenticator, DataHash transactionHash) {
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(authenticator.toCBOR());
         hasher.update(transactionHash.getImprint());
         

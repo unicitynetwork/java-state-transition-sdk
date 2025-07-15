@@ -1,7 +1,8 @@
 
 package com.unicity.sdk.identity;
 
-import com.unicity.sdk.util.HexConverter;
+
+import com.unicity.sdk.shared.util.HexConverter;
 
 import java.util.Arrays;
 

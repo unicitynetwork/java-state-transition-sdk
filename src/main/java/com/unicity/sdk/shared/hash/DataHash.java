@@ -1,24 +1,21 @@
 
 package com.unicity.sdk.shared.hash;
 
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
-import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.util.HexConverter;
-import com.unicity.sdk.shared.cbor.CborDecoder;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.unicity.sdk.serializer.hash.DataHashSerializer;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.cbor.CustomCborDecoder;
+import com.unicity.sdk.shared.util.HexConverter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
-public class DataHash implements ISerializable {
-    private final byte[] hash;
+@JsonSerialize(using = DataHashSerializer.class)
+public class DataHash {
+    private final byte[] data;
     private final HashAlgorithm algorithm;
 
-    public DataHash(byte[] hash, HashAlgorithm algorithm) {
-        this.hash = Arrays.copyOf(hash, hash.length);
+    public DataHash(HashAlgorithm algorithm, byte[] data) {
+        this.data = Arrays.copyOf(data, data.length);
         this.algorithm = algorithm;
     }
 
@@ -41,7 +38,7 @@ public class DataHash implements ISerializable {
         // Extract hash data
         byte[] hashData = Arrays.copyOfRange(imprint, 2, imprint.length);
         
-        return new DataHash(hashData, algorithm);
+        return new DataHash(algorithm, hashData);
     }
     
     /**
@@ -52,18 +49,12 @@ public class DataHash implements ISerializable {
         return fromImprint(HexConverter.decode(imprintHex));
     }
 
-    public byte[] getHash() {
-        return Arrays.copyOf(hash, hash.length);
+    public byte[] getData() {
+        return Arrays.copyOf(this.data, this.data.length);
     }
 
     public HashAlgorithm getAlgorithm() {
-        return algorithm;
-    }
-
-    @Override
-    public Object toJSON() {
-        // JSON representation is the hex-encoded imprint
-        return HexConverter.encode(getImprint());
+        return this.algorithm;
     }
 
     /**
@@ -71,15 +62,15 @@ public class DataHash implements ISerializable {
      * Format: [algorithm_byte_1][algorithm_byte_2][hash_bytes...]
      */
     public byte[] getImprint() {
-        byte[] imprint = new byte[hash.length + 2];
-        int algValue = algorithm.getValue();
-        imprint[0] = (byte) ((algValue & 0xFF00) >> 8);
-        imprint[1] = (byte) (algValue & 0xFF);
-        System.arraycopy(hash, 0, imprint, 2, hash.length);
+        byte[] imprint = new byte[this.data.length + 2];
+        int algorithmValue = this.algorithm.getValue();
+        imprint[0] = (byte) ((algorithmValue & 0xFF00) >> 8);
+        imprint[1] = (byte) (algorithmValue & 0xFF);
+        System.arraycopy(this.data, 0, imprint, 2, this.data.length);
+
         return imprint;
     }
-    
-    @Override
+
     public byte[] toCBOR() {
         // CBOR encoding of the imprint as a byte string
         return CborEncoder.encodeByteString(getImprint());
@@ -90,16 +81,21 @@ public class DataHash implements ISerializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DataHash dataHash = (DataHash) o;
-        return Arrays.equals(hash, dataHash.hash) && algorithm == dataHash.algorithm;
+        return Arrays.equals(this.data, dataHash.data) && this.algorithm == dataHash.algorithm;
     }
 
     @Override
     public int hashCode() {
-        int result = Arrays.hashCode(hash);
-        result = 31 * result + (algorithm != null ? algorithm.hashCode() : 0);
+        int result = Arrays.hashCode(this.data);
+        result = 31 * result + (this.algorithm != null ? this.algorithm.hashCode() : 0);
         return result;
     }
-    
+
+    @Override
+    public String toString() {
+        return HexConverter.encode(this.getImprint());
+    }
+
     /**
      * Deserialize DataHash from CBOR.
      * The CBOR format is a byte string containing the imprint (algorithm prefix + hash).

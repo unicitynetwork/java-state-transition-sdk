@@ -52,7 +52,7 @@ public class MintTransactionDataJsonSerializer {
         
         // Handle data hash
         if (data.getDataHash() != null) {
-            result.put("dataHash", (String) data.getDataHash().toJSON());
+
         } else {
             result.putNull("dataHash");
         }

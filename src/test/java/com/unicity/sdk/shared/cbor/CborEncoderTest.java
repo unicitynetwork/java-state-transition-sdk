@@ -1,6 +1,5 @@
 package com.unicity.sdk.shared.cbor;
 
-import com.unicity.sdk.util.HexConverter;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;

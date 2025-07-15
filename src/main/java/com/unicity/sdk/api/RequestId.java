@@ -1,10 +1,7 @@
 package com.unicity.sdk.api;
 
-import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.cbor.CborDecoder;
-import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.util.BitString;
 
@@ -13,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Represents a unique request identifier derived from a public key and state hash.
  */
-public class RequestId implements ISerializable {
+public class RequestId {
     private final DataHash hash;
 
     /**
@@ -41,7 +38,7 @@ public class RequestId implements ISerializable {
      * @return A CompletableFuture resolving to a RequestId instance.
      */
     public static CompletableFuture<RequestId> createFromImprint(byte[] id, byte[] hashImprint) {
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(id);
         hasher.update(hashImprint);
         
@@ -83,19 +80,9 @@ public class RequestId implements ISerializable {
     }
 
     /**
-     * Converts the RequestId to a JSON string.
-     * @return The JSON string representation.
-     */
-    @Override
-    public Object toJSON() {
-        return hash.toJSON();
-    }
-
-    /**
      * Encodes the RequestId to CBOR format.
      * @return The CBOR-encoded bytes.
      */
-    @Override
     public byte[] toCBOR() {
         return hash.toCBOR();
     }

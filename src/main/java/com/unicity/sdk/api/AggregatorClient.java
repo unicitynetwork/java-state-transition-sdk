@@ -24,9 +24,6 @@ public class AggregatorClient implements IAggregatorClient {
             DataHash transactionHash,
             Authenticator authenticator) {
         Map<String, Object> params = new HashMap<>();
-        params.put("requestId", requestId.toJSON());
-        params.put("transactionHash", transactionHash.toJSON());
-        params.put("authenticator", authenticator.toJSON());
         params.put("receipt", false);
         
         System.out.println("AggregatorClient submit_commitment params: " + objectMapper.valueToTree(params));
@@ -66,7 +63,7 @@ public class AggregatorClient implements IAggregatorClient {
 
     public CompletableFuture<InclusionProof> getInclusionProof(RequestId requestId) {
         Map<String, Object> params = new HashMap<>();
-        params.put("requestId", requestId.toJSON());
+
         
         System.out.println("AggregatorClient get_inclusion_proof params: " + objectMapper.valueToTree(params));
         
@@ -84,7 +81,8 @@ public class AggregatorClient implements IAggregatorClient {
                     
                     // Use custom deserializer for InclusionProof
                     try {
-                        return InclusionProofDeserializer.deserialize(result);
+                        return null;
+                        // return InclusionProofDeserializer.deserialize(result);
                     } catch (Exception e) {
                         throw new RuntimeException("Failed to deserialize InclusionProof", e);
                     }

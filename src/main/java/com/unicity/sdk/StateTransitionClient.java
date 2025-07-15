@@ -53,33 +53,34 @@ public class StateTransitionClient {
     public <T extends ISerializable> CompletableFuture<Transaction<T>> createTransaction(
             Commitment<T> commitment,
             InclusionProof inclusionProof) {
-        return inclusionProof.verify(commitment.getRequestId())
-                .thenCompose(status -> {
-                    if (status != InclusionProofVerificationStatus.OK) {
-                        return CompletableFuture.failedFuture(new Exception("Inclusion proof verification failed."));
-                    }
-
-                    // For mint transactions, authenticator might be null in the inclusion proof
-                    // This is expected behavior from the aggregator
-
-                    // Check transaction hash if applicable
-                    T transactionData = commitment.getTransactionData();
-                    DataHash txHash = null;
-                    if (transactionData instanceof TransactionData) {
-                        txHash = ((TransactionData) transactionData).getHash();
-                    } else if (transactionData instanceof MintTransactionData) {
-                        txHash = ((MintTransactionData<?>) transactionData).getHash();
-                    }
-                    
-                    // Check transaction hash if both are present
-                    if (txHash != null && inclusionProof.getTransactionHash() != null) {
-                        if (!inclusionProof.getTransactionHash().equals(txHash)) {
-                            return CompletableFuture.failedFuture(new Exception("Payload hash mismatch"));
-                        }
-                    }
-
-                    return CompletableFuture.completedFuture(new Transaction<>(commitment.getTransactionData(), inclusionProof));
-                });
+//        return inclusionProof.verify(commitment.getRequestId())
+//                .thenCompose(status -> {
+//                    if (status != InclusionProofVerificationStatus.OK) {
+//                        return CompletableFuture.failedFuture(new Exception("Inclusion proof verification failed."));
+//                    }
+//
+//                    // For mint transactions, authenticator might be null in the inclusion proof
+//                    // This is expected behavior from the aggregator
+//
+//                    // Check transaction hash if applicable
+//                    T transactionData = commitment.getTransactionData();
+//                    DataHash txHash = null;
+//                    if (transactionData instanceof TransactionData) {
+//                        txHash = ((TransactionData) transactionData).getHash();
+//                    } else if (transactionData instanceof MintTransactionData) {
+//                        txHash = ((MintTransactionData<?>) transactionData).getHash();
+//                    }
+//
+//                    // Check transaction hash if both are present
+//                    if (txHash != null && inclusionProof.getTransactionHash() != null) {
+//                        if (!inclusionProof.getTransactionHash().equals(txHash)) {
+//                            return CompletableFuture.failedFuture(new Exception("Payload hash mismatch"));
+//                        }
+//                    }
+//
+//                    return CompletableFuture.completedFuture(new Transaction<>(commitment.getTransactionData(), inclusionProof));
+//                });
+        return new CompletableFuture<>();
     }
 
     public <T extends Transaction<MintTransactionData<?>>> CompletableFuture<Token<T>> finishTransaction(
@@ -125,11 +126,12 @@ public class StateTransitionClient {
     public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
             Token<? extends Transaction<MintTransactionData<?>>> token,
             byte[] publicKey) {
-        return RequestId.create(publicKey, token.getState().getHash())
-                .thenCompose(requestId -> aggregatorClient.getInclusionProof(requestId))
-                .thenCompose(inclusionProof -> 
-                        RequestId.create(publicKey, token.getState().getHash())
-                                .thenCompose(inclusionProof::verify));
+        return new CompletableFuture<>();
+//        return RequestId.create(publicKey, token.getState().getHash())
+//                .thenCompose(requestId -> aggregatorClient.getInclusionProof(requestId))
+//                .thenCompose(inclusionProof ->
+//                        RequestId.create(publicKey, token.getState().getHash())
+//                                .thenCompose(inclusionProof::verify));
     }
 
     public CompletableFuture<InclusionProof> getInclusionProof(Commitment<?> commitment) {
@@ -170,12 +172,8 @@ public class StateTransitionClient {
                             .thenCompose(authenticator -> {
                                 // Debug logging
                                 System.out.println("Authenticator JSON: " + authenticator.toJSON());
-                                System.out.println("RequestId: " + requestId.toJSON());
-                                System.out.println("TransactionHash: " + transactionHash.toJSON());
                                 if (transactionData instanceof MintTransactionData) {
                                     MintTransactionData<?> mintData = (MintTransactionData<?>) transactionData;
-                                    System.out.println("MintSourceState: " + mintData.getSourceState().toJSON());
-                                    System.out.println("MintSourceState hash: " + mintData.getSourceState().getHash().toJSON());
                                     System.out.println("SigningService publicKey: " + HexConverter.encode(signingService.getPublicKey()));
                                 }
                                 

@@ -7,14 +7,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -71,14 +70,14 @@ public class UnmaskedPredicate extends DefaultPredicate {
             HashAlgorithm hashAlgorithm) {
         try {
             // Calculate nonce by signing a salt hash
-            JavaDataHasher nonceHasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            DataHasher nonceHasher = new DataHasher(HashAlgorithm.SHA256);
             nonceHasher.update(publicKey);
             nonceHasher.update(tokenId);
             DataHash saltHash = nonceHasher.digest().get();
             
             // For unmasked predicate, we'll use the salt hash bytes as nonce
             // In production, this would be signed by the private key
-            byte[] nonce = saltHash.getHash();
+            byte[] nonce = saltHash.getData();
             
             // Calculate reference
             DataHash reference = calculateReference(tokenType, algorithm, publicKey, hashAlgorithm);
@@ -132,8 +131,9 @@ public class UnmaskedPredicate extends DefaultPredicate {
                     // Step 3: Create RequestId from public key and state hash
                     return RequestId.create(getPublicKey(), authenticator.getStateHash())
                         .thenCompose(requestId -> 
-                            transaction.getInclusionProof().verify(requestId)
-                                .thenApply(status -> status == InclusionProofVerificationStatus.OK)
+//                            transaction.getInclusionProof().verify(requestId)
+//                                .thenApply(status -> status == InclusionProofVerificationStatus.OK)
+                                null
                         );
                 });
         } catch (Exception e) {
@@ -174,7 +174,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
             byte[] publicKey,
             HashAlgorithm hashAlgorithm) {
         try {
-            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
             
             // Build CBOR array with predicate configuration
             byte[] cborArray = CborEncoder.encodeArray(
@@ -201,7 +201,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
             byte[] nonce,
             HashAlgorithm hashAlgorithm) {
         try {
-            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
             
             // Build CBOR array with reference, tokenId, and nonce
             byte[] cborArray = CborEncoder.encodeArray(

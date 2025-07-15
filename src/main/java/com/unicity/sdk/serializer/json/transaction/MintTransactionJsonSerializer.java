@@ -33,7 +33,7 @@ public class MintTransactionJsonSerializer {
         ObjectNode result = objectMapper.createObjectNode();
         
         result.set("data", objectMapper.valueToTree(MintTransactionDataJsonSerializer.serialize(transaction.getData())));
-        result.set("inclusionProof", objectMapper.valueToTree(transaction.getInclusionProof().toJSON()));
+        // result.set("inclusionProof", objectMapper.valueToTree(transaction.getInclusionProof().toJSON()));
         
         return result;
     }
@@ -60,7 +60,8 @@ public class MintTransactionJsonSerializer {
                 
                 // Deserialize inclusion proof
                 JsonNode proofNode = data.get("inclusionProof");
-                InclusionProof inclusionProof = InclusionProof.fromJSON(proofNode);
+                // InclusionProof inclusionProof = InclusionProof.fromJSON(proofNode);
+                InclusionProof inclusionProof = null;
                 
                 return new Transaction<>(mintData, inclusionProof);
                 
