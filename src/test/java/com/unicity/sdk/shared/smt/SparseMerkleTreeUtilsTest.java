@@ -11,26 +11,26 @@ public class SparseMerkleTreeUtilsTest {
     public void treeShouldBeHalfCalculated() throws Exception {
         Assertions.assertTrue(
                 CommonPath.create(
-                        BigInteger.valueOf(0b11L),
+                        BigInteger.valueOf(0b11),
                         BigInteger.valueOf(0b111101111)
                 ).equals(
-                        new CommonPath(BigInteger.valueOf(0b11L), 1)
+                        new CommonPath(BigInteger.valueOf(0b11), 1)
                 )
         );
         Assertions.assertTrue(
                 CommonPath.create(
-                        BigInteger.valueOf(0b111101111L),
-                        BigInteger.valueOf(0b11L)
+                        BigInteger.valueOf(0b111101111),
+                        BigInteger.valueOf(0b11)
                 ).equals(
-                        new CommonPath(BigInteger.valueOf(0b11L), 1)
+                        new CommonPath(BigInteger.valueOf(0b11), 1)
                 )
         );
         Assertions.assertTrue(
                 CommonPath.create(
-                        BigInteger.valueOf(0b110010000L),
-                        BigInteger.valueOf(0b100010000L)
+                        BigInteger.valueOf(0b110010000),
+                        BigInteger.valueOf(0b100010000)
                 ).equals(
-                        new CommonPath(BigInteger.valueOf(0b10010000L), 7)
+                        new CommonPath(BigInteger.valueOf(0b10010000), 7)
                 )
         );
     }

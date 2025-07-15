@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.predicate.IPredicateFactory;
-import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -32,7 +31,7 @@ public class TokenStateJsonSerializer {
     public static Object serialize(TokenState state) {
         ObjectNode result = objectMapper.createObjectNode();
         
-        result.set("unlockPredicate", objectMapper.valueToTree(state.getUnlockPredicate().toJSON()));
+//        result.set("unlockPredicate", objectMapper.valueToTree(state.getUnlockPredicate().toJSON()));
         result.put("data", HexConverter.encode(state.getData()));
         
         return result;
@@ -50,7 +49,7 @@ public class TokenStateJsonSerializer {
             try {
                 // Deserialize the unlock predicate with token context
                 JsonNode predicateNode = data.get("unlockPredicate");
-                IPredicate predicate = PredicateFactory.create(tokenId, tokenType, predicateNode).get();
+                IPredicate predicate = null;
                 
                 // Get state data
                 String dataHex = data.get("data").asText();

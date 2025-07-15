@@ -5,9 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.Hashable;
 import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
@@ -21,7 +20,7 @@ import java.io.IOException;
 /**
  * Represents a snapshot of token ownership and associated data.
  */
-public class TokenState implements ISerializable {
+public class TokenState implements Hashable {
     @JsonProperty("unlockPredicate")
     private final IPredicate unlockPredicate;
 
@@ -49,32 +48,30 @@ public class TokenState implements ISerializable {
     }
 
     public IPredicate getUnlockPredicate() {
-        return unlockPredicate;
+        return this.unlockPredicate;
     }
 
     public byte[] getData() {
-        return data;
+        return this.data;
     }
 
     public DataHash getHash() {
-        return hash;
+        return this.hash;
     }
 
-    @Override
     public Object toJSON() {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
         root.put("data", HexConverter.encode(data != null ? data : new byte[0]));
-        root.set("unlockPredicate", mapper.valueToTree(unlockPredicate.toJSON()));
+//        root.set("unlockPredicate", mapper.valueToTree(unlockPredicate.toJSON()));
         return root;
     }
 
-    @Override
     public byte[] toCBOR() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             baos.write(CborEncoder.encodeArray(
-                unlockPredicate.toCBOR(),
+//                unlockPredicate.toCBOR(),
                 CborEncoder.encodeByteString(data != null ? data : new byte[0])
             ));
         } catch (IOException e) {
@@ -99,7 +96,6 @@ public class TokenState implements ISerializable {
     public static TokenState fromJSON(JsonNode jsonNode) throws Exception {
         // Deserialize predicate
         JsonNode predicateNode = jsonNode.get("unlockPredicate");
-        IPredicate unlockPredicate = PredicateFactory.fromJSON(predicateNode);
         
         // Get data if present
         byte[] data = null;
@@ -108,6 +104,6 @@ public class TokenState implements ISerializable {
             data = HexConverter.decode(dataHex);
         }
         
-        return create(unlockPredicate, data);
+        return create(null, data);
     }
 }

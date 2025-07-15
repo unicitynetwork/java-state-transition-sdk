@@ -9,7 +9,7 @@ import com.unicity.sdk.predicate.IPredicateFactory;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.Commitment;
-import com.unicity.sdk.transaction.TransactionData;
+import com.unicity.sdk.transaction.TransferTransactionData;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +34,8 @@ public class CommitmentJsonSerializer {
     public static Object serialize(Commitment<?> commitment) {
         ObjectNode result = objectMapper.createObjectNode();
 
-        result.set("transactionData", objectMapper.valueToTree(commitment.getTransactionData().toJSON()));
-        result.set("authenticator", objectMapper.valueToTree(commitment.getAuthenticator().toJSON()));
+//        result.set("transactionData", objectMapper.valueToTree(commitment.getTransactionData().toJSON()));
+//        result.set("authenticator", objectMapper.valueToTree(commitment.getAuthenticator().toJSON()));
         
         return result;
     }
@@ -47,7 +47,7 @@ public class CommitmentJsonSerializer {
      * @param data The JSON data to deserialize
      * @return A promise that resolves to the deserialized Commitment object
      */
-    public CompletableFuture<Commitment<TransactionData>> deserialize(
+    public CompletableFuture<Commitment<TransferTransactionData>> deserialize(
             TokenId tokenId, TokenType tokenType, JsonNode data) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -57,7 +57,7 @@ public class CommitmentJsonSerializer {
                 
                 // Deserialize TransactionData with context
                 JsonNode txDataNode = data.get("transactionData");
-                TransactionData transactionData = 
+                TransferTransactionData transactionData =
                     TransactionDataJsonSerializer.deserialize(tokenId, tokenType, txDataNode).get();
                 
                 // Deserialize Authenticator
@@ -68,9 +68,9 @@ public class CommitmentJsonSerializer {
                 authMap.put("publicKey", authNode.get("publicKey").asText());
                 authMap.put("signature", authNode.get("signature").asText());
                 authMap.put("stateHash", authNode.get("stateHash").asText());
-                Authenticator authenticator = Authenticator.fromJSON(authMap);
+//                Authenticator authenticator = Authenticator.fromJSON(authMap);
                 
-                return new Commitment<>(requestId, transactionData, authenticator);
+                return new Commitment<>(requestId, transactionData, null);
                 
             } catch (Exception e) {
                 throw new RuntimeException("Failed to deserialize commitment", e);

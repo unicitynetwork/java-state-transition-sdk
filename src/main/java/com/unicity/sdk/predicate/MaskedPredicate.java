@@ -1,26 +1,45 @@
 package com.unicity.sdk.predicate;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.unicity.sdk.address.DirectAddress;
+import com.unicity.sdk.address.IAddress;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.signing.ISignature;
-import com.unicity.sdk.shared.signing.ISigningService;
+import com.unicity.sdk.shared.signing.SigningService;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.shared.util.HexConverter;
 
-import java.util.concurrent.CompletableFuture;
+class MaskedPredicateReference {
+    private final TokenType tokenType;
+    private final String signingAlgorithm;
+    private final byte[] publicKey;
+    private final HashAlgorithm hashAlgorithm;
+    private final byte[] nonce;
+
+    public MaskedPredicateReference(TokenType tokenType, String signingAlgorithm, byte[] publicKey, HashAlgorithm hashAlgorithm, byte[] nonce) {
+        this.tokenType = tokenType;
+        this.signingAlgorithm = signingAlgorithm;
+        this.publicKey = publicKey;
+        this.hashAlgorithm = hashAlgorithm;
+        this.nonce = nonce;
+    }
+
+    public DataHash getHash() throws JsonProcessingException {
+        return new DataHasher(HashAlgorithm.SHA256)
+                .update(new ObjectMapper(new CBORFactory()).writeValueAsBytes(this))
+                .digest();
+    }
+
+    public IAddress toAddress() throws JsonProcessingException {
+        return DirectAddress.create(this.getHash());
+    }
+}
 
 public class MaskedPredicate extends DefaultPredicate {
-    private static final PredicateType TYPE = PredicateType.MASKED;
-
-    /**
-     * Private constructor matching TypeScript implementation
-     */
     private MaskedPredicate(
             byte[] publicKey,
             String algorithm,
@@ -28,24 +47,19 @@ public class MaskedPredicate extends DefaultPredicate {
             byte[] nonce,
             DataHash reference,
             DataHash hash) {
-        super(TYPE, publicKey, algorithm, hashAlgorithm, nonce, reference, hash);
+        super(
+                PredicateType.MASKED,
+                publicKey,
+                algorithm,
+                hashAlgorithm,
+                nonce,
+                reference,
+                hash
+        );
     }
 
-    /**
-     * Create a new masked predicate for the given owner.
-     * @param tokenId token ID.
-     * @param tokenType token type.
-     * @param signingService Token owner's signing service.
-     * @param hashAlgorithm Hash algorithm used to hash transaction.
-     * @param nonce Nonce value used during creation, providing uniqueness.
-     */
-    public static CompletableFuture<MaskedPredicate> create(
-            TokenId tokenId,
-            TokenType tokenType,
-            ISigningService<? extends ISignature> signingService,
-            HashAlgorithm hashAlgorithm,
-            byte[] nonce) {
-        return createFromPublicKey(
+    public static MaskedPredicate create(TokenId tokenId, TokenType tokenType, SigningService signingService, HashAlgorithm hashAlgorithm, byte[] nonce) throws JsonProcessingException {
+        return MaskedPredicate.create(
                 tokenId,
                 tokenType,
                 signingService.getAlgorithm(),
@@ -55,115 +69,21 @@ public class MaskedPredicate extends DefaultPredicate {
         );
     }
 
-    public static CompletableFuture<MaskedPredicate> createFromPublicKey(
-            TokenId tokenId,
-            TokenType tokenType,
-            String signingAlgorithm,
-            byte[] publicKey,
-            HashAlgorithm hashAlgorithm,
-            byte[] nonce) {
-        
-        return calculateReference(tokenType, signingAlgorithm, publicKey, hashAlgorithm, nonce)
-            .thenCompose(reference -> 
-                calculateHash(reference, tokenId)
-                    .thenApply(hash -> 
-                        new MaskedPredicate(publicKey, signingAlgorithm, hashAlgorithm, nonce, reference, hash)
-                    )
-            );
-    }
+    // TODO: Catch these exceptions and return API level exception instead?
+    public static MaskedPredicate create(TokenId tokenId, TokenType tokenType, String signingAlgorithm, byte[] publicKey, HashAlgorithm hashAlgorithm, byte[] nonce) throws JsonProcessingException {
+        MaskedPredicateReference reference = new MaskedPredicateReference(tokenType, signingAlgorithm, publicKey, hashAlgorithm, nonce);
+        ObjectMapper cbor = new ObjectMapper(new CBORFactory());
+        ArrayNode array = cbor.createArrayNode().addPOJO(reference).addPOJO(tokenId);
 
-    private static CompletableFuture<DataHash> calculateReference(
-            TokenType tokenType,
-            String signingAlgorithm,
-            byte[] publicKey,
-            HashAlgorithm hashAlgorithm,
-            byte[] nonce) {
-        
-        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-        
-        // Build the reference data following TypeScript implementation
-        hasher.update(tokenType.getBytes());
-        hasher.update(signingAlgorithm.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        hasher.update(publicKey);
-        hasher.update(new byte[] { (byte) hashAlgorithm.getValue() });
-        hasher.update(nonce);
-        
-        return hasher.digest();
-    }
+        DataHash hash = new DataHasher(HashAlgorithm.SHA256).update(cbor.writeValueAsBytes(array)).digest();
 
-    private static CompletableFuture<DataHash> calculateHash(DataHash reference, TokenId tokenId) {
-        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-        
-        hasher.update(tokenId.getBytes());
-        hasher.update(reference.getData());
-        
-        return hasher.digest();
-    }
-
-    @Override
-    public Object toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
-        root.put("type", TYPE.name());
-        
-        // Add predicate data
-        ObjectNode data = mapper.createObjectNode();
-        data.put("publicKey", HexConverter.encode(getPublicKey()));
-        data.put("algorithm", getAlgorithm());
-        data.put("hashAlgorithm", getHashAlgorithm().getValue());
-        data.put("nonce", HexConverter.encode(getNonce()));
-        
-        root.set("data", data);
-        return root;
-    }
-
-    @Override
-    public byte[] toCBOR() {
-        // CBOR encoding following TypeScript structure
-        return CborEncoder.encodeArray(
-            CborEncoder.encodeUnsignedInteger(TYPE.getValue()),
-            CborEncoder.encodeArray(
-                CborEncoder.encodeByteString(getPublicKey()),
-                CborEncoder.encodeTextString(getAlgorithm()),
-                CborEncoder.encodeUnsignedInteger(getHashAlgorithm().getValue()),
-                CborEncoder.encodeByteString(getNonce())
-            )
+        return new MaskedPredicate(
+                publicKey,
+                signingAlgorithm,
+                hashAlgorithm,
+                nonce,
+                reference.getHash(),
+                hash
         );
-    }
-
-    /**
-     * Create a masked predicate from JSON data.
-     * @param tokenId Token ID.
-     * @param tokenType Token type.
-     * @param jsonNode JSON node containing the masked predicate data.
-     */
-    public static CompletableFuture<MaskedPredicate> fromJSON(TokenId tokenId, TokenType tokenType, JsonNode jsonNode) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // Check if we need to extract from "data" field
-                JsonNode dataNode = jsonNode.get("data");
-                final JsonNode predicateNode = (dataNode != null && !dataNode.isNull()) ? dataNode : jsonNode;
-                
-                String publicKeyHex = predicateNode.get("publicKey").asText();
-                String algorithm = predicateNode.get("algorithm").asText();
-                int hashAlgorithmValue = predicateNode.get("hashAlgorithm").asInt();
-                String nonceHex = predicateNode.get("nonce").asText();
-                
-                byte[] publicKey = HexConverter.decode(publicKeyHex);
-                byte[] nonce = HexConverter.decode(nonceHex);
-                HashAlgorithm hashAlgorithm = HashAlgorithm.fromValue(hashAlgorithmValue);
-                
-                return createFromPublicKey(
-                    tokenId,
-                    tokenType,
-                    algorithm,
-                    publicKey,
-                    hashAlgorithm,
-                    nonce
-                ).get();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to deserialize MaskedPredicate from JSON", e);
-            }
-        });
     }
 }

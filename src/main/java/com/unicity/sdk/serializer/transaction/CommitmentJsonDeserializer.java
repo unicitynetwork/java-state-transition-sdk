@@ -1,12 +1,10 @@
 package com.unicity.sdk.serializer.transaction;
 
-import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.predicate.IPredicateFactory;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.Commitment;
-import com.unicity.sdk.transaction.TransactionData;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

@@ -16,58 +16,58 @@ public class SparseMerkleTreeTest {
 
     private final MerkleTreeRootNode root = MerkleTreeRootNode.create(
             new PendingNodeBranch(
-                    BigInteger.valueOf(0b10L),
+                    BigInteger.valueOf(0b10),
                     new PendingNodeBranch(
-                            BigInteger.valueOf(0b10L),
+                            BigInteger.valueOf(0b10),
                             new PendingNodeBranch(
-                                    BigInteger.valueOf(0b100L),
+                                    BigInteger.valueOf(0b100),
                                     new PendingLeafBranch(
-                                            BigInteger.valueOf(0b10000L),
+                                            BigInteger.valueOf(0b10000),
                                             HexConverter.decode("76616c75653030303030303030")
                                     ),
                                     new PendingNodeBranch(
-                                            BigInteger.valueOf(0b1001L),
+                                            BigInteger.valueOf(0b1001),
                                             new PendingLeafBranch(
-                                                    BigInteger.valueOf(0b10L),
+                                                    BigInteger.valueOf(0b10),
                                                     HexConverter.decode("76616c75653030303130303030")
                                             ),
                                             new PendingLeafBranch(
-                                                    BigInteger.valueOf(0b11L),
+                                                    BigInteger.valueOf(0b11),
                                                     HexConverter.decode("76616c75653030303130303030")
                                             )
                                     )
                             ),
                             new PendingLeafBranch(
-                                    BigInteger.valueOf(0b11L),
+                                    BigInteger.valueOf(0b11),
                                     HexConverter.decode("76616c7565313030")
                             )
                     ),
                     new PendingLeafBranch(
-                            BigInteger.valueOf(0b1000101L),
+                            BigInteger.valueOf(0b1000101),
                             HexConverter.decode("76616c756530303031303130")
                     )
             ).finalize(HashAlgorithm.SHA256),
             new PendingNodeBranch(
-                    BigInteger.valueOf(0b11L),
+                    BigInteger.valueOf(0b11),
                     new PendingNodeBranch(
-                            BigInteger.valueOf(0b1010L),
+                            BigInteger.valueOf(0b1010),
                             new PendingLeafBranch(
-                                    BigInteger.valueOf(0b11110L),
+                                    BigInteger.valueOf(0b11110),
                                     HexConverter.decode("76616c75653131313030313031")
                             ),
                             new PendingLeafBranch(
-                                    BigInteger.valueOf(0b1101L),
+                                    BigInteger.valueOf(0b1101),
                                     HexConverter.decode("76616c756531303130313031")
                             )
                     ),
                     new PendingNodeBranch(
-                            BigInteger.valueOf(0b11L),
+                            BigInteger.valueOf(0b11),
                             new PendingLeafBranch(
-                                    BigInteger.valueOf(0b10L),
+                                    BigInteger.valueOf(0b10),
                                     HexConverter.decode("76616c7565303131")
                             ),
                             new PendingLeafBranch(
-                                    BigInteger.valueOf(0b1111011L),
+                                    BigInteger.valueOf(0b1111011),
                                     HexConverter.decode("76616c75653131313031313131")
                             )
                     )
@@ -82,12 +82,12 @@ public class SparseMerkleTreeTest {
     public void treeShouldBeHalfCalculated() throws Exception {
         SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
 
-        smt.addLeaf(BigInteger.valueOf(0b10L), new byte[]{1, 2, 3});
+        smt.addLeaf(BigInteger.valueOf(0b10), new byte[]{1, 2, 3});
         smt.calculateRoot();
-        smt.addLeaf(BigInteger.valueOf(0b11L), new byte[]{1, 2, 3, 4});
+        smt.addLeaf(BigInteger.valueOf(0b11), new byte[]{1, 2, 3, 4});
 
-        FinalizedLeafBranch left = new PendingLeafBranch(BigInteger.valueOf(2L), new byte[]{1, 2, 3}).finalize(HashAlgorithm.SHA256);
-        PendingLeafBranch right = new PendingLeafBranch(BigInteger.valueOf(3L), new byte[]{1, 2, 3, 4});
+        FinalizedLeafBranch left = new PendingLeafBranch(BigInteger.valueOf(2), new byte[]{1, 2, 3}).finalize(HashAlgorithm.SHA256);
+        PendingLeafBranch right = new PendingLeafBranch(BigInteger.valueOf(3), new byte[]{1, 2, 3, 4});
 
         Field leftField = SparseMerkleTree.class.getDeclaredField("left");
         leftField.setAccessible(true);
@@ -101,27 +101,27 @@ public class SparseMerkleTreeTest {
     @Test
     public void shouldVerifyTheTree() throws Exception {
         SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
-        Map<Long, String> leaves = Map.ofEntries(
-                Map.entry(0b110010000L, "value00010000"),
-                Map.entry(0b100000000L, "value00000000"),
-                Map.entry(0b100010000L, "value00010000"),
-                Map.entry(0b111100101L, "value11100101"),
-                Map.entry(0b1100L, "value100"),
-                Map.entry(0b1011L, "value011"),
-                Map.entry(0b111101111L, "value11101111"),
-                Map.entry(0b10001010L, "value0001010"),
-                Map.entry(0b11010101L, "value1010101")
+        Map<Integer, String> leaves = Map.ofEntries(
+                Map.entry(0b110010000, "value00010000"),
+                Map.entry(0b100000000, "value00000000"),
+                Map.entry(0b100010000, "value00010000"),
+                Map.entry(0b111100101, "value11100101"),
+                Map.entry(0b1100, "value100"),
+                Map.entry(0b1011, "value011"),
+                Map.entry(0b111101111, "value11101111"),
+                Map.entry(0b10001010, "value0001010"),
+                Map.entry(0b11010101, "value1010101")
         );
-        for (Map.Entry<Long, String> leaf : leaves.entrySet()) {
+        for (Map.Entry<Integer, String> leaf : leaves.entrySet()) {
             smt.addLeaf(BigInteger.valueOf(leaf.getKey()), leaf.getValue().getBytes(StandardCharsets.UTF_8));
         }
 
         Assertions.assertThrows(BranchExistsException.class, () ->
-                smt.addLeaf(BigInteger.valueOf(0b10000000L), "OnPath".getBytes(StandardCharsets.UTF_8))
+                smt.addLeaf(BigInteger.valueOf(0b10000000), "OnPath".getBytes(StandardCharsets.UTF_8))
         );
 
         Assertions.assertThrows(LeafOutOfBoundsException.class, () ->
-                smt.addLeaf(BigInteger.valueOf(0b1000000000L), "ThroughLeaf".getBytes(StandardCharsets.UTF_8))
+                smt.addLeaf(BigInteger.valueOf(0b1000000000), "ThroughLeaf".getBytes(StandardCharsets.UTF_8))
         );
 
         Assertions.assertTrue(smt.calculateRoot().equals(this.root));
@@ -130,50 +130,50 @@ public class SparseMerkleTreeTest {
     @Test
     public void getPathTest() throws Exception {
         SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
-        Map<Long, String> leaves = Map.ofEntries(
-                Map.entry(0b110010000L, "value00010000"),
-                Map.entry(0b100000000L, "value00000000"),
-                Map.entry(0b100010000L, "value00010000"),
-                Map.entry(0b111100101L, "value11100101"),
-                Map.entry(0b1100L, "value100"),
-                Map.entry(0b1011L, "value011"),
-                Map.entry(0b111101111L, "value11101111"),
-                Map.entry(0b10001010L, "value0001010"),
-                Map.entry(0b11010101L, "value1010101")
+        Map<Integer, String> leaves = Map.ofEntries(
+                Map.entry(0b110010000, "value00010000"),
+                Map.entry(0b100000000, "value00000000"),
+                Map.entry(0b100010000, "value00010000"),
+                Map.entry(0b111100101, "value11100101"),
+                Map.entry(0b1100, "value100"),
+                Map.entry(0b1011, "value011"),
+                Map.entry(0b111101111, "value11101111"),
+                Map.entry(0b10001010, "value0001010"),
+                Map.entry(0b11010101, "value1010101")
         );
-        for (Map.Entry<Long, String> leaf : leaves.entrySet()) {
+        for (Map.Entry<Integer, String> leaf : leaves.entrySet()) {
             smt.addLeaf(BigInteger.valueOf(leaf.getKey()), leaf.getValue().getBytes(StandardCharsets.UTF_8));
         }
         MerkleTreeRootNode root = smt.calculateRoot();
 
-        MerkleTreePath path = root.getPath(BigInteger.valueOf(0b11010L));
-        MerkleTreePathVerificationResult result = path.verify(BigInteger.valueOf(0b11010L));
+        MerkleTreePath path = root.getPath(BigInteger.valueOf(0b11010));
+        MerkleTreePathVerificationResult result = path.verify(BigInteger.valueOf(0b11010));
         Assertions.assertFalse(result.isPathIncluded());
         Assertions.assertTrue(result.isPathValid());
         Assertions.assertFalse(result.isValid());
 
-        path = root.getPath(BigInteger.valueOf(0b110010000L));
-        result = path.verify(BigInteger.valueOf(0b110010000L));
+        path = root.getPath(BigInteger.valueOf(0b110010000));
+        result = path.verify(BigInteger.valueOf(0b110010000));
         Assertions.assertTrue(result.isPathIncluded());
         Assertions.assertTrue(result.isPathValid());
         Assertions.assertTrue(result.isValid());
 
-        path = root.getPath(BigInteger.valueOf(0b110010000L));
-        result = path.verify(BigInteger.valueOf(0b11010L));
+        path = root.getPath(BigInteger.valueOf(0b110010000));
+        result = path.verify(BigInteger.valueOf(0b11010));
         Assertions.assertFalse(result.isPathIncluded());
         Assertions.assertTrue(result.isPathValid());
         Assertions.assertFalse(result.isValid());
 
-        path = root.getPath(BigInteger.valueOf(0b10L));
-        result = path.verify(BigInteger.valueOf(0b10L));
+        path = root.getPath(BigInteger.valueOf(0b10));
+        result = path.verify(BigInteger.valueOf(0b10));
         Assertions.assertTrue(result.isPathIncluded());
         Assertions.assertTrue(result.isPathValid());
         Assertions.assertTrue(result.isValid());
 
         SparseMerkleTree emptyTree = new SparseMerkleTree(HashAlgorithm.SHA256);
         MerkleTreeRootNode emptyRoot = emptyTree.calculateRoot();
-        path = emptyRoot.getPath(BigInteger.valueOf(0b100L));
-        result = path.verify(BigInteger.valueOf(0b10L));
+        path = emptyRoot.getPath(BigInteger.valueOf(0b100));
+        result = path.verify(BigInteger.valueOf(0b10));
         Assertions.assertFalse(result.isPathIncluded());
         Assertions.assertTrue(result.isPathValid());
         Assertions.assertFalse(result.isValid());

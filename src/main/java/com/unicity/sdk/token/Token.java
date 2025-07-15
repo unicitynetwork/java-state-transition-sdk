@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public class Token<T extends Transaction<MintTransactionData<?>>> implements ISerializable {
+public class Token<T extends Transaction<MintTransactionData>> implements ISerializable {
     public static final String TOKEN_VERSION = "2.0";
 
     private final String version;
@@ -70,7 +70,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
         return nametagTokens;
     }
     
-    public ISerializable getData() {
+    public Object getData() {
         return genesis.getData().getTokenData();
     }
 
@@ -85,8 +85,8 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
         ObjectNode root = mapper.createObjectNode();
         root.put("version", version);
         root.set("state", mapper.valueToTree(state.toJSON()));
-        root.set("genesis", mapper.valueToTree(genesis.toJSON()));
-        root.putArray("transactions").addAll(transactions.stream().map(t -> (JsonNode) t.toJSON()).collect(Collectors.toList()));
+//        root.set("genesis", mapper.valueToTree(genesis.toJSON()));
+//        root.putArray("transactions").addAll(transactions.stream().map(t -> (JsonNode) t.toJSON()).collect(Collectors.toList()));
         root.putArray("nametagTokens").addAll(nametagTokens.stream().map(t -> (JsonNode) t.toJSON()).collect(Collectors.toList()));
         return root;
     }
@@ -102,11 +102,11 @@ public class Token<T extends Transaction<MintTransactionData<?>>> implements ISe
             generator.writeFieldName("state");
             generator.writeBinary(state.toCBOR());
             generator.writeFieldName("genesis");
-            generator.writeBinary(genesis.toCBOR());
+//            generator.writeBinary(genesis.toCBOR());
             generator.writeFieldName("transactions");
             generator.writeStartArray();
             for (Transaction transaction : transactions) {
-                generator.writeBinary(transaction.toCBOR());
+//                generator.writeBinary(transaction.toCBOR());
             }
             generator.writeEndArray();
             generator.writeFieldName("nametagTokens");

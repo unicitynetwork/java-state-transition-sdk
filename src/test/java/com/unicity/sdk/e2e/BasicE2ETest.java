@@ -1,9 +1,7 @@
 package com.unicity.sdk.e2e;
 
-import com.unicity.sdk.api.AggregatorClient;
-import com.unicity.sdk.api.Authenticator;
-import com.unicity.sdk.api.RequestId;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
+import com.unicity.sdk.api.*;
+import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.signing.SigningService;
@@ -12,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.security.SecureRandom;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
@@ -45,27 +44,20 @@ public class BasicE2ETest {
         AggregatorClient aggregatorClient = new AggregatorClient(aggregatorUrl);
 
         long startTime = System.currentTimeMillis();
-        var sr = new SecureRandom();
+        SecureRandom sr = new SecureRandom();
         byte[] randomSecret = new byte[32];
         sr.nextBytes(randomSecret);
         byte[] stateBytes = new byte[32];
         sr.nextBytes(stateBytes);
-        var stateHash = DataHasher.digest(HashAlgorithm.SHA256, stateBytes);
-        var txDataHash = DataHasher.digest(HashAlgorithm.SHA256, "test commitment performance".getBytes());
-        var res = SigningService.createFromSecret(randomSecret, null).thenCompose(
-          ss -> {
-              var req = RequestId.createFromImprint(ss.getPublicKey(), stateHash.getImprint());
-              var auth = Authenticator.create(ss, txDataHash, stateHash);
-              return req.thenCombine(auth, (requestId, authenticator) ->
-                      aggregatorClient.submitTransaction(
-                              requestId,
-                              txDataHash,
-                              authenticator
-                      )).thenCompose(Function.identity());
-          }
-        ).get();
-        if (res.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-            System.err.println("Commitment submission failed with status: " + res.getStatus());
+        DataHash stateHash = new DataHasher(HashAlgorithm.SHA256).update(stateBytes).digest();
+        DataHash txDataHash = new DataHasher(HashAlgorithm.SHA256).update("test commitment performance".getBytes()).digest();
+        SigningService signingService = SigningService.createFromSecret(randomSecret, null);
+        RequestId requestId = RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
+        Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
+        SubmitCommitmentResponse response = aggregatorClient.submitTransaction(requestId, txDataHash, auth).get();
+
+        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+            System.err.println("Commitment submission failed with status: " + response.getStatus());
         }
         long endTime = System.currentTimeMillis();
 
@@ -101,21 +93,14 @@ public class BasicE2ETest {
                         sr.nextBytes(stateBytes);
                         byte[] txData = new byte[32];
                         sr.nextBytes(txData);
-                        var stateHash = DataHasher.digest(HashAlgorithm.SHA256, stateBytes);
-                        var txDataHash = DataHasher.digest(HashAlgorithm.SHA256, txData);
-                        var res = SigningService.createFromSecret(randomSecret, null).thenCompose(
-                                ss -> {
-                                    var req = RequestId.createFromImprint(ss.getPublicKey(), stateHash.getImprint());
-                                    var auth = Authenticator.create(ss, txDataHash, stateHash);
-                                    return req.thenCombine(auth, (requestId, authenticator) ->
-                                            aggregatorClient.submitTransaction(
-                                                    requestId,
-                                                    txDataHash,
-                                                    authenticator
-                                            )).thenCompose(Function.identity());
-                                }
-                        ).get();
-                        return res.getStatus() == SubmitCommitmentStatus.SUCCESS;
+
+                        DataHash stateHash = new DataHasher(HashAlgorithm.SHA256).update(stateBytes).digest();
+                        DataHash txDataHash = new DataHasher(HashAlgorithm.SHA256).update(txData).digest();
+                        SigningService signingService = SigningService.createFromSecret(randomSecret, null);
+                        RequestId requestId = RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
+                        Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
+                        SubmitCommitmentResponse response = aggregatorClient.submitTransaction(requestId, txDataHash, auth).get();
+                        return response.getStatus() == SubmitCommitmentStatus.SUCCESS;
                     } finally {
                         latch.countDown();
                     }

@@ -7,7 +7,6 @@ import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
@@ -22,12 +21,12 @@ import java.util.Arrays;
 /**
  * Mint transaction data with full constructor matching TypeScript
  */
-public class MintTransactionData<T extends ISerializable> implements ISerializable {
+public class MintTransactionData implements TransactionData<RequestId> {
     private static final byte[] MINT_SUFFIX = HexConverter.decode("9e82002c144d7c5796c50f6db50a0c7bbd7f717ae3af6c6c71a3e9eba3022730");
     private final TokenId tokenId;
     private final TokenType tokenType;
     private final IPredicate predicate;
-    private final T tokenData;
+    private final Object tokenData;
     private final TokenCoinData coinData;
     private final DataHash dataHash;  // Optional data hash field
     private final byte[] salt;
@@ -43,7 +42,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             TokenId tokenId,
             TokenType tokenType,
             IPredicate predicate,
-            T tokenData,
+            Object tokenData,
             TokenCoinData coinData,
             DataHash dataHash,
             byte[] salt) {
@@ -54,7 +53,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             TokenId tokenId,
             TokenType tokenType,
             IPredicate predicate,
-            T tokenData,
+            Object tokenData,
             TokenCoinData coinData,
             DataHash dataHash,
             byte[] salt,
@@ -70,14 +69,14 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         
         // Calculate recipient from predicate
         try {
-            this.recipient = DirectAddress.create(predicate.getReference()).get();
+            this.recipient = DirectAddress.create(predicate.getReference());
         } catch (Exception e) {
             throw new RuntimeException("Failed to create recipient address", e);
         }
         
         // Create sourceState like TypeScript: RequestId.createFromImprint(tokenId.bytes, MINT_SUFFIX)
         try {
-            this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX).get();
+            this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create source state", e);
         }
@@ -91,7 +90,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             // Hash calculation is different from CBOR encoding!
             // It uses tokenDataHash instead of raw tokenData
             DataHasher tokenDataHasher = new DataHasher(HashAlgorithm.SHA256);
-            tokenDataHasher.update(tokenData.toCBOR());
+            // tokenDataHasher.update(tokenData.toCBOR());
             DataHash tokenDataHash = tokenDataHasher.digest();
             
             DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
@@ -105,7 +104,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
                 CborEncoder.encodeByteString(salt),
                 reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull()
             ));
-            return hasher.digest().get();
+            return hasher.digest();
         } catch (Exception e) {
             throw new RuntimeException("Failed to calculate hash", e);
         }
@@ -123,7 +122,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         return predicate;
     }
 
-    public T getTokenData() {
+    public Object getTokenData() {
         return tokenData;
     }
 
@@ -155,15 +154,14 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         return sourceState;
     }
 
-    @Override
     public Object toJSON() {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
         
         root.put("tokenId", tokenId.toJSON());
         root.put("tokenType", tokenType.toJSON());
-        root.set("unlockPredicate", mapper.valueToTree(predicate.toJSON()));
-        root.set("tokenData", mapper.valueToTree(tokenData.toJSON()));
+//        root.set("unlockPredicate", mapper.valueToTree(predicate.toJSON()));
+        // root.set("tokenData", mapper.valueToTree(tokenData.toJSON()));
         if (coinData != null) {
             root.set("coinData", mapper.valueToTree(coinData.toJSON()));
         }
@@ -179,13 +177,12 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         return root;
     }
 
-    @Override
     public byte[] toCBOR() {
         // Match TypeScript SDK structure exactly
         return CborEncoder.encodeArray(
             tokenId.toCBOR(),                                              // Field 0: Token ID
             tokenType.toCBOR(),                                            // Field 1: Token Type
-            CborEncoder.encodeByteString(tokenData.toCBOR()),             // Field 2: Token Data as byte string
+            // CborEncoder.encodeByteString(tokenData.toCBOR()),             // Field 2: Token Data as byte string
             coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(), // Field 3: Coin Data or null
             CborEncoder.encodeTextString(recipient.getAddress()),         // Field 4: Recipient as text string
             CborEncoder.encodeByteString(salt),                           // Field 5: Salt
@@ -199,7 +196,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
      * @param jsonNode JSON node containing mint transaction data
      * @return MintTransactionData instance
      */
-    public static MintTransactionData<?> fromJSON(JsonNode jsonNode) throws Exception {
+    public static MintTransactionData fromJSON(JsonNode jsonNode) throws Exception {
         // Deserialize token ID
         String tokenIdHex = jsonNode.get("tokenId").asText();
         TokenId tokenId = TokenId.create(HexConverter.decode(tokenIdHex));
@@ -210,7 +207,6 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         
         // Deserialize predicate
         JsonNode predicateNode = jsonNode.get("predicate");
-        IPredicate predicate = PredicateFactory.fromJSON(predicateNode);
         
         // Deserialize token data - we'll use a simple wrapper for raw bytes
         ISerializable tokenData = null;
@@ -254,10 +250,10 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             dataHash = DataHash.fromJSON(dataHashHex);
         }
         
-        return new MintTransactionData<>(
+        return new MintTransactionData(
             tokenId,
             tokenType,
-            predicate,
+            null,
             tokenData,
             coinData,
             dataHash,

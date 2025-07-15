@@ -1,12 +1,13 @@
 package com.unicity.sdk.api;
 
 import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 
-import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
 
 /**
  * Leaf value for merkle tree
@@ -18,12 +19,12 @@ public class LeafValue implements ISerializable {
         this.bytes = bytes;
     }
 
-    public static CompletableFuture<LeafValue> create(Authenticator authenticator, DataHash transactionHash) {
+    public static LeafValue create(Authenticator authenticator, DataHash transactionHash) throws IOException {
         DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-        hasher.update(authenticator.toCBOR());
+        hasher.update(UnicityObjectMapper.CBOR.writeValueAsBytes(authenticator));
         hasher.update(transactionHash.getImprint());
         
-        return hasher.digest().thenApply(hash -> new LeafValue(hash.getImprint()));
+        return new LeafValue(hasher.digest().getImprint());
     }
 
     public byte[] getBytes() {

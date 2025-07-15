@@ -29,7 +29,7 @@ public class MintTransactionJsonSerializer {
      * @param transaction The mint transaction to serialize
      * @return JSON representation of the mint transaction
      */
-    public static Object serialize(Transaction<MintTransactionData<ISerializable>> transaction) {
+    public static Object serialize(Transaction<MintTransactionData> transaction) {
         ObjectNode result = objectMapper.createObjectNode();
         
         result.set("data", objectMapper.valueToTree(MintTransactionDataJsonSerializer.serialize(transaction.getData())));
@@ -43,7 +43,7 @@ public class MintTransactionJsonSerializer {
      * @param data The JSON data to deserialize
      * @return A promise that resolves to the deserialized Transaction object
      */
-    public CompletableFuture<Transaction<MintTransactionData<ISerializable>>> deserialize(JsonNode data) {
+    public CompletableFuture<Transaction<MintTransactionData>> deserialize(JsonNode data) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // First extract tokenId and tokenType from mint data to get context
@@ -55,7 +55,7 @@ public class MintTransactionJsonSerializer {
                 TokenType tokenType = TokenType.fromHex(tokenTypeHex);
                 
                 // Deserialize mint transaction data with context
-                MintTransactionData<ISerializable> mintData = 
+                MintTransactionData mintData =
                     MintTransactionDataJsonSerializer.deserialize(tokenId, tokenType, mintDataNode).get();
                 
                 // Deserialize inclusion proof
