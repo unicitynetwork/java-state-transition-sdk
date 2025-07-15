@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.signing.ISignature;
 import com.unicity.sdk.shared.signing.ISigningService;
@@ -13,9 +13,6 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.shared.util.HexConverter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 public class MaskedPredicate extends DefaultPredicate {
@@ -82,7 +79,7 @@ public class MaskedPredicate extends DefaultPredicate {
             HashAlgorithm hashAlgorithm,
             byte[] nonce) {
         
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         
         // Build the reference data following TypeScript implementation
         hasher.update(tokenType.getBytes());
@@ -95,10 +92,10 @@ public class MaskedPredicate extends DefaultPredicate {
     }
 
     private static CompletableFuture<DataHash> calculateHash(DataHash reference, TokenId tokenId) {
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         
         hasher.update(tokenId.getBytes());
-        hasher.update(reference.getHash());
+        hasher.update(reference.getData());
         
         return hasher.digest();
     }

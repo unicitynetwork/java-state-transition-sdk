@@ -28,14 +28,14 @@ public class SparseMerkleSumTreeBuilder {
         List<Branch> branches = new ArrayList<>(leaves.values());
 
         if (branches.isEmpty()) {
-            return new MerkleSumTreeRootNode(new DataHash(new byte[32], algorithm), BigInteger.ZERO);
+            return new MerkleSumTreeRootNode(new DataHash(algorithm, new byte[32]), BigInteger.ZERO);
         }
 
         for (int i = 0; i < depth; i++) {
             List<Branch> newBranches = new ArrayList<>();
             for (int j = 0; j < branches.size(); j += 2) {
                 Branch left = branches.get(j);
-                Branch right = (j + 1 < branches.size()) ? branches.get(j + 1) : new LeafBranch(new DataHash(new byte[32], algorithm), BigInteger.ZERO);
+                Branch right = (j + 1 < branches.size()) ? branches.get(j + 1) : new LeafBranch(new DataHash(algorithm, new byte[32]), BigInteger.ZERO);
                 newBranches.add(new NodeBranch(left, right, algorithm));
             }
             branches = newBranches;

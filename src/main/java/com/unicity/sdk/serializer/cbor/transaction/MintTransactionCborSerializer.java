@@ -36,7 +36,8 @@ public class MintTransactionCborSerializer {
     public static byte[] serialize(Transaction<MintTransactionData> transaction) {
         return CborEncoder.encodeArray(
             MintTransactionDataCborSerializer.serialize(transaction.getData()),
-            transaction.getInclusionProof().toCBOR()
+            // transaction.getInclusionProof().toCBOR()
+                null
         );
     }
 
@@ -63,7 +64,8 @@ public class MintTransactionCborSerializer {
             return dataSerializer.deserialize((byte[]) data.get(0))
                 .thenApply(transactionData -> {
                     // Deserialize inclusion proof
-                    InclusionProof inclusionProof = InclusionProof.fromCBOR((byte[]) data.get(1));
+                    // InclusionProof inclusionProof = InclusionProof.fromCBOR((byte[]) data.get(1));
+                    InclusionProof inclusionProof = null;
                     
                     return new Transaction<>(transactionData, inclusionProof);
                 });

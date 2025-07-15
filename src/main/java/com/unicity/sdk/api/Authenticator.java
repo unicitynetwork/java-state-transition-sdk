@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.cbor.CustomCborDecoder;
 import com.unicity.sdk.shared.hash.DataHash;
@@ -13,8 +12,6 @@ import com.unicity.sdk.shared.signing.ISignature;
 import com.unicity.sdk.shared.signing.ISigningService;
 import com.unicity.sdk.shared.signing.SigningService;
 import com.unicity.sdk.shared.signing.Signature;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.util.HexConverter;
 
 import java.util.Arrays;
@@ -28,39 +25,38 @@ public class Authenticator implements ISerializable {
     private final ISignature signature;
     private final DataHash transactionHash;
     private final DataHash stateHash;
-    private final byte[] address;
+    private final byte[] publicKey;
 
-    private Authenticator(ISignature signature, DataHash transactionHash, DataHash stateHash, byte[] address) {
+    private Authenticator(ISignature signature, DataHash transactionHash, DataHash stateHash, byte[] publicKey) {
         this.signature = signature;
         this.transactionHash = transactionHash;
         this.stateHash = stateHash;
-        this.address = address;
+        this.publicKey = publicKey;
     }
 
-    public static CompletableFuture<Authenticator> create(
+    public static Authenticator create(
             ISigningService<?> signingService,
             DataHash transactionHash,
             DataHash stateHash) {
-        
-        // TypeScript SDK signs only the transactionHash, not the concatenation
-        return signingService.sign(transactionHash)
-                .thenApply(signature -> new Authenticator(signature, transactionHash, stateHash, signingService.getPublicKey()));
+
+        ISignature signature = signingService.sign(transactionHash);
+        return new Authenticator(signature, transactionHash, stateHash, signingService.getPublicKey());
     }
 
     public ISignature getSignature() {
-        return signature;
+        return this.signature;
     }
 
     public DataHash getTransactionHash() {
-        return transactionHash;
+        return this.transactionHash;
     }
 
     public DataHash getStateHash() {
-        return stateHash;
+        return this.stateHash;
     }
     
     public byte[] getPublicKey() {
-        return address;
+        return this.publicKey;
     }
     
     /**
@@ -111,18 +107,18 @@ public class Authenticator implements ISerializable {
     public CompletableFuture<Boolean> verify(DataHash hash) {
         // When deserialized from JSON, we don't have transactionHash
         // In this case, verify the signature against the provided hash
-        DataHash hashToVerify = transactionHash != null ? transactionHash : hash;
+        DataHash hashToVerify = this.transactionHash != null ? this.transactionHash : hash;
         
         // Verify that the provided hash matches our transaction hash (if we have one)
-        if (transactionHash != null && !hash.equals(transactionHash)) {
+        if (this.transactionHash != null && !hash.equals(this.transactionHash)) {
             return CompletableFuture.completedFuture(false);
         }
         
         // Verify signature against the hash
         return SigningService.verifyWithPublicKey(
             hashToVerify,
-            signature.getBytes(),
-            address
+            this.signature.getBytes(),
+            this.publicKey
         );
     }
 
@@ -132,9 +128,9 @@ public class Authenticator implements ISerializable {
         ObjectNode root = mapper.createObjectNode();
         
         root.put("algorithm", "secp256k1");
-        root.put("publicKey", HexConverter.encode(address));
+        root.put("publicKey", HexConverter.encode(this.publicKey));
         root.put("signature", signature.toJSON().toString());
-        root.put("stateHash", stateHash.toJSON().toString());
+        root.put("stateHash", stateHash.toString());
         
         return root;
     }
@@ -143,7 +139,7 @@ public class Authenticator implements ISerializable {
     public byte[] toCBOR() {
         return CborEncoder.encodeArray(
             CborEncoder.encodeTextString("secp256k1"),  // algorithm
-            CborEncoder.encodeByteString(address),   // publicKey
+            CborEncoder.encodeByteString(this.publicKey),   // publicKey
             CborEncoder.encodeByteString(((Signature)signature).encode()),  // signature bytes
             CborEncoder.encodeByteString(stateHash.getImprint())  // stateHash imprint
         );

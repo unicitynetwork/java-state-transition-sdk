@@ -1,18 +1,16 @@
 
 package com.unicity.sdk.transaction;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 public class Transaction<T extends ISerializable> implements ISerializable {
@@ -32,7 +30,7 @@ public class Transaction<T extends ISerializable> implements ISerializable {
         return inclusionProof;
     }
 
-    public CompletableFuture<Boolean> containsData(byte[] stateData) {
+    public boolean containsData(byte[] stateData) {
         if (!(data instanceof TransactionData)) {
             return CompletableFuture.completedFuture(false);
         }
@@ -49,10 +47,10 @@ public class Transaction<T extends ISerializable> implements ISerializable {
             return CompletableFuture.completedFuture(false);
         }
         
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(stateData);
         
-        return hasher.digest().thenApply(hash -> hash.equals(txData.getDataHash()));
+        return hasher.digest().equals(txData.getDataHash());
     }
 
     @Override

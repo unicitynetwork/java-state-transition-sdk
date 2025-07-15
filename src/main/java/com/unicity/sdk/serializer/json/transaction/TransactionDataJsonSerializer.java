@@ -33,7 +33,7 @@ public class TransactionDataJsonSerializer {
         
         // Handle data hash
         if (data.getDataHash() != null) {
-            result.put("data", (String) data.getDataHash().toJSON());
+
         } else {
             result.putNull("data");
         }

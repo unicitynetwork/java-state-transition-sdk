@@ -9,9 +9,8 @@ import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.predicate.PredicateFactory;
 import com.unicity.sdk.shared.cbor.CborEncoder;
-import com.unicity.sdk.shared.cbor.JacksonCborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
@@ -19,7 +18,6 @@ import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Mint transaction data with full constructor matching TypeScript
@@ -92,11 +90,11 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
         try {
             // Hash calculation is different from CBOR encoding!
             // It uses tokenDataHash instead of raw tokenData
-            JavaDataHasher tokenDataHasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            DataHasher tokenDataHasher = new DataHasher(HashAlgorithm.SHA256);
             tokenDataHasher.update(tokenData.toCBOR());
-            DataHash tokenDataHash = tokenDataHasher.digest().get();
+            DataHash tokenDataHash = tokenDataHasher.digest();
             
-            JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+            DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
             hasher.update(CborEncoder.encodeArray(
                 tokenId.toCBOR(),
                 tokenType.toCBOR(),
@@ -170,7 +168,7 @@ public class MintTransactionData<T extends ISerializable> implements ISerializab
             root.set("coinData", mapper.valueToTree(coinData.toJSON()));
         }
         if (dataHash != null) {
-            root.set("dataHash", mapper.valueToTree(dataHash.toJSON()));
+            root.set("dataHash", mapper.valueToTree(dataHash));
         }
         root.put("salt", HexConverter.encode(salt));
         root.set("recipient", mapper.valueToTree(recipient.toJSON()));

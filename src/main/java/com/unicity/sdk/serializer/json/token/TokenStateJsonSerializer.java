@@ -34,7 +34,6 @@ public class TokenStateJsonSerializer {
         
         result.set("unlockPredicate", objectMapper.valueToTree(state.getUnlockPredicate().toJSON()));
         result.put("data", HexConverter.encode(state.getData()));
-        result.put("hash", (String) state.getHash().toJSON());
         
         return result;
     }

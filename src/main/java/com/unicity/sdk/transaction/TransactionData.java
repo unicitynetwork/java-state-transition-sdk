@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
 import com.unicity.sdk.shared.util.HexConverter;
 import com.unicity.sdk.token.NameTagToken;
@@ -63,7 +63,7 @@ public class TransactionData implements ISerializable {
             byte[] message,
             List<NameTagToken> nametagTokens) {
         
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(sourceState.getHash().toCBOR());
         hasher.update(HexConverter.decode(recipient));
         hasher.update(salt);
@@ -121,7 +121,7 @@ public class TransactionData implements ISerializable {
         root.set("sourceState", mapper.valueToTree(sourceState.toJSON()));
         root.put("recipient", recipient);
         root.put("salt", HexConverter.encode(salt));
-        root.set("data", mapper.valueToTree(data.toJSON()));
+        root.set("data", mapper.valueToTree(data));
         root.put("message", HexConverter.encode(message));
         // TODO: Add nametag tokens when implemented
         

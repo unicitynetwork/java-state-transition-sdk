@@ -33,8 +33,7 @@ public class CommitmentJsonSerializer {
      */
     public static Object serialize(Commitment<?> commitment) {
         ObjectNode result = objectMapper.createObjectNode();
-        
-        result.put("requestId", (String) commitment.getRequestId().toJSON());
+
         result.set("transactionData", objectMapper.valueToTree(commitment.getTransactionData().toJSON()));
         result.set("authenticator", objectMapper.valueToTree(commitment.getAuthenticator().toJSON()));
         

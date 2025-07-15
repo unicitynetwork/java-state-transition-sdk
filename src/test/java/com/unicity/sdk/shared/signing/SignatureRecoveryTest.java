@@ -2,7 +2,7 @@ package com.unicity.sdk.shared.signing;
 
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.hash.JavaDataHasher;
+import com.unicity.sdk.shared.hash.DataHasher;
 import com.unicity.sdk.shared.util.HexConverter;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ public class SignatureRecoveryTest {
         
         // Create test data and hash it
         byte[] testData = "Hello, Unicity!".getBytes();
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(testData);
         DataHash hash = hasher.digest().get();
         
@@ -46,7 +46,7 @@ public class SignatureRecoveryTest {
         
         // Create test data and hash it
         byte[] testData = "Test public key recovery".getBytes();
-        JavaDataHasher hasher = new JavaDataHasher(HashAlgorithm.SHA256);
+        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
         hasher.update(testData);
         DataHash hash = hasher.digest().get();
         

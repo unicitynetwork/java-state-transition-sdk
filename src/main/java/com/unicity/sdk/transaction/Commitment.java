@@ -39,7 +39,7 @@ public class Commitment<T extends ISerializable> implements ISerializable {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode root = mapper.createObjectNode();
         
-        root.set("requestId", mapper.valueToTree(requestId.toJSON()));
+        root.set("requestId", mapper.valueToTree(requestId));
         root.set("transactionData", mapper.valueToTree(transactionData.toJSON()));
         root.set("authenticator", mapper.valueToTree(authenticator.toJSON()));
         

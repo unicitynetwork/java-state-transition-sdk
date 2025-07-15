@@ -38,7 +38,8 @@ public class TransactionCborSerializer {
     public static byte[] serialize(Transaction<TransactionData> transaction) {
         return CborEncoder.encodeArray(
             TransactionDataCborSerializer.serialize(transaction.getData()),
-            transaction.getInclusionProof().toCBOR()
+            // transaction.getInclusionProof().toCBOR()
+                null
         );
     }
 
@@ -71,7 +72,8 @@ public class TransactionCborSerializer {
             return dataSerializer.deserialize(tokenId, tokenType, (byte[]) data.get(0))
                 .thenApply(transactionData -> {
                     // Deserialize inclusion proof
-                    InclusionProof inclusionProof = InclusionProof.fromCBOR((byte[]) data.get(1));
+                    // InclusionProof inclusionProof = InclusionProof.fromCBOR((byte[]) data.get(1));
+                    InclusionProof inclusionProof = null;
                     
                     return new Transaction(transactionData, inclusionProof);
                 });

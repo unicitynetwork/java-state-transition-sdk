@@ -1,5 +1,5 @@
 
-package com.unicity.sdk.shared.smt;
+package com.unicity.sdk.shared.smt.path;
 
 public enum PathVerificationResult {
     OK,

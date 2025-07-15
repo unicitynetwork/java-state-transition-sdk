@@ -1,7 +1,6 @@
 package com.unicity.sdk.address;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.hash.DataHash;
 import com.unicity.sdk.shared.util.HexConverter;
@@ -31,7 +30,7 @@ public class DirectAddress implements IAddress {
     public static CompletableFuture<DirectAddress> create(DataHash reference) {
         byte[] addressBytes = new byte[ADDRESS_LENGTH];
         addressBytes[0] = ADDRESS_TYPE;
-        System.arraycopy(reference.getHash(), 0, addressBytes, 1, Math.min(reference.getHash().length, ADDRESS_LENGTH - 1));
+        System.arraycopy(reference.getData(), 0, addressBytes, 1, Math.min(reference.getData().length, ADDRESS_LENGTH - 1));
         return CompletableFuture.completedFuture(new DirectAddress(addressBytes));
     }
 

@@ -33,7 +33,7 @@ public class TransactionJsonSerializer {
         ObjectNode result = objectMapper.createObjectNode();
         
         result.set("data", objectMapper.valueToTree(TransactionDataJsonSerializer.serialize(transaction.getData())));
-        result.set("inclusionProof", objectMapper.valueToTree(transaction.getInclusionProof().toJSON()));
+        // result.set("inclusionProof", objectMapper.valueToTree(transaction.getInclusionProof().toJSON()));
         
         return result;
     }
@@ -56,7 +56,8 @@ public class TransactionJsonSerializer {
                 
                 // Deserialize inclusion proof
                 JsonNode proofNode = data.get("inclusionProof");
-                InclusionProof inclusionProof = InclusionProof.fromJSON(proofNode);
+                // InclusionProof inclusionProof = InclusionProof.fromJSON(proofNode);
+                InclusionProof inclusionProof = null;
                 
                 return new Transaction<>(transactionData, inclusionProof);
                 

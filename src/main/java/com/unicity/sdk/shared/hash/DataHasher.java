@@ -1,32 +1,32 @@
 package com.unicity.sdk.shared.hash;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.CompletableFuture;
 
 public class DataHasher {
-    public static DataHash digest(HashAlgorithm algorithm, byte[] data) {
+    private final HashAlgorithm algorithm;
+    private final MessageDigest messageDigest;
+    
+    public DataHasher(HashAlgorithm algorithm) {
+        this.algorithm = algorithm;
         try {
-            String algorithmName = getAlgorithmName(algorithm);
-            MessageDigest digest = MessageDigest.getInstance(algorithmName);
-            return new DataHash(digest.digest(data), algorithm);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            this.messageDigest = MessageDigest.getInstance(algorithm.getAlgorithm());
+        } catch (NoSuchAlgorithmException e) {
+            throw new UnsupportedHashAlgorithmError(algorithm);
         }
     }
-    
-    private static String getAlgorithmName(HashAlgorithm algorithm) {
-        switch (algorithm) {
-            case SHA256:
-                return "SHA-256";
-            case SHA224:
-                return "SHA-224";
-            case SHA384:
-                return "SHA-384";
-            case SHA512:
-                return "SHA-512";
-            case RIPEMD160:
-                return "RIPEMD160";
-            default:
-                throw new UnsupportedHashAlgorithmError(algorithm);
-        }
+
+    public HashAlgorithm getAlgorithm() {
+        return algorithm;
+    }
+
+    public DataHasher update(byte[] data) {
+        this.messageDigest.update(data);
+        return this;
+    }
+
+    public DataHash digest() {
+        return new DataHash(this.algorithm, this.messageDigest.digest());
     }
 }

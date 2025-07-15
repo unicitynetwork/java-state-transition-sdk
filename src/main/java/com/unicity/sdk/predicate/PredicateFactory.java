@@ -95,8 +95,8 @@ public class PredicateFactory implements IPredicateFactory {
         public SimplePredicate(PredicateType type, byte[] publicKey, String algorithm, 
                              HashAlgorithm hashAlgorithm, byte[] nonce) {
             super(type, publicKey, algorithm, hashAlgorithm, nonce, 
-                  new DataHash(new byte[32], HashAlgorithm.SHA256),  // dummy reference
-                  new DataHash(new byte[32], HashAlgorithm.SHA256)); // dummy hash
+                  new DataHash(HashAlgorithm.SHA256, new byte[32]),  // dummy reference
+                  new DataHash(HashAlgorithm.SHA256, new byte[32])); // dummy hash
         }
         
         @Override

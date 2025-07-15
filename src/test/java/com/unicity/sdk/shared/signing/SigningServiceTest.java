@@ -44,7 +44,7 @@ public class SigningServiceTest {
         
         // Create a test hash
         byte[] testData = "test data".getBytes(StandardCharsets.UTF_8);
-        DataHash hash = new DataHash(testData, HashAlgorithm.SHA256);
+        DataHash hash = new DataHash(HashAlgorithm.SHA256, testData);
         
         // Sign the hash
         CompletableFuture<Signature> signFuture = service.sign(hash);
@@ -68,7 +68,7 @@ public class SigningServiceTest {
         
         // Create a test hash
         byte[] testData = "test data".getBytes(StandardCharsets.UTF_8);
-        DataHash hash = new DataHash(testData, HashAlgorithm.SHA256);
+        DataHash hash = new DataHash(HashAlgorithm.SHA256, testData);
         
         // Sign the hash
         Signature signature = service.sign(hash).get();
@@ -87,7 +87,7 @@ public class SigningServiceTest {
         
         // Create a test hash
         byte[] testData = "test data".getBytes(StandardCharsets.UTF_8);
-        DataHash hash = new DataHash(testData, HashAlgorithm.SHA256);
+        DataHash hash = new DataHash(HashAlgorithm.SHA256, testData);
         
         // Create an invalid signature
         byte[] invalidSig = new byte[64];
@@ -106,7 +106,7 @@ public class SigningServiceTest {
         SigningService service = new SigningService(privateKey);
         
         byte[] testData = "test data".getBytes(StandardCharsets.UTF_8);
-        DataHash hash = new DataHash(testData, HashAlgorithm.SHA256);
+        DataHash hash = new DataHash(HashAlgorithm.SHA256, testData);
         
         Signature signature = service.sign(hash).get();
         

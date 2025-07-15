@@ -1,20 +1,26 @@
 package com.unicity.sdk.shared.hash;
 
 public enum HashAlgorithm {
-    SHA256(0),
-    SHA224(1),
-    SHA384(2),
-    SHA512(3),
-    RIPEMD160(4);
+    SHA256(0, "SHA-256"),
+    SHA224(1, "SHA-224"),
+    SHA384(2, "SHA-384"),
+    SHA512(3, "SHA-512"),
+    RIPEMD160(4, "RIPEMD160"),;
 
     private final int value;
+    private final String algorithm;
 
-    HashAlgorithm(int value) {
+    HashAlgorithm(int value, String algorithm) {
         this.value = value;
+        this.algorithm = algorithm;
     }
 
     public int getValue() {
         return value;
+    }
+
+    public String getAlgorithm() {
+        return this.algorithm;
     }
     
     /**

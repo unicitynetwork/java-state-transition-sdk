@@ -21,8 +21,8 @@ public class PendingNodeBranch implements PendingBranch {
         this.sum = left.getSum().add(right.getSum());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            baos.write(left.getHash().getHash());
-            baos.write(right.getHash().getHash());
+            baos.write(left.getHash().getData());
+            baos.write(right.getHash().getData());
             baos.write(sum.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
