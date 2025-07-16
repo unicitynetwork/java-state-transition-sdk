@@ -1,7 +1,5 @@
 package com.unicity.sdk.jsonrpc;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class JsonRpcError {
 
   private final int code;

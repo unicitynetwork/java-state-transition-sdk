@@ -94,7 +94,7 @@ public class AuthenticatorJson {
             Set<String> missingFields = new HashSet<>(Set.of(ALGORITHM_FIELD, PUBLIC_KEY_FIELD, SIGNATURE_FIELD, STATE_HASH_FIELD));
             missingFields.removeAll(fields);
             if (!missingFields.isEmpty()) {
-                throw MismatchedInputException.from(p, MerkleTreePath.class, String.format("Missing required fields: %s", missingFields));
+                throw MismatchedInputException.from(p, Authenticator.class, String.format("Missing required fields: %s", missingFields));
             }
 
             return new Authenticator(algorithm, publicKey, signature, stateHash);
