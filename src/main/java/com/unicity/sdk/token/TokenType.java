@@ -2,14 +2,10 @@
 package com.unicity.sdk.token;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -24,10 +20,6 @@ public class TokenType implements ISerializable {
 
     public byte[] getBytes() {
         return Arrays.copyOf(bytes, bytes.length);
-    }
-
-    public static TokenType create(byte[] id) {
-        return new TokenType(id);
     }
     
     public static TokenType fromHex(String hex) {
@@ -47,7 +39,7 @@ public class TokenType implements ISerializable {
 
     @Override
     public String toString() {
-        return "TokenType[" + HexConverter.encode(this.bytes) + "]";
+        return String.format("TokenType[%s]", HexConverter.encode(this.bytes));
     }
 
     @Override

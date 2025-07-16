@@ -7,11 +7,12 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.signing.Signature;
-import com.unicity.sdk.shared.util.HexConverter;
-import com.unicity.sdk.transaction.InclusionProof;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.signing.Signature;
+import com.unicity.sdk.smt.path.MerkleTreePath;
+import com.unicity.sdk.util.HexConverter;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -53,19 +54,19 @@ public class AuthenticatorJson {
             Set<String> fields = new HashSet<>();
 
             if (!p.isExpectedStartObjectToken()) {
-                ctx.handleUnexpectedToken(Authenticator.class, p);
+                throw MismatchedInputException.from(p, Authenticator.class, "Expected object value");
             }
 
             while (p.nextToken() != JsonToken.END_OBJECT) {
                 String fieldName = p.currentName();
 
                 if (!fields.add(fieldName)) {
-                    ctx.reportInputMismatch(Authenticator.class, "Duplicate field: %s", fieldName);
+                    throw MismatchedInputException.from(p, Authenticator.class, String.format("Duplicate field: %s", fieldName));
                 }
 
                 p.nextToken();
                 if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-                    ctx.reportInputMismatch(Authenticator.class, "Expected string value", fieldName);
+                    throw MismatchedInputException.from(p, Authenticator.class, "Expected string value");
                 }
 
                 try {
@@ -82,16 +83,18 @@ public class AuthenticatorJson {
                         case STATE_HASH_FIELD:
                             stateHash = p.readValueAs(DataHash.class);
                             break;
+                        default:
+                            p.skipChildren();
                     }
                 } catch (Exception e) {
-                    ctx.reportInputMismatch(Authenticator.class, "Invalid value for field '%s': %s", fieldName, e.getMessage());
+                    throw MismatchedInputException.wrapWithPath(e, Authenticator.class, fieldName);
                 }
             }
 
-            if (algorithm == null || publicKey == null || signature == null || stateHash == null) {
-                Set<String> missingFields = new HashSet<>(Set.of(ALGORITHM_FIELD, PUBLIC_KEY_FIELD, SIGNATURE_FIELD, STATE_HASH_FIELD));
-                missingFields.removeAll(fields);
-                ctx.reportInputMismatch(InclusionProof.class, "Missing required fields: %s", missingFields);
+            Set<String> missingFields = new HashSet<>(Set.of(ALGORITHM_FIELD, PUBLIC_KEY_FIELD, SIGNATURE_FIELD, STATE_HASH_FIELD));
+            missingFields.removeAll(fields);
+            if (!missingFields.isEmpty()) {
+                throw MismatchedInputException.from(p, MerkleTreePath.class, String.format("Missing required fields: %s", missingFields));
             }
 
             return new Authenticator(algorithm, publicKey, signature, stateHash);

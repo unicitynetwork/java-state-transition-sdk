@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
@@ -71,7 +71,7 @@ public class TransactionDataJsonSerializer {
                 JsonNode dataNode = jsonNode.get("data");
                 DataHash data = null;
                 if (dataNode != null && !dataNode.isNull()) {
-                    data = DataHash.fromJSON(dataNode.asText());
+//                    data = DataHash.fromJSON(dataNode.asText());
                 }
                 
                 // Get message

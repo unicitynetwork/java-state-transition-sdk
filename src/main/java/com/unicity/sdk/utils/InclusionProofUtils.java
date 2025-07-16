@@ -21,8 +21,8 @@ public class InclusionProofUtils {
     private static final Logger logger = LoggerFactory.getLogger(InclusionProofUtils.class);
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);  // 30 seconds should be enough for direct leader
     private static final Duration DEFAULT_INTERVAL = Duration.ofMillis(1000);
-    private static int successfulVerifications = 0;  // Track successful verifications
-    private static int failedVerifications = 0;      // Track failed verifications
+    private static final int successfulVerifications = 0;  // Track successful verifications
+    private static final int failedVerifications = 0;      // Track failed verifications
     
     /**
      * Wait for an inclusion proof to be available and verified
@@ -62,7 +62,6 @@ public class InclusionProofUtils {
         
         if (System.currentTimeMillis() - startTime > timeoutMillis) {
             future.completeExceptionally(new TimeoutException("Timeout waiting for inclusion proof"));
-            return;
         }
         
 //        client.getInclusionProof(commitment)

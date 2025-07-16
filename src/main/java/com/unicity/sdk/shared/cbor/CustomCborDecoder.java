@@ -174,7 +174,7 @@ public class CustomCborDecoder {
             return new DecodeResult((long) (buffer.getShort() & 0xFFFF), offset + 3);
         } else if (additionalInfo == 26) {
             ByteBuffer buffer = ByteBuffer.wrap(data, offset + 1, 4);
-            return new DecodeResult((long) (buffer.getInt() & 0xFFFFFFFFL), offset + 5);
+            return new DecodeResult(buffer.getInt() & 0xFFFFFFFFL, offset + 5);
         } else if (additionalInfo == 27) {
             ByteBuffer buffer = ByteBuffer.wrap(data, offset + 1, 8);
             return new DecodeResult(buffer.getLong(), offset + 9);

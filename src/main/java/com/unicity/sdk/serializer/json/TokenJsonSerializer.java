@@ -106,7 +106,7 @@ public class TokenJsonSerializer {
                 
                 return new Token<Transaction<MintTransactionData>>(
                     tokenState,
-                    (Transaction) mintTransaction,
+                    mintTransaction,
                     (List) transactions,
                     nametagTokens,
                     tokenVersion

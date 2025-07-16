@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
@@ -106,7 +106,7 @@ public class MintTransactionDataJsonSerializer {
                 JsonNode dataHashNode = data.get("dataHash");
                 DataHash dataHash = null;
                 if (dataHashNode != null && !dataHashNode.isNull()) {
-                    dataHash = DataHash.fromJSON(dataHashNode.asText());
+//                    dataHash = DataHash.fromJSON(dataHashNode.asText());
                 }
                 
                 return new MintTransactionData(

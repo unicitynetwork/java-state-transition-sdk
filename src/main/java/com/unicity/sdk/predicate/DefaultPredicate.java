@@ -3,8 +3,8 @@ package com.unicity.sdk.predicate;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 import com.unicity.sdk.transaction.Transaction;
 
@@ -13,13 +13,13 @@ import java.util.Arrays;
 /**
  * Base class for predicates, matching TypeScript implementation
  */
-public abstract class DefaultPredicate implements IPredicate {
+public abstract class DefaultPredicate<PR extends IPredicateReference> implements IPredicate {
     private final PredicateType type;
     private final byte[] publicKey;
     private final String algorithm;
     private final HashAlgorithm hashAlgorithm;
     private final byte[] nonce;
-    private final DataHash reference;
+    private final PR reference;
     private final DataHash hash;
 
     protected DefaultPredicate(
@@ -28,7 +28,7 @@ public abstract class DefaultPredicate implements IPredicate {
             String algorithm,
             HashAlgorithm hashAlgorithm,
             byte[] nonce,
-            DataHash reference,
+            PR reference,
             DataHash hash) {
         this.type = type;
         this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
@@ -70,7 +70,7 @@ public abstract class DefaultPredicate implements IPredicate {
     }
 
     @Override
-    public DataHash getReference() {
+    public PR getReference() {
         return this.reference;
     }
 

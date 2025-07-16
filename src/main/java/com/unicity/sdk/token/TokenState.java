@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.Hashable;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.shared.cbor.CborEncoder;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.util.ByteArraySerializer;
 
 import java.io.ByteArrayOutputStream;
@@ -38,7 +38,7 @@ public class TokenState implements Hashable {
     public static TokenState create(IPredicate unlockPredicate, byte[] data) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            baos.write(unlockPredicate.getHash().toCBOR());
+//            baos.write(unlockPredicate.getHash().toCBOR());
             baos.write(data != null ? data : new byte[0]);
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -3,12 +3,14 @@ package com.unicity.sdk.serializer.json.smt;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.*;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.smt.path.MerkleTreePath;
-import com.unicity.sdk.shared.smt.path.MerkleTreePathStep;
-import com.unicity.sdk.shared.smt.path.MerkleTreePathStepBranch;
-import com.unicity.sdk.transaction.InclusionProof;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.smt.path.MerkleTreePathStep;
+import com.unicity.sdk.smt.path.MerkleTreePathStepBranch;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -48,14 +50,14 @@ public class MerkleTreePathStepJson {
             Set<String> fields = new HashSet<>();
 
             if (!p.isExpectedStartObjectToken()) {
-                ctx.handleUnexpectedToken(InclusionProof.class, p);
+                throw MismatchedInputException.from(p, MerkleTreePathStep.class, "Expected object value");
             }
 
             while (p.nextToken() != JsonToken.END_OBJECT) {
                 String fieldName = p.currentName();
 
                 if (!fields.add(fieldName)) {
-                    ctx.reportInputMismatch(InclusionProof.class, "Duplicate field: %s", fieldName);
+                    throw MismatchedInputException.from(p, MerkleTreePathStep.class, String.format("Duplicate field: %s", fieldName));
                 }
 
                 p.nextToken();
@@ -63,7 +65,7 @@ public class MerkleTreePathStepJson {
                     switch (fieldName) {
                         case PATH_FIELD:
                             if (p.currentToken() != JsonToken.VALUE_STRING) {
-                                ctx.reportInputMismatch(MerkleTreePathStep.class, "Expected string value");
+                                throw MismatchedInputException.from(p, MerkleTreePathStep.class, "Expected string value");
                             }
                             path = new BigInteger(p.getValueAsString());
                             break;
@@ -73,16 +75,18 @@ public class MerkleTreePathStepJson {
                         case BRANCH_FIELD:
                             branch = p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(MerkleTreePathStepBranch.class) : null;
                             break;
+                        default:
+                            p.skipChildren();
                     }
                 } catch (Exception e) {
-                    ctx.reportInputMismatch(MerkleTreePathStep.class, "Invalid value for field '%s': %s", fieldName, e.getMessage());
+                    throw MismatchedInputException.wrapWithPath(e, MerkleTreePathStep.class, fieldName);
                 }
             }
 
             Set<String> missingFields = new HashSet<>(Set.of(PATH_FIELD, SIBLING_FIELD, BRANCH_FIELD));
             missingFields.removeAll(fields);
             if (!missingFields.isEmpty()) {
-                ctx.reportInputMismatch(MerkleTreePathStep.class, "Missing required fields: %s", missingFields);
+                throw MismatchedInputException.from(p, MerkleTreePathStep.class, String.format("Missing required fields: %s", missingFields));
             }
 
             return new MerkleTreePathStep(path, sibling, branch);

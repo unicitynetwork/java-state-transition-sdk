@@ -2,14 +2,10 @@
 package com.unicity.sdk.transaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.cbor.CborEncoder;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.TokenState;
 
@@ -63,11 +59,11 @@ public class TransferTransactionData implements TransactionData<TokenState> {
             List<NameTagToken> nametagTokens) {
         
         DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-        hasher.update(sourceState.getHash().toCBOR());
+//        hasher.update(sourceState.getHash().toCBOR());
         hasher.update(HexConverter.decode(recipient));
         hasher.update(salt);
         if (data != null) {
-            hasher.update(data.toCBOR());
+//            hasher.update(data.toCBOR());
         }
         if (message != null) {
             hasher.update(message);
@@ -128,7 +124,8 @@ public class TransferTransactionData implements TransactionData<TokenState> {
         
         // Get data hash
         JsonNode dataNode = jsonNode.get("data");
-        DataHash data = DataHash.fromJSON(dataNode.asText());
+        DataHash data = null;
+//        DataHash data = DataHash.fromJSON(dataNode.asText());
         
         // Get message
         String messageHex = jsonNode.get("message").asText();

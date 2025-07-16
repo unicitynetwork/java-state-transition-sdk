@@ -1,8 +1,8 @@
 package com.unicity.sdk.api;
 
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.signing.Signature;
-import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.signing.Signature;
+import com.unicity.sdk.signing.SigningService;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -11,55 +11,63 @@ import java.util.Objects;
  * Authenticator for transaction submission
  */
 public class Authenticator {
-    private final String algorithm;
-    private final Signature signature;
-    private final DataHash stateHash;
-    private final byte[] publicKey;
 
-    public Authenticator(String algorithm, byte[] publicKey, Signature signature, DataHash stateHash) {
-        this.algorithm = algorithm;
-        this.publicKey = publicKey;
-        this.signature = signature;
-        this.stateHash = stateHash;
-    }
+  private final String algorithm;
+  private final Signature signature;
+  private final DataHash stateHash;
+  private final byte[] publicKey;
 
-    public static Authenticator create(
-            SigningService signingService,
-            DataHash transactionHash,
-            DataHash stateHash) {
+  public Authenticator(String algorithm, byte[] publicKey, Signature signature,
+      DataHash stateHash) {
+    this.algorithm = algorithm;
+    this.publicKey = publicKey;
+    this.signature = signature;
+    this.stateHash = stateHash;
+  }
 
-        return new Authenticator(signingService.getAlgorithm(), signingService.getPublicKey(), signingService.sign(transactionHash), stateHash);
-    }
+  public static Authenticator create(
+      SigningService signingService,
+      DataHash transactionHash,
+      DataHash stateHash) {
 
-    public Signature getSignature() {
-        return this.signature;
-    }
+    return new Authenticator(signingService.getAlgorithm(), signingService.getPublicKey(),
+        signingService.sign(transactionHash), stateHash);
+  }
 
-    public String getAlgorithm() {
-        return this.algorithm;
-    }
+  public Signature getSignature() {
+    return this.signature;
+  }
 
-    public DataHash getStateHash() {
-        return this.stateHash;
-    }
-    
-    public byte[] getPublicKey() {
-        return this.publicKey;
-    }
+  public String getAlgorithm() {
+    return this.algorithm;
+  }
 
-    public boolean verify(DataHash hash) {
-        return SigningService.verifyWithPublicKey(hash, this.signature.getBytes(), this.publicKey);
-    }
+  public DataHash getStateHash() {
+    return this.stateHash;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Authenticator)) return false;
-        Authenticator that = (Authenticator) o;
-        return Objects.equals(algorithm, that.algorithm) && Objects.equals(signature, that.signature) && Objects.equals(stateHash, that.stateHash) && Objects.deepEquals(publicKey, that.publicKey);
-    }
+  public byte[] getPublicKey() {
+    return this.publicKey;
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(algorithm, signature, stateHash, Arrays.hashCode(publicKey));
+  public boolean verify(DataHash hash) {
+    return SigningService.verifyWithPublicKey(hash, this.signature.getBytes(), this.publicKey);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Authenticator)) {
+      return false;
     }
+    Authenticator that = (Authenticator) o;
+    return Objects.equals(this.algorithm, that.algorithm) && Objects.equals(this.signature,
+        that.signature) && Objects.equals(this.stateHash, that.stateHash) && Objects.deepEquals(
+        this.publicKey, that.publicKey);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.algorithm, this.signature, this.stateHash,
+        Arrays.hashCode(this.publicKey));
+  }
 }

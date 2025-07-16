@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.util.BitString;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.util.BitString;
+import com.unicity.sdk.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
