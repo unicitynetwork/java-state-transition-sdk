@@ -4,14 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.address.DirectAddress;
+import com.unicity.sdk.address.IAddress;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.shared.cbor.CborEncoder;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
@@ -30,7 +30,7 @@ public class MintTransactionData implements TransactionData<RequestId> {
     private final TokenCoinData coinData;
     private final DataHash dataHash;  // Optional data hash field
     private final byte[] salt;
-    private final DirectAddress recipient;
+    private final IAddress recipient;
     private final Object reason;  // Optional reason field
     private final DataHash hash; // Hash of the encoded transaction
     private final RequestId sourceState;
@@ -69,7 +69,7 @@ public class MintTransactionData implements TransactionData<RequestId> {
         
         // Calculate recipient from predicate
         try {
-            this.recipient = DirectAddress.create(predicate.getReference());
+            this.recipient = predicate.getReference().toAddress();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create recipient address", e);
         }
@@ -97,8 +97,8 @@ public class MintTransactionData implements TransactionData<RequestId> {
             hasher.update(CborEncoder.encodeArray(
                 tokenId.toCBOR(),
                 tokenType.toCBOR(),
-                tokenDataHash.toCBOR(),  // Hash of token data, not the data itself
-                dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(),
+//                tokenDataHash.toCBOR(),  // Hash of token data, not the data itself
+//                dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(),
                 coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(),
                 CborEncoder.encodeTextString(recipient.getAddress()),
                 CborEncoder.encodeByteString(salt),
@@ -142,7 +142,7 @@ public class MintTransactionData implements TransactionData<RequestId> {
         return Arrays.copyOf(salt, salt.length);
     }
 
-    public DirectAddress getRecipient() {
+    public IAddress getRecipient() {
         return recipient;
     }
 
@@ -169,7 +169,7 @@ public class MintTransactionData implements TransactionData<RequestId> {
             root.set("dataHash", mapper.valueToTree(dataHash));
         }
         root.put("salt", HexConverter.encode(salt));
-        root.set("recipient", mapper.valueToTree(recipient.toJSON()));
+//        root.set("recipient", mapper.valueToTree(recipient.toJSON()));
         if (reason != null) {
             root.set("reason", mapper.valueToTree(reason));
         }
@@ -186,7 +186,7 @@ public class MintTransactionData implements TransactionData<RequestId> {
             coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(), // Field 3: Coin Data or null
             CborEncoder.encodeTextString(recipient.getAddress()),         // Field 4: Recipient as text string
             CborEncoder.encodeByteString(salt),                           // Field 5: Salt
-            dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(), // Field 6: Data Hash or null
+//            dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(), // Field 6: Data Hash or null
             reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull() // Field 7: Reason or null
         );
     }
@@ -199,11 +199,11 @@ public class MintTransactionData implements TransactionData<RequestId> {
     public static MintTransactionData fromJSON(JsonNode jsonNode) throws Exception {
         // Deserialize token ID
         String tokenIdHex = jsonNode.get("tokenId").asText();
-        TokenId tokenId = TokenId.create(HexConverter.decode(tokenIdHex));
+        TokenId tokenId = new TokenId(HexConverter.decode(tokenIdHex));
         
         // Deserialize token type
         String tokenTypeHex = jsonNode.get("tokenType").asText();
-        TokenType tokenType = TokenType.create(HexConverter.decode(tokenTypeHex));
+        TokenType tokenType = new TokenType(HexConverter.decode(tokenTypeHex));
         
         // Deserialize predicate
         JsonNode predicateNode = jsonNode.get("predicate");
@@ -247,7 +247,7 @@ public class MintTransactionData implements TransactionData<RequestId> {
         DataHash dataHash = null;
         if (jsonNode.has("dataHash") && !jsonNode.get("dataHash").isNull()) {
             String dataHashHex = jsonNode.get("dataHash").asText();
-            dataHash = DataHash.fromJSON(dataHashHex);
+//            dataHash = DataHash.fromJSON(dataHashHex);
         }
         
         return new MintTransactionData(

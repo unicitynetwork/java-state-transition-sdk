@@ -31,7 +31,7 @@ public class CommitmentJsonDeserializer {
 
         try {
             // Get request ID
-            RequestId requestId = RequestId.fromJSON(String.valueOf(commitmentData.get("requestId")));
+//            RequestId requestId = RequestId.fromJSON(String.valueOf(commitmentData.get("requestId")));
             
             // Deserialize transaction - it returns Transaction, not TransactionData
             // For commitments, we need the TransactionData, not the full Transaction

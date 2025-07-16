@@ -5,10 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.cbor.CborDecoder;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.shared.cbor.CustomCborDecoder;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.util.HexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

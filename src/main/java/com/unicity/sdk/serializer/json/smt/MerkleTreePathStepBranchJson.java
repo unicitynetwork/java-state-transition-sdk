@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.smt.path.MerkleTreePathStepBranch;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.unicity.sdk.smt.path.MerkleTreePathStepBranch;
+import com.unicity.sdk.util.HexConverter;
 
 import java.io.IOException;
 
@@ -31,20 +31,19 @@ public class MerkleTreePathStepBranchJson {
         @Override
         public MerkleTreePathStepBranch deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
             if (!p.isExpectedStartArrayToken()) {
-                ctx.handleUnexpectedToken(MerkleTreePathStepBranch.class, p);
+                throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected array value");
             }
 
             p.nextToken();
             String value = p.currentToken() != JsonToken.VALUE_NULL ? p.getValueAsString() : null;
             if (p.nextToken() != JsonToken.END_ARRAY) {
-                ctx.handleUnexpectedToken(MerkleTreePathStepBranch.class, p);
+                throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected only one element in array");
             }
 
             try {
                 return new MerkleTreePathStepBranch(value == null ? null : HexConverter.decode(value));
             } catch (Exception e) {
-                ctx.reportInputMismatch(DataHash.class, "Expected string value");
-                throw e;
+                throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected string value");
             }
         }
     }

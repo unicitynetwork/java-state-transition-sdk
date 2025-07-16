@@ -1,15 +1,13 @@
 
 package com.unicity.sdk.transaction;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.LeafValue;
 import com.unicity.sdk.api.RequestId;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.smt.path.MerkleTreePath;
-import com.unicity.sdk.shared.smt.path.MerkleTreePathStep;
-import com.unicity.sdk.shared.smt.path.MerkleTreePathVerificationResult;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.smt.path.MerkleTreePath;
+import com.unicity.sdk.smt.path.MerkleTreePathStep;
+import com.unicity.sdk.smt.path.MerkleTreePathVerificationResult;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -22,7 +20,6 @@ public class InclusionProof {
     private final Authenticator authenticator;
     private final DataHash transactionHash;
 
-    @JsonCreator
     public InclusionProof(MerkleTreePath merkleTreePath, Authenticator authenticator, DataHash transactionHash) {
         if ((authenticator == null) != (transactionHash == null)) {
             throw new IllegalArgumentException("Authenticator and transaction hash must be both set or both null.");

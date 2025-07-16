@@ -2,10 +2,9 @@ package com.unicity.sdk.utils;
 
 import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.util.HexConverter;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Test token data implementation

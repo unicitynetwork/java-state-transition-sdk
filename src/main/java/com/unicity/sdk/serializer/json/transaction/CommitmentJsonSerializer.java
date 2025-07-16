@@ -53,7 +53,8 @@ public class CommitmentJsonSerializer {
             try {
                 // Deserialize RequestId
                 String requestIdHex = data.get("requestId").asText();
-                RequestId requestId = RequestId.fromJSON(requestIdHex);
+                RequestId requestId = null;
+//                RequestId requestId = RequestId.fromJSON(requestIdHex);
                 
                 // Deserialize TransactionData with context
                 JsonNode txDataNode = data.get("transactionData");

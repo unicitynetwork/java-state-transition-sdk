@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.smt.path.MerkleTreePath;
-import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.smt.path.MerkleTreePath;
 import com.unicity.sdk.transaction.InclusionProof;
 
 import java.io.IOException;
@@ -47,14 +47,14 @@ public class InclusionProofJson {
             Set<String> fields = new HashSet<>();
 
             if (!p.isExpectedStartObjectToken()) {
-                ctx.handleUnexpectedToken(InclusionProof.class, p);
+                throw MismatchedInputException.from(p, InclusionProof.class, "Expected object value");
             }
 
             while (p.nextToken() != JsonToken.END_OBJECT) {
                 String fieldName = p.currentName();
 
                 if (!fields.add(fieldName)) {
-                    ctx.reportInputMismatch(InclusionProof.class, "Duplicate field: %s", fieldName);
+                    throw MismatchedInputException.from(p, InclusionProof.class, String.format("Duplicate field: %s", fieldName));
                 }
 
                 p.nextToken();
@@ -69,14 +69,16 @@ public class InclusionProofJson {
                         case TRANSACTION_HASH_FIELD:
                             transactionHash = p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(DataHash.class) : null;
                             break;
+                        default:
+                            p.skipChildren();
                     }
                 } catch (Exception e) {
-                    ctx.reportInputMismatch(InclusionProof.class, "Invalid value for field '%s': %s", fieldName, e.getMessage());
+                    throw MismatchedInputException.wrapWithPath(e, InclusionProof.class, fieldName);
                 }
             }
 
             if (merkleTreePath == null) {
-                ctx.reportInputMismatch(InclusionProof.class, "Missing required fields: %s", MERKLE_TREE_PATH_FIELD);
+                throw MismatchedInputException.from(p, InclusionProof.class, String.format("Missing required fields: %s", MERKLE_TREE_PATH_FIELD));
             }
 
             return new InclusionProof(merkleTreePath, authenticator, transactionHash);

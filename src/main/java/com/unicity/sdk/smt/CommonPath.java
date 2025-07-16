@@ -1,0 +1,48 @@
+package com.unicity.sdk.smt;
+
+import java.math.BigInteger;
+import java.util.Objects;
+
+public class CommonPath {
+    private final BigInteger path;
+    private final int length;
+
+    public CommonPath(BigInteger path, int length) {
+        this.path = path;
+        this.length = length;
+    }
+
+    public BigInteger getPath() {
+        return this.path;
+    }
+
+    public int getLength() {
+        return this.length;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof CommonPath)) return false;
+        CommonPath that = (CommonPath) o;
+        return length == that.length && Objects.equals(path, that.path);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(path, length);
+    }
+
+    public static CommonPath create(BigInteger path1, BigInteger path2) {
+        BigInteger path = BigInteger.ONE;
+        BigInteger mask = BigInteger.ONE;
+        int length = 0;
+
+        while (Objects.equals(path1.and(mask), path2.and(mask)) && path.compareTo(path1) < 0 && path.compareTo(path2) < 0) {
+            mask = mask.shiftLeft(1);
+            length += 1;
+            path = mask.or(mask.subtract(BigInteger.ONE).and(path1));
+        }
+
+        return new CommonPath(path, length);
+    }
+}

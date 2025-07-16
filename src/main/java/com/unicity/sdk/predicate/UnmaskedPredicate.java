@@ -2,16 +2,13 @@
 package com.unicity.sdk.predicate;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.shared.cbor.CborEncoder;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.util.HexConverter;
-import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
@@ -19,7 +16,7 @@ import com.unicity.sdk.token.TokenType;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
-public class UnmaskedPredicate extends DefaultPredicate {
+public class UnmaskedPredicate extends DefaultPredicate<MaskedPredicateReference> {
     private final TokenType tokenType;
 
     private UnmaskedPredicate(
@@ -30,7 +27,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
             HashAlgorithm hashAlgorithm,
             byte[] nonce,
             TokenType tokenType) {
-        super(PredicateType.UNMASKED, publicKey, algorithm, hashAlgorithm, nonce, reference, hash);
+        super(PredicateType.UNMASKED, publicKey, algorithm, hashAlgorithm, nonce, null, hash);
         this.tokenType = tokenType;
     }
 
@@ -40,7 +37,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
     public static CompletableFuture<UnmaskedPredicate> create(
             TokenId tokenId,
             TokenType tokenType,
-            com.unicity.sdk.shared.signing.SigningService signingService,
+            SigningService signingService,
             HashAlgorithm hashAlgorithm,
             byte[] nonce) {
         try {
@@ -179,7 +176,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
 
             // Build CBOR array with reference, tokenId, and nonce
             byte[] cborArray = CborEncoder.encodeArray(
-                    reference.toCBOR(),
+//                    reference.toCBOR(),
                     CborEncoder.encodeByteString(tokenId),
                     CborEncoder.encodeByteString(nonce)
             );

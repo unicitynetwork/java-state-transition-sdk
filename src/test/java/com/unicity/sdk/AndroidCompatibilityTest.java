@@ -1,11 +1,10 @@
 package com.unicity.sdk;
 
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.address.DirectAddress;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -34,7 +33,7 @@ public class AndroidCompatibilityTest {
         
         // Test 3: Token IDs and Types
         TokenId tokenId = TokenId.create(new byte[32]);
-        TokenType tokenType = TokenType.create(new byte[32]);
+        TokenType tokenType = new TokenType(new byte[32]);
         assertNotNull(tokenId);
         assertNotNull(tokenType);
         

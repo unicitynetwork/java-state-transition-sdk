@@ -1,18 +1,16 @@
 package com.unicity.sdk.e2e;
 
 import com.unicity.sdk.api.*;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.signing.SigningService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.security.SecureRandom;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,7 +52,7 @@ public class BasicE2ETest {
         SigningService signingService = SigningService.createFromSecret(randomSecret, null);
         RequestId requestId = RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
         Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
-        SubmitCommitmentResponse response = aggregatorClient.submitTransaction(requestId, txDataHash, auth).get();
+        SubmitCommitmentResponse response = aggregatorClient.submitCommitment(requestId, txDataHash, auth).get();
 
         if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
             System.err.println("Commitment submission failed with status: " + response.getStatus());
@@ -99,7 +97,7 @@ public class BasicE2ETest {
                         SigningService signingService = SigningService.createFromSecret(randomSecret, null);
                         RequestId requestId = RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
                         Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
-                        SubmitCommitmentResponse response = aggregatorClient.submitTransaction(requestId, txDataHash, auth).get();
+                        SubmitCommitmentResponse response = aggregatorClient.submitCommitment(requestId, txDataHash, auth).get();
                         return response.getStatus() == SubmitCommitmentStatus.SUCCESS;
                     } finally {
                         latch.countDown();

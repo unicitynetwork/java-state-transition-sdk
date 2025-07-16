@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.unicity.sdk.predicate.IPredicate;
 import com.unicity.sdk.predicate.IPredicateFactory;
-import com.unicity.sdk.shared.util.HexConverter;
+import com.unicity.sdk.util.HexConverter;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;

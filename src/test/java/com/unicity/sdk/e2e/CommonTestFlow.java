@@ -5,10 +5,10 @@ import com.unicity.sdk.StateTransitionClient;
 import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
-import com.unicity.sdk.shared.signing.SigningService;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -45,7 +45,7 @@ public class CommonTestFlow {
         SigningService aliceSigningService = SigningService.createFromSecret(ALICE_SECRET, aliceNonce);
         
         TokenId tokenId = TokenId.create(randomBytes(32));
-        TokenType tokenType = TokenType.create(randomBytes(32));
+        TokenType tokenType = new TokenType(randomBytes(32));
         TokenCoinData coinData = randomCoinData(2);
         
         MaskedPredicate alicePredicate = MaskedPredicate.create(
@@ -56,7 +56,7 @@ public class CommonTestFlow {
             aliceNonce
         ); //correct
         
-        DirectAddress aliceAddress = DirectAddress.create(alicePredicate.getReference());
+        DirectAddress aliceAddress = alicePredicate.getReference().toAddress();
         TokenState aliceTokenState = TokenState.create(alicePredicate, new byte[0]);
 
         var tokenData = new TestTokenData(randomBytes(32));
@@ -91,7 +91,7 @@ public class CommonTestFlow {
             HashAlgorithm.SHA256,
             bobNonce
         );
-        DirectAddress bobAddress = DirectAddress.create(bobPredicate.getReference());
+        DirectAddress bobAddress = bobPredicate.getReference().toAddress();
         
         // Alice transfers to Bob
         String bobCustomData = "Bob's custom data";
@@ -117,7 +117,7 @@ public class CommonTestFlow {
         
         // Bob finalizes the token
         TokenState bobTokenState = TokenState.create(bobPredicate, bobStateData);
-        Token bobToken = (Token) client.finishTransaction(
+        Token bobToken = client.finishTransaction(
             aliceToken,
             bobTokenState,
             transferTx
@@ -162,7 +162,7 @@ public class CommonTestFlow {
         ).get();
         
         TokenState carolTokenState = TokenState.create(carolPredicate, null);
-        Token carolToken = (Token) client.finishTransaction(
+        Token carolToken = client.finishTransaction(
             bobToken,
             carolTokenState,
             carolTransferTx
@@ -180,7 +180,7 @@ public class CommonTestFlow {
         SigningService aliceSigningService = SigningService.createFromSecret(ALICE_SECRET, aliceNonce);
         
         TokenId tokenId = TokenId.create(randomBytes(32));
-        TokenType tokenType = TokenType.create(randomBytes(32));
+        TokenType tokenType = new TokenType(randomBytes(32));
         TokenCoinData coinData = randomCoinData(2);
         
         MaskedPredicate alicePredicate = MaskedPredicate.create(
@@ -191,7 +191,7 @@ public class CommonTestFlow {
             aliceNonce
         );
         
-        DirectAddress aliceAddress = DirectAddress.create(alicePredicate.getReference());
+        DirectAddress aliceAddress = alicePredicate.getReference().toAddress();
         TokenState aliceTokenState = TokenState.create(alicePredicate, new byte[0]);
         
         // Mint token
@@ -232,7 +232,7 @@ public class CommonTestFlow {
             HashAlgorithm.SHA256,
             bobNonce
         );
-        DirectAddress bobAddress = DirectAddress.create(bobPredicate.getReference());
+        DirectAddress bobAddress = bobPredicate.getReference().toAddress();
         
         // Create offline commitment
         byte[] customData = "my custom data".getBytes(StandardCharsets.UTF_8);
@@ -255,7 +255,7 @@ public class CommonTestFlow {
         
         // Bob finalizes with his predicate
         TokenState bobTokenState = TokenState.create(bobPredicate, customData);
-        Token bobToken = (Token) client.finishTransaction(
+        Token bobToken = client.finishTransaction(
             token,
             bobTokenState,
             confirmedTx

@@ -1,8 +1,8 @@
 
 package com.unicity.sdk.transaction;
 
-import com.unicity.sdk.shared.hash.DataHasher;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
 
 
 public class Transaction<T extends TransactionData<?>> {

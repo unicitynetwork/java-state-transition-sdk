@@ -3,11 +3,14 @@ package com.unicity.sdk.serializer.json.smt;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.*;
-import com.unicity.sdk.shared.hash.DataHash;
-import com.unicity.sdk.shared.smt.path.MerkleTreePath;
-import com.unicity.sdk.shared.smt.path.MerkleTreePathStep;
-import com.unicity.sdk.transaction.InclusionProof;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.smt.path.MerkleTreePath;
+import com.unicity.sdk.smt.path.MerkleTreePathStep;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,14 +47,14 @@ public class MerkleTreePathJson {
             Set<String> fields = new HashSet<>();
 
             if (!p.isExpectedStartObjectToken()) {
-                ctx.handleUnexpectedToken(MerkleTreePath.class, p);
+                throw MismatchedInputException.from(p, MerkleTreePath.class, "Expected object value");
             }
 
             while (p.nextToken() != JsonToken.END_OBJECT) {
                 String fieldName = p.currentName();
 
                 if (!fields.add(fieldName)) {
-                    ctx.reportInputMismatch(MerkleTreePath.class, "Duplicate field: %s", fieldName);
+                    throw MismatchedInputException.from(p, MerkleTreePath.class, String.format("Duplicate field: %s", fieldName));
                 }
 
                 p.nextToken();
@@ -59,29 +62,31 @@ public class MerkleTreePathJson {
                     switch (fieldName) {
                         case ROOT_HASH_FIELD:
                             if (p.currentToken() != JsonToken.VALUE_STRING) {
-                                ctx.reportInputMismatch(MerkleTreePath.class, "Expected string value");
+                                throw MismatchedInputException.from(p, MerkleTreePath.class, "Expected string value");
                             }
                             rootHash = p.readValueAs(DataHash.class);
                             break;
                         case STEPS_FIELD:
                             if (p.currentToken() != JsonToken.START_ARRAY) {
-                                ctx.reportInputMismatch(MerkleTreePath.class, "Expected array value");
+                                throw MismatchedInputException.from(p, MerkleTreePath.class, "Expected array value");
                             }
 
                             while (p.nextToken() != JsonToken.END_ARRAY) {
                                 steps.add(p.readValueAs(MerkleTreePathStep.class));
                             }
                             break;
+                        default:
+                            p.skipChildren();
                     }
                 } catch (Exception e) {
-                    ctx.reportInputMismatch(MerkleTreePath.class, "Invalid value for field '%s': %s", fieldName, e.getMessage());
+                    throw MismatchedInputException.wrapWithPath(e, MerkleTreePath.class, fieldName);
                 }
             }
 
             Set<String> missingFields = new HashSet<>(Set.of(ROOT_HASH_FIELD, STEPS_FIELD));
             missingFields.removeAll(fields);
             if (!missingFields.isEmpty()) {
-                ctx.reportInputMismatch(MerkleTreePath.class, "Missing required fields: %s", missingFields);
+                throw MismatchedInputException.from(p, MerkleTreePath.class, String.format("Missing required fields: %s", missingFields));
             }
 
             return new MerkleTreePath(rootHash, steps);
