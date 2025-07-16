@@ -102,7 +102,7 @@ public class JsonRpcResponseJson {
       Set<String> missingFields = new HashSet<>(Set.of(VERSION_FIELD, ID_FIELD));
       missingFields.removeAll(fields);
       if (!missingFields.isEmpty()) {
-        throw MismatchedInputException.from(p, MerkleTreePath.class,
+        throw MismatchedInputException.from(p, JsonRpcResponse.class,
             String.format("Missing required fields: %s", missingFields));
       }
 

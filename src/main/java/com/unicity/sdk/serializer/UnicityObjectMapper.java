@@ -8,6 +8,7 @@ import com.unicity.sdk.api.BlockHeightResponse;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.SubmitCommitmentRequest;
 import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.jsonrpc.JsonRpcError;
 import com.unicity.sdk.jsonrpc.JsonRpcRequest;
 import com.unicity.sdk.jsonrpc.JsonRpcResponse;
 import com.unicity.sdk.serializer.cbor.api.AuthenticatorCborSerializer;
@@ -18,6 +19,7 @@ import com.unicity.sdk.serializer.json.api.BlockHeightResponseJson;
 import com.unicity.sdk.serializer.json.api.RequestIdJson;
 import com.unicity.sdk.serializer.json.api.SubmitCommitmentRequestJson;
 import com.unicity.sdk.serializer.json.hash.DataHashJson;
+import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcErrorJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcRequestJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcRequestJson.Serializer;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcResponseJson;
@@ -83,6 +85,7 @@ public class UnicityObjectMapper {
 
     module.addDeserializer(JsonRpcResponse.class, new JsonRpcResponseJson.Deserializer());
     module.addDeserializer(BlockHeightResponse.class, new BlockHeightResponseJson.Deserializer());
+    module.addDeserializer(JsonRpcError.class, new JsonRpcErrorJson.Deserializer());
 
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(module);
