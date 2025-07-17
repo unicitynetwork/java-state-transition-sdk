@@ -15,6 +15,7 @@ public class MerkleTreePathStepBranchTest {
         Assertions.assertEquals("null", objectMapper.writeValueAsString(null));
         Assertions.assertEquals("[]", objectMapper.writeValueAsString(new MerkleTreePathStepBranch(null)));
         Assertions.assertEquals("[\"00000000\"]", objectMapper.writeValueAsString(new MerkleTreePathStepBranch(new byte[4])));
+        Assertions.assertEquals(new MerkleTreePathStepBranch(null), objectMapper.readValue("[]", MerkleTreePathStepBranch.class));
         Assertions.assertEquals(new MerkleTreePathStepBranch(null), objectMapper.readValue("[null]", MerkleTreePathStepBranch.class));
         Assertions.assertEquals(new MerkleTreePathStepBranch(new byte[] { (byte) 0x51, (byte) 0x55 }), objectMapper.readValue("[\"5155\"]", MerkleTreePathStepBranch.class));
         Assertions.assertThrows(JsonMappingException.class, () -> objectMapper.readValue("\"asd\"", MerkleTreePathStepBranch.class));

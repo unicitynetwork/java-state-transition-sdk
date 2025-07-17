@@ -1,6 +1,6 @@
 package com.unicity.sdk.api;
 
-class InclusionProofRequest {
+public class InclusionProofRequest {
 
   private final RequestId requestId;
 
