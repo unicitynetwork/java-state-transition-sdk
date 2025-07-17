@@ -34,14 +34,16 @@ public class MerkleTreePathStepBranchJson {
                 throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected array value");
             }
 
-            p.nextToken();
-            String value = p.currentToken() != JsonToken.VALUE_NULL ? p.getValueAsString() : null;
+            String value = null;
             if (p.nextToken() != JsonToken.END_ARRAY) {
-                throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected only one element in array");
+                value = p.currentToken() != JsonToken.VALUE_NULL ? p.getValueAsString() : null;
+                if (p.nextToken() != JsonToken.END_ARRAY) {
+                    throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected only one element in array");
+                }
             }
 
             try {
-                return new MerkleTreePathStepBranch(value == null ? null : HexConverter.decode(value));
+                return new MerkleTreePathStepBranch(value != null ? HexConverter.decode(value) : null);
             } catch (Exception e) {
                 throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class, "Expected string value");
             }
