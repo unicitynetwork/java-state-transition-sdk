@@ -1,7 +1,8 @@
 
 package com.unicity.sdk;
 
-import com.unicity.sdk.address.IAddress;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.AggregatorClient;
 import com.unicity.sdk.api.SubmitCommitmentResponse;
 import com.unicity.sdk.api.SubmitCommitmentStatus;
@@ -12,6 +13,7 @@ import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.transaction.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,16 +29,17 @@ public class StateTransitionClient {
     this.client = client;
   }
 
-  public CompletableFuture<Commitment<MintTransactionData>> submitMintTransaction(MintTransactionData transactionData) {
+  public CompletableFuture<Commitment<MintTransactionData<?>>> submitMintTransaction(
+      MintTransactionData<?> transactionData) throws IOException {
     SigningService signingService = SigningService.createFromSecret(MINTER_SECRET,
         transactionData.getTokenId().getBytes());
 
-    Commitment<MintTransactionData> commitment = Commitment.create(
+    Commitment<MintTransactionData<?>> commitment = Commitment.create(
         transactionData, signingService);
 
     return this.client.submitCommitment(
-        commitment.getRequestId(), commitment.getTransactionData()
-            .getHash(), commitment.getAuthenticator()).thenApply(response -> {
+        commitment.getRequestId(), commitment.getTransactionData().calculateHash(),
+        commitment.getAuthenticator()).thenApply(response -> {
       if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
         throw new RuntimeException(
             String.format("Could not submit transaction: %s", response.getStatus()));
@@ -90,23 +93,17 @@ public class StateTransitionClient {
     return new CompletableFuture<>();
   }
 
-  public <T extends Transaction<MintTransactionData>> Token<T> finishTransaction(
-      Token<T> token,
-      TokenState state,
-      Transaction<TransferTransactionData> transaction) {
-    return finishTransaction(token, state, transaction, new ArrayList<>());
-  }
-
-  public <T extends Transaction<MintTransactionData>> Token<T> finishTransaction(
+  public <T extends Transaction<MintTransactionData<?>>> Token<T> finishTransaction(
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,
-      List<Token<?>> nametagTokens) {
-    if (!transaction.getData().getSourceState().getUnlockPredicate().verify(transaction)) {
+      List<Token<?>> nametagTokens) throws IOException {
+    if (!transaction.getData().getSourceState().getUnlockPredicate()
+        .verify(transaction, token.getId(), token.getType())) {
       throw new RuntimeException("Predicate verification failed");
     }
 
-    IAddress expectedAddress = state.getUnlockPredicate().getReference().toAddress();
+    Address expectedAddress = state.getUnlockPredicate().getReference(token.getType()).toAddress();
     if (!expectedAddress.toString().equals(transaction.getData().getRecipient())) {
       throw new RuntimeException("Recipient address mismatch");
     }
@@ -122,7 +119,7 @@ public class StateTransitionClient {
   }
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
-      Token<? extends Transaction<MintTransactionData>> token,
+      Token<? extends Transaction<MintTransactionData<?>>> token,
       byte[] publicKey) {
     return new CompletableFuture<>();
 //        return RequestId.create(publicKey, token.getState().getHash())
@@ -188,20 +185,20 @@ public class StateTransitionClient {
 //                );
   }
 
-  public CompletableFuture<SubmitCommitmentResponse> submitCommitment(Commitment<?> commitment) {
-    DataHash txHash = null;
-    TransactionData transactionData = commitment.getTransactionData();
-
-    if (transactionData.getHash() == null) {
-      return CompletableFuture.failedFuture(
-          new IllegalArgumentException("Cannot get hash from transaction data"));
+  public CompletableFuture<SubmitCommitmentResponse> submitCommitment(Token<?> token,
+      Commitment<TransferTransactionData> commitment) {
+    if (!commitment.getTransactionData().getSourceState().getUnlockPredicate()
+        .isOwner(commitment.getAuthenticator().getPublicKey())) {
+      throw new IllegalArgumentException(
+          "Ownership verification failed: Authenticator does not match source state predicate.");
     }
 
-    return client.submitCommitment(
-        commitment.getRequestId(),
-        txHash,
-        commitment.getAuthenticator()
-    );
+//    if (commitment.get) {
+//      return this.client.submitCommitment(commitment.getRequestId(),
+//          commitment.getTransactionData().calculateHash(token.getId(), token.getType()),
+//          commitment.getAuthenticator());
+//    }
+    return null;
   }
 
   public AggregatorClient getClient() {

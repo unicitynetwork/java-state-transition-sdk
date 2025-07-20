@@ -1,263 +1,146 @@
 package com.unicity.sdk.transaction;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.address.IAddress;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.RequestId;
-import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
-
+import com.unicity.sdk.util.HexConverter;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Mint transaction data with full constructor matching TypeScript
  */
-public class MintTransactionData implements TransactionData<RequestId> {
-    private static final byte[] MINT_SUFFIX = HexConverter.decode("9e82002c144d7c5796c50f6db50a0c7bbd7f717ae3af6c6c71a3e9eba3022730");
-    private final TokenId tokenId;
-    private final TokenType tokenType;
-    private final IPredicate predicate;
-    private final Object tokenData;
-    private final TokenCoinData coinData;
-    private final DataHash dataHash;  // Optional data hash field
-    private final byte[] salt;
-    private final IAddress recipient;
-    private final Object reason;  // Optional reason field
-    private final DataHash hash; // Hash of the encoded transaction
-    private final RequestId sourceState;
+public class MintTransactionData<R extends MintTransactionReason> implements
+    TransactionData<RequestId> {
 
-    /**
-     * Constructor matching TypeScript implementation
-     */
-    public MintTransactionData(
-            TokenId tokenId,
-            TokenType tokenType,
-            IPredicate predicate,
-            Object tokenData,
-            TokenCoinData coinData,
-            DataHash dataHash,
-            byte[] salt) {
-        this(tokenId, tokenType, predicate, tokenData, coinData, dataHash, salt, null);
-    }
-    
-    public MintTransactionData(
-            TokenId tokenId,
-            TokenType tokenType,
-            IPredicate predicate,
-            Object tokenData,
-            TokenCoinData coinData,
-            DataHash dataHash,
-            byte[] salt,
-            Object reason) {
-        this.tokenId = tokenId;
-        this.tokenType = tokenType;
-        this.predicate = predicate;
-        this.tokenData = tokenData;
-        this.coinData = coinData;
-        this.dataHash = dataHash;
-        this.salt = Arrays.copyOf(salt, salt.length);
-        this.reason = reason;
-        
-        // Calculate recipient from predicate
-        try {
-            this.recipient = predicate.getReference().toAddress();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create recipient address", e);
-        }
-        
-        // Create sourceState like TypeScript: RequestId.createFromImprint(tokenId.bytes, MINT_SUFFIX)
-        try {
-            this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create source state", e);
-        }
-        
-        // Calculate hash
-        this.hash = calculateHash();
-    }
-    
-    private DataHash calculateHash() {
-        try {
-            // Hash calculation is different from CBOR encoding!
-            // It uses tokenDataHash instead of raw tokenData
-            DataHasher tokenDataHasher = new DataHasher(HashAlgorithm.SHA256);
-            // tokenDataHasher.update(tokenData.toCBOR());
-            DataHash tokenDataHash = tokenDataHasher.digest();
-            
-            DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-            hasher.update(CborEncoder.encodeArray(
-                tokenId.toCBOR(),
-                tokenType.toCBOR(),
-//                tokenDataHash.toCBOR(),  // Hash of token data, not the data itself
-//                dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(),
-                coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(),
-                CborEncoder.encodeTextString(recipient.getAddress()),
-                CborEncoder.encodeByteString(salt),
-                reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull()
-            ));
-            return hasher.digest();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to calculate hash", e);
-        }
-    }
+  private static final byte[] MINT_SUFFIX = HexConverter.decode(
+      "9e82002c144d7c5796c50f6db50a0c7bbd7f717ae3af6c6c71a3e9eba3022730");
 
-    public TokenId getTokenId() {
-        return tokenId;
-    }
+  private final TokenId tokenId;
+  private final TokenType tokenType;
+  private final byte[] tokenData;
+  private final TokenCoinData coinData;
+  private final RequestId sourceState;
+  private final Address recipient;
+  private final byte[] salt;
+  private final DataHash dataHash;
+  private final R reason;
 
-    public TokenType getTokenType() {
-        return tokenType;
-    }
+  public MintTransactionData(
+      TokenId tokenId,
+      TokenType tokenType,
+      byte[] tokenData,
+      TokenCoinData coinData,
+      Address recipient,
+      byte[] salt,
+      DataHash dataHash,
+      R reason
+  ) {
+    Objects.requireNonNull(tokenId, "Token ID cannot be null");
+    Objects.requireNonNull(tokenType, "Token type cannot be null");
+    Objects.requireNonNull(recipient, "Recipient cannot be null");
+    Objects.requireNonNull(salt, "Salt cannot be null");
 
-    public IPredicate getPredicate() {
-        return predicate;
-    }
+    this.tokenId = tokenId;
+    this.tokenType = tokenType;
+    this.tokenData = Arrays.copyOf(tokenData, tokenData.length);
+    this.coinData = coinData;
+    this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX);
+    this.recipient = recipient;
+    this.salt = Arrays.copyOf(salt, salt.length);
+    this.dataHash = dataHash;
+    this.reason = reason;
+  }
 
-    public Object getTokenData() {
-        return tokenData;
-    }
+  public TokenId getTokenId() {
+    return this.tokenId;
+  }
 
-    public TokenCoinData getCoinData() {
-        return coinData;
-    }
+  public TokenType getTokenType() {
+    return this.tokenType;
+  }
 
-    public DataHash getDataHash() {
-        return dataHash;
-    }
-    
-    public Object getReason() {
-        return reason;
-    }
 
-    public byte[] getSalt() {
-        return Arrays.copyOf(salt, salt.length);
-    }
+  public byte[] getTokenData() {
+    return this.tokenData;
+  }
 
-    public IAddress getRecipient() {
-        return recipient;
-    }
+  public TokenCoinData getCoinData() {
+    return this.coinData;
+  }
 
-    public DataHash getHash() {
-        return hash;
-    }
-    
-    public RequestId getSourceState() {
-        return sourceState;
-    }
+  public DataHash getDataHash() {
+    return this.dataHash;
+  }
 
-    public Object toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
-        
-        root.put("tokenId", tokenId.toJSON());
-        root.put("tokenType", tokenType.toJSON());
-//        root.set("unlockPredicate", mapper.valueToTree(predicate.toJSON()));
-        // root.set("tokenData", mapper.valueToTree(tokenData.toJSON()));
-        if (coinData != null) {
-            root.set("coinData", mapper.valueToTree(coinData.toJSON()));
-        }
-        if (dataHash != null) {
-            root.set("dataHash", mapper.valueToTree(dataHash));
-        }
-        root.put("salt", HexConverter.encode(salt));
-//        root.set("recipient", mapper.valueToTree(recipient.toJSON()));
-        if (reason != null) {
-            root.set("reason", mapper.valueToTree(reason));
-        }
-        
-        return root;
-    }
+  public byte[] getSalt() {
+    return Arrays.copyOf(this.salt, this.salt.length);
+  }
 
-    public byte[] toCBOR() {
-        // Match TypeScript SDK structure exactly
-        return CborEncoder.encodeArray(
-            tokenId.toCBOR(),                                              // Field 0: Token ID
-            tokenType.toCBOR(),                                            // Field 1: Token Type
-            // CborEncoder.encodeByteString(tokenData.toCBOR()),             // Field 2: Token Data as byte string
-            coinData != null ? coinData.toCBOR() : CborEncoder.encodeNull(), // Field 3: Coin Data or null
-            CborEncoder.encodeTextString(recipient.getAddress()),         // Field 4: Recipient as text string
-            CborEncoder.encodeByteString(salt),                           // Field 5: Salt
-//            dataHash != null ? dataHash.toCBOR() : CborEncoder.encodeNull(), // Field 6: Data Hash or null
-            reason != null ? CborEncoder.encodeByteString((byte[]) reason) : CborEncoder.encodeNull() // Field 7: Reason or null
-        );
+  public Address getRecipient() {
+    return this.recipient;
+  }
+
+  public Object getReason() {
+    return this.reason;
+  }
+
+  public RequestId getSourceState() {
+    return this.sourceState;
+  }
+
+  public DataHash calculateHash() throws IOException {
+    DataHash tokenDataHash = new DataHasher(HashAlgorithm.SHA256).update(tokenData).digest();
+    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
+    node.addPOJO(tokenId);
+    node.addPOJO(tokenType);
+    node.addPOJO(tokenDataHash);
+    node.addPOJO(dataHash);
+    node.addPOJO(coinData);
+    node.add(recipient.getAddress());
+    node.add(salt);
+    node.addPOJO(reason);
+
+    return new DataHasher(HashAlgorithm.SHA256).update(
+        UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof MintTransactionData)) {
+      return false;
     }
-    
-    /**
-     * Deserialize MintTransactionData from JSON.
-     * @param jsonNode JSON node containing mint transaction data
-     * @return MintTransactionData instance
-     */
-    public static MintTransactionData fromJSON(JsonNode jsonNode) throws Exception {
-        // Deserialize token ID
-        String tokenIdHex = jsonNode.get("tokenId").asText();
-        TokenId tokenId = new TokenId(HexConverter.decode(tokenIdHex));
-        
-        // Deserialize token type
-        String tokenTypeHex = jsonNode.get("tokenType").asText();
-        TokenType tokenType = new TokenType(HexConverter.decode(tokenTypeHex));
-        
-        // Deserialize predicate
-        JsonNode predicateNode = jsonNode.get("predicate");
-        
-        // Deserialize token data - we'll use a simple wrapper for raw bytes
-        ISerializable tokenData = null;
-        if (jsonNode.has("tokenData") && !jsonNode.get("tokenData").isNull()) {
-            String tokenDataHex = jsonNode.get("tokenData").asText();
-            final byte[] tokenDataBytes = HexConverter.decode(tokenDataHex);
-            
-            // Create a simple ISerializable wrapper for the token data
-            tokenData = new ISerializable() {
-                @Override
-                public Object toJSON() {
-                    return HexConverter.encode(tokenDataBytes);
-                }
-                
-                @Override
-                public byte[] toCBOR() {
-                    return CborEncoder.encodeByteString(tokenDataBytes);
-                }
-                
-                public byte[] getData() {
-                    return tokenDataBytes;
-                }
-            };
-        }
-        
-        // Deserialize coin data
-        TokenCoinData coinData = null;
-        if (jsonNode.has("coinData") && !jsonNode.get("coinData").isNull()) {
-            JsonNode coinDataNode = jsonNode.get("coinData");
-            coinData = TokenCoinData.fromJSON(coinDataNode);
-        }
-        
-        // Deserialize salt
-        String saltHex = jsonNode.get("salt").asText();
-        byte[] salt = HexConverter.decode(saltHex);
-        
-        // Deserialize data hash (optional)
-        DataHash dataHash = null;
-        if (jsonNode.has("dataHash") && !jsonNode.get("dataHash").isNull()) {
-            String dataHashHex = jsonNode.get("dataHash").asText();
-//            dataHash = DataHash.fromJSON(dataHashHex);
-        }
-        
-        return new MintTransactionData(
-            tokenId,
-            tokenType,
-            null,
-            tokenData,
-            coinData,
-            dataHash,
-            salt
-        );
-    }
+    MintTransactionData<?> that = (MintTransactionData<?>) o;
+
+    return Objects.equals(this.tokenId, that.tokenId) && Objects.equals(this.tokenType,
+        that.tokenType) && Objects.deepEquals(this.tokenData, that.tokenData)
+        && Objects.equals(this.coinData, that.coinData) && Objects.equals(this.sourceState,
+        that.sourceState) && Objects.equals(this.recipient, that.recipient)
+        && Objects.deepEquals(this.salt, that.salt) && Objects.equals(this.dataHash,
+        that.dataHash) && Objects.equals(this.reason, that.reason);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.tokenId, this.tokenType, Arrays.hashCode(tokenData), this.coinData,
+        this.sourceState,
+        this.recipient, Arrays.hashCode(this.salt), this.dataHash, this.reason);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "MintTransactionData{tokenId=%s, tokenType=%s, tokenData=%s, coinData=%s, sourceState=%s, recipient=%s, salt=%s, dataHash=%s, reason=%s}",
+        this.tokenId, this.tokenType, HexConverter.encode(this.tokenData), this.coinData,
+        this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
+        this.reason);
+  }
 }

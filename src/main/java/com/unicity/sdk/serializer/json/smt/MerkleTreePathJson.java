@@ -61,9 +61,6 @@ public class MerkleTreePathJson {
                 try {
                     switch (fieldName) {
                         case ROOT_HASH_FIELD:
-                            if (p.currentToken() != JsonToken.VALUE_STRING) {
-                                throw MismatchedInputException.from(p, MerkleTreePath.class, "Expected string value");
-                            }
                             rootHash = p.readValueAs(DataHash.class);
                             break;
                         case STEPS_FIELD:

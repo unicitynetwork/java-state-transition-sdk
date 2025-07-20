@@ -1,109 +1,69 @@
 package com.unicity.sdk.token;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.unicity.sdk.Hashable;
-import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.shared.cbor.CborEncoder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.predicate.IPredicate;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.util.HexConverter;
-import com.unicity.sdk.util.ByteArraySerializer;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Represents a snapshot of token ownership and associated data.
  */
-public class TokenState implements Hashable {
-    @JsonProperty("unlockPredicate")
-    private final IPredicate unlockPredicate;
+public class TokenState {
 
-    @JsonSerialize(using = ByteArraySerializer.class)
-    private final byte[] data;
+  private final IPredicate unlockPredicate;
+  private final byte[] data;
 
-    private final DataHash hash;
+  public TokenState(IPredicate unlockPredicate, byte[] data) {
+    Objects.requireNonNull(unlockPredicate, "Unlock predicate cannot be null");
+    this.unlockPredicate = unlockPredicate;
+    this.data = data != null ? Arrays.copyOf(data, data.length) : null;
+  }
 
-    private TokenState(IPredicate unlockPredicate, byte[] data, DataHash hash) {
-        this.unlockPredicate = unlockPredicate;
-        this.data = data;
-        this.hash = hash;
+  public IPredicate getUnlockPredicate() {
+    return this.unlockPredicate;
+  }
+
+  public byte[] getData() {
+    return this.data;
+  }
+
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
+    node.addPOJO(unlockPredicate.calculateHash(tokenId, tokenType));
+    node.add(data);
+
+    return new DataHasher(HashAlgorithm.SHA256).update(
+        UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof TokenState)) {
+      return false;
     }
+    TokenState that = (TokenState) o;
+    return Objects.equals(this.unlockPredicate, that.unlockPredicate)
+        && Objects.deepEquals(this.data, that.data);
+  }
 
-    public static TokenState create(IPredicate unlockPredicate, byte[] data) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-//            baos.write(unlockPredicate.getHash().toCBOR());
-            baos.write(data != null ? data : new byte[0]);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        DataHash hash = new DataHasher(HashAlgorithm.SHA256).update(baos.toByteArray()).digest();
-        return new TokenState(unlockPredicate, data, hash);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.unlockPredicate, Arrays.hashCode(this.data));
+  }
 
-    public IPredicate getUnlockPredicate() {
-        return this.unlockPredicate;
-    }
-
-    public byte[] getData() {
-        return this.data;
-    }
-
-    public DataHash getHash() {
-        return this.hash;
-    }
-
-    public Object toJSON() {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
-        root.put("data", HexConverter.encode(data != null ? data : new byte[0]));
-//        root.set("unlockPredicate", mapper.valueToTree(unlockPredicate.toJSON()));
-        return root;
-    }
-
-    public byte[] toCBOR() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            baos.write(CborEncoder.encodeArray(
-//                unlockPredicate.toCBOR(),
-                CborEncoder.encodeByteString(data != null ? data : new byte[0])
-            ));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to encode TokenState", e);
-        }
-        return baos.toByteArray();
-    }
-
-    @Override
-    public String toString() {
-        return "TokenState:" +
-                "\n  " + unlockPredicate.toString() +
-                "\n  Data: " + (data != null ? HexConverter.encode(data) : "null") +
-                "\n  Hash: " + hash.toString();
-    }
-    
-    /**
-     * Deserialize TokenState from JSON.
-     * @param jsonNode JSON node containing token state
-     * @return TokenState instance
-     */
-    public static TokenState fromJSON(JsonNode jsonNode) throws Exception {
-        // Deserialize predicate
-        JsonNode predicateNode = jsonNode.get("unlockPredicate");
-        
-        // Get data if present
-        byte[] data = null;
-        if (jsonNode.has("data") && !jsonNode.get("data").isNull()) {
-            String dataHex = jsonNode.get("data").asText();
-            data = HexConverter.decode(dataHex);
-        }
-        
-        return create(null, data);
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "TokenState{unlockPredicate=%s, data=%s}",
+        this.unlockPredicate,
+        this.data != null ? HexConverter.encode(this.data) : "null"
+    );
+  }
 }

@@ -2,12 +2,14 @@ package com.unicity.sdk.serializer.json.hash;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.util.HexConverter;
 
 import java.io.IOException;
@@ -52,15 +54,15 @@ public class DataHashJson {
 
         @Override
         public DataHash deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-            String value = p.getValueAsString();
-            if (value == null) {
-                throw MismatchedInputException.from(p, DataHash.class, "Expected string value");
+            if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
+                throw MismatchedInputException.from(p, DataHash.class,
+                    "Expected string value");
             }
 
             try {
-                return DataHash.fromImprint(HexConverter.decode(value));
+                return DataHash.fromImprint(p.readValueAs(byte[].class));
             } catch (Exception e) {
-                throw MismatchedInputException.from(p, DataHash.class, "Expected string value");
+                throw MismatchedInputException.from(p, DataHash.class, "Expected bytes");
             }
         }
     }

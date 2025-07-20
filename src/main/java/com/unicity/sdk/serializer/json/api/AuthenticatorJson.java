@@ -11,9 +11,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.signing.Signature;
-import com.unicity.sdk.smt.path.MerkleTreePath;
 import com.unicity.sdk.util.HexConverter;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -75,10 +73,10 @@ public class AuthenticatorJson {
                             algorithm = p.getValueAsString();
                             break;
                         case PUBLIC_KEY_FIELD:
-                            publicKey = HexConverter.decode(p.getValueAsString());
+                            publicKey = p.readValueAs(byte[].class);
                             break;
                         case SIGNATURE_FIELD:
-                            signature = Signature.decode(HexConverter.decode(p.getValueAsString()));
+                            signature = Signature.decode(p.readValueAs(byte[].class));
                             break;
                         case STATE_HASH_FIELD:
                             stateHash = p.readValueAs(DataHash.class);

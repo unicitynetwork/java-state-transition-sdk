@@ -1,138 +1,85 @@
 
 package com.unicity.sdk.transaction;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.unicity.sdk.address.Address;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.token.NameTagToken;
+import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
-
+import com.unicity.sdk.token.TokenType;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Transaction data for token state transitions
  */
 public class TransferTransactionData implements TransactionData<TokenState> {
-    private final TokenState sourceState;
-    private final String recipient;
-    private final byte[] salt;
-    private final DataHash data;
-    private final byte[] message;
-    private final List<NameTagToken> nametagTokens;
-    private final DataHash hash;
 
-    private TransferTransactionData(
-            TokenState sourceState,
-            String recipient,
-            byte[] salt,
-            DataHash data,
-            byte[] message,
-            List<NameTagToken> nametagTokens,
-            DataHash hash) {
-        this.sourceState = sourceState;
-        this.recipient = recipient;
-        this.salt = Arrays.copyOf(salt, salt.length);
-        this.data = data;
-        this.message = Arrays.copyOf(message, message.length);
-        this.nametagTokens = nametagTokens;
-        this.hash = hash;
-    }
+  private final TokenState sourceState;
+  private final Address recipient;
+  private final byte[] salt;
+  private final DataHash dataHash;
+  private final byte[] message;
+  private final List<NameTagToken> nametagTokens;
 
-    public static TransferTransactionData create(
-            TokenState sourceState,
-            String recipient,
-            byte[] salt,
-            DataHash data,
-            byte[] message) {
-        return create(sourceState, recipient, salt, data, message, null);
-    }
+  public TransferTransactionData(
+      TokenState sourceState,
+      Address recipient,
+      byte[] salt,
+      DataHash dataHash,
+      byte[] message,
+      List<NameTagToken> nametagTokens) {
+    Objects.requireNonNull(sourceState, "SourceState cannot be null");
+    Objects.requireNonNull(recipient, "Recipient cannot be null");
+    Objects.requireNonNull(salt, "Salt cannot be null");
+    this.sourceState = sourceState;
+    this.recipient = recipient;
+    this.salt = Arrays.copyOf(salt, salt.length);
+    this.dataHash = dataHash;
+    this.message = Arrays.copyOf(message, message.length);
+    this.nametagTokens = nametagTokens;
+  }
 
-    public static TransferTransactionData create(
-            TokenState sourceState,
-            String recipient,
-            byte[] salt,
-            DataHash data,
-            byte[] message,
-            List<NameTagToken> nametagTokens) {
-        
-        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-//        hasher.update(sourceState.getHash().toCBOR());
-        hasher.update(HexConverter.decode(recipient));
-        hasher.update(salt);
-        if (data != null) {
-//            hasher.update(data.toCBOR());
-        }
-        if (message != null) {
-            hasher.update(message);
-        }
-        // TODO: Add nametag tokens hashing when implemented
-        
-        return new TransferTransactionData(sourceState, recipient, salt, data, message != null ? message : new byte[0], nametagTokens, hasher.digest());
-    }
+  public TokenState getSourceState() {
+    return this.sourceState;
+  }
 
-    public TokenState getSourceState() {
-        return sourceState;
-    }
+  public Address getRecipient() {
+    return this.recipient;
+  }
 
-    public String getRecipient() {
-        return recipient;
-    }
+  public byte[] getSalt() {
+    return Arrays.copyOf(this.salt, this.salt.length);
+  }
 
-    public byte[] getSalt() {
-        return Arrays.copyOf(salt, salt.length);
-    }
+  public DataHash getDataHash() {
+    return this.dataHash;
+  }
 
-    public DataHash getData() {
-        return data;
-    }
-    
-    public DataHash getDataHash() {
-        return data;
-    }
+  public byte[] getMessage() {
+    return Arrays.copyOf(this.message, this.message.length);
+  }
 
-    public byte[] getMessage() {
-        return Arrays.copyOf(message, message.length);
-    }
+  public List<NameTagToken> getNametagTokens() {
+    return this.nametagTokens;
+  }
 
-    public List<NameTagToken> getNametagTokens() {
-        return nametagTokens;
-    }
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
+    node.addPOJO(this.sourceState.calculateHash(tokenId, tokenType));
+    node.addPOJO(this.dataHash);
+    node.addPOJO(this.recipient);
+    node.add(this.salt);
+    node.add(this.message);
 
-    public DataHash getHash() {
-        return hash;
-    }
-    
-    /**
-     * Deserialize TransactionData from JSON.
-     * @param jsonNode JSON node containing transaction data
-     * @return TransactionData instance
-     */
-    public static TransferTransactionData fromJSON(JsonNode jsonNode) throws Exception {
-        // Deserialize source state
-        JsonNode sourceStateNode = jsonNode.get("sourceState");
-        TokenState sourceState = TokenState.fromJSON(sourceStateNode);
-        
-        // Get recipient
-        String recipient = jsonNode.get("recipient").asText();
-        
-        // Get salt
-        String saltHex = jsonNode.get("salt").asText();
-        byte[] salt = HexConverter.decode(saltHex);
-        
-        // Get data hash
-        JsonNode dataNode = jsonNode.get("data");
-        DataHash data = null;
-//        DataHash data = DataHash.fromJSON(dataNode.asText());
-        
-        // Get message
-        String messageHex = jsonNode.get("message").asText();
-        byte[] message = HexConverter.decode(messageHex);
-        
-        // TODO: Handle nametag tokens when implemented
-        
-        return create(sourceState, recipient, salt, data, message);
-    }
+    return new DataHasher(HashAlgorithm.SHA256).update(
+        UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+  }
 }

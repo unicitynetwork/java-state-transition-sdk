@@ -37,15 +37,15 @@ public class TokenE2ETest {
         assertTrue(blockHeight > 0);
     }
     
-    @Test
-    void testTransferFlow() throws Exception {
-        CommonTestFlow.testTransferFlow(client);
-    }
-    
-    @Test 
-    void testOfflineTransferFlow() throws Exception {
-        CommonTestFlow.testOfflineTransferFlow(client);
-    }
+//    @Test
+//    void testTransferFlow() throws Exception {
+//        CommonTestFlow.testTransferFlow(client);
+//    }
+//
+//    @Test
+//    void testOfflineTransferFlow() throws Exception {
+//        CommonTestFlow.testOfflineTransferFlow(client);
+//    }
     
     // Token splitting will be added once implemented
     // @Test

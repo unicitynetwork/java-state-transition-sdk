@@ -6,11 +6,12 @@ import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.util.HexConverter;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Direct address implementation
  */
-public class DirectAddress implements IAddress {
+public class DirectAddress implements Address {
 
   private final DataHash data;
   private final byte[] checksum;
@@ -29,6 +30,21 @@ public class DirectAddress implements IAddress {
   @Override
   public String getAddress() {
     return this.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof DirectAddress)) {
+      return false;
+    }
+    DirectAddress that = (DirectAddress) o;
+    return Objects.equals(data, that.data) && Objects.deepEquals(checksum,
+        that.checksum);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(data, Arrays.hashCode(checksum));
   }
 
   @Override
