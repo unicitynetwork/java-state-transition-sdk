@@ -12,21 +12,10 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 
-/**
- * DataHashJson provides JSON serialization and deserialization for DataHash objects.
- * It uses Hex encoding to represent the hash imprint as a string in JSON.
- */
 public class RequestIdJson {
     private RequestIdJson() {}
 
-    /**
-     * Serializer for DataHash objects.
-     * Serializes the DataHash imprint as a Hex-encoded string.
-     */
     public static class Serializer extends JsonSerializer<RequestId> {
-        /**
-         * Default constructor for the serializer.
-         */
         public Serializer() {}
 
         @Override
@@ -40,14 +29,7 @@ public class RequestIdJson {
         }
     }
 
-    /**
-     * Deserializer for DataHash objects.
-     * Expects a Hex-encoded string and converts it to a DataHash object.
-     */
     public static class Deserializer extends JsonDeserializer<RequestId> {
-        /**
-         * Default constructor for the deserializer.
-         */
         public Deserializer() {}
 
         @Override

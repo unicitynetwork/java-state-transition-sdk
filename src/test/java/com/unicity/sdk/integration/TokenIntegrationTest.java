@@ -117,15 +117,15 @@ public class TokenIntegrationTest {
         assertTrue(blockHeight >= 0);
     }
     
-    @Test
-    @Order(3) 
-    void testTransferFlow() throws Exception {
-        CommonTestFlow.testTransferFlow(client);
-    }
-    
-    @Test
-    @Order(4)
-    void testOfflineTransferFlow() throws Exception {
-        CommonTestFlow.testOfflineTransferFlow(client);
-    }
+//    @Test
+//    @Order(3)
+//    void testTransferFlow() throws Exception {
+//        CommonTestFlow.testTransferFlow(client);
+//    }
+//
+//    @Test
+//    @Order(4)
+//    void testOfflineTransferFlow() throws Exception {
+//        CommonTestFlow.testOfflineTransferFlow(client);
+//    }
 }

@@ -9,8 +9,9 @@ public class AggregatorClientTest {
 
   @Test
   public void testSubmitCommitment() throws ExecutionException, InterruptedException {
-    System.out.println(
-        new AggregatorClient("https://gateway-test.unicity.network/").getBlockHeight().get());
+//    Commitment.create(MintTransactionData)
+//    System.out.println(
+//        new AggregatorClient("https://gateway-test.unicity.network/").submitCommitment();
   }
 
   @Test

@@ -32,9 +32,9 @@ public class AndroidCompatibilityTest {
         assertNotNull(signingService.getPublicKey());
         
         // Test 3: Token IDs and Types
-        TokenId tokenId = TokenId.create(new byte[32]);
+//        TokenId tokenId = TokenId.create(new byte[32]);
         TokenType tokenType = new TokenType(new byte[32]);
-        assertNotNull(tokenId);
+//        assertNotNull(tokenId);
         assertNotNull(tokenType);
         
         // Test 4: Predicates

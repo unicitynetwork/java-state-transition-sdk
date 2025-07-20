@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.jsonrpc.JsonRpcError;
 import com.unicity.sdk.jsonrpc.JsonRpcResponse;
-import com.unicity.sdk.smt.path.MerkleTreePath;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,7 +39,8 @@ public class JsonRpcResponseJson {
     }
 
     @Override
-    public JsonDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) {
+    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,
+        BeanProperty property) {
       JavaType wrapperType = ctxt.getContextualType();
       JavaType valueType = wrapperType != null ? wrapperType.containedType(0) : null;
       return new Deserializer(valueType);
@@ -76,7 +76,7 @@ public class JsonRpcResponseJson {
                 throw MismatchedInputException.from(p, JsonRpcResponse.class,
                     "Expected string value");
               }
-              version = p.readValueAs(String.class);
+              version = p.getValueAsString();
               break;
             case RESULT_FIELD:
               result = p.getCodec().readValue(p, this.resultType);
@@ -85,10 +85,6 @@ public class JsonRpcResponseJson {
               error = p.readValueAs(JsonRpcError.class);
               break;
             case ID_FIELD:
-              if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-                throw MismatchedInputException.from(p, JsonRpcResponse.class,
-                    "Expected string value");
-              }
               id = p.readValueAs(UUID.class);
               break;
             default:

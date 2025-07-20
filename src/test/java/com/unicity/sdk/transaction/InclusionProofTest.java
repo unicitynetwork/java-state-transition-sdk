@@ -9,6 +9,8 @@ import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.smt.SparseMerkleTree;
 import com.unicity.sdk.smt.path.MerkleTreePath;
+import com.unicity.sdk.token.TokenId;
+import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.util.HexConverter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;

@@ -52,16 +52,17 @@ public class JsonRpcErrorJson {
 
         p.nextToken();
 
-        if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-          throw MismatchedInputException.from(p, JsonRpcError.class,
-              "Expected string value");
-        }
         try {
           switch (fieldName) {
             case CODE_FIELD:
+              // TODO: Check field type?
               code = p.getValueAsInt();
               break;
             case MESSAGE_FIELD:
+              if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
+                throw MismatchedInputException.from(p, JsonRpcError.class,
+                    "Expected string value");
+              }
               message = p.getValueAsString();
               break;
             default:

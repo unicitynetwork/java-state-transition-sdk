@@ -1,8 +1,9 @@
 package com.unicity.sdk.predicate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.unicity.sdk.address.IAddress;
+import com.unicity.sdk.address.Address;
+import com.unicity.sdk.hash.DataHash;
 
 public interface IPredicateReference {
-    IAddress toAddress();
+    DataHash getHash();
+    Address toAddress();
 }

@@ -16,7 +16,7 @@ import java.util.Arrays;
 /**
  * Globally unique identifier of a token.
  */
-public class TokenId implements ISerializable {
+public class TokenId {
     private final byte[] bytes;
 
     public TokenId(byte[] bytes) {
@@ -24,47 +24,11 @@ public class TokenId implements ISerializable {
     }
 
     public byte[] getBytes() {
-        return Arrays.copyOf(bytes, bytes.length);
-    }
-
-    public static TokenId create(byte[] id) {
-        return new TokenId(id);
-    }
-    
-    public static TokenId fromHex(String hex) {
-        return new TokenId(HexConverter.decode(hex));
-    }
-
-    @Override
-    @JsonValue
-    public String toJSON() {
-        return HexConverter.encode(this.bytes);
-    }
-
-    @Override
-    public byte[] toCBOR() {
-        CBORFactory factory = new CBORFactory();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             CBORGenerator generator = factory.createGenerator(baos)) {
-            generator.writeBinary(this.bytes);
-            generator.flush();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "TokenId[" + HexConverter.encode(this.bytes) + "]";
-    }
-
-    public BigInteger toBigInt() {
-        return new BigInteger(1, toCBOR());
+        return Arrays.copyOf(this.bytes, this.bytes.length);
     }
 
     public BitString toBitString() {
-        return new BitString(bytes);
+        return new BitString(this.bytes);
     }
 
     @Override
@@ -72,11 +36,16 @@ public class TokenId implements ISerializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TokenId tokenId = (TokenId) o;
-        return Arrays.equals(bytes, tokenId.bytes);
+        return Arrays.equals(this.bytes, tokenId.bytes);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(bytes);
+        return Arrays.hashCode(this.bytes);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("TokenId[%s]", HexConverter.encode(this.bytes));
     }
 }
