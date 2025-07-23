@@ -13,6 +13,7 @@ import com.unicity.sdk.address.Address;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.smt.path.MerkleTreePath;
 import com.unicity.sdk.smt.path.MerkleTreePathStep;
+import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -22,6 +23,7 @@ import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.MintTransactionReason;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
+import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -66,8 +68,8 @@ public class TokenJson {
         throws IOException {
       TokenState state = null;
       Transaction<MintTransactionData<?>> genesis = null;
-      List<Transaction<?>> transactions = new ArrayList<>();
-      List<Token<?>> nametagTokens = new ArrayList<>();
+      List<Transaction<TransferTransactionData>> transactions = new ArrayList<>();
+      List<NameTagToken> nametagTokens = new ArrayList<>();
 
       Set<String> fields = new HashSet<>();
 
@@ -101,7 +103,7 @@ public class TokenJson {
               while (p.nextToken() != JsonToken.END_ARRAY) {
                 transactions.add(
                     ctx.readValue(p, ctx.getTypeFactory()
-                        .constructParametricType(Transaction.class, TransactionData.class))
+                        .constructParametricType(Transaction.class, TransferTransactionData.class))
                 );
               }
               break;

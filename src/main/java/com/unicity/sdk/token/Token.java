@@ -3,6 +3,7 @@ package com.unicity.sdk.token;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransferTransactionData;
 import java.util.List;
 import java.util.Objects;
 
@@ -12,15 +13,24 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
 
   private final TokenState state;
   private final T genesis;
-  private final List<Transaction<?>> transactions;
-  private final List<Token<?>> nametagTokens;
+  private final List<Transaction<TransferTransactionData>> transactions;
+  private final List<NameTagToken> nametagTokens;
 
-  public Token(TokenState state, T genesis, List<Transaction<?>> transactions,
-      List<Token<?>> nametagTokens) {
+  public Token(TokenState state, T genesis, List<Transaction<TransferTransactionData>> transactions,
+      List<NameTagToken> nametagTokens) {
+    Objects.requireNonNull(state, "State cannot be null");
+    Objects.requireNonNull(genesis, "Genesis cannot be null");
+    Objects.requireNonNull(transactions, "Transactions list cannot be null");
+    Objects.requireNonNull(nametagTokens, "Nametag tokens list cannot be null");
+
     this.state = state;
     this.genesis = genesis;
     this.transactions = List.copyOf(transactions);
     this.nametagTokens = List.copyOf(nametagTokens);
+  }
+
+  public Token(TokenState state, T genesis) {
+    this(state, genesis, List.of(), List.of());
   }
 
   public TokenId getId() {
@@ -51,11 +61,11 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.genesis;
   }
 
-  public List<Transaction<?>> getTransactions() {
+  public List<Transaction<TransferTransactionData>> getTransactions() {
     return this.transactions;
   }
 
-  public List<Token<?>> getNametagTokens() {
+  public List<NameTagToken> getNametagTokens() {
     return this.nametagTokens;
   }
 

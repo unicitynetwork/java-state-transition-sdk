@@ -1,7 +1,6 @@
 
 package com.unicity.sdk.token.fungible;
 
-import com.unicity.sdk.ISerializable;
 import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.util.HexConverter;
 

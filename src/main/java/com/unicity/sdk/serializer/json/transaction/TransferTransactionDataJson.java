@@ -3,19 +3,26 @@ package com.unicity.sdk.serializer.json.transaction;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.serializer.json.token.TokenStateJson;
+import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.transaction.MintTransactionData;
+import com.unicity.sdk.transaction.MintTransactionReason;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class TransferTransactionDataJson {
@@ -51,13 +58,12 @@ public class TransferTransactionDataJson {
     }
   }
 
-  public static class Deserializer {
+  public static class Deserializer extends
+      JsonDeserializer<TransferTransactionData> {
 
-    private Deserializer() {
-    }
-
-    public static TransferTransactionData deserialize(JsonParser p, TokenId tokenId,
-        TokenType TokenType) throws IOException {
+    @Override
+    public TransferTransactionData deserialize(JsonParser p, DeserializationContext ctx)
+        throws IOException {
       if (!p.isExpectedStartObjectToken()) {
         throw MismatchedInputException.from(p, TransferTransactionData.class,
             "Expected object value");
@@ -68,7 +74,7 @@ public class TransferTransactionDataJson {
       byte[] salt = null;
       DataHash dataHash = null;
       byte[] message = null;
-      Set<Token<?>> nametagTokens = new HashSet<>();
+      List<NameTagToken> nametagTokens = new ArrayList<>();
 
       while (p.nextToken() != JsonToken.END_OBJECT) {
         String fieldName = p.currentName();
@@ -96,7 +102,8 @@ public class TransferTransactionDataJson {
         }
       }
 
-      return null;
+      return new TransferTransactionData(tokenState, recipient, salt, dataHash, message,
+          nametagTokens);
     }
   }
 }

@@ -33,6 +33,12 @@ public abstract class DefaultPredicate implements IPredicate {
       String algorithm,
       HashAlgorithm hashAlgorithm,
       byte[] nonce) {
+    Objects.requireNonNull(type, "Predicate type cannot be null");
+    Objects.requireNonNull(publicKey, "Public key cannot be null");
+    Objects.requireNonNull(algorithm, "Algorithm cannot be null");
+    Objects.requireNonNull(hashAlgorithm, "Hash algorithm cannot be null");
+    Objects.requireNonNull(nonce, "Nonce cannot be null");
+
     this.type = type;
     this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
     this.algorithm = algorithm;

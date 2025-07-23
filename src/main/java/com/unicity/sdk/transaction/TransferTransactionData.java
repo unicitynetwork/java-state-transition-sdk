@@ -1,7 +1,6 @@
 
 package com.unicity.sdk.transaction;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.hash.DataHash;
@@ -12,6 +11,7 @@ import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -39,11 +39,12 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     Objects.requireNonNull(sourceState, "SourceState cannot be null");
     Objects.requireNonNull(recipient, "Recipient cannot be null");
     Objects.requireNonNull(salt, "Salt cannot be null");
+    Objects.requireNonNull(nametagTokens, "Nametags cannot be null");
     this.sourceState = sourceState;
     this.recipient = recipient;
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
-    this.message = Arrays.copyOf(message, message.length);
+    this.message = message != null ? Arrays.copyOf(message, message.length) : message;
     this.nametagTokens = nametagTokens;
   }
 
@@ -81,5 +82,31 @@ public class TransferTransactionData implements TransactionData<TokenState> {
 
     return new DataHasher(HashAlgorithm.SHA256).update(
         UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof TransferTransactionData)) {
+      return false;
+    }
+    TransferTransactionData that = (TransferTransactionData) o;
+    return Objects.equals(this.sourceState, that.sourceState) && Objects.equals(
+        this.recipient, that.recipient) && Objects.deepEquals(this.salt, that.salt)
+        && Objects.equals(this.dataHash, that.dataHash) && Objects.deepEquals(this.message,
+        that.message) && Objects.equals(this.nametagTokens, that.nametagTokens);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.sourceState, this.recipient, Arrays.hashCode(this.salt), this.dataHash,
+        Arrays.hashCode(this.message), this.nametagTokens);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "TransferTransactionData{sourceState=%s, recipient=%s, salt=%s, dataHash=%s, message=%s, nametagTokens=%s}",
+        this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
+        this.message != null ? HexConverter.encode(this.message) : null, this.nametagTokens);
   }
 }

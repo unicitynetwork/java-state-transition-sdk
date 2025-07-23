@@ -9,6 +9,7 @@ import com.unicity.sdk.api.BlockHeightResponse;
 import com.unicity.sdk.api.InclusionProofRequest;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.SubmitCommitmentRequest;
+import com.unicity.sdk.api.SubmitCommitmentResponse;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.jsonrpc.JsonRpcError;
 import com.unicity.sdk.jsonrpc.JsonRpcRequest;
@@ -25,6 +26,7 @@ import com.unicity.sdk.serializer.json.api.BlockHeightResponseJson;
 import com.unicity.sdk.serializer.json.api.InclusionProofRequestJson;
 import com.unicity.sdk.serializer.json.api.RequestIdJson;
 import com.unicity.sdk.serializer.json.api.SubmitCommitmentRequestJson;
+import com.unicity.sdk.serializer.json.api.SubmitCommitmentResponseJson;
 import com.unicity.sdk.serializer.json.hash.DataHashJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcErrorJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcRequestJson;
@@ -44,6 +46,7 @@ import com.unicity.sdk.serializer.json.transaction.CommitmentJson;
 import com.unicity.sdk.serializer.json.transaction.InclusionProofJson;
 import com.unicity.sdk.serializer.json.transaction.MintTransactionDataJson;
 import com.unicity.sdk.serializer.json.transaction.TransactionJson;
+import com.unicity.sdk.serializer.json.transaction.TransferTransactionDataJson;
 import com.unicity.sdk.serializer.json.util.ByteArrayHexJson;
 import com.unicity.sdk.smt.path.MerkleTreePath;
 import com.unicity.sdk.smt.path.MerkleTreePathStep;
@@ -57,6 +60,7 @@ import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransferTransactionData;
 
 public class UnicityObjectMapper {
 
@@ -140,6 +144,11 @@ public class UnicityObjectMapper {
     module.addSerializer(MintTransactionData.class, new MintTransactionDataJson.Serializer());
     module.addDeserializer(MintTransactionData.class, new MintTransactionDataJson.Deserializer());
 
+    module.addSerializer(TransferTransactionData.class,
+        new TransferTransactionDataJson.Serializer());
+    module.addDeserializer(TransferTransactionData.class,
+        new TransferTransactionDataJson.Deserializer());
+
     module.addSerializer(JsonRpcRequest.class, new JsonRpcRequestJson.Serializer());
     module.addSerializer(SubmitCommitmentRequest.class,
         new SubmitCommitmentRequestJson.Serializer());
@@ -148,6 +157,7 @@ public class UnicityObjectMapper {
     module.addDeserializer(JsonRpcResponse.class, new JsonRpcResponseJson.Deserializer());
     module.addDeserializer(JsonRpcError.class, new JsonRpcErrorJson.Deserializer());
     module.addDeserializer(BlockHeightResponse.class, new BlockHeightResponseJson.Deserializer());
+    module.addDeserializer(SubmitCommitmentResponse.class, new SubmitCommitmentResponseJson.Deserializer());
 
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(module);

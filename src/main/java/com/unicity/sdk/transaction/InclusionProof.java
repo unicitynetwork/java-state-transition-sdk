@@ -33,19 +33,19 @@ public class InclusionProof {
   }
 
   public MerkleTreePath getMerkleTreePath() {
-    return merkleTreePath;
+    return this.merkleTreePath;
   }
 
   public Authenticator getAuthenticator() {
-    return authenticator;
+    return this.authenticator;
   }
 
   public DataHash getTransactionHash() {
-    return transactionHash;
+    return this.transactionHash;
   }
 
   public InclusionProofVerificationStatus verify(RequestId requestId) {
-    if (authenticator != null && transactionHash != null) {
+    if (this.authenticator != null && this.transactionHash != null) {
       if (!this.authenticator.verify(this.transactionHash)) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }

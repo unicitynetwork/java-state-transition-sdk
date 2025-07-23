@@ -8,4 +8,5 @@ import com.unicity.sdk.token.TokenType;
 public interface TransactionData<T>{
     T getSourceState();
     Address getRecipient();
+    DataHash getDataHash();
 }
