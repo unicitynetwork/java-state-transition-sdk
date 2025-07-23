@@ -13,6 +13,9 @@ public class Transaction<T extends TransactionData<?>> {
   private final InclusionProof inclusionProof;
 
   public Transaction(T data, InclusionProof inclusionProof) {
+    Objects.requireNonNull(data, "Transaction data cannot be null");
+    Objects.requireNonNull(inclusionProof, "Inclusion proof cannot be null");
+
     this.data = data;
     this.inclusionProof = inclusionProof;
   }
@@ -26,26 +29,17 @@ public class Transaction<T extends TransactionData<?>> {
   }
 
   public boolean containsData(byte[] stateData) {
-    if (!(data instanceof TransferTransactionData)) {
+    if ((this.getData().getDataHash() == null) != (stateData == null)) {
       return false;
     }
 
-    TransferTransactionData txData = (TransferTransactionData) data;
-
-    // If transaction has no data hash and state data is empty, they match
-    if (txData.getDataHash() == null && (stateData == null || stateData.length == 0)) {
-      return false;
-    }
-
-    // If one is null but not the other, they don't match
-    if (txData.getDataHash() == null || stateData == null) {
-      return false;
+    if (this.getData().getDataHash() == null) {
+      return true;
     }
 
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
     hasher.update(stateData);
-
-    return hasher.digest().equals(txData.getDataHash());
+    return hasher.digest().equals(this.getData().getDataHash());
   }
 
   @Override

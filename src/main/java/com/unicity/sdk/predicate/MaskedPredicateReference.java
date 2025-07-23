@@ -7,6 +7,7 @@ import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.TokenType;
 
 public class MaskedPredicateReference implements IPredicateReference {
@@ -36,6 +37,12 @@ public class MaskedPredicateReference implements IPredicateReference {
         .digest();
 
     return new MaskedPredicateReference(hash);
+  }
+
+  public static MaskedPredicateReference create(TokenType tokenType, SigningService signingService,
+      HashAlgorithm hashAlgorithm, byte[] nonce) throws JsonProcessingException {
+    return MaskedPredicateReference.create(tokenType, signingService.getAlgorithm(),
+        signingService.getPublicKey(), hashAlgorithm, nonce);
   }
 
   public DirectAddress toAddress() {

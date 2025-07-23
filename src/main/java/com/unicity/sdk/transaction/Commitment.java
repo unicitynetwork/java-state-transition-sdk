@@ -27,14 +27,6 @@ public class Commitment<T extends TransactionData<?>> {
     this.authenticator = authenticator;
   }
 
-  /**
-   * Creates a new `Commitment` TransferTransactionData instance by generating a request ID and
-   * authenticator.
-   *
-   * @param transactionData The data associated with the transaction.
-   * @param signingService  The service used to sign the transaction.
-   * @return Commitment for transaction.
-   */
   public static <T extends MintTransactionData<?>> Commitment<T> create(
       T transactionData,
       SigningService signingService
@@ -43,26 +35,20 @@ public class Commitment<T extends TransactionData<?>> {
         transactionData.getSourceState().getHash());
   }
 
-  /**
-   * Creates a new `Commitment` TransferTransactionData instance by generating a request ID and
-   * authenticator.
-   *
-   * @param transactionData The data associated with the transaction.
-   * @param signingService  The service used to sign the transaction.
-   * @return Commitment for transaction.
-   */
-  private static Commitment<TransferTransactionData> create(
-      TokenId tokenId,
-      TokenType tokenType,
+  public static Commitment<TransferTransactionData> create(
       TransferTransactionData transactionData,
-      SigningService signingService
+      SigningService signingService,
+      TokenId tokenId,
+      TokenType tokenType
   ) throws IOException {
     return Commitment.create(signingService, transactionData,
         transactionData.calculateHash(tokenId, tokenType),
         transactionData.getSourceState().calculateHash(tokenId, tokenType));
   }
 
-  private static <T extends TransactionData<?>> Commitment<T> create(SigningService signingService, T transactionData,
+  private static <T extends TransactionData<?>> Commitment<T> create(
+      SigningService signingService,
+      T transactionData,
       DataHash transactionHash,
       DataHash sourceStateHash) {
     RequestId requestId = RequestId.create(signingService.getPublicKey(), sourceStateHash);

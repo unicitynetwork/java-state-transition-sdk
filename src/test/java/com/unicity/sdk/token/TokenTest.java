@@ -1,24 +1,18 @@
 package com.unicity.sdk.token;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.api.Authenticator;
-import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.predicate.MaskedPredicate;
-import com.unicity.sdk.predicate.MaskedPredicateReference;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.smt.path.MerkleTreePath;
 import com.unicity.sdk.token.fungible.CoinId;
 import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintTransactionData;
-import com.unicity.sdk.transaction.MintTransactionReason;
 import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.util.HexConverter;
+import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.utils.TestUtils;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -63,13 +57,36 @@ public class TokenTest {
                 null
             )
         ),
-        List.of(),
+        List.of(
+            new Transaction<>(
+                new TransferTransactionData(
+                    new TokenState(
+                        new MaskedPredicate(
+                            new byte[24],
+                            "secp256k1",
+                            HashAlgorithm.SHA256,
+                            new byte[25]
+                        ),
+                        null
+                    ),
+                    DirectAddress.create(new DataHash(HashAlgorithm.SHA256, new byte[32])),
+                    new byte[20],
+                    null,
+                    "Transfer".getBytes(),
+                    List.of()
+                ),
+                new InclusionProof(
+                    new MerkleTreePath(
+                        new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
+                        List.of()
+                    ),
+                    null,
+                    null
+                )
+            )
+        ),
         List.of()
     );
-
-    System.out.println(UnicityObjectMapper.JSON.readValue(
-        UnicityObjectMapper.JSON.writeValueAsString(token),
-        Token.class));
 
     Assertions.assertEquals(token,
         UnicityObjectMapper.JSON.readValue(

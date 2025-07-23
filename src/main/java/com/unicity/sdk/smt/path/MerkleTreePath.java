@@ -3,7 +3,7 @@ package com.unicity.sdk.smt.path;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
-
+import com.unicity.sdk.util.BigIntegerConverter;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +46,7 @@ public class MerkleTreePath {
             } else {
                 byte[] bytes = i == 0 ? step.getBranch().getValue() : (currentHash != null ? currentHash.getData() : null);
                 hash = new DataHasher(HashAlgorithm.SHA256)
-                        .update(step.getPath().toByteArray())
+                        .update(BigIntegerConverter.encode(step.getPath()))
                         .update(bytes == null ? new byte[]{0} : bytes)
                         .digest()
                         .getData();

@@ -1,24 +1,23 @@
 package com.unicity.sdk.api;
 
-import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.serializer.UnicityObjectMapper;
-import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
-
+import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Leaf value for merkle tree
  */
-public class LeafValue implements ISerializable {
+public class LeafValue {
 
   private final byte[] bytes;
 
   private LeafValue(byte[] bytes) {
-    this.bytes = bytes;
+    this.bytes = Arrays.copyOf(bytes, bytes.length);
   }
 
   public static LeafValue create(Authenticator authenticator, DataHash transactionHash)
@@ -31,27 +30,25 @@ public class LeafValue implements ISerializable {
   }
 
   public byte[] getBytes() {
-    return this.bytes;
+    return Arrays.copyOf(this.bytes, this.bytes.length);
   }
 
-  public boolean equals(Object other) {
-    if (this == other) {
-      return true;
-    }
-    if (other == null || getClass() != other.getClass()) {
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof LeafValue)) {
       return false;
     }
-    LeafValue leafValue = (LeafValue) other;
-    return java.util.Arrays.equals(this.bytes, leafValue.bytes);
+    LeafValue leafValue = (LeafValue) o;
+    return Objects.deepEquals(this.bytes, leafValue.bytes);
   }
 
   @Override
-  public Object toJSON() {
-    return HexConverter.encode(this.bytes);
+  public int hashCode() {
+    return Arrays.hashCode(this.bytes);
   }
 
   @Override
-  public byte[] toCBOR() {
-    return CborEncoder.encodeByteString(this.bytes);
+  public String toString() {
+    return String.format("LeafValue{%s}", HexConverter.encode(this.bytes));
   }
 }
