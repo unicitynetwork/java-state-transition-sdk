@@ -1,16 +1,26 @@
 
 package com.unicity.sdk.token.fungible;
 
-import com.unicity.sdk.ISerializable;
+import com.unicity.sdk.smt.path.MerkleTreePath;
+import java.util.Objects;
 
-public class SplitMintReasonProof implements ISerializable {
-    @Override
-    public Object toJSON() {
-        return null;
-    }
+public class SplitMintReasonProof {
+  private final MerkleTreePath aggregationPath;
+  private final MerkleTreePath coinTreePath;
 
-    @Override
-    public byte[] toCBOR() {
-        return new byte[0];
-    }
+  public SplitMintReasonProof(MerkleTreePath aggregationPath, MerkleTreePath coinTreePath) {
+    Objects.requireNonNull(aggregationPath, "aggregationPath cannot be null");
+    Objects.requireNonNull(coinTreePath, "coinTreePath cannot be null");
+
+    this.aggregationPath = aggregationPath;
+    this.coinTreePath = coinTreePath;
+  }
+
+  public MerkleTreePath getAggregationPath() {
+    return aggregationPath;
+  }
+
+  public MerkleTreePath getCoinTreePath() {
+    return coinTreePath;
+  }
 }

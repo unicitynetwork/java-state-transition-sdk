@@ -1,13 +1,12 @@
 
 package com.unicity.sdk.transaction;
 
+import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 import java.util.Objects;
@@ -43,9 +42,14 @@ public class Commitment<T extends TransactionData<?>> {
 
   public static Commitment<TransferTransactionData> create(
       Token<?> token,
-      TransferTransactionData transactionData,
+      Address recipient,
+      byte[] salt,
+      DataHash dataHash,
+      byte[] message,
       SigningService signingService
   ) throws IOException {
+    TransferTransactionData transactionData = new TransferTransactionData(
+        token.getState(), recipient, salt, dataHash, message, token.getNametags());
     return Commitment.create(signingService, transactionData,
         transactionData.calculateHash(token.getId(), token.getType()),
         transactionData.getSourceState().calculateHash(token.getId(), token.getType()));

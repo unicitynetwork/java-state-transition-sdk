@@ -1,9 +1,14 @@
 package com.unicity.sdk.token;
 
 import com.unicity.sdk.address.Address;
+import com.unicity.sdk.address.AddressFactory;
+import com.unicity.sdk.address.AddressScheme;
+import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.api.RequestId;
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.fungible.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
@@ -12,8 +17,12 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class Token<T extends Transaction<MintTransactionData<?>>> {
@@ -23,7 +32,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
   private final TokenState state;
   private final T genesis;
   private final List<Transaction<TransferTransactionData>> transactions;
-  private final List<Token<?>> nametagTokens;
+  private final Map<Address, Token<?>> nametags;
 
   public Token(TokenState state, T genesis, List<Transaction<TransferTransactionData>> transactions,
       List<Token<?>> nametagTokens) {
@@ -35,7 +44,20 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     this.state = state;
     this.genesis = genesis;
     this.transactions = List.copyOf(transactions);
-    this.nametagTokens = List.copyOf(nametagTokens);
+    Map<Address, Token<?>> nametags = new HashMap<>();
+    for (Token<?> token : nametagTokens) {
+      if (token == null) {
+        throw new IllegalArgumentException("Nametag tokens list cannot contain null elements");
+      }
+
+      Address address = ProxyAddress.create(token.getId());
+      if (nametags.containsKey(address)) {
+        throw new IllegalArgumentException(
+            "Nametag tokens list contains duplicate addresses: " + address);
+      }
+      nametags.put(address, token);
+    }
+    this.nametags = Map.copyOf(nametags);
   }
 
   public Token(TokenState state, T genesis) {
@@ -74,54 +96,107 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.transactions;
   }
 
-  public List<Token<?>> getNametagTokens() {
-    return this.nametagTokens;
+  public Map<Address, Token<?>> getNametags() {
+    return this.nametags;
   }
 
-  public boolean verify() throws IOException {
-    this.genesis.verify()
-    if (!this.verifyGenesis(this.genesis)) {
-      return false;
-    }
+  public TokenVerificationResult verify() throws IOException {
+    List<TokenVerificationResult> results = new ArrayList<>();
+    results.add(
+        TokenVerificationResult.fromChildren(
+            "Genesis verification",
+            List.of(this.verifyGenesis(this.genesis)))
+    );
 
     Transaction<? extends TransactionData<?>> previousTransaction = this.genesis;
     for (Transaction<TransferTransactionData> transaction : this.transactions) {
-      Address expectedRecipient = transaction.getData().getSourceState().getUnlockPredicate()
-          .getReference(this.getType()).toAddress();
-      if (!expectedRecipient.equals(previousTransaction.getData().getRecipient())) {
-        return false;
-      }
+      Address recipient = previousTransaction.getData().getRecipient();
 
-      if (!previousTransaction.containsData(transaction.getData().getSourceState().getData())) {
-        return false;
-      }
-
-      if (!transaction.getData().getSourceState().getUnlockPredicate()
-          .verify(transaction, this.getId(), this.getType())) {
-        return false;
-      }
+      results.add(
+          TokenVerificationResult.fromChildren(
+              "Transaction verification",
+              List.of(
+                  this.verifyTransaction(transaction, previousTransaction.getData().getDataHash(),
+                      recipient)))
+      );
 
       previousTransaction = transaction;
     }
 
-    if (previousTransaction.containsData(this.getState().getData())) {
-      return false;
+    results.add(TokenVerificationResult.fromChildren(
+        "Token data verification",
+        List.of(
+            this.transactionContainsData(previousTransaction.getData().getDataHash(),
+                this.getState().getData())
+                ? TokenVerificationResult.success()
+                : TokenVerificationResult.fail("Invalid token data")
+        )
+    ));
+
+    List<TokenVerificationResult> nametagResults = new ArrayList<>();
+    for (Token<?> nametag : this.nametags.values()) {
+      nametagResults.add(nametag.verify());
     }
+    results.add(TokenVerificationResult.fromChildren(
+        "Token nametags verification",
+        nametagResults
+    ));
 
     Address expectedAddress = this.getState().getUnlockPredicate().getReference(this.getType())
         .toAddress();
-    if (!expectedAddress.equals(previousTransaction.getData().getRecipient())) {
-      return false;
-    }
+    Address recipient = ProxyAddress.resolve(previousTransaction.getData().getRecipient(),
+        this.nametags);
 
-    return true;
+    results.add(TokenVerificationResult.fromChildren(
+        "Token recipient verification",
+        List.of(
+            expectedAddress.equals(recipient)
+                ? TokenVerificationResult.success()
+                : TokenVerificationResult.fail("Invalid recipient address")
+        )
+    ));
+
+    return TokenVerificationResult.fromChildren("Token verification", results);
   }
 
-  private boolean verifyGenesis(
+  private TokenVerificationResult verifyTransaction(
+      Transaction<TransferTransactionData> transaction, DataHash dataHash, Address recipient)
+      throws IOException {
+
+    for (Token<?> nametag : transaction.getData().getNametags().values()) {
+      if (!nametag.verify().isSuccessful()) {
+        return TokenVerificationResult.fail(
+            String.format("Nametag token %s verification failed", nametag.getId()));
+      }
+    }
+
+    Address expectedRecipient = transaction.getData().getSourceState().getUnlockPredicate()
+        .getReference(this.getType()).toAddress();
+
+    if (!expectedRecipient.equals(
+        ProxyAddress.resolve(recipient, transaction.getData().getNametags()))) {
+      return TokenVerificationResult.fail("recipient mismatch");
+    }
+
+    if (!this.transactionContainsData(dataHash, transaction.getData().getSourceState().getData())) {
+      return TokenVerificationResult.fail("data mismatch");
+    }
+
+    if (!transaction.getData().getSourceState().getUnlockPredicate()
+        .verify(transaction, this.getId(), this.getType())) {
+      return TokenVerificationResult.fail("predicate verification failed");
+    }
+
+    return TokenVerificationResult.success();
+  }
+
+  private TokenVerificationResult verifyGenesis(
       Transaction<MintTransactionData<?>> transaction) throws IOException {
-    if (transaction.getInclusionProof().getAuthenticator() == null ||
-        transaction.getInclusionProof().getTransactionHash() == null) {
-      return false; // Missing authenticator or transaction hash
+    if (transaction.getInclusionProof().getAuthenticator() == null) {
+      return TokenVerificationResult.fail("Missing authenticator.");
+    }
+    if (transaction.getInclusionProof().getTransactionHash() == null) {
+      return TokenVerificationResult.fail("Missing transaction hash.");
     }
 
     SigningService signingService = SigningService.createFromSecret(Commitment.MINTER_SECRET,
@@ -129,20 +204,40 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
 
     if (!Arrays.equals(transaction.getInclusionProof().getAuthenticator().getPublicKey(),
         signingService.getPublicKey())) {
+      return TokenVerificationResult.fail("Authenticator public key mismatch.");
+    }
+
+    if (!transaction.getInclusionProof().getAuthenticator()
+        .verify(transaction.getData().calculateHash())) {
+      return TokenVerificationResult.fail("Authenticator verification failed.");
+    }
+
+    if (transaction.getData().getReason() != null
+        && !transaction.getData().getReason().verify(transaction)) {
+      return TokenVerificationResult.fail("Mint reason verification failed.");
+    }
+
+    RequestId requestId = RequestId.create(signingService.getPublicKey(),
+        transaction.getData().getSourceState().getHash());
+    if (transaction.getInclusionProof().verify(requestId) != InclusionProofVerificationStatus.OK) {
+      return TokenVerificationResult.fail("Inclusion proof verification failed.");
+    }
+
+    return TokenVerificationResult.success();
+  }
+
+  private boolean transactionContainsData(DataHash hash, byte[] stateData) {
+    if ((hash == null) != (stateData == null)) {
       return false;
     }
 
-    if (!transaction.getInclusionProof().getAuthenticator().verify(transaction.getData().calculateHash())) {
-      return false; // Authenticator verification failed
-    }
-
-    if (transaction.getData().getReason() instanceof SplitMintReason) {
-      // transaction.getData().getReason().verify(transaction);
+    if (hash == null) {
       return true;
     }
 
-    RequestId requestId = RequestId.create(signingService.getPublicKey(), transaction.getData().getSourceState().getHash());
-    return transaction.getInclusionProof().verify(requestId) == InclusionProofVerificationStatus.OK;
+    DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
+    hasher.update(stateData);
+    return hasher.digest().equals(hash);
   }
 
   @Override
@@ -153,17 +248,17 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     Token<?> token = (Token<?>) o;
     return Objects.equals(this.state, token.state) && Objects.equals(this.genesis,
         token.genesis) && Objects.equals(this.transactions, token.transactions)
-        && Objects.equals(this.nametagTokens, token.nametagTokens);
+        && Objects.equals(this.nametags, token.nametags);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.state, this.genesis, this.transactions, this.nametagTokens);
+    return Objects.hash(this.state, this.genesis, this.transactions, this.nametags);
   }
 
   @Override
   public String toString() {
     return String.format("Token{state=%s, genesis=%s, transactions=%s, nametagTokens=%s}",
-        this.state, this.genesis, this.transactions, this.nametagTokens);
+        this.state, this.genesis, this.transactions, this.nametags);
   }
 }

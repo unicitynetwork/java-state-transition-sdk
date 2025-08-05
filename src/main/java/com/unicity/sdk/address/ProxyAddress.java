@@ -5,8 +5,11 @@ import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
+import com.unicity.sdk.token.TokenVerificationResult;
 import com.unicity.sdk.util.HexConverter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -36,6 +39,21 @@ public class ProxyAddress implements Address {
   @Override
   public String getAddress() {
     return this.toString();
+  }
+
+  public static Address resolve(Address address, Map<Address, Token<?>> nametags) {
+    Address targetAddress = address;
+    while (targetAddress.getScheme() != AddressScheme.DIRECT) {
+      Token<?> nametag = nametags.get(targetAddress);
+      if (nametag == null) {
+        return null;
+      }
+
+      targetAddress = AddressFactory.createAddress(
+          new String(nametag.getState().getData(), StandardCharsets.UTF_8));
+    }
+
+    return targetAddress;
   }
 
   @Override
