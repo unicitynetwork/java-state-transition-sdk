@@ -8,11 +8,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.predicate.IPredicate;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenId;
+import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.token.TokenState;
-import com.unicity.sdk.token.TokenType;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,7 +45,7 @@ public class TokenStateJson {
     @Override
     public TokenState deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
-      IPredicate predicate = null;
+      Predicate predicate = null;
       byte[] data = null;
 
       Set<String> fields = new HashSet<>();
@@ -69,7 +66,7 @@ public class TokenStateJson {
         try {
           switch (fieldName) {
             case UNLOCK_PREDICATE_FIELD:
-              predicate = p.readValueAs(IPredicate.class);
+              predicate = p.readValueAs(Predicate.class);
               break;
             case DATA_FIELD:
               data =

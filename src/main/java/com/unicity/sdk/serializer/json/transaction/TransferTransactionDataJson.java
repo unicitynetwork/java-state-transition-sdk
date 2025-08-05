@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.serializer.json.token.TokenStateJson;
-import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -74,7 +73,7 @@ public class TransferTransactionDataJson {
       byte[] salt = null;
       DataHash dataHash = null;
       byte[] message = null;
-      List<NameTagToken> nametagTokens = new ArrayList<>();
+      List<Token<?>> nametagTokens = new ArrayList<>();
 
       while (p.nextToken() != JsonToken.END_OBJECT) {
         String fieldName = p.currentName();
@@ -102,8 +101,14 @@ public class TransferTransactionDataJson {
         }
       }
 
-      return new TransferTransactionData(tokenState, recipient, salt, dataHash, message,
-          nametagTokens);
+      return new TransferTransactionData(
+          tokenState,
+          recipient,
+          salt,
+          dataHash,
+          message,
+          nametagTokens
+      );
     }
   }
 }

@@ -1,7 +1,6 @@
 package com.unicity.sdk.utils;
 
 import com.unicity.sdk.ISerializable;
-import com.unicity.sdk.shared.cbor.CborEncoder;
 import com.unicity.sdk.util.HexConverter;
 
 import java.util.Arrays;
@@ -9,7 +8,7 @@ import java.util.Arrays;
 /**
  * Test token data implementation
  */
-public class TestTokenData implements ISerializable {
+public class TestTokenData {
     private final byte[] data;
 
     public TestTokenData(byte[] data) {
@@ -18,16 +17,6 @@ public class TestTokenData implements ISerializable {
 
     public byte[] getData() {
         return Arrays.copyOf(data, data.length);
-    }
-
-    @Override
-    public Object toJSON() {
-        return HexConverter.encode(data);
-    }
-
-    @Override
-    public byte[] toCBOR() {
-        return CborEncoder.encodeByteString(data);
     }
 
     @Override

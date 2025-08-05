@@ -1,9 +1,18 @@
 package com.unicity.sdk.token;
 
+import com.unicity.sdk.address.Address;
+import com.unicity.sdk.api.RequestId;
+import com.unicity.sdk.signing.SigningService;
+import com.unicity.sdk.token.fungible.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
+import com.unicity.sdk.transaction.Commitment;
+import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,10 +23,10 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
   private final TokenState state;
   private final T genesis;
   private final List<Transaction<TransferTransactionData>> transactions;
-  private final List<NameTagToken> nametagTokens;
+  private final List<Token<?>> nametagTokens;
 
   public Token(TokenState state, T genesis, List<Transaction<TransferTransactionData>> transactions,
-      List<NameTagToken> nametagTokens) {
+      List<Token<?>> nametagTokens) {
     Objects.requireNonNull(state, "State cannot be null");
     Objects.requireNonNull(genesis, "Genesis cannot be null");
     Objects.requireNonNull(transactions, "Transactions list cannot be null");
@@ -65,8 +74,75 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.transactions;
   }
 
-  public List<NameTagToken> getNametagTokens() {
+  public List<Token<?>> getNametagTokens() {
     return this.nametagTokens;
+  }
+
+  public boolean verify() throws IOException {
+    this.genesis.verify()
+    if (!this.verifyGenesis(this.genesis)) {
+      return false;
+    }
+
+    Transaction<? extends TransactionData<?>> previousTransaction = this.genesis;
+    for (Transaction<TransferTransactionData> transaction : this.transactions) {
+      Address expectedRecipient = transaction.getData().getSourceState().getUnlockPredicate()
+          .getReference(this.getType()).toAddress();
+      if (!expectedRecipient.equals(previousTransaction.getData().getRecipient())) {
+        return false;
+      }
+
+      if (!previousTransaction.containsData(transaction.getData().getSourceState().getData())) {
+        return false;
+      }
+
+      if (!transaction.getData().getSourceState().getUnlockPredicate()
+          .verify(transaction, this.getId(), this.getType())) {
+        return false;
+      }
+
+      previousTransaction = transaction;
+    }
+
+    if (previousTransaction.containsData(this.getState().getData())) {
+      return false;
+    }
+
+    Address expectedAddress = this.getState().getUnlockPredicate().getReference(this.getType())
+        .toAddress();
+    if (!expectedAddress.equals(previousTransaction.getData().getRecipient())) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private boolean verifyGenesis(
+      Transaction<MintTransactionData<?>> transaction) throws IOException {
+    if (transaction.getInclusionProof().getAuthenticator() == null ||
+        transaction.getInclusionProof().getTransactionHash() == null) {
+      return false; // Missing authenticator or transaction hash
+    }
+
+    SigningService signingService = SigningService.createFromSecret(Commitment.MINTER_SECRET,
+        transaction.getData().getTokenId().getBytes());
+
+    if (!Arrays.equals(transaction.getInclusionProof().getAuthenticator().getPublicKey(),
+        signingService.getPublicKey())) {
+      return false;
+    }
+
+    if (!transaction.getInclusionProof().getAuthenticator().verify(transaction.getData().calculateHash())) {
+      return false; // Authenticator verification failed
+    }
+
+    if (transaction.getData().getReason() instanceof SplitMintReason) {
+      // transaction.getData().getReason().verify(transaction);
+      return true;
+    }
+
+    RequestId requestId = RequestId.create(signingService.getPublicKey(), transaction.getData().getSourceState().getHash());
+    return transaction.getInclusionProof().verify(requestId) == InclusionProofVerificationStatus.OK;
   }
 
   @Override

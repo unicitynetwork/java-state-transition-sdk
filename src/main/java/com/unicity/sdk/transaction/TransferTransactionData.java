@@ -7,7 +7,7 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
-import com.unicity.sdk.token.NameTagToken;
+import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
@@ -27,7 +27,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
   private final byte[] salt;
   private final DataHash dataHash;
   private final byte[] message;
-  private final List<NameTagToken> nametagTokens;
+  private final List<Token<?>> nametagTokens;
 
   public TransferTransactionData(
       TokenState sourceState,
@@ -35,7 +35,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
       byte[] salt,
       DataHash dataHash,
       byte[] message,
-      List<NameTagToken> nametagTokens) {
+      List<Token<?>> nametagTokens) {
     Objects.requireNonNull(sourceState, "SourceState cannot be null");
     Objects.requireNonNull(recipient, "Recipient cannot be null");
     Objects.requireNonNull(salt, "Salt cannot be null");
@@ -68,7 +68,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return Arrays.copyOf(this.message, this.message.length);
   }
 
-  public List<NameTagToken> getNametagTokens() {
+  public List<Token<?>> getNametagTokens() {
     return this.nametagTokens;
   }
 

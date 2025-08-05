@@ -1,13 +1,14 @@
 
 package com.unicity.sdk;
 
+import com.unicity.sdk.address.Address;
+import com.unicity.sdk.address.AddressFactory;
+import com.unicity.sdk.address.AddressScheme;
+import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.api.AggregatorClient;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.SubmitCommitmentResponse;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.transaction.Commitment;
@@ -17,17 +18,18 @@ import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
-import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class StateTransitionClient {
-
-  public static final byte[] MINTER_SECRET = HexConverter.decode(
-      "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 
   protected final AggregatorClient client;
 
@@ -35,25 +37,13 @@ public class StateTransitionClient {
     this.client = client;
   }
 
-  public CompletableFuture<Commitment<MintTransactionData<?>>> submitMintTransaction(
-      MintTransactionData<?> transactionData) throws IOException {
-    SigningService signingService = SigningService.createFromSecret(MINTER_SECRET,
-        transactionData.getTokenId().getBytes());
-
-    Commitment<MintTransactionData<?>> commitment = Commitment.create(
-        transactionData, signingService);
-
+  public <T extends MintTransactionData<?>> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
+      Commitment<T> commitment) throws IOException {
     return this.client.submitCommitment(
         commitment.getRequestId(),
         commitment.getTransactionData().calculateHash(),
-        commitment.getAuthenticator()).thenApply(response -> {
-      if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-        throw new RuntimeException(
-            String.format("Could not submit mint transaction: %s", response.getStatus()));
-      }
-
-      return commitment;
-    });
+        commitment.getAuthenticator()
+    );
   }
 
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
@@ -126,7 +116,7 @@ public class StateTransitionClient {
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,
-      List<NameTagToken> nametagTokens
+      List<Token<?>> nametagTokens
   ) throws IOException {
     Objects.requireNonNull(token, "Token is null");
     Objects.requireNonNull(state, "State is null");
@@ -138,8 +128,32 @@ public class StateTransitionClient {
       throw new RuntimeException("Predicate verification failed");
     }
 
-    if (!transaction.getData().getRecipient().getAddress().equals(
-            state.getUnlockPredicate().getReference(token.getType()).toAddress().getAddress())) {
+    Map<Address, Entry<Address, Token<?>>> nametagAddressMap = new HashMap<>();
+    for (Token<?> nametagToken : nametagTokens) {
+      if (!nametagToken.verify()) {
+        throw new RuntimeException("Nametag token verification failed");
+      }
+
+      ProxyAddress nametagAddress = ProxyAddress.create(nametagToken.getId());
+      Address address = AddressFactory.createAddress(
+          new String(nametagToken.getState().getData(), StandardCharsets.UTF_8));
+      nametagAddressMap.put(nametagAddress, new AbstractMap.SimpleEntry<>(address, nametagToken));
+    }
+
+    List<Token<?>> nametags = new ArrayList<>();
+    Address recipient = transaction.getData().getRecipient();
+    while (recipient.getScheme() != AddressScheme.DIRECT) {
+      Entry<Address, Token<?>> nametag = nametagAddressMap.get(recipient);
+      if (nametag == null) {
+        throw new RuntimeException("Recipient address is not a nametag token");
+      }
+
+      nametags.add(nametag.getValue());
+      recipient = nametag.getKey();
+    }
+
+    if (!recipient.getAddress().equals(
+        state.getUnlockPredicate().getReference(token.getType()).toAddress().getAddress())) {
       throw new RuntimeException("Recipient address mismatch");
     }
 
@@ -147,11 +161,13 @@ public class StateTransitionClient {
       throw new RuntimeException("State data is not part of transaction.");
     }
 
+    // TODO: Verify nametag tokens
+
     List<Transaction<TransferTransactionData>> transactions = new ArrayList<>(
         token.getTransactions());
     transactions.add(transaction);
 
-    return new Token<>(state, token.getGenesis(), transactions, nametagTokens);
+    return new Token<>(state, token.getGenesis(), transactions, List.copyOf(nametags));
   }
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(

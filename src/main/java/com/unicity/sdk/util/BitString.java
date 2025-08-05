@@ -15,7 +15,7 @@ public class BitString {
      * @param data The input data to convert into a BitString.
      */
     public BitString(byte[] data) {
-        // Create hex string with "01" prefix, matching TypeScript: BigInt(`0x01${HexConverter.encode(data)}`)
+        // Create hex string with "01" prefix
         String hexString = "01" + HexConverter.encode(data);
         this.value = new BigInteger(hexString, 16);
     }

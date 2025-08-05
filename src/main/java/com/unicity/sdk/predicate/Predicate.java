@@ -7,7 +7,7 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
 
-public interface IPredicate {
+public interface Predicate {
     String getType();
     DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException;
     IPredicateReference getReference(TokenType tokenType) throws IOException;

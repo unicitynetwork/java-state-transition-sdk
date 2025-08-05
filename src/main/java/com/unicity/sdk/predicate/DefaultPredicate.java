@@ -1,7 +1,6 @@
 package com.unicity.sdk.predicate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
@@ -17,9 +16,9 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Base class for predicates, matching TypeScript implementation
+ * Base class for unmasked and masked predicates
  */
-public abstract class DefaultPredicate implements IPredicate {
+public abstract class DefaultPredicate implements Predicate {
 
   private final PredicateType type;
   private final byte[] publicKey;

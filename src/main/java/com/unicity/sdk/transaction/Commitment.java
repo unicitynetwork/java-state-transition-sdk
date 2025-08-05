@@ -5,8 +5,10 @@ import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.signing.SigningService;
+import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -16,6 +18,8 @@ import java.util.Objects;
  * @param <T> the type of transaction data
  */
 public class Commitment<T extends TransactionData<?>> {
+  public static final byte[] MINTER_SECRET = HexConverter.decode(
+      "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 
   private final RequestId requestId;
   private final T transactionData;
@@ -28,22 +32,23 @@ public class Commitment<T extends TransactionData<?>> {
   }
 
   public static <T extends MintTransactionData<?>> Commitment<T> create(
-      T transactionData,
-      SigningService signingService
+      T transactionData
   ) throws IOException {
+    SigningService signingService = SigningService.createFromSecret(MINTER_SECRET,
+        transactionData.getTokenId().getBytes());
+
     return Commitment.create(signingService, transactionData, transactionData.calculateHash(),
         transactionData.getSourceState().getHash());
   }
 
   public static Commitment<TransferTransactionData> create(
+      Token<?> token,
       TransferTransactionData transactionData,
-      SigningService signingService,
-      TokenId tokenId,
-      TokenType tokenType
+      SigningService signingService
   ) throws IOException {
     return Commitment.create(signingService, transactionData,
-        transactionData.calculateHash(tokenId, tokenType),
-        transactionData.getSourceState().calculateHash(tokenId, tokenType));
+        transactionData.calculateHash(token.getId(), token.getType()),
+        transactionData.getSourceState().calculateHash(token.getId(), token.getType()));
   }
 
   private static <T extends TransactionData<?>> Commitment<T> create(
@@ -56,7 +61,6 @@ public class Commitment<T extends TransactionData<?>> {
         sourceStateHash);
     return new Commitment<>(requestId, transactionData, authenticator);
   }
-
 
   /**
    * Returns the request ID associated with this commitment.
