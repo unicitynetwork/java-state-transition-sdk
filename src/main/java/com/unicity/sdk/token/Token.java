@@ -1,8 +1,6 @@
 package com.unicity.sdk.token;
 
 import com.unicity.sdk.address.Address;
-import com.unicity.sdk.address.AddressFactory;
-import com.unicity.sdk.address.AddressScheme;
 import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
@@ -17,7 +15,6 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
