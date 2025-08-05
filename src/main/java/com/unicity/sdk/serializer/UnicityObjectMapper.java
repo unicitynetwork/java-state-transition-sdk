@@ -32,7 +32,7 @@ import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcErrorJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcRequestJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcResponseJson;
 import com.unicity.sdk.serializer.json.predicate.MaskedPredicateJson;
-import com.unicity.sdk.serializer.json.predicate.IPredicateJson;
+import com.unicity.sdk.serializer.json.predicate.PredicateJson;
 import com.unicity.sdk.serializer.json.predicate.UnmaskedPredicateJson;
 import com.unicity.sdk.serializer.json.smt.MerkleTreePathJson;
 import com.unicity.sdk.serializer.json.smt.MerkleTreePathStepBranchJson;
@@ -132,7 +132,7 @@ public class UnicityObjectMapper {
     module.addSerializer(TokenState.class, new TokenStateJson.Serializer());
     module.addDeserializer(TokenState.class, new TokenStateJson.Deserializer());
 
-    module.addDeserializer(Predicate.class, new IPredicateJson.Deserializer());
+    module.addDeserializer(Predicate.class, new PredicateJson.Deserializer());
     module.addSerializer(MaskedPredicate.class, new MaskedPredicateJson.Serializer());
     module.addDeserializer(MaskedPredicate.class, new MaskedPredicateJson.Deserializer());
     module.addSerializer(UnmaskedPredicate.class, new UnmaskedPredicateJson.Serializer());

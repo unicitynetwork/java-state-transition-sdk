@@ -8,14 +8,18 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.PredicateType;
+import com.unicity.sdk.predicate.UnmaskedPredicate;
 import java.io.IOException;
 
-public class IPredicateJson {
+public class PredicateJson {
+
   private static final String TYPE_FIELD = "type";
 
-  private IPredicateJson() {}
+  private PredicateJson() {
+  }
 
   public static class Deserializer extends JsonDeserializer<Predicate> {
+
     @Override
     public Predicate deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
       JsonNode node = p.getCodec().readTree(p);
@@ -26,12 +30,17 @@ public class IPredicateJson {
       }
 
       switch (PredicateType.valueOf(typeNode.asText())) {
-        case MASKED:
+        case MASKED: {
           JsonParser parser = node.traverse(p.getCodec());
           parser.nextToken();
           return ctx.readValue(parser, MaskedPredicate.class);
-        case UNMASKED:
-//          return p.getCodec().treeToValue(node, UnmaskedPredicateJson.Deserializer.class);
+        }
+        case UNMASKED: {
+          JsonParser parser = node.traverse(p.getCodec());
+          parser.nextToken();
+          return ctx.readValue(parser, UnmaskedPredicate.class);
+        }
+        default:
           p.skipChildren();
       }
 

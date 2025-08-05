@@ -27,7 +27,6 @@ import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintTransactionData;
-import com.unicity.sdk.transaction.NameTagMintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.utils.InclusionProofUtils;
@@ -108,7 +107,6 @@ public class CommonTestFlow {
         bobNonce);
     DirectAddress bobAddress = bobPredicate.getReference(tokenType).toAddress();
 
-
     // Bob mints a name tag tokens
     byte[] bobNametagNonce = randomBytes(32);
     MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
@@ -117,18 +115,17 @@ public class CommonTestFlow {
         bobNametagNonce
     );
     TokenType bobNametagTokenType = new TokenType(randomBytes(32));
-    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType).toAddress();
-    NameTagTokenState bobNametagTokenState = new NameTagTokenState(bobNametagPredicate, bobAddress);
-    // TODO: Move create method usual mint transaction data, same with tokenState
-    Commitment<NameTagMintTransactionData> nametagMintCommitment = Commitment.create(
-        NameTagMintTransactionData.create(
+    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType)
+        .toAddress();
+    Commitment<MintTransactionData<?>> nametagMintCommitment = Commitment.create(
+        MintTransactionData.createNametag(
             UUID.randomUUID().toString(),
             bobNametagTokenType,
             new byte[10],
             null,
             bobNametagAddress,
             randomBytes(32),
-            bobNametagTokenState
+            bobAddress
         ));
     SubmitCommitmentResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment)
         .get();
@@ -137,14 +134,17 @@ public class CommonTestFlow {
           nametagMintResponse.getStatus()));
     }
 
-    Transaction<NameTagMintTransactionData> bobNametagGenesis = client.createTransaction(
+    Transaction<MintTransactionData<?>> bobNametagGenesis = client.createTransaction(
         nametagMintCommitment,
         InclusionProofUtils.waitInclusionProof(
             client,
             nametagMintCommitment
         ).get()
     );
-    Token<?> bobNametagToken = new Token(bobNametagTokenState, bobNametagGenesis);
+    Token<?> bobNametagToken = new Token(
+        new NameTagTokenState(bobNametagPredicate, bobAddress),
+        bobNametagGenesis
+    );
 
     // Alice transfers to Bob
     String bobCustomData = "Bob's custom data";
@@ -218,7 +218,7 @@ public class CommonTestFlow {
 
     if (bobToCarolTransferSubmitResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit transaction commitment: %s",
-          aliceToBobTransferSubmitResponse.getStatus()));
+          bobToCarolTransferSubmitResponse.getStatus()));
     }
 
     InclusionProof bobToCarolInclusionProof = InclusionProofUtils.waitInclusionProof(
@@ -246,5 +246,85 @@ public class CommonTestFlow {
 
     assertTrue(carolToken.verify().isSuccessful());
     assertEquals(2, carolToken.getTransactions().size());
+
+    // Bob receives carol token with nametag
+    byte[] bobReceivesTokenFromCarolNonce = randomBytes(32);
+    UnmaskedPredicate bobReceivesTokenFromCarolPredicate = UnmaskedPredicate.create(
+        SigningService.createFromSecret(BOB_SECRET, bobReceivesTokenFromCarolNonce),
+        HashAlgorithm.SHA256,
+        bobReceivesTokenFromCarolNonce
+    );
+
+    byte[] bobNametagSecondUseNonce = randomBytes(32);
+    MaskedPredicate bobNametagSecondUsePredicate = MaskedPredicate.create(
+        SigningService.createFromSecret(BOB_SECRET, bobNametagSecondUseNonce),
+        HashAlgorithm.SHA256, bobNametagSecondUseNonce);
+
+    Commitment<TransferTransactionData> nametagSecondUseCommitment = Commitment.create(
+        bobNametagToken,
+        bobNametagSecondUsePredicate.getReference(bobNametagToken.getType()).toAddress(),
+        randomBytes(32),
+        // TODO: Make nametags transfer easier
+        new DataHasher(HashAlgorithm.SHA256).update(
+            bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
+                .getAddress().getBytes(StandardCharsets.UTF_8)).digest(),
+        null,
+        SigningService.createFromSecret(BOB_SECRET, bobNametagNonce)
+    );
+    SubmitCommitmentResponse nametagSecondUseResponse = client.submitCommitment(
+        bobNametagToken,
+        nametagSecondUseCommitment
+    ).get();
+
+    if (nametagSecondUseResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      throw new Exception(String.format("Failed to submit nametag transfer commitment: %s",
+          nametagMintResponse.getStatus()));
+    }
+
+    Token<?> bobSecondUseNametag = client.finishTransaction(
+        bobNametagToken,
+        new TokenState(bobNametagSecondUsePredicate,
+            bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
+                .getAddress().getBytes(StandardCharsets.UTF_8)),
+        client.createTransaction(bobNametagToken, nametagSecondUseCommitment,
+            InclusionProofUtils.waitInclusionProof(client, nametagSecondUseCommitment).get())
+    );
+
+    Commitment<TransferTransactionData> carolToBobTransferCommitment = Commitment.create(
+        carolToken,
+        ProxyAddress.create(bobNametagToken.getId()),
+        randomBytes(32),
+        null,
+        null,
+        carolSigningService
+    );
+    SubmitCommitmentResponse carolToBobTransferSubmitResponse = client.submitCommitment(
+        carolToken,
+        carolToBobTransferCommitment
+    ).get();
+
+    if (carolToBobTransferSubmitResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      throw new Exception(String.format("Failed to submit transaction commitment: %s",
+          carolToBobTransferSubmitResponse.getStatus()));
+    }
+
+    InclusionProof carolToBobInclusionProof = InclusionProofUtils.waitInclusionProof(
+        client,
+        carolToBobTransferCommitment
+    ).get();
+
+    Transaction<TransferTransactionData> carolToBobTransaction = client.createTransaction(
+        carolToken,
+        carolToBobTransferCommitment,
+        carolToBobInclusionProof
+    );
+
+    assertTrue(client.finishTransaction(
+        carolToken,
+        new TokenState(bobReceivesTokenFromCarolPredicate, null),
+        carolToBobTransaction,
+        List.of(bobSecondUseNametag)
+    ).verify().isSuccessful());
+
   }
 }

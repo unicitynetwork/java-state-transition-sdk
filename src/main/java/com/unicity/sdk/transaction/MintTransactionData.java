@@ -7,11 +7,13 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.token.NameTagTokenState;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -55,6 +57,37 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
     this.reason = reason;
+  }
+
+  public static MintTransactionData<MintTransactionReason> createNametag(
+      String name,
+      TokenType tokenType,
+      byte[] tokenData,
+      TokenCoinData coinData,
+      Address recipient,
+      byte[] salt,
+      Address targetAddress
+  ) {
+    Objects.requireNonNull(name, "Name cannot be null");
+    Objects.requireNonNull(targetAddress, "Target address cannot be null");
+
+    return new MintTransactionData<>(
+        new TokenId(
+            new DataHasher(HashAlgorithm.SHA256)
+                .update(name.getBytes(StandardCharsets.UTF_8))
+                .digest()
+                .getImprint()
+        ),
+        tokenType,
+        tokenData,
+        coinData,
+        recipient,
+        salt,
+        new DataHasher(HashAlgorithm.SHA256)
+            .update(targetAddress.getAddress().getBytes(StandardCharsets.UTF_8))
+            .digest(),
+        null
+    );
   }
 
   public TokenId getTokenId() {
