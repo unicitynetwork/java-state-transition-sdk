@@ -99,6 +99,8 @@ public class CommonTestFlow {
         client.createTransaction(aliceMintCommitment, mintInclusionProof)
     );
 
+    assertTrue(aliceToken.verify().isSuccessful());
+
     // Bob prepares to receive the token
     byte[] bobNonce = randomBytes(32);
     SigningService bobSigningService = SigningService.createFromSecret(BOB_SECRET, bobNonce);
@@ -108,15 +110,16 @@ public class CommonTestFlow {
 
 
     // Bob mints a name tag tokens
+    byte[] bobNametagNonce = randomBytes(32);
     MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
-        bobSigningService,
+        SigningService.createFromSecret(BOB_SECRET, bobNametagNonce),
         HashAlgorithm.SHA256,
-        randomBytes(32)
+        bobNametagNonce
     );
     TokenType bobNametagTokenType = new TokenType(randomBytes(32));
-    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(tokenType).toAddress();
-    NameTagTokenState bobNametagTokenState = new NameTagTokenState(bobNametagPredicate,
-        bobAddress);
+    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType).toAddress();
+    NameTagTokenState bobNametagTokenState = new NameTagTokenState(bobNametagPredicate, bobAddress);
+    // TODO: Move create method usual mint transaction data, same with tokenState
     Commitment<NameTagMintTransactionData> nametagMintCommitment = Commitment.create(
         NameTagMintTransactionData.create(
             UUID.randomUUID().toString(),
@@ -148,19 +151,13 @@ public class CommonTestFlow {
     byte[] bobStateData = bobCustomData.getBytes(StandardCharsets.UTF_8);
     DataHash bobDataHash = new DataHasher(HashAlgorithm.SHA256).update(bobStateData).digest();
 
-    TransferTransactionData aliceToBobTransferData = new TransferTransactionData(
-        aliceTokenState,
+    // Submit transfer transaction
+    Commitment<TransferTransactionData> aliceToBobTransferCommitment = Commitment.create(
+        aliceToken,
         ProxyAddress.create(bobNametagGenesis.getData().getTokenId()),
         randomBytes(32),
         bobDataHash,
         null,
-        List.of()
-    );
-
-    // Submit transfer transaction
-    Commitment<TransferTransactionData> aliceToBobTransferCommitment = Commitment.create(
-        aliceToken,
-        aliceToBobTransferData,
         aliceSigningService
     );
     SubmitCommitmentResponse aliceToBobTransferSubmitResponse = client.submitCommitment(aliceToken,
@@ -185,15 +182,15 @@ public class CommonTestFlow {
     );
 
     // Bob finalizes the token
-    TokenState bobTokenState = new TokenState(bobPredicate, bobStateData);
     Token bobToken = client.finishTransaction(
         aliceToken,
-        bobTokenState,
+        new TokenState(bobPredicate, bobStateData),
         aliceToBobTransferTransaction,
         List.of(bobNametagToken)
     );
 
     // Verify Bob is now the owner
+    assertTrue(bobToken.verify().isSuccessful());
     assertTrue(bobToken.getState().getUnlockPredicate().isOwner(bobSigningService.getPublicKey()));
     assertEquals(aliceToken.getId(), bobToken.getId());
     assertEquals(aliceToken.getType(), bobToken.getType());
@@ -205,19 +202,13 @@ public class CommonTestFlow {
         HashAlgorithm.SHA256).toAddress();
 
     // Bob transfers to Carol (no custom data)
-    TransferTransactionData bobToCarolTransferData = new TransferTransactionData(
-        bobTokenState,
-        carolAddress,
-        randomBytes(32),
-        null, // Carol doesn't provide state
-        null,
-        List.of()
-    );
-
     // Submit transfer transaction
     Commitment<TransferTransactionData> bobToCarolTransferCommitment = Commitment.create(
         bobToken,
-        bobToCarolTransferData,
+        carolAddress,
+        randomBytes(32),
+        null,
+        null,
         bobSigningService
     );
     SubmitCommitmentResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
@@ -253,6 +244,7 @@ public class CommonTestFlow {
         bobToCarolTransaction
     );
 
+    assertTrue(carolToken.verify().isSuccessful());
     assertEquals(2, carolToken.getTransactions().size());
   }
 }

@@ -3,6 +3,7 @@ package com.unicity.sdk.transaction;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.address.Address;
+import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
@@ -14,7 +15,9 @@ import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -27,7 +30,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
   private final byte[] salt;
   private final DataHash dataHash;
   private final byte[] message;
-  private final List<Token<?>> nametagTokens;
+  private final Map<Address, Token<?>> nametags;
 
   public TransferTransactionData(
       TokenState sourceState,
@@ -35,17 +38,18 @@ public class TransferTransactionData implements TransactionData<TokenState> {
       byte[] salt,
       DataHash dataHash,
       byte[] message,
-      List<Token<?>> nametagTokens) {
+      Map<Address, Token<?>> nametags) {
     Objects.requireNonNull(sourceState, "SourceState cannot be null");
     Objects.requireNonNull(recipient, "Recipient cannot be null");
     Objects.requireNonNull(salt, "Salt cannot be null");
-    Objects.requireNonNull(nametagTokens, "Nametags cannot be null");
+    Objects.requireNonNull(nametags, "Nametags cannot be null");
+
     this.sourceState = sourceState;
     this.recipient = recipient;
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
     this.message = message != null ? Arrays.copyOf(message, message.length) : message;
-    this.nametagTokens = nametagTokens;
+    this.nametags = Map.copyOf(nametags);
   }
 
   public TokenState getSourceState() {
@@ -68,8 +72,8 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return Arrays.copyOf(this.message, this.message.length);
   }
 
-  public List<Token<?>> getNametagTokens() {
-    return this.nametagTokens;
+  public Map<Address, Token<?>> getNametags() {
+    return this.nametags;
   }
 
   public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
@@ -93,13 +97,13 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return Objects.equals(this.sourceState, that.sourceState) && Objects.equals(
         this.recipient, that.recipient) && Objects.deepEquals(this.salt, that.salt)
         && Objects.equals(this.dataHash, that.dataHash) && Objects.deepEquals(this.message,
-        that.message) && Objects.equals(this.nametagTokens, that.nametagTokens);
+        that.message) && Objects.equals(this.nametags, that.nametags);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(this.sourceState, this.recipient, Arrays.hashCode(this.salt), this.dataHash,
-        Arrays.hashCode(this.message), this.nametagTokens);
+        Arrays.hashCode(this.message), this.nametags);
   }
 
   @Override
@@ -107,6 +111,6 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return String.format(
         "TransferTransactionData{sourceState=%s, recipient=%s, salt=%s, dataHash=%s, message=%s, nametagTokens=%s}",
         this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
-        this.message != null ? HexConverter.encode(this.message) : null, this.nametagTokens);
+        this.message != null ? HexConverter.encode(this.message) : null, this.nametags);
   }
 }

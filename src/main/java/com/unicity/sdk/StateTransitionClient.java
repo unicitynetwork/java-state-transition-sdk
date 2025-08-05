@@ -2,8 +2,6 @@
 package com.unicity.sdk;
 
 import com.unicity.sdk.address.Address;
-import com.unicity.sdk.address.AddressFactory;
-import com.unicity.sdk.address.AddressScheme;
 import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.api.AggregatorClient;
 import com.unicity.sdk.api.RequestId;
@@ -19,13 +17,10 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -128,32 +123,18 @@ public class StateTransitionClient {
       throw new RuntimeException("Predicate verification failed");
     }
 
-    Map<Address, Entry<Address, Token<?>>> nametagAddressMap = new HashMap<>();
+    Map<Address, Token<?>> nametags = new HashMap<>();
     for (Token<?> nametagToken : nametagTokens) {
-      if (!nametagToken.verify()) {
-        throw new RuntimeException("Nametag token verification failed");
+      ProxyAddress address = ProxyAddress.create(nametagToken.getId());
+      if (nametags.containsKey(address)) {
+        throw new RuntimeException("Duplicate nametag in list");
       }
 
-      ProxyAddress nametagAddress = ProxyAddress.create(nametagToken.getId());
-      Address address = AddressFactory.createAddress(
-          new String(nametagToken.getState().getData(), StandardCharsets.UTF_8));
-      nametagAddressMap.put(nametagAddress, new AbstractMap.SimpleEntry<>(address, nametagToken));
+      nametags.put(address, nametagToken);
     }
 
-    List<Token<?>> nametags = new ArrayList<>();
-    Address recipient = transaction.getData().getRecipient();
-    while (recipient.getScheme() != AddressScheme.DIRECT) {
-      Entry<Address, Token<?>> nametag = nametagAddressMap.get(recipient);
-      if (nametag == null) {
-        throw new RuntimeException("Recipient address is not a nametag token");
-      }
-
-      nametags.add(nametag.getValue());
-      recipient = nametag.getKey();
-    }
-
-    if (!recipient.getAddress().equals(
-        state.getUnlockPredicate().getReference(token.getType()).toAddress().getAddress())) {
+    Address recipient = ProxyAddress.resolve(transaction.getData().getRecipient(), nametags);
+    if (!state.getUnlockPredicate().getReference(token.getType()).toAddress().equals(recipient)) {
       throw new RuntimeException("Recipient address mismatch");
     }
 
@@ -161,13 +142,11 @@ public class StateTransitionClient {
       throw new RuntimeException("State data is not part of transaction.");
     }
 
-    // TODO: Verify nametag tokens
-
     List<Transaction<TransferTransactionData>> transactions = new ArrayList<>(
         token.getTransactions());
     transactions.add(transaction);
 
-    return new Token<>(state, token.getGenesis(), transactions, List.copyOf(nametags));
+    return new Token<>(state, token.getGenesis(), transactions, nametagTokens);
   }
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(

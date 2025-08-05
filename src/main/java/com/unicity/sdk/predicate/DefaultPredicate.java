@@ -1,10 +1,12 @@
 package com.unicity.sdk.predicate;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
@@ -45,32 +47,37 @@ public abstract class DefaultPredicate implements Predicate {
     this.nonce = Arrays.copyOf(nonce, nonce.length);
   }
 
-  @JsonProperty
   public String getType() {
     return this.type.name();
   }
 
-  @JsonProperty
   public byte[] getPublicKey() {
     return Arrays.copyOf(this.publicKey, this.publicKey.length);
   }
 
-  @JsonProperty
   public String getAlgorithm() {
     return this.algorithm;
   }
 
-  @JsonProperty
   public HashAlgorithm getHashAlgorithm() {
     return this.hashAlgorithm;
   }
 
-  @JsonProperty
   public byte[] getNonce() {
     return Arrays.copyOf(this.nonce, this.nonce.length);
   }
 
-  public abstract DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException;
+  @Override
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
+    node.addPOJO(this.getReference(tokenType).getHash());
+    node.addPOJO(tokenId);
+    node.add(this.getNonce());
+
+    return new DataHasher(HashAlgorithm.SHA256)
+        .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
+        .digest();
+  }
 
   public abstract IPredicateReference getReference(TokenType tokenType)
       throws IOException;

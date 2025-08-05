@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.address.Address;
+import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.serializer.json.token.TokenStateJson;
 import com.unicity.sdk.token.Token;
@@ -20,8 +21,10 @@ import com.unicity.sdk.transaction.MintTransactionReason;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class TransferTransactionDataJson {
@@ -49,10 +52,10 @@ public class TransferTransactionDataJson {
       gen.writeStartObject();
       gen.writeObjectField(DATA_HASH_FIELD, value.getDataHash());
       gen.writeObjectField(MESSAGE_FIELD, value.getMessage());
-      gen.writeObjectField(NAMETAG_FIELD, value.getNametagTokens());
       gen.writeObjectField(RECIPIENT_FIELD, value.getRecipient());
       gen.writeObjectField(SALT_FIELD, value.getSalt());
       gen.writeObjectField(SOURCE_STATE_FIELD, value.getSourceState());
+      gen.writeObjectField(NAMETAG_FIELD, List.copyOf(value.getNametags().values()));
       gen.writeEndObject();
     }
   }
@@ -73,7 +76,7 @@ public class TransferTransactionDataJson {
       byte[] salt = null;
       DataHash dataHash = null;
       byte[] message = null;
-      List<Token<?>> nametagTokens = new ArrayList<>();
+      Map<Address, Token<?>> nametags = new HashMap<>();
 
       while (p.nextToken() != JsonToken.END_OBJECT) {
         String fieldName = p.currentName();
@@ -96,6 +99,20 @@ public class TransferTransactionDataJson {
             message = p.readValueAs(byte[].class);
             break;
           case NAMETAG_FIELD:
+            if (p.currentToken() != JsonToken.START_ARRAY) {
+              throw MismatchedInputException.from(p, Token.class, "Expected array value");
+            }
+
+            while (p.nextToken() != JsonToken.END_ARRAY) {
+              Token<?> token = p.readValueAs(Token.class);
+              Address address = ProxyAddress.create(token.getId());
+              if (nametags.containsKey(address)) {
+                throw MismatchedInputException.from(p, Token.class, "Duplicate nametag");
+              }
+
+              nametags.put(address, token);
+            }
+            break;
           default:
             p.skipChildren(); // Skip unknown fields
         }
@@ -107,7 +124,7 @@ public class TransferTransactionDataJson {
           salt,
           dataHash,
           message,
-          nametagTokens
+          nametags
       );
     }
   }

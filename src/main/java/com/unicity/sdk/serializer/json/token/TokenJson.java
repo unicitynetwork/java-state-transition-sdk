@@ -24,7 +24,7 @@ public class TokenJson {
   private static final String STATE_FIELD = "state";
   private static final String GENESIS_FIELD = "genesis";
   private static final String TRANSACTIONS_FIELD = "transactions";
-  private static final String NAMETAG_FIELD = "nametagTokens";
+  private static final String NAMETAG_FIELD = "nametags";
 
   private TokenJson() {
   }
@@ -43,7 +43,7 @@ public class TokenJson {
       gen.writeObjectField(STATE_FIELD, value.getState());
       gen.writeObjectField(GENESIS_FIELD, value.getGenesis());
       gen.writeObjectField(TRANSACTIONS_FIELD, value.getTransactions());
-      gen.writeObjectField(NAMETAG_FIELD, value.getNametagTokens());
+      gen.writeObjectField(NAMETAG_FIELD, List.copyOf(value.getNametags().values()));
       gen.writeEndObject();
     }
   }
@@ -58,7 +58,7 @@ public class TokenJson {
       TokenState state = null;
       Transaction<MintTransactionData<?>> genesis = null;
       List<Transaction<TransferTransactionData>> transactions = new ArrayList<>();
-      List<Token<?>> nametagTokens = new ArrayList<>();
+      List<Token<?>> nametags = new ArrayList<>();
 
       Set<String> fields = new HashSet<>();
 
@@ -97,6 +97,13 @@ public class TokenJson {
               }
               break;
             case NAMETAG_FIELD:
+              if (p.currentToken() != JsonToken.START_ARRAY) {
+                throw MismatchedInputException.from(p, Token.class, "Expected array value");
+              }
+
+              while (p.nextToken() != JsonToken.END_ARRAY) {
+                nametags.add(p.readValueAs(Token.class));
+              }
             default:
               p.skipChildren();
           }
@@ -113,7 +120,7 @@ public class TokenJson {
             String.format("Missing required fields: %s", missingFields));
       }
 
-      return new Token<>(state, genesis, transactions, nametagTokens);
+      return new Token<>(state, genesis, transactions, nametags);
     }
   }
 }
