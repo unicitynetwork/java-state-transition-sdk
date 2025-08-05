@@ -11,4 +11,9 @@ public class SubmitCommitmentResponse {
   public SubmitCommitmentStatus getStatus() {
     return this.status;
   }
+
+  @Override
+  public String toString() {
+    return String.format("SubmitCommitmentResponse{status=%s}", this.status);
+  }
 }

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.unicity.sdk.StateTransitionClient;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.address.DirectAddress;
+import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.api.SubmitCommitmentResponse;
 import com.unicity.sdk.api.SubmitCommitmentStatus;
 import com.unicity.sdk.hash.DataHash;
@@ -17,6 +18,7 @@ import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
 import com.unicity.sdk.predicate.UnmaskedPredicateReference;
 import com.unicity.sdk.signing.SigningService;
+import com.unicity.sdk.token.NameTagTokenState;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -25,12 +27,14 @@ import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintTransactionData;
+import com.unicity.sdk.transaction.NameTagMintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.utils.InclusionProofUtils;
 import com.unicity.sdk.utils.TestTokenData;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Common test flows for token operations, matching TypeScript SDK's CommonTestFlow.
@@ -63,8 +67,7 @@ public class CommonTestFlow {
     Address aliceAddress = alicePredicate.getReference(tokenType).toAddress();
     TokenState aliceTokenState = new TokenState(alicePredicate, null);
 
-    // Submit mint transaction using StateTransitionClient
-    Commitment<MintTransactionData<?>> mintCommitment = client.submitMintTransaction(
+    Commitment<MintTransactionData<?>> aliceMintCommitment = Commitment.create(
         new MintTransactionData(
             tokenId,
             tokenType,
@@ -74,30 +77,71 @@ public class CommonTestFlow {
             new byte[5],
             null,
             null
-        )).get();
+        ));
+
+    // Submit mint transaction using StateTransitionClient
+    SubmitCommitmentResponse aliceMintTokenResponse = client.submitCommitment(
+        aliceMintCommitment).get();
+    if (aliceMintTokenResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      throw new Exception(String.format("Failed to submit mint commitment: %s",
+          aliceMintTokenResponse.getStatus()));
+    }
 
     // Wait for inclusion proof
     InclusionProof mintInclusionProof = InclusionProofUtils.waitInclusionProof(
         client,
-        mintCommitment
+        aliceMintCommitment
     ).get();
 
     // Create mint transaction
     Token aliceToken = new Token(
         aliceTokenState,
-        client.createTransaction(mintCommitment,
-            mintInclusionProof)
+        client.createTransaction(aliceMintCommitment, mintInclusionProof)
     );
 
     // Bob prepares to receive the token
     byte[] bobNonce = randomBytes(32);
     SigningService bobSigningService = SigningService.createFromSecret(BOB_SECRET, bobNonce);
-    MaskedPredicate bobPredicate = MaskedPredicate.create(
+    MaskedPredicate bobPredicate = MaskedPredicate.create(bobSigningService, HashAlgorithm.SHA256,
+        bobNonce);
+    DirectAddress bobAddress = bobPredicate.getReference(tokenType).toAddress();
+
+
+    // Bob mints a name tag tokens
+    MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
         bobSigningService,
         HashAlgorithm.SHA256,
-        bobNonce
+        randomBytes(32)
     );
-    DirectAddress bobAddress = bobPredicate.getReference(tokenType).toAddress();
+    TokenType bobNametagTokenType = new TokenType(randomBytes(32));
+    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(tokenType).toAddress();
+    NameTagTokenState bobNametagTokenState = new NameTagTokenState(bobNametagPredicate,
+        bobAddress);
+    Commitment<NameTagMintTransactionData> nametagMintCommitment = Commitment.create(
+        NameTagMintTransactionData.create(
+            UUID.randomUUID().toString(),
+            bobNametagTokenType,
+            new byte[10],
+            null,
+            bobNametagAddress,
+            randomBytes(32),
+            bobNametagTokenState
+        ));
+    SubmitCommitmentResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment)
+        .get();
+    if (nametagMintResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      throw new Exception(String.format("Failed to submit nametag mint commitment: %s",
+          nametagMintResponse.getStatus()));
+    }
+
+    Transaction<NameTagMintTransactionData> bobNametagGenesis = client.createTransaction(
+        nametagMintCommitment,
+        InclusionProofUtils.waitInclusionProof(
+            client,
+            nametagMintCommitment
+        ).get()
+    );
+    Token<?> bobNametagToken = new Token(bobNametagTokenState, bobNametagGenesis);
 
     // Alice transfers to Bob
     String bobCustomData = "Bob's custom data";
@@ -106,7 +150,7 @@ public class CommonTestFlow {
 
     TransferTransactionData aliceToBobTransferData = new TransferTransactionData(
         aliceTokenState,
-        bobAddress,
+        ProxyAddress.create(bobNametagGenesis.getData().getTokenId()),
         randomBytes(32),
         bobDataHash,
         null,
@@ -115,10 +159,9 @@ public class CommonTestFlow {
 
     // Submit transfer transaction
     Commitment<TransferTransactionData> aliceToBobTransferCommitment = Commitment.create(
+        aliceToken,
         aliceToBobTransferData,
-        aliceSigningService,
-        aliceToken.getId(),
-        aliceToken.getType()
+        aliceSigningService
     );
     SubmitCommitmentResponse aliceToBobTransferSubmitResponse = client.submitCommitment(aliceToken,
         aliceToBobTransferCommitment).get();
@@ -146,7 +189,8 @@ public class CommonTestFlow {
     Token bobToken = client.finishTransaction(
         aliceToken,
         bobTokenState,
-        aliceToBobTransferTransaction
+        aliceToBobTransferTransaction,
+        List.of(bobNametagToken)
     );
 
     // Verify Bob is now the owner
@@ -172,10 +216,9 @@ public class CommonTestFlow {
 
     // Submit transfer transaction
     Commitment<TransferTransactionData> bobToCarolTransferCommitment = Commitment.create(
+        bobToken,
         bobToCarolTransferData,
-        bobSigningService,
-        bobToken.getId(),
-        bobToken.getType()
+        bobSigningService
     );
     SubmitCommitmentResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
         bobToken,

@@ -5,24 +5,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.address.Address;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.smt.path.MerkleTreePath;
-import com.unicity.sdk.smt.path.MerkleTreePathStep;
-import com.unicity.sdk.token.NameTagToken;
 import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.MintTransactionData;
-import com.unicity.sdk.transaction.MintTransactionReason;
 import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,7 +58,7 @@ public class TokenJson {
       TokenState state = null;
       Transaction<MintTransactionData<?>> genesis = null;
       List<Transaction<TransferTransactionData>> transactions = new ArrayList<>();
-      List<NameTagToken> nametagTokens = new ArrayList<>();
+      List<Token<?>> nametagTokens = new ArrayList<>();
 
       Set<String> fields = new HashSet<>();
 

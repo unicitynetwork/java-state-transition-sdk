@@ -14,7 +14,7 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.jsonrpc.JsonRpcError;
 import com.unicity.sdk.jsonrpc.JsonRpcRequest;
 import com.unicity.sdk.jsonrpc.JsonRpcResponse;
-import com.unicity.sdk.predicate.IPredicate;
+import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
 import com.unicity.sdk.serializer.cbor.api.AuthenticatorCborSerializer;
@@ -132,7 +132,7 @@ public class UnicityObjectMapper {
     module.addSerializer(TokenState.class, new TokenStateJson.Serializer());
     module.addDeserializer(TokenState.class, new TokenStateJson.Deserializer());
 
-    module.addDeserializer(IPredicate.class, new IPredicateJson.Deserializer());
+    module.addDeserializer(Predicate.class, new IPredicateJson.Deserializer());
     module.addSerializer(MaskedPredicate.class, new MaskedPredicateJson.Serializer());
     module.addDeserializer(MaskedPredicate.class, new MaskedPredicateJson.Deserializer());
     module.addSerializer(UnmaskedPredicate.class, new UnmaskedPredicateJson.Serializer());

@@ -3,33 +3,34 @@ package com.unicity.sdk.address;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.token.Token;
+import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.util.HexConverter;
-
 import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Direct address implementation
  */
-public class DirectAddress implements Address {
+public class ProxyAddress implements Address {
 
-  private final DataHash data;
+  private final TokenId data;
   private final byte[] checksum;
 
-  private DirectAddress(DataHash data, byte[] checksum) {
+  private ProxyAddress(TokenId data, byte[] checksum) {
     this.data = data;
     this.checksum = Arrays.copyOf(checksum, checksum.length);
   }
 
-  public static DirectAddress create(DataHash reference) {
-    DataHash checksum = new DataHasher(HashAlgorithm.SHA256).update(reference.getImprint())
+  public static ProxyAddress create(TokenId tokenId) {
+    DataHash checksum = new DataHasher(HashAlgorithm.SHA256).update(tokenId.getBytes())
         .digest();
-    return new DirectAddress(reference, Arrays.copyOf(checksum.getData(), 4));
+    return new ProxyAddress(tokenId, Arrays.copyOf(checksum.getData(), 4));
   }
 
   @Override
   public AddressScheme getScheme() {
-    return AddressScheme.DIRECT;
+    return AddressScheme.PROXY;
   }
 
   @Override
@@ -39,10 +40,10 @@ public class DirectAddress implements Address {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof DirectAddress)) {
+    if (!(o instanceof ProxyAddress)) {
       return false;
     }
-    DirectAddress that = (DirectAddress) o;
+    ProxyAddress that = (ProxyAddress) o;
     return Objects.equals(data, that.data) && Objects.deepEquals(checksum,
         that.checksum);
   }
@@ -56,8 +57,8 @@ public class DirectAddress implements Address {
   public String toString() {
     return String.format(
         "%s://%s%s",
-        AddressScheme.DIRECT,
-        HexConverter.encode(this.data.getImprint()),
+        AddressScheme.PROXY,
+        HexConverter.encode(this.data.getBytes()),
         HexConverter.encode(this.checksum));
   }
 }

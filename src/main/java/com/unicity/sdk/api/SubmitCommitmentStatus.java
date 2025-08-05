@@ -2,7 +2,6 @@ package com.unicity.sdk.api;
 
 /**
  * Status codes for submit commitment response.
- * Must match TypeScript SubmitCommitmentStatus enum values.
  */
 public enum SubmitCommitmentStatus {
     /** The commitment was accepted and stored. */

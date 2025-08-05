@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.address.Address;
+import com.unicity.sdk.address.AddressFactory;
 import com.unicity.sdk.address.AddressScheme;
 import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.hash.DataHash;
@@ -50,23 +51,11 @@ public class AddressJson {
             "Expected string value");
       }
 
-      String value = p.getValueAsString();
-      String[] result = value.split("://", 2);
-
-      switch (AddressScheme.valueOf(result[0])) {
-        case DIRECT:
-          byte[] bytes = HexConverter.decode(result[1]);
-          DataHash hash = DataHash.fromImprint(Arrays.copyOf(bytes, bytes.length - 4));
-          DirectAddress address = DirectAddress.create(hash);
-          if (!address.getAddress().equals(value)) {
-            throw MismatchedInputException.from(p, Address.class,
-                "Invalid address checksum");
-          }
-
-          return address;
-        default:
-          throw MismatchedInputException.from(p, Address.class,
-              String.format("Unsupported address scheme: %s", result[0]));
+      try {
+        return AddressFactory.createAddress(p.getValueAsString());
+      } catch (Exception e) {
+        throw MismatchedInputException.from(p, Address.class,
+            String.format("Invalid address: %s", e.getMessage()));
       }
     }
   }

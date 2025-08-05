@@ -15,9 +15,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * Mint transaction data with full constructor matching TypeScript
- */
 public class MintTransactionData<R extends MintTransactionReason> implements
     TransactionData<RequestId> {
 
@@ -89,7 +86,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     return this.recipient;
   }
 
-  public Object getReason() {
+  public R getReason() {
     return this.reason;
   }
 
