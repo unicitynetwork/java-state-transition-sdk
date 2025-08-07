@@ -53,7 +53,6 @@ public class CommitmentTest {
             transactionData.getSourceState().getHash())
     );
 
-
     Assertions.assertEquals(commitment,
         UnicityObjectMapper.JSON.readValue(
             UnicityObjectMapper.JSON.writeValueAsString(commitment),

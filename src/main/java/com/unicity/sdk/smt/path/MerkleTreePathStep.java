@@ -31,9 +31,7 @@ public class MerkleTreePathStep {
   }
 
   public MerkleTreePathStep(BigInteger path, DataHash sibling, MerkleTreePathStepBranch branch) {
-    if (path == null) {
-      throw new IllegalArgumentException("Invalid path: null");
-    }
+    Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
     this.sibling = sibling;

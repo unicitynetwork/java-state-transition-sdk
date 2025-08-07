@@ -4,6 +4,7 @@ package com.unicity.sdk.hash;
 import com.unicity.sdk.util.HexConverter;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * DataHash represents a hash of data using a specific hash algorithm.
@@ -21,13 +22,9 @@ public class DataHash {
    * @throws IllegalArgumentException if algorithm or data is null
    */
   public DataHash(HashAlgorithm algorithm, byte[] data) {
-    if (algorithm == null) {
-      throw new IllegalArgumentException("Invalid algorithm: null");
-    }
+    Objects.requireNonNull(algorithm, "algorithm cannot be null");
+    Objects.requireNonNull(data, "data cannot be null");
 
-    if (data == null) {
-      throw new IllegalArgumentException("Invalid hash: null");
-    }
     this.data = Arrays.copyOf(data, data.length);
     this.algorithm = algorithm;
   }
