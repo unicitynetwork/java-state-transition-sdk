@@ -168,7 +168,17 @@ public class MintTransactionData<R extends MintTransactionReason> implements
   @Override
   public String toString() {
     return String.format(
-        "MintTransactionData{tokenId=%s, tokenType=%s, tokenData=%s, coinData=%s, sourceState=%s, recipient=%s, salt=%s, dataHash=%s, reason=%s}",
+        "MintTransactionData{"
+            + "tokenId=%s, "
+            + "tokenType=%s, "
+            + "tokenData=%s, "
+            + "coinData=%s, "
+            + "sourceState=%s, "
+            + "recipient=%s, "
+            + "salt=%s, "
+            + "dataHash=%s, "
+            + "reason=%s"
+            + "}",
         this.tokenId, this.tokenType, HexConverter.encode(this.tokenData), this.coinData,
         this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
         this.reason);

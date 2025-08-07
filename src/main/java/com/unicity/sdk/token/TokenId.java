@@ -25,8 +25,12 @@ public class TokenId {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+          return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
         TokenId tokenId = (TokenId) o;
         return Arrays.equals(this.bytes, tokenId.bytes);
     }

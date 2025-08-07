@@ -13,29 +13,36 @@ import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 
 public class RequestIdJson {
-    private RequestIdJson() {}
 
-    public static class Serializer extends JsonSerializer<RequestId> {
-        public Serializer() {}
+  private RequestIdJson() {
+  }
 
-        @Override
-        public void serialize(RequestId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value == null) {
-                gen.writeNull();
-                return;
-            }
+  public static class Serializer extends JsonSerializer<RequestId> {
 
-            gen.writePOJO(value.getHash());
-        }
+    public Serializer() {
     }
 
-    public static class Deserializer extends JsonDeserializer<RequestId> {
-        public Deserializer() {}
+    @Override
+    public void serialize(RequestId value, JsonGenerator gen, SerializerProvider serializers)
+        throws IOException {
+      if (value == null) {
+        gen.writeNull();
+        return;
+      }
 
-        @Override
-        public RequestId deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-            return new RequestId(p.readValueAs(DataHash.class));
-        }
+      gen.writePOJO(value.getHash());
     }
+  }
+
+  public static class Deserializer extends JsonDeserializer<RequestId> {
+
+    public Deserializer() {
+    }
+
+    @Override
+    public RequestId deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+      return new RequestId(p.readValueAs(DataHash.class));
+    }
+  }
 }
 

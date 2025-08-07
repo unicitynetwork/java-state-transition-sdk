@@ -8,13 +8,16 @@ import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 
 class MerkleTreePathStepBranchSerializer extends JsonSerializer<MerkleTreePathStepBranch> {
-    @Override
-    public void serialize(MerkleTreePathStepBranch value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        if (value == null) {
-            gen.writeNull();
-        } else {
-            String[] result = value.getValue() == null ? new String[0] : new String[]{HexConverter.encode(value.getValue())};
-            gen.writeArray(result, 0, result.length);
-        }
+
+  @Override
+  public void serialize(MerkleTreePathStepBranch value, JsonGenerator gen,
+      SerializerProvider serializers) throws IOException {
+    if (value == null) {
+      gen.writeNull();
+    } else {
+      String[] result = value.getValue() == null ? new String[0]
+          : new String[]{HexConverter.encode(value.getValue())};
+      gen.writeArray(result, 0, result.length);
     }
+  }
 }

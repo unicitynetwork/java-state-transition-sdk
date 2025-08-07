@@ -30,12 +30,14 @@ public class PredicateJson {
       }
 
       switch (PredicateType.valueOf(typeNode.asText())) {
-        case MASKED: {
+        case MASKED:
+        {
           JsonParser parser = node.traverse(p.getCodec());
           parser.nextToken();
           return ctx.readValue(parser, MaskedPredicate.class);
         }
-        case UNMASKED: {
+        case UNMASKED:
+        {
           JsonParser parser = node.traverse(p.getCodec());
           parser.nextToken();
           return ctx.readValue(parser, UnmaskedPredicate.class);

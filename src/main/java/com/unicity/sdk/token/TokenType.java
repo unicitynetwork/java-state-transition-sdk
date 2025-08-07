@@ -20,8 +20,12 @@ public class TokenType {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+          return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
         TokenType tokenType = (TokenType) o;
         return Arrays.equals(this.bytes, tokenType.bytes);
     }

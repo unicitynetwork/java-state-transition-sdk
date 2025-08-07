@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class AddressFactory {
+
   public static Address createAddress(String address) {
     Objects.requireNonNull(address, "Address cannot be null");
 
@@ -17,7 +18,8 @@ public class AddressFactory {
 
     switch (AddressScheme.valueOf(result[0])) {
       case DIRECT:
-        expectedAddress = DirectAddress.create(DataHash.fromImprint(Arrays.copyOf(bytes, bytes.length - 4)));
+        expectedAddress = DirectAddress.create(
+            DataHash.fromImprint(Arrays.copyOf(bytes, bytes.length - 4)));
         break;
       case PROXY:
         expectedAddress = ProxyAddress.create(new TokenId(Arrays.copyOf(bytes, bytes.length - 4)));

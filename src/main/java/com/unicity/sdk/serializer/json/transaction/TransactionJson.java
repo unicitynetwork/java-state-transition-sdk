@@ -61,7 +61,8 @@ public class TransactionJson {
     }
 
     @Override
-    public JsonDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) {
+    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,
+        BeanProperty property) {
       JavaType wrapperType = ctxt.getContextualType();
       JavaType valueType = wrapperType != null ? wrapperType.containedType(0) : null;
       return new TransactionJson.Deserializer(valueType);

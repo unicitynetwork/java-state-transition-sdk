@@ -13,33 +13,38 @@ import com.unicity.sdk.token.TokenType;
 import java.io.IOException;
 
 public class TokenTypeCbor {
-    private TokenTypeCbor() {}
 
-    public static class Serializer extends JsonSerializer<TokenType> {
-        @Override
-        public void serialize(TokenType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value == null) {
-                gen.writeNull();
-                return;
-            }
+  private TokenTypeCbor() {
+  }
 
-            gen.writeBinary(value.getBytes());
-        }
+  public static class Serializer extends JsonSerializer<TokenType> {
+
+    @Override
+    public void serialize(TokenType value, JsonGenerator gen, SerializerProvider serializers)
+        throws IOException {
+      if (value == null) {
+        gen.writeNull();
+        return;
+      }
+
+      gen.writeBinary(value.getBytes());
     }
+  }
 
-    public static class Deserializer extends JsonDeserializer<TokenType> {
-        @Override
-        public TokenType deserialize(JsonParser p, DeserializationContext cxt) throws IOException {
-            byte[] value = p.getBinaryValue();
-            if (value == null) {
-                throw MismatchedInputException.from(p, DataHash.class, "Expected byte value");
-            }
+  public static class Deserializer extends JsonDeserializer<TokenType> {
 
-            try {
-                return new TokenType(value);
-            } catch (Exception e) {
-                throw MismatchedInputException.from(p, DataHash.class, "Expected byte value");
-            }
-        }
+    @Override
+    public TokenType deserialize(JsonParser p, DeserializationContext cxt) throws IOException {
+      byte[] value = p.getBinaryValue();
+      if (value == null) {
+        throw MismatchedInputException.from(p, DataHash.class, "Expected byte value");
+      }
+
+      try {
+        return new TokenType(value);
+      } catch (Exception e) {
+        throw MismatchedInputException.from(p, DataHash.class, "Expected byte value");
+      }
     }
+  }
 }

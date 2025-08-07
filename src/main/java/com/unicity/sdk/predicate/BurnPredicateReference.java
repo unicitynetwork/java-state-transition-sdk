@@ -21,7 +21,8 @@ public class BurnPredicateReference implements IPredicateReference {
     return this.hash;
   }
 
-  public static BurnPredicateReference create(TokenType tokenType, DataHash burnReason) throws JsonProcessingException {
+  public static BurnPredicateReference create(TokenType tokenType, DataHash burnReason)
+      throws JsonProcessingException {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.add(PredicateType.BURN.name());
     node.addPOJO(tokenType);

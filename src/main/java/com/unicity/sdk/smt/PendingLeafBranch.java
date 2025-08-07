@@ -9,36 +9,40 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class PendingLeafBranch implements LeafBranch {
-    private final BigInteger path;
-    private final byte[] value;
 
-    public PendingLeafBranch(BigInteger path, byte[] value) {
-        this.path = path;
-        this.value = value;
-    }
+  private final BigInteger path;
+  private final byte[] value;
 
-    public BigInteger getPath() {
-        return this.path;
-    }
+  public PendingLeafBranch(BigInteger path, byte[] value) {
+    this.path = path;
+    this.value = value;
+  }
 
-    public byte[] getValue() {
-        return this.value;
-    }
+  public BigInteger getPath() {
+    return this.path;
+  }
 
-    public FinalizedLeafBranch finalize(HashAlgorithm hashAlgorithm) {
-        DataHash hash = new DataHasher(hashAlgorithm).update(this.path.toByteArray()).update(this.value).digest();
-        return new FinalizedLeafBranch(this.path, this.value, hash);
-    }
+  public byte[] getValue() {
+    return this.value;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof PendingLeafBranch)) return false;
-        PendingLeafBranch that = (PendingLeafBranch) o;
-        return Objects.equals(path, that.path) && Objects.deepEquals(value, that.value);
-    }
+  public FinalizedLeafBranch finalize(HashAlgorithm hashAlgorithm) {
+    DataHash hash = new DataHasher(hashAlgorithm).update(this.path.toByteArray()).update(this.value)
+        .digest();
+    return new FinalizedLeafBranch(this.path, this.value, hash);
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(path, Arrays.hashCode(value));
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof PendingLeafBranch)) {
+      return false;
     }
+    PendingLeafBranch that = (PendingLeafBranch) o;
+    return Objects.equals(path, that.path) && Objects.deepEquals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(path, Arrays.hashCode(value));
+  }
 }

@@ -38,8 +38,10 @@ public class UnmaskedPredicateReference implements IPredicateReference {
     return new UnmaskedPredicateReference(hash);
   }
 
-  public static UnmaskedPredicateReference create(TokenType tokenType, SigningService signingService, HashAlgorithm hashAlgorithm) throws JsonProcessingException {
-    return UnmaskedPredicateReference.create(tokenType, signingService.getAlgorithm(), signingService.getPublicKey(), hashAlgorithm);
+  public static UnmaskedPredicateReference create(TokenType tokenType,
+      SigningService signingService, HashAlgorithm hashAlgorithm) throws JsonProcessingException {
+    return UnmaskedPredicateReference.create(tokenType, signingService.getAlgorithm(),
+        signingService.getPublicKey(), hashAlgorithm);
   }
 
   public DirectAddress toAddress() {

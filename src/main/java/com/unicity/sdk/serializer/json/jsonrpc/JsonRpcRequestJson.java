@@ -7,16 +7,20 @@ import com.unicity.sdk.jsonrpc.JsonRpcRequest;
 import java.io.IOException;
 
 public class JsonRpcRequestJson {
+
   private static final String ID_FIELD = "id";
   private static final String VERSION_FIELD = "jsonrpc";
   private static final String METHOD_FIELD = "method";
   private static final String PARAMS_FIELD = "params";
 
-  private JsonRpcRequestJson() {}
+  private JsonRpcRequestJson() {
+  }
 
   public static class Serializer extends JsonSerializer<JsonRpcRequest> {
+
     @Override
-    public void serialize(JsonRpcRequest value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(JsonRpcRequest value, JsonGenerator gen, SerializerProvider serializers)
+        throws IOException {
       if (value == null) {
         gen.writeNull();
         return;

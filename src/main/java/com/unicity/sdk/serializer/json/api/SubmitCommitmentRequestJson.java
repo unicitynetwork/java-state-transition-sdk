@@ -7,16 +7,20 @@ import com.unicity.sdk.api.SubmitCommitmentRequest;
 import java.io.IOException;
 
 public class SubmitCommitmentRequestJson {
+
   private static final String REQUEST_ID_FIELD = "requestId";
   private static final String TRANSACTION_HASH_FIELD = "transactionHash";
   private static final String AUTHENTICATOR_FIELD = "authenticator";
   private static final String RECEIPT_FIELD = "receipt";
 
-  private SubmitCommitmentRequestJson() {}
+  private SubmitCommitmentRequestJson() {
+  }
 
   public static class Serializer extends JsonSerializer<SubmitCommitmentRequest> {
+
     @Override
-    public void serialize(SubmitCommitmentRequest value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(SubmitCommitmentRequest value, JsonGenerator gen,
+        SerializerProvider serializers) throws IOException {
       if (value == null) {
         gen.writeNull();
         return;
