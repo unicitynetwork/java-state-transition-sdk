@@ -5,10 +5,13 @@ import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -17,6 +20,7 @@ import java.util.Objects;
  * @param <T> the type of transaction data
  */
 public class Commitment<T extends TransactionData<?>> {
+
   public static final byte[] MINTER_SECRET = HexConverter.decode(
       "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 

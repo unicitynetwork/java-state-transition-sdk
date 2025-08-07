@@ -17,7 +17,7 @@ import com.unicity.sdk.jsonrpc.JsonRpcResponse;
 import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
-import com.unicity.sdk.serializer.cbor.api.AuthenticatorCborSerializer;
+import com.unicity.sdk.serializer.cbor.api.AuthenticatorCbor;
 import com.unicity.sdk.serializer.cbor.hash.DataHashCbor;
 import com.unicity.sdk.serializer.cbor.token.TokenTypeCbor;
 import com.unicity.sdk.serializer.json.address.AddressJson;
@@ -72,8 +72,8 @@ public class UnicityObjectMapper {
     module.addSerializer(DataHash.class, new DataHashCbor.Serializer());
     module.addDeserializer(DataHash.class, new DataHashCbor.Deserializer());
 
-    module.addSerializer(Authenticator.class, new AuthenticatorCborSerializer.Serializer());
-    module.addDeserializer(Authenticator.class, new AuthenticatorCborSerializer.Deserializer());
+    module.addSerializer(Authenticator.class, new AuthenticatorCbor.Serializer());
+    module.addDeserializer(Authenticator.class, new AuthenticatorCbor.Deserializer());
 
     module.addSerializer(TokenType.class, new TokenTypeCbor.Serializer());
     module.addDeserializer(TokenType.class, new TokenTypeCbor.Deserializer());
@@ -157,7 +157,8 @@ public class UnicityObjectMapper {
     module.addDeserializer(JsonRpcResponse.class, new JsonRpcResponseJson.Deserializer());
     module.addDeserializer(JsonRpcError.class, new JsonRpcErrorJson.Deserializer());
     module.addDeserializer(BlockHeightResponse.class, new BlockHeightResponseJson.Deserializer());
-    module.addDeserializer(SubmitCommitmentResponse.class, new SubmitCommitmentResponseJson.Deserializer());
+    module.addDeserializer(SubmitCommitmentResponse.class,
+        new SubmitCommitmentResponseJson.Deserializer());
 
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(module);

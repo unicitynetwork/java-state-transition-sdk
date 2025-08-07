@@ -12,34 +12,41 @@ import com.unicity.sdk.token.TokenType;
 import java.io.IOException;
 
 public class TokenTypeJson {
-    private TokenTypeJson() {}
+
+  private TokenTypeJson() {
+  }
 
 
-    public static class Serializer extends JsonSerializer<TokenType> {
-        public Serializer() {}
+  public static class Serializer extends JsonSerializer<TokenType> {
 
-        @Override
-        public void serialize(TokenType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value == null) {
-                gen.writeNull();
-                return;
-            }
-
-            gen.writePOJO(value.getBytes());
-        }
+    public Serializer() {
     }
 
-    public static class Deserializer extends JsonDeserializer<TokenType> {
-        public Deserializer() {}
+    @Override
+    public void serialize(TokenType value, JsonGenerator gen, SerializerProvider serializers)
+        throws IOException {
+      if (value == null) {
+        gen.writeNull();
+        return;
+      }
 
-        @Override
-        public TokenType deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-            try {
-                return new TokenType(p.readValueAs(byte[].class));
-            } catch (Exception e) {
-                throw MismatchedInputException.from(p, TokenType.class, "Expected bytes");
-            }
-        }
+      gen.writePOJO(value.getBytes());
     }
+  }
+
+  public static class Deserializer extends JsonDeserializer<TokenType> {
+
+    public Deserializer() {
+    }
+
+    @Override
+    public TokenType deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+      try {
+        return new TokenType(p.readValueAs(byte[].class));
+      } catch (Exception e) {
+        throw MismatchedInputException.from(p, TokenType.class, "Expected bytes");
+      }
+    }
+  }
 }
 

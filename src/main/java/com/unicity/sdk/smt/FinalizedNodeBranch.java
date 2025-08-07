@@ -7,53 +7,59 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 public class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
-    private final BigInteger path;
-    private final FinalizedBranch left;
-    private final FinalizedBranch right;
-    private final DataHash hash;
-    private final DataHash childrenHash;
 
-    public FinalizedNodeBranch(BigInteger path, FinalizedBranch left, FinalizedBranch right, DataHash childrenHash, DataHash hash) {
-        this.path = path;
-        this.left = left;
-        this.right = right;
-        this.childrenHash = childrenHash;
-        this.hash = hash;
-    }
+  private final BigInteger path;
+  private final FinalizedBranch left;
+  private final FinalizedBranch right;
+  private final DataHash hash;
+  private final DataHash childrenHash;
 
-    public BigInteger getPath() {
-        return this.path;
-    }
+  public FinalizedNodeBranch(BigInteger path, FinalizedBranch left, FinalizedBranch right,
+      DataHash childrenHash, DataHash hash) {
+    this.path = path;
+    this.left = left;
+    this.right = right;
+    this.childrenHash = childrenHash;
+    this.hash = hash;
+  }
 
-    public FinalizedBranch getLeft() {
-        return this.left;
-    }
+  public BigInteger getPath() {
+    return this.path;
+  }
 
-    public FinalizedBranch getRight() {
-        return this.right;
-    }
+  public FinalizedBranch getLeft() {
+    return this.left;
+  }
 
-    public DataHash getChildrenHash() {
-        return this.childrenHash;
-    }
+  public FinalizedBranch getRight() {
+    return this.right;
+  }
 
-    public DataHash getHash() {
-        return this.hash;
-    }
+  public DataHash getChildrenHash() {
+    return this.childrenHash;
+  }
 
-    public FinalizedNodeBranch finalize(HashAlgorithm hashAlgorithm) {
-        return this; // Already finalized
-    }
+  public DataHash getHash() {
+    return this.hash;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof FinalizedNodeBranch)) return false;
-        FinalizedNodeBranch that = (FinalizedNodeBranch) o;
-        return Objects.equals(path, that.path) && Objects.equals(left, that.left) && Objects.equals(right, that.right) && Objects.equals(hash, that.hash) && Objects.equals(childrenHash, that.childrenHash);
-    }
+  public FinalizedNodeBranch finalize(HashAlgorithm hashAlgorithm) {
+    return this; // Already finalized
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(path, left, right, hash, childrenHash);
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof FinalizedNodeBranch)) {
+      return false;
     }
+    FinalizedNodeBranch that = (FinalizedNodeBranch) o;
+    return Objects.equals(path, that.path) && Objects.equals(left, that.left) && Objects.equals(
+        right, that.right) && Objects.equals(hash, that.hash) && Objects.equals(childrenHash,
+        that.childrenHash);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(path, left, right, hash, childrenHash);
+  }
 }

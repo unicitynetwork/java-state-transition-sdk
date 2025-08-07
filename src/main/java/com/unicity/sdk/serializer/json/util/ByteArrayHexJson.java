@@ -15,13 +15,18 @@ import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 
 public class ByteArrayHexJson {
-  private ByteArrayHexJson() {}
+
+  private ByteArrayHexJson() {
+  }
 
   public static class Serializer extends JsonSerializer<byte[]> {
-    public Serializer() {}
+
+    public Serializer() {
+    }
 
     @Override
-    public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers)
+        throws IOException {
       if (value == null) {
         gen.writeNull();
         return;
@@ -32,7 +37,9 @@ public class ByteArrayHexJson {
   }
 
   public static class Deserializer extends JsonDeserializer<byte[]> {
-    public Deserializer() {}
+
+    public Deserializer() {
+    }
 
     @Override
     public byte[] deserialize(JsonParser p, DeserializationContext ctx) throws IOException {

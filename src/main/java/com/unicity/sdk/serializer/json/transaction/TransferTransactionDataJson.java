@@ -60,8 +60,7 @@ public class TransferTransactionDataJson {
     }
   }
 
-  public static class Deserializer extends
-      JsonDeserializer<TransferTransactionData> {
+  public static class Deserializer extends JsonDeserializer<TransferTransactionData> {
 
     @Override
     public TransferTransactionData deserialize(JsonParser p, DeserializationContext ctx)
@@ -118,14 +117,7 @@ public class TransferTransactionDataJson {
         }
       }
 
-      return new TransferTransactionData(
-          tokenState,
-          recipient,
-          salt,
-          dataHash,
-          message,
-          nametags
-      );
+      return new TransferTransactionData(tokenState, recipient, salt, dataHash, message, nametags);
     }
   }
 }

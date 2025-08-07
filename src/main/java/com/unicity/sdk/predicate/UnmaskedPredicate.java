@@ -13,6 +13,7 @@ import com.unicity.sdk.token.TokenType;
 import java.io.IOException;
 
 public class UnmaskedPredicate extends DefaultPredicate {
+
   public UnmaskedPredicate(
       byte[] publicKey,
       String algorithm,
@@ -26,7 +27,8 @@ public class UnmaskedPredicate extends DefaultPredicate {
       HashAlgorithm hashAlgorithm,
       byte[] salt
   ) {
-    Signature nonce = signingService.sign(new DataHasher(HashAlgorithm.SHA256).update(salt).digest());
+    Signature nonce = signingService.sign(
+        new DataHasher(HashAlgorithm.SHA256).update(salt).digest());
 
     return new UnmaskedPredicate(
         signingService.getPublicKey(),
@@ -46,7 +48,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
 
     return new DataHasher(HashAlgorithm.SHA256)
         .update(UnicityObjectMapper.CBOR.writeValueAsBytes(reference.getHash()))
-      .digest();
+        .digest();
   }
 
   public UnmaskedPredicateReference getReference(TokenType tokenType) throws IOException {

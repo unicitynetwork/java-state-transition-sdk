@@ -8,13 +8,17 @@ import com.unicity.sdk.api.SubmitCommitmentRequest;
 import java.io.IOException;
 
 public class InclusionProofRequestJson {
+
   private static final String REQUEST_ID_FIELD = "requestId";
 
-  private InclusionProofRequestJson() {}
+  private InclusionProofRequestJson() {
+  }
 
   public static class Serializer extends JsonSerializer<InclusionProofRequest> {
+
     @Override
-    public void serialize(InclusionProofRequest value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(InclusionProofRequest value, JsonGenerator gen,
+        SerializerProvider serializers) throws IOException {
       if (value == null) {
         gen.writeNull();
         return;

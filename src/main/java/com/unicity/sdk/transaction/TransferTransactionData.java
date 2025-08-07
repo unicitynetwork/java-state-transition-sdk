@@ -109,7 +109,14 @@ public class TransferTransactionData implements TransactionData<TokenState> {
   @Override
   public String toString() {
     return String.format(
-        "TransferTransactionData{sourceState=%s, recipient=%s, salt=%s, dataHash=%s, message=%s, nametagTokens=%s}",
+        "TransferTransactionData{"
+            + "sourceState=%s, "
+            + "recipient=%s, "
+            + "salt=%s, "
+            + "dataHash=%s, "
+            + "message=%s, "
+            + "nametagTokens=%s"
+            + "}",
         this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
         this.message != null ? HexConverter.encode(this.message) : null, this.nametags);
   }

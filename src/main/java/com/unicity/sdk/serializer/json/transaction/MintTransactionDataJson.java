@@ -60,10 +60,12 @@ public class MintTransactionDataJson {
     }
   }
 
-  public static class Deserializer extends JsonDeserializer<MintTransactionData<MintTransactionReason>> {
+  public static class Deserializer extends
+      JsonDeserializer<MintTransactionData<MintTransactionReason>> {
 
     @Override
-    public MintTransactionData<MintTransactionReason> deserialize(JsonParser p, DeserializationContext ctx)
+    public MintTransactionData<MintTransactionReason> deserialize(JsonParser p,
+        DeserializationContext ctx)
         throws IOException {
       TokenId tokenId = null;
       TokenType tokenType = null;
@@ -131,7 +133,8 @@ public class MintTransactionDataJson {
             String.format("Missing required fields: %s", missingFields));
       }
 
-      return new MintTransactionData<>(tokenId, tokenType, tokenData, coinData, recipient, salt, dataHash, reason);
+      return new MintTransactionData<>(tokenId, tokenType, tokenData, coinData, recipient, salt,
+          dataHash, reason);
     }
   }
 }

@@ -19,7 +19,7 @@ public class SubmitCommitmentResponseJson {
   private SubmitCommitmentResponseJson() {
   }
 
-  public static class Deserializer extends JsonDeserializer<SubmitCommitmentResponse>{
+  public static class Deserializer extends JsonDeserializer<SubmitCommitmentResponse> {
 
     public Deserializer() {
     }
@@ -33,7 +33,8 @@ public class SubmitCommitmentResponseJson {
       Set<String> fields = new HashSet<>();
 
       if (!p.isExpectedStartObjectToken()) {
-        throw MismatchedInputException.from(p, SubmitCommitmentResponse.class, "Expected object value");
+        throw MismatchedInputException.from(p, SubmitCommitmentResponse.class,
+            "Expected object value");
       }
 
       while (p.nextToken() != JsonToken.END_OBJECT) {

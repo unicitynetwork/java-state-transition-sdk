@@ -256,18 +256,21 @@ public class CommonTestFlow {
     );
 
     byte[] bobNametagSecondUseNonce = randomBytes(32);
-    MaskedPredicate bobNametagSecondUsePredicate = MaskedPredicate.create(
-        SigningService.createFromSecret(BOB_SECRET, bobNametagSecondUseNonce),
-        HashAlgorithm.SHA256, bobNametagSecondUseNonce);
+    NameTagTokenState nametagSecondUseTokenState = new NameTagTokenState(
+        MaskedPredicate.create(
+            SigningService.createFromSecret(BOB_SECRET, bobNametagSecondUseNonce),
+            HashAlgorithm.SHA256,
+            bobNametagSecondUseNonce
+        ),
+        bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
+    );
 
     Commitment<TransferTransactionData> nametagSecondUseCommitment = Commitment.create(
         bobNametagToken,
-        bobNametagSecondUsePredicate.getReference(bobNametagToken.getType()).toAddress(),
+        nametagSecondUseTokenState.getUnlockPredicate().getReference(bobNametagToken.getType())
+            .toAddress(),
         randomBytes(32),
-        // TODO: Make nametags transfer easier
-        new DataHasher(HashAlgorithm.SHA256).update(
-            bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
-                .getAddress().getBytes(StandardCharsets.UTF_8)).digest(),
+        new DataHasher(HashAlgorithm.SHA256).update(nametagSecondUseTokenState.getData()).digest(),
         null,
         SigningService.createFromSecret(BOB_SECRET, bobNametagNonce)
     );
@@ -283,9 +286,7 @@ public class CommonTestFlow {
 
     Token<?> bobSecondUseNametag = client.finishTransaction(
         bobNametagToken,
-        new TokenState(bobNametagSecondUsePredicate,
-            bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
-                .getAddress().getBytes(StandardCharsets.UTF_8)),
+        nametagSecondUseTokenState,
         client.createTransaction(bobNametagToken, nametagSecondUseCommitment,
             InclusionProofUtils.waitInclusionProof(client, nametagSecondUseCommitment).get())
     );
