@@ -18,30 +18,41 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MerkleTreePathStepTest {
-    @Test
-    public void testConstructorThrowsOnNullArguments() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new MerkleTreePathStep(null, null, (FinalizedLeafBranch) null);
-        });
-        assertEquals("Invalid path: null", exception.getMessage());
-    }
 
-    @Test
-    public void testJsonSerialization() throws JsonProcessingException {
-        ObjectMapper objectMapper = UnicityObjectMapper.JSON;
+  @Test
+  public void testConstructorThrowsOnNullArguments() {
+    Exception exception = assertThrows(NullPointerException.class, () -> {
+      new MerkleTreePathStep(null, null, (FinalizedLeafBranch) null);
+    });
+    assertEquals("path cannot be null", exception.getMessage());
+  }
 
-        JsonMappingException exception = Assertions.assertThrows(JsonMappingException.class, () -> objectMapper.readValue("{\"path\":\"asd\",\"sibling\":null,\"branch\":null}", MerkleTreePathStep.class));
-        exception = Assertions.assertThrows(JsonMappingException.class, () -> objectMapper.readValue("{\"path\":[],\"sibling\":null,\"branch\":null}", MerkleTreePathStep.class));
-        exception = Assertions.assertThrows(JsonMappingException.class, () -> objectMapper.readValue("{\"sibling\":null,\"branch\":null}", MerkleTreePathStep.class));
-        exception = Assertions.assertThrows(JsonMappingException.class, () -> objectMapper.readValue("{\"path\":\"5\",\"branch\":null}", MerkleTreePathStep.class));
-        exception = Assertions.assertThrows(JsonMappingException.class, () -> objectMapper.readValue("{\"path\":\"5\",\"sibling\":null,\"branch\":\"asd\"}", MerkleTreePathStep.class));
+  @Test
+  public void testJsonSerialization() throws JsonProcessingException {
+    ObjectMapper objectMapper = UnicityObjectMapper.JSON;
 
-        MerkleTreePathStep step = new MerkleTreePathStep(
-                BigInteger.ONE,
-                new DataHash(HashAlgorithm.SHA384, new byte[5]),
-                new MerkleTreePathStepBranch(new byte[3])
-        );
-        Assertions.assertEquals(step, objectMapper.readValue(objectMapper.writeValueAsString(step), MerkleTreePathStep.class));
+    JsonMappingException exception = Assertions.assertThrows(JsonMappingException.class,
+        () -> objectMapper.readValue("{\"path\":\"asd\",\"sibling\":null,\"branch\":null}",
+            MerkleTreePathStep.class));
+    exception = Assertions.assertThrows(JsonMappingException.class,
+        () -> objectMapper.readValue("{\"path\":[],\"sibling\":null,\"branch\":null}",
+            MerkleTreePathStep.class));
+    exception = Assertions.assertThrows(JsonMappingException.class,
+        () -> objectMapper.readValue("{\"sibling\":null,\"branch\":null}",
+            MerkleTreePathStep.class));
+    exception = Assertions.assertThrows(JsonMappingException.class,
+        () -> objectMapper.readValue("{\"path\":\"5\",\"branch\":null}", MerkleTreePathStep.class));
+    exception = Assertions.assertThrows(JsonMappingException.class,
+        () -> objectMapper.readValue("{\"path\":\"5\",\"sibling\":null,\"branch\":\"asd\"}",
+            MerkleTreePathStep.class));
 
-    }
+    MerkleTreePathStep step = new MerkleTreePathStep(
+        BigInteger.ONE,
+        new DataHash(HashAlgorithm.SHA384, new byte[5]),
+        new MerkleTreePathStepBranch(new byte[3])
+    );
+    Assertions.assertEquals(step,
+        objectMapper.readValue(objectMapper.writeValueAsString(step), MerkleTreePathStep.class));
+
+  }
 }
