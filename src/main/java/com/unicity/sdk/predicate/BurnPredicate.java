@@ -1,10 +1,12 @@
 package com.unicity.sdk.predicate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.Transaction;
@@ -50,23 +52,27 @@ public class BurnPredicate implements Predicate {
 
   @Override
   public boolean verify(Transaction<TransferTransactionData> transaction, TokenId tokenId,
-      TokenType tokenType) throws IOException {
+      TokenType tokenType) {
     return false;
   }
 
   @Override
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.addPOJO(this.getReference(tokenType).getHash());
     node.addPOJO(tokenId);
 
-    return new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-        .digest();
+    try {
+      return new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
+          .digest();
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   @Override
-  public BurnPredicateReference getReference(TokenType tokenType) throws IOException {
+  public BurnPredicateReference getReference(TokenType tokenType) {
     return BurnPredicateReference.create(tokenType, this.burnReason);
   }
 }

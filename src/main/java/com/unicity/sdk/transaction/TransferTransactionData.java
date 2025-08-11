@@ -1,6 +1,7 @@
 
 package com.unicity.sdk.transaction;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.address.ProxyAddress;
@@ -8,6 +9,7 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -76,7 +78,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return this.nametags;
   }
 
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.addPOJO(this.sourceState.calculateHash(tokenId, tokenType));
     node.addPOJO(this.dataHash);
@@ -84,8 +86,12 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     node.add(this.salt);
     node.add(this.message);
 
-    return new DataHasher(HashAlgorithm.SHA256).update(
-        UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+    try {
+      return new DataHasher(HashAlgorithm.SHA256).update(
+          UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   @Override

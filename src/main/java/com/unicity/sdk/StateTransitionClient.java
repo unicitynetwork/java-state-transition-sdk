@@ -33,7 +33,7 @@ public class StateTransitionClient {
   }
 
   public <T extends MintTransactionData<?>> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      Commitment<T> commitment) throws IOException {
+      Commitment<T> commitment) {
     return this.client.submitCommitment(
         commitment.getRequestId(),
         commitment.getTransactionData().calculateHash(),
@@ -43,10 +43,10 @@ public class StateTransitionClient {
 
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
       Token<?> token,
-      Commitment<TransferTransactionData> commitment) throws IOException {
+      Commitment<TransferTransactionData> commitment) {
     if (!commitment.getTransactionData().getSourceState().getUnlockPredicate()
         .isOwner(commitment.getAuthenticator().getPublicKey())) {
-      throw new IOException(
+      throw new IllegalArgumentException(
           "Ownership verification failed: Authenticator does not match source state predicate.");
     }
 
@@ -56,7 +56,7 @@ public class StateTransitionClient {
 
   public <T extends MintTransactionData<?>> Transaction<T> createTransaction(
       Commitment<T> commitment,
-      InclusionProof inclusionProof) throws IOException {
+      InclusionProof inclusionProof) {
     return this.createTransaction(
         commitment.getRequestId(),
         commitment.getTransactionData(),
@@ -69,7 +69,7 @@ public class StateTransitionClient {
   public <T extends Transaction<MintTransactionData<?>>> Transaction<TransferTransactionData> createTransaction(
       Token<T> token,
       Commitment<TransferTransactionData> commitment,
-      InclusionProof inclusionProof) throws IOException {
+      InclusionProof inclusionProof) {
     return this.createTransaction(
         commitment.getRequestId(),
         commitment.getTransactionData(),
@@ -103,7 +103,7 @@ public class StateTransitionClient {
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction
-  ) throws IOException {
+  ) {
     return this.finishTransaction(token, state, transaction, List.of());
   }
 
@@ -112,7 +112,7 @@ public class StateTransitionClient {
       TokenState state,
       Transaction<TransferTransactionData> transaction,
       List<Token<?>> nametagTokens
-  ) throws IOException {
+  ) {
     Objects.requireNonNull(token, "Token is null");
     Objects.requireNonNull(state, "State is null");
     Objects.requireNonNull(transaction, "Transaction is null");
@@ -151,7 +151,7 @@ public class StateTransitionClient {
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
       Token<? extends Transaction<MintTransactionData<?>>> token,
-      byte[] publicKey) throws IOException {
+      byte[] publicKey) {
     RequestId requestId = RequestId.create(publicKey,
         token.getState().calculateHash(token.getId(), token.getType()));
     return this.client.getInclusionProof(requestId)

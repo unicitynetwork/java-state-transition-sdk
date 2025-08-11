@@ -1,5 +1,6 @@
 package com.unicity.sdk.predicate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
@@ -68,19 +69,22 @@ public abstract class DefaultPredicate implements Predicate {
   }
 
   @Override
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.addPOJO(this.getReference(tokenType).getHash());
     node.addPOJO(tokenId);
     node.add(this.getNonce());
 
-    return new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-        .digest();
+    try {
+      return new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
+          .digest();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public abstract IPredicateReference getReference(TokenType tokenType)
-      throws IOException;
+  public abstract IPredicateReference getReference(TokenType tokenType);
 
   @Override
   public boolean isOwner(byte[] publicKey) {
@@ -89,7 +93,7 @@ public abstract class DefaultPredicate implements Predicate {
 
   @Override
   public boolean verify(Transaction<TransferTransactionData> transaction, TokenId tokenId,
-      TokenType tokenType) throws IOException {
+      TokenType tokenType) {
     Authenticator authenticator = transaction.getInclusionProof().getAuthenticator();
     DataHash transactionHash = transaction.getInclusionProof().getTransactionHash();
 

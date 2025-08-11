@@ -14,7 +14,7 @@ public class CoinId {
   }
 
   public byte[] getBytes() {
-    return Arrays.copyOf(bytes, bytes.length);
+    return Arrays.copyOf(this.bytes, this.bytes.length);
   }
 
   public BitString toBitString() {

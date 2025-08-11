@@ -1,11 +1,13 @@
 package com.unicity.sdk.token;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,13 +35,17 @@ public class TokenState {
     return this.data;
   }
 
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.addPOJO(unlockPredicate.calculateHash(tokenId, tokenType));
     node.add(data);
 
-    return new DataHasher(HashAlgorithm.SHA256).update(
-        UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+    try {
+      return new DataHasher(HashAlgorithm.SHA256).update(
+          UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   @Override

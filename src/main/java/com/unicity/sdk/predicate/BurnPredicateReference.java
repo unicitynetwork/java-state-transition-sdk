@@ -7,6 +7,7 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.token.TokenType;
 
 public class BurnPredicateReference implements IPredicateReference {
@@ -21,18 +22,21 @@ public class BurnPredicateReference implements IPredicateReference {
     return this.hash;
   }
 
-  public static BurnPredicateReference create(TokenType tokenType, DataHash burnReason)
-      throws JsonProcessingException {
+  public static BurnPredicateReference create(TokenType tokenType, DataHash burnReason) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.add(PredicateType.BURN.name());
     node.addPOJO(tokenType);
     node.addPOJO(burnReason);
 
-    DataHash hash = new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-        .digest();
+    try {
+      DataHash hash = new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
+          .digest();
 
-    return new BurnPredicateReference(hash);
+      return new BurnPredicateReference(hash);
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   public DirectAddress toAddress() {

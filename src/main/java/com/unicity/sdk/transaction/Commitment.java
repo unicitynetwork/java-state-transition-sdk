@@ -36,7 +36,7 @@ public class Commitment<T extends TransactionData<?>> {
 
   public static <T extends MintTransactionData<?>> Commitment<T> create(
       T transactionData
-  ) throws IOException {
+  ) {
     SigningService signingService = SigningService.createFromSecret(MINTER_SECRET,
         transactionData.getTokenId().getBytes());
 
@@ -51,7 +51,7 @@ public class Commitment<T extends TransactionData<?>> {
       DataHash dataHash,
       byte[] message,
       SigningService signingService
-  ) throws IOException {
+  ) {
     TransferTransactionData transactionData = new TransferTransactionData(
         token.getState(), recipient, salt, dataHash, message, token.getNametags());
     return Commitment.create(signingService, transactionData,

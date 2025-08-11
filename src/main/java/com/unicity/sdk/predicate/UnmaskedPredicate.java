@@ -1,11 +1,13 @@
 
 package com.unicity.sdk.predicate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.signing.Signature;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.TokenId;
@@ -38,7 +40,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
   }
 
   @Override
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException {
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
     IPredicateReference reference = this.getReference(tokenType);
 
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
@@ -46,12 +48,16 @@ public class UnmaskedPredicate extends DefaultPredicate {
     node.addPOJO(tokenId);
     node.addPOJO(this.getNonce());
 
-    return new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicityObjectMapper.CBOR.writeValueAsBytes(reference.getHash()))
-        .digest();
+    try {
+      return new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(reference.getHash()))
+          .digest();
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
-  public UnmaskedPredicateReference getReference(TokenType tokenType) throws IOException {
+  public UnmaskedPredicateReference getReference(TokenType tokenType) {
     return UnmaskedPredicateReference.create(
         tokenType,
         this.getAlgorithm(),
