@@ -17,7 +17,7 @@ public class TokenCoinData {
     }
 
     public Map<CoinId, BigInteger> getCoins() {
-        return coins;
+        return this.coins;
     }
 
     @Override

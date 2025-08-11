@@ -97,7 +97,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.nametags;
   }
 
-  public TokenVerificationResult verify() throws IOException {
+  public TokenVerificationResult verify() {
     List<TokenVerificationResult> results = new ArrayList<>();
     results.add(
         TokenVerificationResult.fromChildren(
@@ -157,8 +157,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
   }
 
   private TokenVerificationResult verifyTransaction(
-      Transaction<TransferTransactionData> transaction, DataHash dataHash, Address recipient)
-      throws IOException {
+      Transaction<TransferTransactionData> transaction, DataHash dataHash, Address recipient) {
 
     for (Token<?> nametag : transaction.getData().getNametags().values()) {
       if (!nametag.verify().isSuccessful()) {
@@ -188,7 +187,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
   }
 
   private TokenVerificationResult verifyGenesis(
-      Transaction<MintTransactionData<?>> transaction) throws IOException {
+      Transaction<MintTransactionData<?>> transaction) {
     if (transaction.getInclusionProof().getAuthenticator() == null) {
       return TokenVerificationResult.fail("Missing authenticator.");
     }

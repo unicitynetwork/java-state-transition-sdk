@@ -9,10 +9,10 @@ import java.io.IOException;
 
 public interface Predicate {
     String getType();
-    DataHash calculateHash(TokenId tokenId, TokenType tokenType) throws IOException;
-    IPredicateReference getReference(TokenType tokenType) throws IOException;
+    DataHash calculateHash(TokenId tokenId, TokenType tokenType);
+    IPredicateReference getReference(TokenType tokenType);
     byte[] getNonce();
     boolean isOwner(byte[] publicKey);
     boolean verify(Transaction<TransferTransactionData> transaction, TokenId tokenId,
-        TokenType tokenType) throws IOException;
+        TokenType tokenType);
 }

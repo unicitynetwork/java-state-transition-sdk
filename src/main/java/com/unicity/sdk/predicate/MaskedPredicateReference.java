@@ -7,6 +7,7 @@ import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.TokenType;
 
@@ -23,7 +24,7 @@ public class MaskedPredicateReference implements IPredicateReference {
   }
 
   public static MaskedPredicateReference create(TokenType tokenType, String signingAlgorithm,
-      byte[] publicKey, HashAlgorithm hashAlgorithm, byte[] nonce) throws JsonProcessingException {
+      byte[] publicKey, HashAlgorithm hashAlgorithm, byte[] nonce) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.add(PredicateType.MASKED.name());
     node.addPOJO(tokenType);
@@ -32,15 +33,19 @@ public class MaskedPredicateReference implements IPredicateReference {
     node.add(publicKey);
     node.add(nonce);
 
-    DataHash hash = new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-        .digest();
+    try {
+      DataHash hash = new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
+          .digest();
 
-    return new MaskedPredicateReference(hash);
+      return new MaskedPredicateReference(hash);
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   public static MaskedPredicateReference create(TokenType tokenType, SigningService signingService,
-      HashAlgorithm hashAlgorithm, byte[] nonce) throws JsonProcessingException {
+      HashAlgorithm hashAlgorithm, byte[] nonce) {
     return MaskedPredicateReference.create(tokenType, signingService.getAlgorithm(),
         signingService.getPublicKey(), hashAlgorithm, nonce);
   }

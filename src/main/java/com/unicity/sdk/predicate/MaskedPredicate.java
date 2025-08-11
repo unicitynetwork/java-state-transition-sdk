@@ -30,7 +30,7 @@ public class MaskedPredicate extends DefaultPredicate {
   }
 
   @Override
-  public MaskedPredicateReference getReference(TokenType tokenType) throws IOException {
+  public MaskedPredicateReference getReference(TokenType tokenType) {
     return MaskedPredicateReference.create(
         tokenType,
         this.getAlgorithm(),

@@ -1,5 +1,6 @@
 package com.unicity.sdk.transaction;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.RequestId;
@@ -7,6 +8,7 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.token.NameTagTokenState;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
@@ -127,7 +129,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     return this.sourceState;
   }
 
-  public DataHash calculateHash() throws IOException {
+  public DataHash calculateHash() {
     DataHash tokenDataHash = new DataHasher(HashAlgorithm.SHA256).update(tokenData).digest();
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.addPOJO(tokenId);
@@ -139,8 +141,12 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     node.add(salt);
     node.addPOJO(reason);
 
-    return new DataHasher(HashAlgorithm.SHA256).update(
-        UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+    try {
+      return new DataHasher(HashAlgorithm.SHA256).update(
+          UnicityObjectMapper.CBOR.writeValueAsBytes(node)).digest();
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   @Override
