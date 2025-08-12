@@ -8,8 +8,8 @@ import java.util.Optional;
 public class MerkleTreePathStep {
 
   private final BigInteger path;
-  private final Optional<Branch> sibling;
-  private final Optional<Branch> branch;
+  private final Branch sibling;
+  private final Branch branch;
 
   MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
     this(
@@ -25,7 +25,8 @@ public class MerkleTreePathStep {
     this(
         path,
         sibling,
-        branch == null ? null : new Branch(branch.getChildrenHash().getImprint(), branch.getCounter())
+        branch == null ? null
+            : new Branch(branch.getChildrenHash().getImprint(), branch.getCounter())
     );
   }
 
@@ -49,8 +50,8 @@ public class MerkleTreePathStep {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
-    this.sibling = Optional.ofNullable(sibling);
-    this.branch = Optional.ofNullable(branch);
+    this.sibling = sibling;
+    this.branch = branch;
   }
 
   public BigInteger getPath() {
@@ -58,11 +59,11 @@ public class MerkleTreePathStep {
   }
 
   public Optional<Branch> getSibling() {
-    return this.sibling;
+    return Optional.ofNullable(this.sibling);
   }
 
   public Optional<Branch> getBranch() {
-    return this.branch;
+    return Optional.ofNullable(this.branch);
   }
 
   @Override
