@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.smt.path.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.MerkleTreePath;
 import com.unicity.sdk.transaction.InclusionProof;
 
 import java.io.IOException;

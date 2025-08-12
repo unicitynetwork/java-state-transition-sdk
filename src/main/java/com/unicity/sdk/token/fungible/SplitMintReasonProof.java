@@ -1,7 +1,7 @@
 
 package com.unicity.sdk.token.fungible;
 
-import com.unicity.sdk.smt.path.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.MerkleTreePath;
 import java.util.Objects;
 
 public class SplitMintReasonProof {
