@@ -18,13 +18,14 @@ public class SparseMerkleTree {
     this.hashAlgorithm = hashAlgorithm;
   }
 
-  public synchronized void addLeaf(BigInteger path, byte[] data) throws BranchExistsException, LeafOutOfBoundsException {
+  public synchronized void addLeaf(BigInteger path, byte[] data)
+      throws BranchExistsException, LeafOutOfBoundsException {
     if (path.compareTo(BigInteger.ONE) < 0) {
       throw new IllegalArgumentException("Path must be greater than 0");
     }
 
     boolean isRight = path.testBit(0);
-    Branch branch = isRight ? right : left;
+    Branch branch = isRight ? this.right : this.left;
     Branch result = branch != null
         ? SparseMerkleTree.buildTree(branch, path, Arrays.copyOf(data, data.length))
         : new PendingLeafBranch(path, Arrays.copyOf(data, data.length));

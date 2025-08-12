@@ -23,13 +23,15 @@ class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
     this.hash = hash;
   }
 
-  public static FinalizedLeafBranch create(BigInteger path, LeafValue value, HashAlgorithm hashAlgorithm) {
+  public static FinalizedLeafBranch create(BigInteger path, LeafValue value,
+      HashAlgorithm hashAlgorithm) {
     try {
       DataHash hash = new DataHasher(hashAlgorithm)
           .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
               UnicityObjectMapper.CBOR.createArrayNode()
                   .add(BigIntegerConverter.encode(path))
-                  .addPOJO(value)
+                  .add(value.getValue())
+                  .add(BigIntegerConverter.encode(value.getCounter()))
           ))
           .digest();
       return new FinalizedLeafBranch(path, value, hash);

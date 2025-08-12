@@ -19,8 +19,8 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
   private final DataHash hash;
   private final DataHash childrenHash;
 
-  private FinalizedNodeBranch(BigInteger path, FinalizedBranch left, FinalizedBranch right, BigInteger counter,
-      DataHash childrenHash, DataHash hash) {
+  private FinalizedNodeBranch(BigInteger path, FinalizedBranch left, FinalizedBranch right,
+      BigInteger counter, DataHash childrenHash, DataHash hash) {
     this.path = path;
     this.left = left;
     this.right = right;
@@ -29,8 +29,8 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
     this.hash = hash;
   }
 
-  public static FinalizedNodeBranch create(BigInteger path, FinalizedBranch left, FinalizedBranch right,
-      HashAlgorithm hashAlgorithm) {
+  public static FinalizedNodeBranch create(BigInteger path, FinalizedBranch left,
+      FinalizedBranch right, HashAlgorithm hashAlgorithm) {
     try {
       DataHash childrenHash = new DataHasher(hashAlgorithm)
           .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
@@ -38,26 +38,28 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
                       .add(
                           UnicityObjectMapper.CBOR.createArrayNode()
                               .add(left.getHash().getImprint())
-                              .add(left.getCounter())
+                              .add(BigIntegerConverter.encode(left.getCounter()))
                       )
                       .add(
                           UnicityObjectMapper.CBOR.createArrayNode()
                               .add(right.getHash().getImprint())
-                              .add(right.getCounter())
+                              .add(BigIntegerConverter.encode(right.getCounter()))
                       )
               )
           )
           .digest();
 
+      BigInteger counter = left.getCounter().add(right.getCounter());
       DataHash hash = new DataHasher(hashAlgorithm)
           .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
               UnicityObjectMapper.CBOR.createArrayNode()
                   .add(BigIntegerConverter.encode(path))
-                  .add(childrenHash.getData())
+                  .add(childrenHash.getImprint())
+                  .add(BigIntegerConverter.encode(counter))
           ))
           .digest();
 
-      return new FinalizedNodeBranch(path, left, right, left.getCounter().add(right.getCounter()), childrenHash, hash);
+      return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
     } catch (JsonProcessingException e) {
       throw new CborSerializationException(e);
     }
@@ -97,7 +99,8 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
       return false;
     }
     FinalizedNodeBranch that = (FinalizedNodeBranch) o;
-    return Objects.equals(this.path, that.path) && Objects.equals(this.left, that.left) && Objects.equals(this.right, that.right);
+    return Objects.equals(this.path, that.path) && Objects.equals(this.left, that.left)
+        && Objects.equals(this.right, that.right);
   }
 
   @Override

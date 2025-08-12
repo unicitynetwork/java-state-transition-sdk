@@ -1,10 +1,14 @@
 package com.unicity.sdk.mtree.sum;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.CommonPath;
 import com.unicity.sdk.mtree.sum.MerkleTreePath.Root;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
+import com.unicity.sdk.util.BigIntegerConverter;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
@@ -16,32 +20,59 @@ public class SparseMerkleSumTreeRootNode {
   private final BigInteger path = BigInteger.ONE; // Root path is always 0
   private final FinalizedBranch left;
   private final FinalizedBranch right;
-  private final DataHash rootHash;
+  private final Root root;
 
   private SparseMerkleSumTreeRootNode(
-      FinalizedBranch left, FinalizedBranch right, DataHash rootHash) {
+      FinalizedBranch left, FinalizedBranch right, Root root) {
     this.left = left;
     this.right = right;
-    this.rootHash = rootHash;
+    this.root = root;
   }
 
   static SparseMerkleSumTreeRootNode create(
       FinalizedBranch left, FinalizedBranch right,
       HashAlgorithm hashAlgorithm) {
-    DataHash rootHash = new DataHasher(hashAlgorithm).update(
-            left == null ? new byte[]{0} : left.getHash().getData())
-        .update(right == null ? new byte[]{0} : right.getHash().getData()).digest();
-    return new SparseMerkleSumTreeRootNode(left, right, rootHash);
+    try {
+      DataHash rootHash = new DataHasher(hashAlgorithm)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
+              UnicityObjectMapper.CBOR.createArrayNode()
+                  .add(
+                      left == null
+                          ? null
+                          : UnicityObjectMapper.CBOR.createArrayNode()
+                              .add(left.getHash().getImprint())
+                              .add(BigIntegerConverter.encode(left.getCounter()))
+                  )
+                  .add(
+                      right == null
+                          ? null
+                          : UnicityObjectMapper.CBOR.createArrayNode()
+                              .add(right.getHash().getImprint())
+                              .add(BigIntegerConverter.encode(right.getCounter()))
+                  )
+          ))
+          .digest();
+
+      BigInteger counter = BigInteger.ZERO
+          .add(left == null ? BigInteger.ZERO : left.getCounter())
+          .add(right == null ? BigInteger.ZERO : right.getCounter());
+      Root root = new Root(rootHash, counter);
+
+      return new SparseMerkleSumTreeRootNode(left, right, root);
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
-  public DataHash getRootHash() {
-    return this.rootHash;
+  public Root getRoot() {
+    return this.root;
   }
 
   public MerkleTreePath getPath(BigInteger path) {
     return new MerkleTreePath(
-        new Root(this.rootHash, BigInteger.ZERO),
-        SparseMerkleSumTreeRootNode.generatePath(path, this.left, this.right));
+        this.root,
+        SparseMerkleSumTreeRootNode.generatePath(path, this.left, this.right)
+    );
   }
 
   @Override
@@ -50,7 +81,8 @@ public class SparseMerkleSumTreeRootNode {
       return false;
     }
     SparseMerkleSumTreeRootNode that = (SparseMerkleSumTreeRootNode) o;
-    return Objects.equals(this.path, that.path) && Objects.equals(this.left, that.left) && Objects.equals(this.right, that.right);
+    return Objects.equals(this.path, that.path) && Objects.equals(this.left, that.left)
+        && Objects.equals(this.right, that.right);
   }
 
   @Override
@@ -74,7 +106,8 @@ public class SparseMerkleSumTreeRootNode {
     CommonPath commonPath = CommonPath.create(remainingPath, branch.getPath());
     if (branch.getPath().equals(commonPath.getPath())) {
       if (branch instanceof FinalizedLeafBranch) {
-        return List.of(new MerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+        return List.of(
+            new MerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
       }
 
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;

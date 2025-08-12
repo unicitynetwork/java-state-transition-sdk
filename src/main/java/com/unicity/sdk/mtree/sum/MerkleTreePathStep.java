@@ -3,34 +3,45 @@ package com.unicity.sdk.mtree.sum;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 public class MerkleTreePathStep {
 
   private final BigInteger path;
-  private final Branch sibling;
-  private final Branch branch;
+  private final Optional<Branch> sibling;
+  private final Optional<Branch> branch;
 
   MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
     this(
         path,
-        sibling == null ? null : new Branch(sibling.getHash().getData(), sibling.getCounter()),
-        branch == null ? null : new Branch(branch.getValue().getValue(), branch.getValue().getCounter())
+        sibling,
+        branch == null
+            ? null
+            : new Branch(branch.getValue().getValue(), branch.getValue().getCounter())
     );
   }
 
   MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
     this(
         path,
-        sibling == null ? null : new Branch(sibling.getHash().getData(), sibling.getCounter()),
-        branch == null ? null : new Branch(branch.getChildrenHash().getData(), branch.getCounter())
+        sibling,
+        branch == null ? null : new Branch(branch.getChildrenHash().getImprint(), branch.getCounter())
     );
   }
 
   MerkleTreePathStep(BigInteger path, FinalizedBranch sibling) {
     this(
         path,
-        sibling == null ? null : new Branch(sibling.getHash().getData(), sibling.getCounter()),
-        null
+        sibling,
+        (Branch) null
+    );
+  }
+
+  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
+    this(
+        path,
+        sibling == null ? null : new Branch(sibling.getHash().getImprint(), sibling.getCounter()),
+        branch
     );
   }
 
@@ -38,19 +49,19 @@ public class MerkleTreePathStep {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
-    this.sibling = sibling;
-    this.branch = branch;
+    this.sibling = Optional.ofNullable(sibling);
+    this.branch = Optional.ofNullable(branch);
   }
 
   public BigInteger getPath() {
     return this.path;
   }
 
-  public Branch getSibling() {
+  public Optional<Branch> getSibling() {
     return this.sibling;
   }
 
-  public Branch getBranch() {
+  public Optional<Branch> getBranch() {
     return this.branch;
   }
 

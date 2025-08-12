@@ -1,9 +1,13 @@
 package com.unicity.sdk.mtree.sum;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.MerkleTreePathVerificationResult;
+import com.unicity.sdk.serializer.UnicityObjectMapper;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.util.BigIntegerConverter;
 import java.math.BigInteger;
 import java.util.List;
@@ -15,7 +19,7 @@ public class MerkleTreePath {
   private final List<MerkleTreePathStep> steps;
 
   public MerkleTreePath(Root root, List<MerkleTreePathStep> steps) {
-    Objects.requireNonNull(root, "rootHash cannot be null");
+    Objects.requireNonNull(root, "root cannot be null");
     Objects.requireNonNull(steps, "steps cannot be null");
 
     this.root = root;
@@ -30,37 +34,78 @@ public class MerkleTreePath {
     return this.steps;
   }
 
+  // TODO: Make it possible to use other hash algorithms
   public MerkleTreePathVerificationResult verify(BigInteger requestId) {
-    BigInteger currentPath = BigInteger.ONE; // Root path is always 1
+    BigInteger currentPath = BigInteger.ONE;
     DataHash currentHash = null;
+    BigInteger currentCounter = this.steps.isEmpty()
+        ? BigInteger.ZERO
+        : this.steps.get(0)
+            .getBranch()
+            .map(MerkleTreePathStep.Branch::getCounter)
+            .orElse(BigInteger.ZERO);
 
     for (int i = 0; i < this.steps.size(); i++) {
       MerkleTreePathStep step = this.steps.get(i);
-      byte[] hash;
-      if (step.getBranch() == null) {
-        hash = new byte[]{0};
-      } else {
-        byte[] bytes = i == 0 ? step.getBranch().getValue()
-            : (currentHash != null ? currentHash.getData() : null);
-        hash = new DataHasher(HashAlgorithm.SHA256)
-            .update(BigIntegerConverter.encode(step.getPath()))
-            .update(bytes == null ? new byte[]{0} : bytes)
-            .digest()
-            .getData();
+      DataHash hash = null;
+
+      if (step.getBranch().isPresent()) {
+        byte[] bytes = i == 0
+            ? step.getBranch().get().getValue()
+            : (currentHash != null ? currentHash.getImprint() : null);
+        try {
+          hash = new DataHasher(HashAlgorithm.SHA256)
+              .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
+                  UnicityObjectMapper.CBOR.createArrayNode()
+                      .add(BigIntegerConverter.encode(step.getPath()))
+                      .add(bytes)
+                      .add(BigIntegerConverter.encode(currentCounter))
+              ))
+              .digest();
+        } catch (JsonProcessingException e) {
+          throw new CborSerializationException(e);
+        }
 
         int length = step.getPath().bitLength() - 1;
         currentPath = currentPath.shiftLeft(length)
             .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
+
       }
 
-      byte[] siblingHash = step.getSibling() != null ? step.getSibling().getValue() : new byte[]{0};
       boolean isRight = step.getPath().testBit(0);
-      currentHash = new DataHasher(HashAlgorithm.SHA256).update(isRight ? siblingHash : hash)
-          .update(isRight ? hash : siblingHash).digest();
+      ArrayNode sibling = step.getSibling()
+          .map(data -> UnicityObjectMapper.CBOR.createArrayNode()
+              .add(data.getValue())
+              .add(BigIntegerConverter.encode(data.getCounter())))
+          .orElse(null);
+      ArrayNode branch = hash == null
+          ? null
+          : UnicityObjectMapper.CBOR.createArrayNode()
+              .add(hash.getImprint())
+              .add(BigIntegerConverter.encode(currentCounter));
+
+      try {
+        currentHash = new DataHasher(HashAlgorithm.SHA256)
+            .update(
+                UnicityObjectMapper.CBOR.writeValueAsBytes(
+                    UnicityObjectMapper.CBOR.createArrayNode()
+                        .add(isRight ? sibling : branch)
+                        .add(isRight ? branch : sibling)
+                )
+            )
+            .digest();
+      } catch (JsonProcessingException e) {
+        throw new CborSerializationException(e);
+      }
+      currentCounter = currentCounter.add(
+          step.getSibling()
+              .map(MerkleTreePathStep.Branch::getCounter)
+              .orElse(BigInteger.ZERO)
+      );
     }
 
     return new MerkleTreePathVerificationResult(
-        this.root.hash.equals(currentHash) && this.root.counter.equals(0),
+        this.root.hash.equals(currentHash) && this.root.counter.equals(currentCounter),
         currentPath.equals(requestId));
   }
 
@@ -84,6 +129,7 @@ public class MerkleTreePath {
   }
 
   public static class Root {
+
     private final DataHash hash;
     private final BigInteger counter;
 
