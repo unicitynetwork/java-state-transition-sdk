@@ -54,7 +54,8 @@ public class InclusionProof {
       try {
         LeafValue leafValue = LeafValue.create(this.authenticator, this.transactionHash);
         MerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
-        if (step == null || step.getBranch() == null || !Arrays.equals(leafValue.getBytes(), step.getBranch().getValue())) {
+        if (step == null || step.getBranch() == null
+            || !Arrays.equals(leafValue.getBytes(), step.getBranch().getValue())) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
         }
       } catch (IOException e) {
@@ -77,9 +78,9 @@ public class InclusionProof {
 
   @Override
   public boolean equals(Object o) {
-      if (!(o instanceof InclusionProof)) {
-          return false;
-      }
+    if (!(o instanceof InclusionProof)) {
+      return false;
+    }
     InclusionProof that = (InclusionProof) o;
     return Objects.equals(merkleTreePath, that.merkleTreePath) && Objects.equals(authenticator,
         that.authenticator) && Objects.equals(transactionHash, that.transactionHash);

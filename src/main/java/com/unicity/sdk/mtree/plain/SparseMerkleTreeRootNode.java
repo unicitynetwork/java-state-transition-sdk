@@ -33,6 +33,10 @@ public class SparseMerkleTreeRootNode {
     return new SparseMerkleTreeRootNode(left, right, rootHash);
   }
 
+  public DataHash getRootHash() {
+    return this.rootHash;
+  }
+
   public MerkleTreePath getPath(BigInteger path) {
     return new MerkleTreePath(this.rootHash,
         SparseMerkleTreeRootNode.generatePath(path, this.left, this.right));
@@ -44,7 +48,8 @@ public class SparseMerkleTreeRootNode {
       return false;
     }
     SparseMerkleTreeRootNode that = (SparseMerkleTreeRootNode) o;
-    return Objects.equals(this.path, that.path) && Objects.equals(this.left, that.left) && Objects.equals(this.right, that.right);
+    return Objects.equals(this.path, that.path) && Objects.equals(this.left, that.left)
+        && Objects.equals(this.right, that.right);
   }
 
   @Override

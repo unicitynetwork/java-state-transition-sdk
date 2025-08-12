@@ -19,13 +19,21 @@ public class SparseMerkleSumTree {
     this.hashAlgorithm = hashAlgorithm;
   }
 
-  public synchronized void addLeaf(BigInteger path, LeafValue value) throws BranchExistsException, LeafOutOfBoundsException {
+  public synchronized void addLeaf(BigInteger path, LeafValue value)
+      throws BranchExistsException, LeafOutOfBoundsException {
+    Objects.requireNonNull(path, "Path cannot be null");
+    Objects.requireNonNull(value, "Value cannot be null");
+
     if (path.compareTo(BigInteger.ONE) < 0) {
       throw new IllegalArgumentException("Path must be greater than 0");
     }
 
+    if (value.getCounter().signum() < 0) {
+      throw new IllegalArgumentException("Counter must be an unsigned BigInteger.");
+    }
+
     boolean isRight = path.testBit(0);
-    Branch branch = isRight ? right : left;
+    Branch branch = isRight ? this.right : this.left;
     Branch result = branch != null
         ? SparseMerkleSumTree.buildTree(branch, path, value)
         : new PendingLeafBranch(path, value);
@@ -95,12 +103,16 @@ public class SparseMerkleSumTree {
   }
 
   public static class LeafValue {
-    private final byte[] value;
-    private final BigInteger sum;
 
-    public LeafValue(byte[] value, BigInteger sum) {
+    private final byte[] value;
+    private final BigInteger counter;
+
+    public LeafValue(byte[] value, BigInteger counter) {
+      Objects.requireNonNull(value, "Value cannot be null");
+      Objects.requireNonNull(counter, "Counter cannot be null");
+
       this.value = Arrays.copyOf(value, value.length);
-      this.sum = sum;
+      this.counter = counter;
     }
 
     public byte[] getValue() {
@@ -108,7 +120,7 @@ public class SparseMerkleSumTree {
     }
 
     public BigInteger getCounter() {
-      return this.sum;
+      return this.counter;
     }
 
     @Override
@@ -117,12 +129,12 @@ public class SparseMerkleSumTree {
         return false;
       }
       LeafValue that = (LeafValue) o;
-      return Arrays.equals(this.value, that.value) && Objects.equals(this.sum, that.sum);
+      return Arrays.equals(this.value, that.value) && Objects.equals(this.counter, that.counter);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(Arrays.hashCode(this.value), this.sum);
+      return Objects.hash(Arrays.hashCode(this.value), this.counter);
     }
   }
 }

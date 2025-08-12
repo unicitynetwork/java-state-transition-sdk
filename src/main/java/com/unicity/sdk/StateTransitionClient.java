@@ -16,7 +16,6 @@ import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
