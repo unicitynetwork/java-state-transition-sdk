@@ -2,20 +2,13 @@ package com.unicity.sdk.serializer.json.api;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.BlockHeightResponse;
-import com.unicity.sdk.jsonrpc.JsonRpcError;
-import com.unicity.sdk.jsonrpc.JsonRpcResponse;
-import com.unicity.sdk.smt.path.MerkleTreePath;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 public class BlockHeightResponseJson {
 

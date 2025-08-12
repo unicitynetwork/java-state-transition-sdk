@@ -2,9 +2,9 @@
 package com.unicity.sdk.token.fungible;
 
 import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.mtree.plain.MerkleTreePathStep;
 import com.unicity.sdk.predicate.BurnPredicate;
 import com.unicity.sdk.predicate.PredicateType;
-import com.unicity.sdk.smt.path.MerkleTreePathStep;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.MintTransactionReason;

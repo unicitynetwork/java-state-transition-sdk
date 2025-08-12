@@ -5,11 +5,12 @@ import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.LeafValue;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.smt.path.MerkleTreePath;
-import com.unicity.sdk.smt.path.MerkleTreePathStep;
-import com.unicity.sdk.smt.path.MerkleTreePathVerificationResult;
 
+import com.unicity.sdk.mtree.MerkleTreePathVerificationResult;
+import com.unicity.sdk.mtree.plain.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.MerkleTreePathStep;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -53,8 +54,7 @@ public class InclusionProof {
       try {
         LeafValue leafValue = LeafValue.create(this.authenticator, this.transactionHash);
         MerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
-        if (step == null || step.getBranch() == null || leafValue.equals(
-            step.getBranch().getValue())) {
+        if (step == null || step.getBranch() == null || !Arrays.equals(leafValue.getBytes(), step.getBranch().getValue())) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
         }
       } catch (IOException e) {
