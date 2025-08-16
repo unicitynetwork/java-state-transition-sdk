@@ -50,7 +50,11 @@ public class ProxyAddress implements Address {
       }
 
       targetAddress = AddressFactory.createAddress(
-          new String(nametag.getState().getData(), StandardCharsets.UTF_8));
+          new String(nametag.getState().getData()
+              .orElseThrow(() ->
+                  new IllegalArgumentException("Invalid nametag target address")
+              ),
+              StandardCharsets.UTF_8));
     }
 
     return targetAddress;

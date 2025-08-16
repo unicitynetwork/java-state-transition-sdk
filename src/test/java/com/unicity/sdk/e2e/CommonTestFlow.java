@@ -270,7 +270,14 @@ public class CommonTestFlow {
         nametagSecondUseTokenState.getUnlockPredicate().getReference(bobNametagToken.getType())
             .toAddress(),
         randomBytes(32),
-        new DataHasher(HashAlgorithm.SHA256).update(nametagSecondUseTokenState.getData()).digest(),
+        new DataHasher(HashAlgorithm.SHA256)
+            .update(
+                nametagSecondUseTokenState.getData()
+                    .orElseThrow(
+                        () -> new RuntimeException("Invalid nametag, address data missing")
+                    )
+            )
+            .digest(),
         null,
         SigningService.createFromSecret(BOB_SECRET, bobNametagNonce)
     );

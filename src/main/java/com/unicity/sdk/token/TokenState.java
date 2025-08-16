@@ -9,9 +9,9 @@ import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.util.HexConverter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a snapshot of token ownership and associated data.
@@ -31,8 +31,10 @@ public class TokenState {
     return this.unlockPredicate;
   }
 
-  public byte[] getData() {
-    return this.data;
+  public Optional<byte[]> getData() {
+    return this.data != null
+        ? Optional.of(Arrays.copyOf(this.data, this.data.length))
+        : Optional.empty();
   }
 
   public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
