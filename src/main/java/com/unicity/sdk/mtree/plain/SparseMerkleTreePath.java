@@ -9,12 +9,12 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
-public class MerkleTreePath {
+public class SparseMerkleTreePath {
 
   private final DataHash rootHash;
-  private final List<MerkleTreePathStep> steps;
+  private final List<SparseMerkleTreePathStep> steps;
 
-  public MerkleTreePath(DataHash rootHash, List<MerkleTreePathStep> steps) {
+  public SparseMerkleTreePath(DataHash rootHash, List<SparseMerkleTreePathStep> steps) {
     Objects.requireNonNull(rootHash, "rootHash cannot be null");
     Objects.requireNonNull(steps, "steps cannot be null");
 
@@ -26,7 +26,7 @@ public class MerkleTreePath {
     return this.rootHash;
   }
 
-  public List<MerkleTreePathStep> getSteps() {
+  public List<SparseMerkleTreePathStep> getSteps() {
     return this.steps;
   }
 
@@ -35,7 +35,7 @@ public class MerkleTreePath {
     DataHash currentHash = null;
 
     for (int i = 0; i < this.steps.size(); i++) {
-      MerkleTreePathStep step = this.steps.get(i);
+      SparseMerkleTreePathStep step = this.steps.get(i);
       byte[] hash;
       if (step.getBranch() == null) {
         hash = new byte[]{0};
@@ -65,10 +65,10 @@ public class MerkleTreePath {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MerkleTreePath)) {
+    if (!(o instanceof SparseMerkleTreePath)) {
       return false;
     }
-    MerkleTreePath that = (MerkleTreePath) o;
+    SparseMerkleTreePath that = (SparseMerkleTreePath) o;
     return Objects.equals(this.rootHash, that.rootHash) && Objects.equals(this.steps, that.steps);
   }
 

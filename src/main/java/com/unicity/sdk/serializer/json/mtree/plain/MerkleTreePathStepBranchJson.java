@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.mtree.plain.MerkleTreePathStepBranch;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
 import com.unicity.sdk.util.HexConverter;
 
 import java.io.IOException;
@@ -18,10 +18,10 @@ public class MerkleTreePathStepBranchJson {
   private MerkleTreePathStepBranchJson() {
   }
 
-  public static class Serializer extends JsonSerializer<MerkleTreePathStepBranch> {
+  public static class Serializer extends JsonSerializer<SparseMerkleTreePathStepBranch> {
 
     @Override
-    public void serialize(MerkleTreePathStepBranch value, JsonGenerator gen,
+    public void serialize(SparseMerkleTreePathStepBranch value, JsonGenerator gen,
         SerializerProvider serializers) throws IOException {
       if (value == null) {
         gen.writeNull();
@@ -34,13 +34,13 @@ public class MerkleTreePathStepBranchJson {
     }
   }
 
-  public static class Deserializer extends JsonDeserializer<MerkleTreePathStepBranch> {
+  public static class Deserializer extends JsonDeserializer<SparseMerkleTreePathStepBranch> {
 
     @Override
-    public MerkleTreePathStepBranch deserialize(JsonParser p, DeserializationContext ctx)
+    public SparseMerkleTreePathStepBranch deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
       if (!p.isExpectedStartArrayToken()) {
-        throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class,
+        throw MismatchedInputException.from(p, SparseMerkleTreePathStepBranch.class,
             "Expected array value");
       }
 
@@ -49,14 +49,14 @@ public class MerkleTreePathStepBranchJson {
         if (p.nextToken() != JsonToken.END_ARRAY) {
           value = p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(byte[].class) : null;
           if (p.nextToken() != JsonToken.END_ARRAY) {
-            throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class,
+            throw MismatchedInputException.from(p, SparseMerkleTreePathStepBranch.class,
                 "Expected only one element in array");
           }
         }
 
-        return new MerkleTreePathStepBranch(value);
+        return new SparseMerkleTreePathStepBranch(value);
       } catch (Exception e) {
-        throw MismatchedInputException.from(p, MerkleTreePathStepBranch.class,
+        throw MismatchedInputException.from(p, SparseMerkleTreePathStepBranch.class,
             "Expected hex string value");
       }
     }

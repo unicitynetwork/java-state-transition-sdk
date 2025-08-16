@@ -3,11 +3,11 @@ package com.unicity.sdk.mtree.plain;
 import com.unicity.sdk.util.HexConverter;
 import java.util.Arrays;
 
-public class MerkleTreePathStepBranch {
+public class SparseMerkleTreePathStepBranch {
 
   private final byte[] value;
 
-  public MerkleTreePathStepBranch(byte[] value) {
+  public SparseMerkleTreePathStepBranch(byte[] value) {
     this.value = value;
   }
 
@@ -17,10 +17,10 @@ public class MerkleTreePathStepBranch {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MerkleTreePathStepBranch)) {
+    if (!(o instanceof SparseMerkleTreePathStepBranch)) {
       return false;
     }
-    MerkleTreePathStepBranch that = (MerkleTreePathStepBranch) o;
+    SparseMerkleTreePathStepBranch that = (SparseMerkleTreePathStepBranch) o;
     return Arrays.equals(this.value, that.value);
   }
 

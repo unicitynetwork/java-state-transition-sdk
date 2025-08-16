@@ -13,12 +13,12 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
-public class MerkleTreePath {
+public class SparseMerkleSumTreePath {
 
   private final Root root;
-  private final List<MerkleTreePathStep> steps;
+  private final List<SparseMerkleSumTreePathStep> steps;
 
-  public MerkleTreePath(Root root, List<MerkleTreePathStep> steps) {
+  public SparseMerkleSumTreePath(Root root, List<SparseMerkleSumTreePathStep> steps) {
     Objects.requireNonNull(root, "root cannot be null");
     Objects.requireNonNull(steps, "steps cannot be null");
 
@@ -30,7 +30,7 @@ public class MerkleTreePath {
     return this.root;
   }
 
-  public List<MerkleTreePathStep> getSteps() {
+  public List<SparseMerkleSumTreePathStep> getSteps() {
     return this.steps;
   }
 
@@ -42,11 +42,11 @@ public class MerkleTreePath {
         ? BigInteger.ZERO
         : this.steps.get(0)
             .getBranch()
-            .map(MerkleTreePathStep.Branch::getCounter)
+            .map(SparseMerkleSumTreePathStep.Branch::getCounter)
             .orElse(BigInteger.ZERO);
 
     for (int i = 0; i < this.steps.size(); i++) {
-      MerkleTreePathStep step = this.steps.get(i);
+      SparseMerkleSumTreePathStep step = this.steps.get(i);
       DataHash hash = null;
 
       if (step.getBranch().isPresent()) {
@@ -99,7 +99,7 @@ public class MerkleTreePath {
       }
       currentCounter = currentCounter.add(
           step.getSibling()
-              .map(MerkleTreePathStep.Branch::getCounter)
+              .map(SparseMerkleSumTreePathStep.Branch::getCounter)
               .orElse(BigInteger.ZERO)
       );
     }
@@ -111,10 +111,10 @@ public class MerkleTreePath {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MerkleTreePath)) {
+    if (!(o instanceof SparseMerkleSumTreePath)) {
       return false;
     }
-    MerkleTreePath that = (MerkleTreePath) o;
+    SparseMerkleSumTreePath that = (SparseMerkleSumTreePath) o;
     return Objects.equals(this.root, that.root) && Objects.equals(this.steps, that.steps);
   }
 
