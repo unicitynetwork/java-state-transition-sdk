@@ -4,7 +4,6 @@ package com.unicity.sdk.transaction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.address.Address;
-import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
@@ -15,12 +14,10 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.util.HexConverter;
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Transaction data for token state transitions
@@ -50,7 +47,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     this.recipient = recipient;
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
-    this.message = message != null ? Arrays.copyOf(message, message.length) : message;
+    this.message = message != null ? Arrays.copyOf(message, message.length) : null;
     this.nametags = Map.copyOf(nametags);
   }
 
@@ -66,12 +63,14 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return Arrays.copyOf(this.salt, this.salt.length);
   }
 
-  public DataHash getDataHash() {
-    return this.dataHash;
+  public Optional<DataHash> getDataHash() {
+    return Optional.ofNullable(this.dataHash);
   }
 
-  public byte[] getMessage() {
-    return Arrays.copyOf(this.message, this.message.length);
+  public Optional<byte[]> getMessage() {
+    return this.message != null
+        ? Optional.of(Arrays.copyOf(this.message, this.message.length))
+        : Optional.empty();
   }
 
   public Map<Address, Token<?>> getNametags() {

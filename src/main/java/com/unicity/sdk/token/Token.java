@@ -14,13 +14,13 @@ import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferTransactionData;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class Token<T extends Transaction<MintTransactionData<?>>> {
 
@@ -69,11 +69,11 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.genesis.getData().getTokenType();
   }
 
-  public byte[] getData() {
+  public Optional<byte[]> getData() {
     return this.genesis.getData().getTokenData();
   }
 
-  public TokenCoinData getCoins() {
+  public Optional<TokenCoinData> getCoins() {
     return this.genesis.getData().getCoinData();
   }
 
@@ -113,8 +113,13 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
           TokenVerificationResult.fromChildren(
               "Transaction verification",
               List.of(
-                  this.verifyTransaction(transaction, previousTransaction.getData().getDataHash(),
-                      recipient)))
+                  this.verifyTransaction(
+                      transaction,
+                      previousTransaction.getData().getDataHash().orElse(null),
+                      recipient
+                  )
+              )
+          )
       );
 
       previousTransaction = transaction;
@@ -123,8 +128,10 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     results.add(TokenVerificationResult.fromChildren(
         "Token data verification",
         List.of(
-            this.transactionContainsData(previousTransaction.getData().getDataHash(),
-                this.getState().getData())
+            this.transactionContainsData(
+                previousTransaction.getData().getDataHash().orElse(null),
+                this.getState().getData().orElse(null)
+            )
                 ? TokenVerificationResult.success()
                 : TokenVerificationResult.fail("Invalid token data")
         )
@@ -174,7 +181,9 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
       return TokenVerificationResult.fail("recipient mismatch");
     }
 
-    if (!this.transactionContainsData(dataHash, transaction.getData().getSourceState().getData())) {
+    if (!this.transactionContainsData(
+        dataHash,
+        transaction.getData().getSourceState().getData().orElse(null))) {
       return TokenVerificationResult.fail("data mismatch");
     }
 
@@ -208,8 +217,9 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
       return TokenVerificationResult.fail("Authenticator verification failed.");
     }
 
-    if (transaction.getData().getReason() != null
-        && !transaction.getData().getReason().verify(transaction)) {
+    if (transaction.getData().getReason()
+        .map(reason -> reason.verify(transaction))
+        .orElse(false)) {
       return TokenVerificationResult.fail("Mint reason verification failed.");
     }
 

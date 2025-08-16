@@ -137,7 +137,7 @@ public class StateTransitionClient {
       throw new RuntimeException("Recipient address mismatch");
     }
 
-    if (!transaction.containsData(state.getData())) {
+    if (!transaction.containsData(state.getData().orElse(null))) {
       throw new RuntimeException("State data is not part of transaction.");
     }
 

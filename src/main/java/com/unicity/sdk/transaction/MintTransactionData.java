@@ -9,15 +9,14 @@ import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.serializer.cbor.CborSerializationException;
-import com.unicity.sdk.token.NameTagTokenState;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.util.HexConverter;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 public class MintTransactionData<R extends MintTransactionReason> implements
     TransactionData<RequestId> {
@@ -52,7 +51,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
 
     this.tokenId = tokenId;
     this.tokenType = tokenType;
-    this.tokenData = Arrays.copyOf(tokenData, tokenData.length);
+    this.tokenData = tokenData == null ? null : Arrays.copyOf(tokenData, tokenData.length);
     this.coinData = coinData;
     this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX);
     this.recipient = recipient;
@@ -101,16 +100,16 @@ public class MintTransactionData<R extends MintTransactionReason> implements
   }
 
 
-  public byte[] getTokenData() {
-    return this.tokenData;
+  public Optional<byte[]> getTokenData() {
+    return Optional.ofNullable(this.tokenData);
   }
 
-  public TokenCoinData getCoinData() {
-    return this.coinData;
+  public Optional<TokenCoinData> getCoinData() {
+    return Optional.ofNullable(this.coinData);
   }
 
-  public DataHash getDataHash() {
-    return this.dataHash;
+  public Optional<DataHash> getDataHash() {
+    return Optional.ofNullable(this.dataHash);
   }
 
   public byte[] getSalt() {
@@ -121,8 +120,8 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     return this.recipient;
   }
 
-  public R getReason() {
-    return this.reason;
+  public Optional<R> getReason() {
+    return Optional.ofNullable(this.reason);
   }
 
   public RequestId getSourceState() {
