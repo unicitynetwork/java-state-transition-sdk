@@ -6,7 +6,7 @@ import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.plain.SparseMerkleTree;
-import com.unicity.sdk.mtree.plain.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.util.HexConverter;
@@ -20,7 +20,7 @@ public class InclusionProofTest {
 
   RequestId requestId;
   DataHash transactionHash;
-  MerkleTreePath merkleTreePath;
+  SparseMerkleTreePath merkleTreePath;
   Authenticator authenticator;
 
   @BeforeAll

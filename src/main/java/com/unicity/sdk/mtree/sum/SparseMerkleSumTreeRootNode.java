@@ -5,7 +5,7 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.CommonPath;
-import com.unicity.sdk.mtree.sum.MerkleTreePath.Root;
+import com.unicity.sdk.mtree.sum.SparseMerkleSumTreePath.Root;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import com.unicity.sdk.util.BigIntegerConverter;
@@ -68,8 +68,8 @@ public class SparseMerkleSumTreeRootNode {
     return this.root;
   }
 
-  public MerkleTreePath getPath(BigInteger path) {
-    return new MerkleTreePath(
+  public SparseMerkleSumTreePath getPath(BigInteger path) {
+    return new SparseMerkleSumTreePath(
         this.root,
         SparseMerkleSumTreeRootNode.generatePath(path, this.left, this.right)
     );
@@ -90,7 +90,7 @@ public class SparseMerkleSumTreeRootNode {
     return Objects.hash(this.path, this.left, this.right);
   }
 
-  private static List<MerkleTreePathStep> generatePath(
+  private static List<SparseMerkleSumTreePathStep> generatePath(
       BigInteger remainingPath,
       FinalizedBranch left,
       FinalizedBranch right
@@ -100,35 +100,35 @@ public class SparseMerkleSumTreeRootNode {
     FinalizedBranch siblingBranch = isRight ? left : right;
 
     if (branch == null) {
-      return List.of(new MerkleTreePathStep(remainingPath, siblingBranch));
+      return List.of(new SparseMerkleSumTreePathStep(remainingPath, siblingBranch));
     }
 
     CommonPath commonPath = CommonPath.create(remainingPath, branch.getPath());
     if (branch.getPath().equals(commonPath.getPath())) {
       if (branch instanceof FinalizedLeafBranch) {
         return List.of(
-            new MerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+            new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
       }
 
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;
 
       if (remainingPath.shiftRight(commonPath.getLength()).compareTo(BigInteger.ONE) == 0) {
-        return List.of(new MerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
+        return List.of(new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
       return Stream.concat(
           SparseMerkleSumTreeRootNode.generatePath(remainingPath.shiftRight(commonPath.getLength()),
               nodeBranch.getLeft(), nodeBranch.getRight()).stream(),
-          Stream.of(new MerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
+          Stream.of(new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
       ).collect(Collectors.toUnmodifiableList());
     }
 
     if (branch instanceof FinalizedLeafBranch) {
       return List.of(
-          new MerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+          new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
     }
 
     return List.of(
-        new MerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedNodeBranch) branch));
+        new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, (FinalizedNodeBranch) branch));
   }
 }

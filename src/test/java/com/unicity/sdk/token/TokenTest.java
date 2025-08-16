@@ -4,7 +4,7 @@ import com.unicity.sdk.address.DirectAddress;
 import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.mtree.plain.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.signing.SigningService;
@@ -63,7 +63,7 @@ public class TokenTest {
         new Transaction<>(
             nametagGenesisData,
             new InclusionProof(
-                new MerkleTreePath(
+                new SparseMerkleTreePath(
                     new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
                     List.of()
                 ),
@@ -85,7 +85,7 @@ public class TokenTest {
         new Transaction<>(
             genesisData,
             new InclusionProof(
-                new MerkleTreePath(
+                new SparseMerkleTreePath(
                     new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
                     List.of()
                 ),
@@ -112,7 +112,7 @@ public class TokenTest {
                     Map.of(ProxyAddress.create(nametagToken.getId()), nametagToken)
                 ),
                 new InclusionProof(
-                    new MerkleTreePath(
+                    new SparseMerkleTreePath(
                         new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
                         List.of()
                     ),

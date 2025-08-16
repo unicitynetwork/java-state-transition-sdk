@@ -1,6 +1,7 @@
 plugins {
     id("java-library")
     id("maven-publish")
+    id("checkstyle")
     id("com.google.protobuf") version "0.9.4"
     id("ru.vyarus.animalsniffer") version "2.0.1"
 }
@@ -21,10 +22,10 @@ configurations {
 
 dependencies {
     // Core dependencies that work on both platforms
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.17.0")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
-    implementation("org.bouncycastle:bcprov-jdk15on:1.70")
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.19.2")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.19.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.2")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.81")
     implementation("org.slf4j:slf4j-api:2.0.13")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
@@ -32,10 +33,10 @@ dependencies {
     compileOnly("com.google.guava:guava:33.0.0-jre")
     "android"("com.google.guava:guava:33.0.0-android")
     "jvm"("com.google.guava:guava:33.0.0-jre")
-    
+
     // Animal Sniffer signatures
     signature("com.toasttab.android:gummy-bears-api-31:0.7.0@signature")
-    
+
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -44,6 +45,8 @@ dependencies {
     testImplementation("org.testcontainers:mongodb:1.19.8")
     testImplementation("org.slf4j:slf4j-simple:2.0.13")
     testImplementation("com.google.guava:guava:33.0.0-jre")
+
+    checkstyle("com.puppycrawl.tools:checkstyle:10.26.1")
 }
 
 java {
@@ -53,11 +56,22 @@ java {
     withJavadocJar()
 }
 
+checkstyle {
+    configFile = file("config/checkstyle/checkstyle.xml")
+}
+
 tasks.test {
     useJUnitPlatform {
         excludeTags("integration")
     }
     maxHeapSize = "1024m"
+}
+
+tasks.withType<Checkstyle>{
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+    }
 }
 
 tasks.register<Test>("integrationTest") {

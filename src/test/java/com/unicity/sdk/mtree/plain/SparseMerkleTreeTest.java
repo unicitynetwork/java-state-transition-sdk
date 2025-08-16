@@ -151,7 +151,7 @@ public class SparseMerkleTreeTest {
     }
     SparseMerkleTreeRootNode root = smt.calculateRoot();
 
-    MerkleTreePath path = root.getPath(BigInteger.valueOf(0b11010));
+    SparseMerkleTreePath path = root.getPath(BigInteger.valueOf(0b11010));
     MerkleTreePathVerificationResult result = path.verify(BigInteger.valueOf(0b11010));
     Assertions.assertFalse(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());

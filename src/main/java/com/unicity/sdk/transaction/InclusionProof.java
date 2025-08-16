@@ -7,8 +7,8 @@ import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
 
 import com.unicity.sdk.mtree.MerkleTreePathVerificationResult;
-import com.unicity.sdk.mtree.plain.MerkleTreePath;
-import com.unicity.sdk.mtree.plain.MerkleTreePathStep;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -18,11 +18,11 @@ import java.util.Objects;
  */
 public class InclusionProof {
 
-  private final MerkleTreePath merkleTreePath;
+  private final SparseMerkleTreePath merkleTreePath;
   private final Authenticator authenticator;
   private final DataHash transactionHash;
 
-  public InclusionProof(MerkleTreePath merkleTreePath, Authenticator authenticator,
+  public InclusionProof(SparseMerkleTreePath merkleTreePath, Authenticator authenticator,
       DataHash transactionHash) {
     if ((authenticator == null) != (transactionHash == null)) {
       throw new IllegalArgumentException(
@@ -33,7 +33,7 @@ public class InclusionProof {
     this.transactionHash = transactionHash;
   }
 
-  public MerkleTreePath getMerkleTreePath() {
+  public SparseMerkleTreePath getMerkleTreePath() {
     return this.merkleTreePath;
   }
 
@@ -53,7 +53,7 @@ public class InclusionProof {
 
       try {
         LeafValue leafValue = LeafValue.create(this.authenticator, this.transactionHash);
-        MerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
+        SparseMerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
         if (step == null || step.getBranch() == null
             || !Arrays.equals(leafValue.getBytes(), step.getBranch().getValue())) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;

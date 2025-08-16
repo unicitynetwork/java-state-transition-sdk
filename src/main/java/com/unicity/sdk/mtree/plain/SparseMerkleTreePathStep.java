@@ -4,29 +4,29 @@ import com.unicity.sdk.hash.DataHash;
 import java.math.BigInteger;
 import java.util.Objects;
 
-public class MerkleTreePathStep {
+public class SparseMerkleTreePathStep {
 
   private final BigInteger path;
   private final DataHash sibling;
-  private final MerkleTreePathStepBranch branch;
+  private final SparseMerkleTreePathStepBranch branch;
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
     this(path, sibling, branch == null ? null : branch.getValue());
   }
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
     this(path, sibling, branch == null ? null : branch.getChildrenHash().getData());
   }
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, byte[] value) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, byte[] value) {
     this(
         path,
         sibling != null ? sibling.getHash() : null,
-        value != null ? new MerkleTreePathStepBranch(value) : null
+        value != null ? new SparseMerkleTreePathStepBranch(value) : null
     );
   }
 
-  public MerkleTreePathStep(BigInteger path, DataHash sibling, MerkleTreePathStepBranch branch) {
+  public SparseMerkleTreePathStep(BigInteger path, DataHash sibling, SparseMerkleTreePathStepBranch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -42,16 +42,16 @@ public class MerkleTreePathStep {
     return this.sibling;
   }
 
-  public MerkleTreePathStepBranch getBranch() {
+  public SparseMerkleTreePathStepBranch getBranch() {
     return this.branch;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MerkleTreePathStep)) {
+    if (!(o instanceof SparseMerkleTreePathStep)) {
       return false;
     }
-    MerkleTreePathStep that = (MerkleTreePathStep) o;
+    SparseMerkleTreePathStep that = (SparseMerkleTreePathStep) o;
     return Objects.equals(this.path, that.path) && Objects.equals(this.sibling, that.sibling)
         && Objects.equals(this.branch, that.branch);
   }

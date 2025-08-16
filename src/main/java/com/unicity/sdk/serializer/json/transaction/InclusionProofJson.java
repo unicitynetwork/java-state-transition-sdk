@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.mtree.plain.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
 import com.unicity.sdk.transaction.InclusionProof;
 
 import java.io.IOException;
@@ -48,7 +48,7 @@ public class InclusionProofJson {
 
     @Override
     public InclusionProof deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-      MerkleTreePath merkleTreePath = null;
+      SparseMerkleTreePath merkleTreePath = null;
       Authenticator authenticator = null;
       DataHash transactionHash = null;
 
@@ -70,7 +70,7 @@ public class InclusionProofJson {
         try {
           switch (fieldName) {
             case MERKLE_TREE_PATH_FIELD:
-              merkleTreePath = p.readValueAs(MerkleTreePath.class);
+              merkleTreePath = p.readValueAs(SparseMerkleTreePath.class);
               break;
             case AUTHENTICATOR_FIELD:
               authenticator =

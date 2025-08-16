@@ -5,13 +5,13 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-public class MerkleTreePathStep {
+public class SparseMerkleSumTreePathStep {
 
   private final BigInteger path;
   private final Branch sibling;
   private final Branch branch;
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
     this(
         path,
         sibling,
@@ -21,7 +21,7 @@ public class MerkleTreePathStep {
     );
   }
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
     this(
         path,
         sibling,
@@ -30,7 +30,7 @@ public class MerkleTreePathStep {
     );
   }
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling) {
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling) {
     this(
         path,
         sibling,
@@ -38,7 +38,7 @@ public class MerkleTreePathStep {
     );
   }
 
-  MerkleTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
     this(
         path,
         sibling == null ? null : new Branch(sibling.getHash().getImprint(), sibling.getCounter()),
@@ -46,7 +46,7 @@ public class MerkleTreePathStep {
     );
   }
 
-  public MerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  public SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -68,10 +68,10 @@ public class MerkleTreePathStep {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MerkleTreePathStep)) {
+    if (!(o instanceof SparseMerkleSumTreePathStep)) {
       return false;
     }
-    MerkleTreePathStep that = (MerkleTreePathStep) o;
+    SparseMerkleSumTreePathStep that = (SparseMerkleSumTreePathStep) o;
     return Objects.equals(this.path, that.path) && Objects.equals(this.sibling, that.sibling)
         && Objects.equals(this.branch, that.branch);
   }

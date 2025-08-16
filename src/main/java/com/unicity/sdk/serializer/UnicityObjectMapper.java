@@ -3,6 +3,7 @@ package com.unicity.sdk.serializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.BlockHeightResponse;
@@ -14,9 +15,9 @@ import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.jsonrpc.JsonRpcError;
 import com.unicity.sdk.jsonrpc.JsonRpcRequest;
 import com.unicity.sdk.jsonrpc.JsonRpcResponse;
-import com.unicity.sdk.mtree.plain.MerkleTreePath;
-import com.unicity.sdk.mtree.plain.MerkleTreePathStep;
-import com.unicity.sdk.mtree.plain.MerkleTreePathStepBranch;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
 import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
@@ -106,15 +107,15 @@ public class UnicityObjectMapper {
     module.addSerializer(InclusionProof.class, new InclusionProofJson.Serializer());
     module.addDeserializer(InclusionProof.class, new InclusionProofJson.Deserializer());
 
-    module.addSerializer(MerkleTreePath.class, new MerkleTreePathJson.Serializer());
-    module.addDeserializer(MerkleTreePath.class, new MerkleTreePathJson.Deserializer());
+    module.addSerializer(SparseMerkleTreePath.class, new MerkleTreePathJson.Serializer());
+    module.addDeserializer(SparseMerkleTreePath.class, new MerkleTreePathJson.Deserializer());
 
-    module.addSerializer(MerkleTreePathStep.class, new MerkleTreePathStepJson.Serializer());
-    module.addDeserializer(MerkleTreePathStep.class, new MerkleTreePathStepJson.Deserializer());
+    module.addSerializer(SparseMerkleTreePathStep.class, new MerkleTreePathStepJson.Serializer());
+    module.addDeserializer(SparseMerkleTreePathStep.class, new MerkleTreePathStepJson.Deserializer());
 
-    module.addSerializer(MerkleTreePathStepBranch.class,
+    module.addSerializer(SparseMerkleTreePathStepBranch.class,
         new MerkleTreePathStepBranchJson.Serializer());
-    module.addDeserializer(MerkleTreePathStepBranch.class,
+    module.addDeserializer(SparseMerkleTreePathStepBranch.class,
         new MerkleTreePathStepBranchJson.Deserializer());
 
     module.addSerializer(Authenticator.class, new AuthenticatorJson.Serializer());
@@ -161,6 +162,7 @@ public class UnicityObjectMapper {
         new SubmitCommitmentResponseJson.Deserializer());
 
     ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new Jdk8Module());
     objectMapper.registerModule(module);
     return objectMapper;
   }
