@@ -23,19 +23,27 @@ import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.token.fungible.CoinId;
+import com.unicity.sdk.token.fungible.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferCommitment;
 import com.unicity.sdk.transaction.TransferTransactionData;
+import com.unicity.sdk.transaction.split.TokenSplitBuilder;
+import com.unicity.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
 import com.unicity.sdk.utils.InclusionProofUtils;
 import com.unicity.sdk.utils.TestTokenData;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * Common test flows for token operations, matching TypeScript SDK's CommonTestFlow.
@@ -248,11 +256,11 @@ public class CommonTestFlow {
     assertEquals(2, carolToken.getTransactions().size());
 
     // Bob receives carol token with nametag
-    byte[] bobReceivesTokenFromCarolNonce = randomBytes(32);
-    UnmaskedPredicate bobReceivesTokenFromCarolPredicate = UnmaskedPredicate.create(
-        SigningService.createFromSecret(BOB_SECRET, bobReceivesTokenFromCarolNonce),
+    byte[] carolToBobNonce = randomBytes(32);
+    UnmaskedPredicate carolToBobPredicate = UnmaskedPredicate.create(
+        SigningService.createFromSecret(BOB_SECRET, carolToBobNonce),
         HashAlgorithm.SHA256,
-        bobReceivesTokenFromCarolNonce
+        carolToBobNonce
     );
 
     byte[] bobNametagSecondUseNonce = randomBytes(32);
@@ -262,7 +270,7 @@ public class CommonTestFlow {
             HashAlgorithm.SHA256,
             bobNametagSecondUseNonce
         ),
-        bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
+        carolToBobPredicate.getReference(carolToken.getType()).toAddress()
     );
 
     TransferCommitment nametagSecondUseCommitment = TransferCommitment.create(
@@ -326,12 +334,70 @@ public class CommonTestFlow {
         carolToBobInclusionProof
     );
 
-    assertTrue(client.finishTransaction(
+    Token<?> carolToBobToken = client.finishTransaction(
         carolToken,
-        new TokenState(bobReceivesTokenFromCarolPredicate, null),
+        new TokenState(carolToBobPredicate, null),
         carolToBobTransaction,
         List.of(bobSecondUseNametag)
-    ).verify().isSuccessful());
+    );
+
+    assertTrue(carolToBobToken.verify().isSuccessful());
+
+    // SPLIT
+    Entry<CoinId, BigInteger>[] splitCoins = coinData.getCoins().entrySet()
+        .toArray(Map.Entry[]::new);
+    TokenSplit split = new TokenSplitBuilder()
+        .createToken(
+            new TokenId(randomBytes(32)),
+            new TokenType(randomBytes(32)),
+            null,
+            TokenCoinData.create(Map.ofEntries(splitCoins[0])),
+            DirectAddress.create(new DataHash(HashAlgorithm.SHA256, randomBytes(32))),
+            randomBytes(32),
+            null
+        )
+        .createToken(
+            new TokenId(randomBytes(32)),
+            new TokenType(randomBytes(32)),
+            null,
+            TokenCoinData.create(Map.ofEntries(splitCoins[1])),
+            DirectAddress.create(new DataHash(HashAlgorithm.SHA256, randomBytes(32))),
+            randomBytes(32),
+            null
+        )
+        .build(carolToBobToken);
+
+    TransferCommitment burnCommitment = split.createBurnCommitment(randomBytes(32),
+        SigningService.createFromSecret(BOB_SECRET, carolToBobNonce));
+
+    if (client.submitCommitment(carolToBobToken, burnCommitment).get().getStatus()
+        != SubmitCommitmentStatus.SUCCESS) {
+      throw new Exception("Failed to submit burn commitment");
+    }
+
+    List<MintCommitment<MintTransactionData<SplitMintReason>>> splitCommitments = split.createSplitMintCommitments(
+        burnCommitment.toTransaction(carolToBobToken, InclusionProofUtils.waitInclusionProof(
+            client,
+            burnCommitment
+        ).get()));
+
+    List<Transaction<MintTransactionData<SplitMintReason>>> splitTransactions = new ArrayList<>();
+    for (MintCommitment<MintTransactionData<SplitMintReason>> commitment : splitCommitments) {
+      if (client.submitCommitment(commitment).get().getStatus() != SubmitCommitmentStatus.SUCCESS) {
+        throw new Exception("Failed to submit split mint commitment");
+      }
+
+      splitTransactions.add(commitment.toTransaction(
+          InclusionProofUtils.waitInclusionProof(client, commitment).get()));
+    }
+    Assertions.assertEquals(
+        2,
+        splitTransactions.stream()
+            .map(transaction -> transaction.getData().getReason().get().verify(transaction))
+            .filter(Boolean::booleanValue)
+            .count()
+    );
+
 
   }
 }

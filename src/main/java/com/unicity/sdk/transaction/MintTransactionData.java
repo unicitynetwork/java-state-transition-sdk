@@ -129,16 +129,19 @@ public class MintTransactionData<R extends MintTransactionReason> implements
   }
 
   public DataHash calculateHash() {
-    DataHash tokenDataHash = new DataHasher(HashAlgorithm.SHA256).update(tokenData).digest();
+    DataHash tokenDataHash = this.tokenData == null ? null : new DataHasher(HashAlgorithm.SHA256)
+        .update(this.tokenData)
+        .digest();
+
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.addPOJO(tokenId);
-    node.addPOJO(tokenType);
+    node.addPOJO(this.tokenId);
+    node.addPOJO(this.tokenType);
     node.addPOJO(tokenDataHash);
-    node.addPOJO(dataHash);
-    node.addPOJO(coinData);
-    node.add(recipient.getAddress());
-    node.add(salt);
-    node.addPOJO(reason);
+    node.addPOJO(this.dataHash);
+    node.addPOJO(this.coinData);
+    node.add(this.recipient.getAddress());
+    node.add(this.salt);
+    node.addPOJO(this.reason);
 
     try {
       return new DataHasher(HashAlgorithm.SHA256).update(

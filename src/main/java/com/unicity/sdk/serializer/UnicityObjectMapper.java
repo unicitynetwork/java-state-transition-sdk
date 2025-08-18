@@ -18,8 +18,8 @@ import com.unicity.sdk.jsonrpc.JsonRpcResponse;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
-import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
+import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
 import com.unicity.sdk.serializer.cbor.api.AuthenticatorCbor;
 import com.unicity.sdk.serializer.cbor.hash.DataHashCbor;
@@ -46,6 +46,7 @@ import com.unicity.sdk.serializer.json.token.TokenIdJson;
 import com.unicity.sdk.serializer.json.token.TokenJson;
 import com.unicity.sdk.serializer.json.token.TokenStateJson;
 import com.unicity.sdk.serializer.json.token.TokenTypeJson;
+import com.unicity.sdk.serializer.json.token.fungible.SplitMintReasonJson;
 import com.unicity.sdk.serializer.json.transaction.CommitmentJson;
 import com.unicity.sdk.serializer.json.transaction.InclusionProofJson;
 import com.unicity.sdk.serializer.json.transaction.MintCommitmentJson;
@@ -58,13 +59,13 @@ import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
+import com.unicity.sdk.token.fungible.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.transaction.TransactionData;
 import com.unicity.sdk.transaction.TransferCommitment;
 import com.unicity.sdk.transaction.TransferTransactionData;
 
@@ -85,6 +86,7 @@ public class UnicityObjectMapper {
     module.addDeserializer(TokenType.class, new TokenTypeCbor.Deserializer());
 
     ObjectMapper objectMapper = new CBORMapper();
+    objectMapper.registerModule(new Jdk8Module());
     objectMapper.registerModule(module);
     return objectMapper;
   }
@@ -156,6 +158,9 @@ public class UnicityObjectMapper {
         new TransferTransactionDataJson.Serializer());
     module.addDeserializer(TransferTransactionData.class,
         new TransferTransactionDataJson.Deserializer());
+
+    module.addSerializer(SplitMintReason.class, new SplitMintReasonJson.Serializer());
+    module.addDeserializer(SplitMintReason.class, new SplitMintReasonJson.Deserializer());
 
     module.addSerializer(JsonRpcRequest.class, new JsonRpcRequestJson.Serializer());
     module.addSerializer(SubmitCommitmentRequest.class,
