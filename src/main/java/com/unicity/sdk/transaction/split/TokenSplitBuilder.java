@@ -136,7 +136,7 @@ public class TokenSplitBuilder {
       );
     }
 
-    public List<MintCommitment<?>> createSplitMintCommitments(
+    public List<MintCommitment<MintTransactionData<SplitMintReason>>> createSplitMintCommitments(
         Transaction<TransferTransactionData> burnTransaction) {
       Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
       Token<?> burnedToken = this.token.update(

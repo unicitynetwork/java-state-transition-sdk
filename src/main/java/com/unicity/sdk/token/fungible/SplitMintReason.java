@@ -30,7 +30,15 @@ public class SplitMintReason implements MintTransactionReason {
     this.proofs = Map.copyOf(proofs);
   }
 
-  public boolean verify(Transaction<MintTransactionData<?>> transaction) {
+  public Token<?> getToken() {
+    return this.token;
+  }
+
+  public Map<CoinId, SplitMintReasonProof> getProofs() {
+    return Map.copyOf(this.proofs);
+  }
+
+  public boolean verify(Transaction<? extends MintTransactionData<?>> transaction) {
     if (transaction.getData().getCoinData().isEmpty()) {
       return false;
     }
@@ -68,11 +76,6 @@ public class SplitMintReason implements MintTransactionReason {
 
       if (!proof.getValue().getCoinTreePath().getSteps().getFirst().getBranch()
           .map(Branch::getCounter).equals(Optional.ofNullable(coins.get(proof.getKey())))) {
-        return false;
-      }
-
-      if (PredicateType.valueOf(this.token.getState().getUnlockPredicate().getType())
-          != PredicateType.BURN) {
         return false;
       }
 
