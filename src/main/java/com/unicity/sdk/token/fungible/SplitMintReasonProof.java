@@ -1,14 +1,16 @@
 
 package com.unicity.sdk.token.fungible;
 
-import com.unicity.sdk.mtree.plain.MerkleTreePath;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
+import com.unicity.sdk.mtree.sum.SparseMerkleSumTreePath;
 import java.util.Objects;
 
 public class SplitMintReasonProof {
-  private final MerkleTreePath aggregationPath;
-  private final MerkleTreePath coinTreePath;
+  private final SparseMerkleTreePath aggregationPath;
+  private final SparseMerkleSumTreePath coinTreePath;
 
-  public SplitMintReasonProof(MerkleTreePath aggregationPath, MerkleTreePath coinTreePath) {
+  public SplitMintReasonProof(
+      SparseMerkleTreePath aggregationPath, SparseMerkleSumTreePath coinTreePath) {
     Objects.requireNonNull(aggregationPath, "aggregationPath cannot be null");
     Objects.requireNonNull(coinTreePath, "coinTreePath cannot be null");
 
@@ -16,11 +18,11 @@ public class SplitMintReasonProof {
     this.coinTreePath = coinTreePath;
   }
 
-  public MerkleTreePath getAggregationPath() {
-    return aggregationPath;
+  public SparseMerkleTreePath getAggregationPath() {
+    return this.aggregationPath;
   }
 
-  public MerkleTreePath getCoinTreePath() {
-    return coinTreePath;
+  public SparseMerkleSumTreePath getCoinTreePath() {
+    return this.coinTreePath;
   }
 }

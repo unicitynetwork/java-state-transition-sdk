@@ -107,28 +107,40 @@ public class SparseMerkleSumTreeRootNode {
     if (branch.getPath().equals(commonPath.getPath())) {
       if (branch instanceof FinalizedLeafBranch) {
         return List.of(
-            new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+            new SparseMerkleSumTreePathStep(
+                branch.getPath(),
+                siblingBranch,
+                (FinalizedLeafBranch) branch));
       }
 
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;
 
       if (remainingPath.shiftRight(commonPath.getLength()).compareTo(BigInteger.ONE) == 0) {
-        return List.of(new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
+        return List.of(
+            new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
       return Stream.concat(
-          SparseMerkleSumTreeRootNode.generatePath(remainingPath.shiftRight(commonPath.getLength()),
-              nodeBranch.getLeft(), nodeBranch.getRight()).stream(),
-          Stream.of(new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
-      ).collect(Collectors.toUnmodifiableList());
+              SparseMerkleSumTreeRootNode.generatePath(
+                      remainingPath.shiftRight(commonPath.getLength()),
+                      nodeBranch.getLeft(),
+                      nodeBranch.getRight()
+                  )
+                  .stream(),
+              Stream.of(
+                  new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
+          )
+          .collect(Collectors.toUnmodifiableList());
     }
 
     if (branch instanceof FinalizedLeafBranch) {
       return List.of(
-          new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+          new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch,
+              (FinalizedLeafBranch) branch));
     }
 
     return List.of(
-        new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, (FinalizedNodeBranch) branch));
+        new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch,
+            (FinalizedNodeBranch) branch));
   }
 }

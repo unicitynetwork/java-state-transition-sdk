@@ -8,8 +8,8 @@ import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
+import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
@@ -97,6 +97,47 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.nametags;
   }
 
+  public Token<T> update(
+      TokenState state,
+      Transaction<TransferTransactionData> transaction,
+      List<Token<?>> nametagTokens
+  ) {
+    Objects.requireNonNull(state, "State is null");
+    Objects.requireNonNull(transaction, "Transaction is null");
+    Objects.requireNonNull(nametagTokens, "Nametag tokens are null");
+
+    if (!transaction.getData().getSourceState().getUnlockPredicate()
+        .verify(transaction, this.getId(), this.getType())) {
+      throw new RuntimeException("Predicate verification failed");
+    }
+
+    Map<Address, Token<?>> nametags = new HashMap<>();
+    for (Token<?> nametagToken : nametagTokens) {
+      ProxyAddress address = ProxyAddress.create(nametagToken.getId());
+      if (nametags.containsKey(address)) {
+        throw new RuntimeException("Duplicate nametag in list");
+      }
+
+      nametags.put(address, nametagToken);
+    }
+
+    Address recipient = ProxyAddress.resolve(transaction.getData().getRecipient(), nametags);
+    if (!state.getUnlockPredicate().getReference(this.getType()).toAddress().equals(recipient)) {
+      throw new RuntimeException("Recipient address mismatch");
+    }
+
+    if (!transaction.containsData(state.getData().orElse(null))) {
+      throw new RuntimeException("State data is not part of transaction.");
+    }
+
+    List<Transaction<TransferTransactionData>> transactions = new ArrayList<>(
+        this.getTransactions());
+    transactions.add(transaction);
+
+    return new Token<>(state, this.getGenesis(), transactions, nametagTokens);
+  }
+
+  // TODO: Move out of token class
   public TokenVerificationResult verify() {
     List<TokenVerificationResult> results = new ArrayList<>();
     results.add(
@@ -197,22 +238,22 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
 
   private TokenVerificationResult verifyGenesis(
       Transaction<MintTransactionData<?>> transaction) {
-    if (transaction.getInclusionProof().getAuthenticator() == null) {
+    if (transaction.getInclusionProof().getAuthenticator().isEmpty()) {
       return TokenVerificationResult.fail("Missing authenticator.");
     }
-    if (transaction.getInclusionProof().getTransactionHash() == null) {
+
+    if (transaction.getInclusionProof().getTransactionHash().isEmpty()) {
       return TokenVerificationResult.fail("Missing transaction hash.");
     }
 
-    SigningService signingService = SigningService.createFromSecret(Commitment.MINTER_SECRET,
-        transaction.getData().getTokenId().getBytes());
+    SigningService signingService = MintCommitment.createSigningService(transaction.getData());
 
-    if (!Arrays.equals(transaction.getInclusionProof().getAuthenticator().getPublicKey(),
+    if (!Arrays.equals(transaction.getInclusionProof().getAuthenticator().get().getPublicKey(),
         signingService.getPublicKey())) {
       return TokenVerificationResult.fail("Authenticator public key mismatch.");
     }
 
-    if (!transaction.getInclusionProof().getAuthenticator()
+    if (!transaction.getInclusionProof().getAuthenticator().get()
         .verify(transaction.getData().calculateHash())) {
       return TokenVerificationResult.fail("Authenticator verification failed.");
     }

@@ -12,6 +12,7 @@ import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a proof of inclusion or non-inclusion in a sparse merkle tree.
@@ -37,12 +38,12 @@ public class InclusionProof {
     return this.merkleTreePath;
   }
 
-  public Authenticator getAuthenticator() {
-    return this.authenticator;
+  public Optional<Authenticator> getAuthenticator() {
+    return Optional.ofNullable(this.authenticator);
   }
 
-  public DataHash getTransactionHash() {
-    return this.transactionHash;
+  public Optional<DataHash> getTransactionHash() {
+    return Optional.ofNullable(this.transactionHash);
   }
 
   public InclusionProofVerificationStatus verify(RequestId requestId) {

@@ -56,7 +56,8 @@ public class MerkleTreePathStepJson {
       Set<String> fields = new HashSet<>();
 
       if (!p.isExpectedStartObjectToken()) {
-        throw MismatchedInputException.from(p, SparseMerkleTreePathStep.class, "Expected object value");
+        throw MismatchedInputException.from(p, SparseMerkleTreePathStep.class,
+            "Expected object value");
       }
 
       while (p.nextToken() != JsonToken.END_OBJECT) {

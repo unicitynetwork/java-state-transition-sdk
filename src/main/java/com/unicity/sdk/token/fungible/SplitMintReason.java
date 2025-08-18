@@ -2,7 +2,8 @@
 package com.unicity.sdk.token.fungible;
 
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.mtree.plain.MerkleTreePathStep;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
+import com.unicity.sdk.mtree.sum.SparseMerkleSumTreePathStep.Branch;
 import com.unicity.sdk.predicate.BurnPredicate;
 import com.unicity.sdk.predicate.PredicateType;
 import com.unicity.sdk.token.Token;
@@ -13,28 +14,33 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 
 public class SplitMintReason implements MintTransactionReason {
 
   private final Token<?> token;
   private final Map<CoinId, SplitMintReasonProof> proofs;
 
-  public SplitMintReason(Token<?> token) {
+  public SplitMintReason(Token<?> token, Map<CoinId, SplitMintReasonProof> proofs) {
+    Objects.requireNonNull(token, "Token cannot be null");
+    Objects.requireNonNull(proofs, "Proofs cannot be null");
+
     this.token = token;
-    this.proofs = Map.of();
+    this.proofs = Map.copyOf(proofs);
   }
 
   public boolean verify(Transaction<MintTransactionData<?>> transaction) {
-    if (transaction.getData().getCoinData() == null) {
+    if (transaction.getData().getCoinData().isEmpty()) {
       return false;
     }
 
-    if (PredicateType.valueOf(this.token.getState().getUnlockPredicate().getType())
-        != PredicateType.BURN) {
+    if (!PredicateType.BURN.name().equals(this.token.getState().getUnlockPredicate().getType())) {
       return false;
     }
 
-    Map<CoinId, BigInteger> coins = transaction.getData().getCoinData().getCoins();
+    Map<CoinId, BigInteger> coins = transaction.getData().getCoinData().map(TokenCoinData::getCoins)
+        .orElse(Map.of());
     if (coins.size() != this.proofs.size()) {
       return false;
     }
@@ -50,21 +56,20 @@ public class SplitMintReason implements MintTransactionReason {
         return false;
       }
 
-      List<MerkleTreePathStep> aggregationPathSteps = proof.getValue().getAggregationPath()
+      List<SparseMerkleTreePathStep> aggregationPathSteps = proof.getValue().getAggregationPath()
           .getSteps();
       if (aggregationPathSteps.isEmpty()
           || aggregationPathSteps.getFirst().getBranch() == null
           || aggregationPathSteps.getFirst().getBranch().getValue() == null
-          || !proof.getValue().getCoinTreePath().getRootHash()
+          || !proof.getValue().getCoinTreePath().getRoot().getHash()
           .equals(DataHash.fromImprint(aggregationPathSteps.getFirst().getBranch().getValue()))) {
         return false;
       }
 
-//
-//        const sumPathLeaf = proof.coinTreePath.steps.at(0) ?.branch ?.sum;
-//      if (coins.get(coinId) != = sumPathLeaf) {
-//        return false;
-//      }
+      if (!proof.getValue().getCoinTreePath().getSteps().getFirst().getBranch()
+          .map(Branch::getCounter).equals(Optional.ofNullable(coins.get(proof.getKey())))) {
+        return false;
+      }
 
       if (PredicateType.valueOf(this.token.getState().getUnlockPredicate().getType())
           != PredicateType.BURN) {

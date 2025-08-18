@@ -3,13 +3,10 @@ package com.unicity.sdk.serializer.json.transaction;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
@@ -46,31 +43,17 @@ public class CommitmentJson {
     }
   }
 
-  public static class Deserializer extends JsonDeserializer<Commitment<?>> implements
-      ContextualDeserializer {
+  public static abstract class Deserializer<T extends TransactionData<?>, U extends Commitment<T>> extends JsonDeserializer<U> {
 
-    private final JavaType resultType;
+    protected abstract T createTransactionData(JsonParser p, DeserializationContext ctx) throws IOException;
 
-    public Deserializer() {
-      this.resultType = null;
-    }
-
-    private Deserializer(JavaType valueType) {
-      this.resultType = valueType;
-    }
+    protected abstract U createCommitment(
+        RequestId requestId, T transactionData, Authenticator authenticator);
 
     @Override
-    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,
-        BeanProperty property) {
-      JavaType wrapperType = ctxt.getContextualType();
-      JavaType valueType = wrapperType != null ? wrapperType.containedType(0) : null;
-      return new Deserializer(valueType);
-    }
-
-    @Override
-    public Commitment<?> deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+    public U deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
       RequestId requestId = null;
-      TransactionData<?> transactionData = null;
+      T transactionData = null;
       Authenticator authenticator = null;
 
       Set<String> fields = new HashSet<>();
@@ -94,7 +77,7 @@ public class CommitmentJson {
               requestId = p.readValueAs(RequestId.class);
               break;
             case TRANSACTION_DATA_FIELD:
-              transactionData = p.getCodec().readValue(p, this.resultType);
+              transactionData = this.createTransactionData(p, ctx);
               break;
             case AUTHENTICATOR_FIELD:
               authenticator = p.readValueAs(Authenticator.class);
@@ -115,7 +98,7 @@ public class CommitmentJson {
             String.format("Missing required fields: %s", missingFields));
       }
 
-      return new Commitment<>(requestId, transactionData, authenticator);
+      return this.createCommitment(requestId, transactionData, authenticator);
     }
   }
 }

@@ -48,8 +48,10 @@ import com.unicity.sdk.serializer.json.token.TokenStateJson;
 import com.unicity.sdk.serializer.json.token.TokenTypeJson;
 import com.unicity.sdk.serializer.json.transaction.CommitmentJson;
 import com.unicity.sdk.serializer.json.transaction.InclusionProofJson;
+import com.unicity.sdk.serializer.json.transaction.MintCommitmentJson;
 import com.unicity.sdk.serializer.json.transaction.MintTransactionDataJson;
 import com.unicity.sdk.serializer.json.transaction.TransactionJson;
+import com.unicity.sdk.serializer.json.transaction.TransferCommitmentJson;
 import com.unicity.sdk.serializer.json.transaction.TransferTransactionDataJson;
 import com.unicity.sdk.serializer.json.util.ByteArrayHexJson;
 import com.unicity.sdk.token.Token;
@@ -59,8 +61,11 @@ import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
+import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransactionData;
+import com.unicity.sdk.transaction.TransferCommitment;
 import com.unicity.sdk.transaction.TransferTransactionData;
 
 public class UnicityObjectMapper {
@@ -111,7 +116,8 @@ public class UnicityObjectMapper {
     module.addDeserializer(SparseMerkleTreePath.class, new MerkleTreePathJson.Deserializer());
 
     module.addSerializer(SparseMerkleTreePathStep.class, new MerkleTreePathStepJson.Serializer());
-    module.addDeserializer(SparseMerkleTreePathStep.class, new MerkleTreePathStepJson.Deserializer());
+    module.addDeserializer(SparseMerkleTreePathStep.class,
+        new MerkleTreePathStepJson.Deserializer());
 
     module.addSerializer(SparseMerkleTreePathStepBranch.class,
         new MerkleTreePathStepBranchJson.Serializer());
@@ -125,7 +131,8 @@ public class UnicityObjectMapper {
     module.addDeserializer(RequestId.class, new RequestIdJson.Deserializer());
 
     module.addSerializer(Commitment.class, new CommitmentJson.Serializer());
-    module.addDeserializer(Commitment.class, new CommitmentJson.Deserializer());
+    module.addDeserializer(MintCommitment.class, new MintCommitmentJson.Deserializer());
+    module.addDeserializer(TransferCommitment.class, new TransferCommitmentJson.Deserializer());
 
     module.addSerializer(Token.class, new TokenJson.Serializer());
     module.addDeserializer(Token.class, new TokenJson.Deserializer());

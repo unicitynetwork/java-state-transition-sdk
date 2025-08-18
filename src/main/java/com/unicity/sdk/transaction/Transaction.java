@@ -29,17 +29,17 @@ public class Transaction<T extends TransactionData<?>> {
   }
 
   public boolean containsData(byte[] stateData) {
-    if ((this.data.getDataHash() == null) != (stateData == null)) {
+    if (this.data.getDataHash().isEmpty() != (stateData == null)) {
       return false;
     }
 
-    if (this.data.getDataHash() == null) {
+    if (this.data.getDataHash().isEmpty()) {
       return true;
     }
 
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
     hasher.update(stateData);
-    return hasher.digest().equals(this.data.getDataHash());
+    return hasher.digest().equals(this.data.getDataHash().orElse(null));
   }
 
   @Override
