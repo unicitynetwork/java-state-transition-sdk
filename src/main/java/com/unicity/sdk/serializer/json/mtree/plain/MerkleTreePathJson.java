@@ -29,7 +29,8 @@ public class MerkleTreePathJson {
   public static class Serializer extends JsonSerializer<SparseMerkleTreePath> {
 
     @Override
-    public void serialize(SparseMerkleTreePath value, JsonGenerator gen, SerializerProvider serializers)
+    public void serialize(SparseMerkleTreePath value, JsonGenerator gen,
+        SerializerProvider serializers)
         throws IOException {
       if (value == null) {
         gen.writeNull();
@@ -46,7 +47,8 @@ public class MerkleTreePathJson {
   public static class Deserializer extends JsonDeserializer<SparseMerkleTreePath> {
 
     @Override
-    public SparseMerkleTreePath deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+    public SparseMerkleTreePath deserialize(JsonParser p, DeserializationContext ctx)
+        throws IOException {
       DataHash rootHash = null;
       List<SparseMerkleTreePathStep> steps = new ArrayList<>();
       Set<String> fields = new HashSet<>();

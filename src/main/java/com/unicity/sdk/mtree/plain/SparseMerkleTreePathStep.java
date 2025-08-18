@@ -26,7 +26,8 @@ public class SparseMerkleTreePathStep {
     );
   }
 
-  public SparseMerkleTreePathStep(BigInteger path, DataHash sibling, SparseMerkleTreePathStepBranch branch) {
+  public SparseMerkleTreePathStep(BigInteger path, DataHash sibling,
+      SparseMerkleTreePathStepBranch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;

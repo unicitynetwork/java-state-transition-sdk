@@ -6,21 +6,35 @@ import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.BranchExistsException;
 import com.unicity.sdk.mtree.LeafOutOfBoundsException;
 import com.unicity.sdk.mtree.plain.SparseMerkleTree;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreeRootNode;
 import com.unicity.sdk.mtree.sum.SparseMerkleSumTree;
 import com.unicity.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 import com.unicity.sdk.mtree.sum.SparseMerkleSumTreeRootNode;
+import com.unicity.sdk.predicate.BurnPredicate;
+import com.unicity.sdk.predicate.BurnPredicateReference;
+import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
+import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.CoinId;
+import com.unicity.sdk.token.fungible.SplitMintReason;
+import com.unicity.sdk.token.fungible.SplitMintReasonProof;
 import com.unicity.sdk.token.fungible.TokenCoinData;
+import com.unicity.sdk.transaction.MintCommitment;
+import com.unicity.sdk.transaction.MintTransactionData;
+import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransferCommitment;
+import com.unicity.sdk.transaction.TransferTransactionData;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class TokenSplitBuilder {
 
@@ -41,7 +55,9 @@ public class TokenSplitBuilder {
     return this;
   }
 
-  public void build(Token<?> token) throws LeafOutOfBoundsException, BranchExistsException {
+  public TokenSplit build(Token<?> token) throws LeafOutOfBoundsException, BranchExistsException {
+    Objects.requireNonNull(token, "Token cannot be null");
+
     Map<CoinId, SparseMerkleSumTree> trees = new HashMap<>();
     Map<CoinId, List<TokenRequest>> tokensByCoin = new HashMap<>();
 
@@ -79,11 +95,90 @@ public class TokenSplitBuilder {
           root.getRoot().getHash().getImprint());
     }
 
-    // BURN
-    // Create tokens
+    return new TokenSplit(
+        token,
+        aggregationTree.calculateRoot(),
+        coinRoots,
+        this.tokens
+    );
+  }
+
+  public static class TokenSplit {
+
+    private final Token<?> token;
+    private final SparseMerkleTreeRootNode aggregationRoot;
+    private final Map<CoinId, SparseMerkleSumTreeRootNode> coinRoots;
+    private final Map<TokenId, TokenRequest> tokens;
+
+    private TokenSplit(
+        Token<?> token,
+        SparseMerkleTreeRootNode aggregationRoot,
+        Map<CoinId, SparseMerkleSumTreeRootNode> coinRoots,
+        Map<TokenId, TokenRequest> tokens
+    ) {
+      this.token = token;
+      this.aggregationRoot = aggregationRoot;
+      this.coinRoots = coinRoots;
+      this.tokens = tokens;
+    }
+
+    public TransferCommitment createBurnCommitment(byte[] salt, SigningService signingService) {
+      return TransferCommitment.create(
+          token,
+          BurnPredicateReference.create(
+              this.token.getType(),
+              this.aggregationRoot.getRootHash()
+          ).toAddress(),
+          salt,
+          null,
+          null,
+          signingService
+      );
+    }
+
+    public List<MintCommitment<?>> createSplitMintCommitments(
+        Transaction<TransferTransactionData> burnTransaction) {
+      Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
+      Token<?> burnedToken = this.token.update(
+          new TokenState(new BurnPredicate(this.aggregationRoot.getRootHash()), null),
+          burnTransaction,
+          List.of()
+      );
+
+      return this.tokens.values().stream()
+          .map(request -> MintCommitment.create(
+                  new MintTransactionData<>(
+                      request.id,
+                      request.type,
+                      request.data,
+                      request.coinData,
+                      request.recipient,
+                      request.salt,
+                      request.recipientDataHash,
+                      new SplitMintReason(burnedToken,
+                          request.coinData.getCoins().keySet().stream()
+                              .map(coinId -> Map.entry(
+                                      coinId,
+                                      new SplitMintReasonProof(
+                                          this.aggregationRoot.getPath(
+                                              coinId.toBitString().toBigInteger()),
+                                          this.coinRoots.get(coinId)
+                                              .getPath(request.id.toBitString().toBigInteger())
+                                      )
+                                  )
+                              )
+                              .collect(
+                                  Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue))
+                      )
+                  )
+              )
+          )
+          .collect(Collectors.toUnmodifiableList());
+    }
   }
 
   public static class TokenRequest {
+
     private final TokenId id;
     private final TokenType type;
     private final byte[] data;
@@ -111,10 +206,10 @@ public class TokenSplitBuilder {
 
       this.id = id;
       this.type = type;
-      this.data = data;
+      this.data = data == null ? null : Arrays.copyOf(data, data.length);
       this.coinData = coinData;
       this.recipient = recipient;
-      this.salt = salt;
+      this.salt = Arrays.copyOf(salt, salt.length);
       this.recipientDataHash = recipientDataHash;
     }
   }

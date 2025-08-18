@@ -16,19 +16,12 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class BurnPredicate implements Predicate {
-  private final byte[] nonce;
   private final DataHash burnReason;
 
-  public BurnPredicate(byte[] nonce, DataHash reason) {
-    Objects.requireNonNull(nonce, "Nonce cannot be null");
+  public BurnPredicate(DataHash reason) {
     Objects.requireNonNull(reason, "Burn reason cannot be null");
 
-    this.nonce = Arrays.copyOf(nonce, nonce.length);
     this.burnReason = reason;
-  }
-
-  public static BurnPredicate create(byte[] nonce, DataHash reason) {
-    return new BurnPredicate(nonce, reason);
   }
 
   public DataHash getReason() {
@@ -42,7 +35,7 @@ public class BurnPredicate implements Predicate {
 
   @Override
   public byte[] getNonce() {
-    return Arrays.copyOf(this.nonce, this.nonce.length);
+    return new byte[0];
   }
 
   @Override

@@ -5,8 +5,10 @@ import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.BranchExistsException;
 import com.unicity.sdk.mtree.LeafOutOfBoundsException;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
+import com.unicity.sdk.predicate.BurnPredicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.Predicate;
+import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -108,9 +110,12 @@ public class TokenSplitBuilderTest {
         null
     );
 
-    Assertions.assertThrows(IllegalArgumentException.class, () -> {
+    Exception exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
       builder.build(token);
     });
+
+    Assertions.assertEquals("Token contained 100 CoinId{bytes=636f696e31} coins, but tree has 50",
+        exception.getMessage());
 
     builder.createToken(
         new TokenId(UUID.randomUUID().toString().getBytes()),
@@ -141,7 +146,7 @@ public class TokenSplitBuilderTest {
 
     Token<?> token = this.createToken(null);
 
-    Assertions.assertThrows(
+    Exception exception = Assertions.assertThrows(
         IllegalArgumentException.class, () -> {
           TokenSplitBuilder builder = new TokenSplitBuilder();
           builder
@@ -161,5 +166,9 @@ public class TokenSplitBuilderTest {
               )
               .build(token);
         });
+    Assertions.assertEquals(
+        "Token has different number of coins than expected",
+        exception.getMessage()
+    );
   }
 }

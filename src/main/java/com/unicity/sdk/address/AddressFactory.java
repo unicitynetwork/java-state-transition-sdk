@@ -1,6 +1,5 @@
 package com.unicity.sdk.address;
 
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.util.HexConverter;

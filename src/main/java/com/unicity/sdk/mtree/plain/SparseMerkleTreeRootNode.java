@@ -27,9 +27,10 @@ public class SparseMerkleTreeRootNode {
   static SparseMerkleTreeRootNode create(
       FinalizedBranch left, FinalizedBranch right,
       HashAlgorithm hashAlgorithm) {
-    DataHash rootHash = new DataHasher(hashAlgorithm).update(
-            left == null ? new byte[]{0} : left.getHash().getData())
-        .update(right == null ? new byte[]{0} : right.getHash().getData()).digest();
+    DataHash rootHash = new DataHasher(hashAlgorithm)
+        .update(left == null ? new byte[]{0} : left.getHash().getData())
+        .update(right == null ? new byte[]{0} : right.getHash().getData())
+        .digest();
     return new SparseMerkleTreeRootNode(left, right, rootHash);
   }
 
@@ -75,7 +76,8 @@ public class SparseMerkleTreeRootNode {
     if (branch.getPath().equals(commonPath.getPath())) {
       if (branch instanceof FinalizedLeafBranch) {
         return List.of(
-            new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+            new SparseMerkleTreePathStep(branch.getPath(), siblingBranch,
+                (FinalizedLeafBranch) branch));
       }
 
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;
@@ -85,18 +87,26 @@ public class SparseMerkleTreeRootNode {
       }
 
       return Stream.concat(
-          SparseMerkleTreeRootNode.generatePath(remainingPath.shiftRight(commonPath.getLength()),
-              nodeBranch.getLeft(), nodeBranch.getRight()).stream(),
-          Stream.of(new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
-      ).collect(Collectors.toUnmodifiableList());
+              SparseMerkleTreeRootNode.generatePath(
+                  remainingPath.shiftRight(commonPath.getLength()),
+                  nodeBranch.getLeft(),
+                  nodeBranch.getRight()
+              ).stream(),
+              Stream.of(
+                  new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch)
+              )
+          )
+          .collect(Collectors.toUnmodifiableList());
     }
 
     if (branch instanceof FinalizedLeafBranch) {
       return List.of(
-          new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedLeafBranch) branch));
+          new SparseMerkleTreePathStep(branch.getPath(), siblingBranch,
+              (FinalizedLeafBranch) branch));
     }
 
     return List.of(
-        new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, (FinalizedNodeBranch) branch));
+        new SparseMerkleTreePathStep(branch.getPath(), siblingBranch,
+            (FinalizedNodeBranch) branch));
   }
 }

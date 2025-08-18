@@ -19,11 +19,7 @@ import java.util.Objects;
  *
  * @param <T> the type of transaction data
  */
-public class Commitment<T extends TransactionData<?>> {
-
-  public static final byte[] MINTER_SECRET = HexConverter.decode(
-      "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
-
+public abstract class Commitment<T extends TransactionData<?>> {
   private final RequestId requestId;
   private final T transactionData;
   private final Authenticator authenticator;
@@ -32,42 +28,6 @@ public class Commitment<T extends TransactionData<?>> {
     this.requestId = requestId;
     this.transactionData = transactionData;
     this.authenticator = authenticator;
-  }
-
-  public static <T extends MintTransactionData<?>> Commitment<T> create(
-      T transactionData
-  ) {
-    SigningService signingService = SigningService.createFromSecret(MINTER_SECRET,
-        transactionData.getTokenId().getBytes());
-
-    return Commitment.create(signingService, transactionData, transactionData.calculateHash(),
-        transactionData.getSourceState().getHash());
-  }
-
-  public static Commitment<TransferTransactionData> create(
-      Token<?> token,
-      Address recipient,
-      byte[] salt,
-      DataHash dataHash,
-      byte[] message,
-      SigningService signingService
-  ) {
-    TransferTransactionData transactionData = new TransferTransactionData(
-        token.getState(), recipient, salt, dataHash, message, token.getNametags());
-    return Commitment.create(signingService, transactionData,
-        transactionData.calculateHash(token.getId(), token.getType()),
-        transactionData.getSourceState().calculateHash(token.getId(), token.getType()));
-  }
-
-  private static <T extends TransactionData<?>> Commitment<T> create(
-      SigningService signingService,
-      T transactionData,
-      DataHash transactionHash,
-      DataHash sourceStateHash) {
-    RequestId requestId = RequestId.create(signingService.getPublicKey(), sourceStateHash);
-    Authenticator authenticator = Authenticator.create(signingService, transactionHash,
-        sourceStateHash);
-    return new Commitment<>(requestId, transactionData, authenticator);
   }
 
   /**

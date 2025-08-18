@@ -26,8 +26,10 @@ import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
+import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
+import com.unicity.sdk.transaction.TransferCommitment;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.utils.InclusionProofUtils;
 import com.unicity.sdk.utils.TestTokenData;
@@ -66,7 +68,7 @@ public class CommonTestFlow {
     Address aliceAddress = alicePredicate.getReference(tokenType).toAddress();
     TokenState aliceTokenState = new TokenState(alicePredicate, null);
 
-    Commitment<MintTransactionData<?>> aliceMintCommitment = Commitment.create(
+    MintCommitment<?> aliceMintCommitment = MintCommitment.create(
         new MintTransactionData(
             tokenId,
             tokenType,
@@ -79,8 +81,9 @@ public class CommonTestFlow {
         ));
 
     // Submit mint transaction using StateTransitionClient
-    SubmitCommitmentResponse aliceMintTokenResponse = client.submitCommitment(
-        aliceMintCommitment).get();
+    SubmitCommitmentResponse aliceMintTokenResponse = client
+        .submitCommitment(aliceMintCommitment)
+        .get();
     if (aliceMintTokenResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit mint commitment: %s",
           aliceMintTokenResponse.getStatus()));
@@ -95,7 +98,7 @@ public class CommonTestFlow {
     // Create mint transaction
     Token aliceToken = new Token(
         aliceTokenState,
-        client.createTransaction(aliceMintCommitment, mintInclusionProof)
+        aliceMintCommitment.toTransaction(mintInclusionProof)
     );
 
     assertTrue(aliceToken.verify().isSuccessful());
@@ -117,7 +120,7 @@ public class CommonTestFlow {
     TokenType bobNametagTokenType = new TokenType(randomBytes(32));
     DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType)
         .toAddress();
-    Commitment<MintTransactionData<?>> nametagMintCommitment = Commitment.create(
+    MintCommitment<?> nametagMintCommitment = MintCommitment.create(
         MintTransactionData.createNametag(
             UUID.randomUUID().toString(),
             bobNametagTokenType,
@@ -134,8 +137,7 @@ public class CommonTestFlow {
           nametagMintResponse.getStatus()));
     }
 
-    Transaction<MintTransactionData<?>> bobNametagGenesis = client.createTransaction(
-        nametagMintCommitment,
+    Transaction<? extends MintTransactionData<?>> bobNametagGenesis = nametagMintCommitment.toTransaction(
         InclusionProofUtils.waitInclusionProof(
             client,
             nametagMintCommitment
@@ -152,7 +154,7 @@ public class CommonTestFlow {
     DataHash bobDataHash = new DataHasher(HashAlgorithm.SHA256).update(bobStateData).digest();
 
     // Submit transfer transaction
-    Commitment<TransferTransactionData> aliceToBobTransferCommitment = Commitment.create(
+    TransferCommitment aliceToBobTransferCommitment = TransferCommitment.create(
         aliceToken,
         ProxyAddress.create(bobNametagGenesis.getData().getTokenId()),
         randomBytes(32),
@@ -175,9 +177,8 @@ public class CommonTestFlow {
     ).get();
 
     // Create transfer transaction
-    Transaction<TransferTransactionData> aliceToBobTransferTransaction = client.createTransaction(
+    Transaction<TransferTransactionData> aliceToBobTransferTransaction = aliceToBobTransferCommitment.toTransaction(
         aliceToken,
-        aliceToBobTransferCommitment,
         aliceToBobTransferInclusionProof
     );
 
@@ -203,7 +204,7 @@ public class CommonTestFlow {
 
     // Bob transfers to Carol (no custom data)
     // Submit transfer transaction
-    Commitment<TransferTransactionData> bobToCarolTransferCommitment = Commitment.create(
+    TransferCommitment bobToCarolTransferCommitment = TransferCommitment.create(
         bobToken,
         carolAddress,
         randomBytes(32),
@@ -225,9 +226,8 @@ public class CommonTestFlow {
         client,
         bobToCarolTransferCommitment
     ).get();
-    Transaction<TransferTransactionData> bobToCarolTransaction = client.createTransaction(
+    Transaction<TransferTransactionData> bobToCarolTransaction = bobToCarolTransferCommitment.toTransaction(
         bobToken,
-        bobToCarolTransferCommitment,
         bobToCarolInclusionProof
     );
 
@@ -265,7 +265,7 @@ public class CommonTestFlow {
         bobReceivesTokenFromCarolPredicate.getReference(carolToken.getType()).toAddress()
     );
 
-    Commitment<TransferTransactionData> nametagSecondUseCommitment = Commitment.create(
+    TransferCommitment nametagSecondUseCommitment = TransferCommitment.create(
         bobNametagToken,
         nametagSecondUseTokenState.getUnlockPredicate().getReference(bobNametagToken.getType())
             .toAddress(),
@@ -294,11 +294,11 @@ public class CommonTestFlow {
     Token<?> bobSecondUseNametag = client.finishTransaction(
         bobNametagToken,
         nametagSecondUseTokenState,
-        client.createTransaction(bobNametagToken, nametagSecondUseCommitment,
+        nametagSecondUseCommitment.toTransaction(bobNametagToken,
             InclusionProofUtils.waitInclusionProof(client, nametagSecondUseCommitment).get())
     );
 
-    Commitment<TransferTransactionData> carolToBobTransferCommitment = Commitment.create(
+    TransferCommitment carolToBobTransferCommitment = TransferCommitment.create(
         carolToken,
         ProxyAddress.create(bobNametagToken.getId()),
         randomBytes(32),
@@ -321,9 +321,8 @@ public class CommonTestFlow {
         carolToBobTransferCommitment
     ).get();
 
-    Transaction<TransferTransactionData> carolToBobTransaction = client.createTransaction(
+    Transaction<TransferTransactionData> carolToBobTransaction = carolToBobTransferCommitment.toTransaction(
         carolToken,
-        carolToBobTransferCommitment,
         carolToBobInclusionProof
     );
 

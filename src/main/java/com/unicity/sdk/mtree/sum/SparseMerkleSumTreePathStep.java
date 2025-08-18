@@ -11,7 +11,8 @@ public class SparseMerkleSumTreePathStep {
   private final Branch sibling;
   private final Branch branch;
 
-  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling,
+      FinalizedLeafBranch branch) {
     this(
         path,
         sibling,
@@ -21,7 +22,8 @@ public class SparseMerkleSumTreePathStep {
     );
   }
 
-  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling,
+      FinalizedNodeBranch branch) {
     this(
         path,
         sibling,

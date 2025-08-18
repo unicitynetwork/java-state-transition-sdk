@@ -94,8 +94,8 @@ public abstract class DefaultPredicate implements Predicate {
   @Override
   public boolean verify(Transaction<TransferTransactionData> transaction, TokenId tokenId,
       TokenType tokenType) {
-    Authenticator authenticator = transaction.getInclusionProof().getAuthenticator();
-    DataHash transactionHash = transaction.getInclusionProof().getTransactionHash();
+    Authenticator authenticator = transaction.getInclusionProof().getAuthenticator().orElse(null);
+    DataHash transactionHash = transaction.getInclusionProof().getTransactionHash().orElse(null);
 
     if (authenticator == null || transactionHash == null) {
       return false;

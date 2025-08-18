@@ -42,7 +42,7 @@ public class CommitmentTest {
         new DataHash(HashAlgorithm.SHA256, new byte[32]),
         null
     );
-    Commitment<MintTransactionData<MintTransactionReason>> commitment = new Commitment<>(
+    Commitment<MintTransactionData<MintTransactionReason>> commitment = new MintCommitment<>(
         new RequestId(
             new DataHash(HashAlgorithm.SHA256, new byte[32])
         ),
@@ -56,8 +56,9 @@ public class CommitmentTest {
     Assertions.assertEquals(commitment,
         UnicityObjectMapper.JSON.readValue(
             UnicityObjectMapper.JSON.writeValueAsString(commitment),
-            UnicityObjectMapper.JSON.getTypeFactory()
-                .constructParametricType(Commitment.class, MintTransactionData.class)));
+            MintCommitment.class
+        )
+    );
   }
 
 }
