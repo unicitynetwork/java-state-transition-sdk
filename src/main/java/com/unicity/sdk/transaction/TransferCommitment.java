@@ -52,7 +52,7 @@ public class TransferCommitment extends Commitment<TransferTransactionData> {
       throw new RuntimeException("Inclusion proof verification failed.");
     }
 
-    if (inclusionProof.getAuthenticator().isEmpty()) {
+    if (!inclusionProof.getAuthenticator().isPresent()) {
       throw new RuntimeException("Authenticator is missing from inclusion proof.");
     }
 

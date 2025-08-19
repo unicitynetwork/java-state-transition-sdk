@@ -86,17 +86,19 @@ public class SparseMerkleTreeRootNode {
         return List.of(new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
-      return Stream.concat(
-              SparseMerkleTreeRootNode.generatePath(
-                  remainingPath.shiftRight(commonPath.getLength()),
-                  nodeBranch.getLeft(),
-                  nodeBranch.getRight()
-              ).stream(),
-              Stream.of(
-                  new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch)
+      return List.copyOf(
+          Stream.concat(
+                  SparseMerkleTreeRootNode.generatePath(
+                      remainingPath.shiftRight(commonPath.getLength()),
+                      nodeBranch.getLeft(),
+                      nodeBranch.getRight()
+                  ).stream(),
+                  Stream.of(
+                      new SparseMerkleTreePathStep(branch.getPath(), siblingBranch, nodeBranch)
+                  )
               )
-          )
-          .collect(Collectors.toUnmodifiableList());
+              .collect(Collectors.toList())
+      );
     }
 
     if (branch instanceof FinalizedLeafBranch) {
