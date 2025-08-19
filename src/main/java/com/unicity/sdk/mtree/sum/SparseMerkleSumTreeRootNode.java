@@ -120,17 +120,19 @@ public class SparseMerkleSumTreeRootNode {
             new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
-      return Stream.concat(
-              SparseMerkleSumTreeRootNode.generatePath(
-                      remainingPath.shiftRight(commonPath.getLength()),
-                      nodeBranch.getLeft(),
-                      nodeBranch.getRight()
-                  )
-                  .stream(),
-              Stream.of(
-                  new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
-          )
-          .collect(Collectors.toUnmodifiableList());
+      return List.copyOf(
+          Stream.concat(
+                  SparseMerkleSumTreeRootNode.generatePath(
+                          remainingPath.shiftRight(commonPath.getLength()),
+                          nodeBranch.getLeft(),
+                          nodeBranch.getRight()
+                      )
+                      .stream(),
+                  Stream.of(
+                      new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
+              )
+              .collect(Collectors.toList())
+      );
     }
 
     if (branch instanceof FinalizedLeafBranch) {

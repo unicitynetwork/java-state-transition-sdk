@@ -238,11 +238,11 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
 
   private TokenVerificationResult verifyGenesis(
       Transaction<MintTransactionData<?>> transaction) {
-    if (transaction.getInclusionProof().getAuthenticator().isEmpty()) {
+    if (!transaction.getInclusionProof().getAuthenticator().isPresent()) {
       return TokenVerificationResult.fail("Missing authenticator.");
     }
 
-    if (transaction.getInclusionProof().getTransactionHash().isEmpty()) {
+    if (!transaction.getInclusionProof().getTransactionHash().isPresent()) {
       return TokenVerificationResult.fail("Missing transaction hash.");
     }
 

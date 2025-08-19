@@ -39,7 +39,7 @@ public class SplitMintReason implements MintTransactionReason {
   }
 
   public boolean verify(Transaction<? extends MintTransactionData<?>> transaction) {
-    if (transaction.getData().getCoinData().isEmpty()) {
+    if (!transaction.getData().getCoinData().isPresent()) {
       return false;
     }
 
@@ -67,14 +67,14 @@ public class SplitMintReason implements MintTransactionReason {
       List<SparseMerkleTreePathStep> aggregationPathSteps = proof.getValue().getAggregationPath()
           .getSteps();
       if (aggregationPathSteps.isEmpty()
-          || aggregationPathSteps.getFirst().getBranch() == null
-          || aggregationPathSteps.getFirst().getBranch().getValue() == null
+          || aggregationPathSteps.get(0).getBranch() == null
+          || aggregationPathSteps.get(0).getBranch().getValue() == null
           || !proof.getValue().getCoinTreePath().getRoot().getHash()
-          .equals(DataHash.fromImprint(aggregationPathSteps.getFirst().getBranch().getValue()))) {
+          .equals(DataHash.fromImprint(aggregationPathSteps.get(0).getBranch().getValue()))) {
         return false;
       }
 
-      if (!proof.getValue().getCoinTreePath().getSteps().getFirst().getBranch()
+      if (!proof.getValue().getCoinTreePath().getSteps().get(0).getBranch()
           .map(Branch::getCounter).equals(Optional.ofNullable(coins.get(proof.getKey())))) {
         return false;
       }

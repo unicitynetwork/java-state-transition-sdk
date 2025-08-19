@@ -145,35 +145,39 @@ public class TokenSplitBuilder {
           List.of()
       );
 
-      return this.tokens.values().stream()
-          .map(request -> MintCommitment.create(
-                  new MintTransactionData<>(
-                      request.id,
-                      request.type,
-                      request.data,
-                      request.coinData,
-                      request.recipient,
-                      request.salt,
-                      request.recipientDataHash,
-                      new SplitMintReason(burnedToken,
-                          request.coinData.getCoins().keySet().stream()
-                              .map(coinId -> Map.entry(
-                                      coinId,
-                                      new SplitMintReasonProof(
-                                          this.aggregationRoot.getPath(
-                                              coinId.toBitString().toBigInteger()),
-                                          this.coinRoots.get(coinId)
-                                              .getPath(request.id.toBitString().toBigInteger())
+      return List.copyOf(
+          this.tokens.values().stream()
+              .map(request -> MintCommitment.create(
+                      new MintTransactionData<>(
+                          request.id,
+                          request.type,
+                          request.data,
+                          request.coinData,
+                          request.recipient,
+                          request.salt,
+                          request.recipientDataHash,
+                          new SplitMintReason(burnedToken,
+                              Map.copyOf(
+                                  request.coinData.getCoins().keySet().stream()
+                                      .map(coinId -> Map.entry(
+                                              coinId,
+                                              new SplitMintReasonProof(
+                                                  this.aggregationRoot.getPath(
+                                                      coinId.toBitString().toBigInteger()),
+                                                  this.coinRoots.get(coinId)
+                                                      .getPath(request.id.toBitString().toBigInteger())
+                                              )
+                                          )
                                       )
-                                  )
+                                      .collect(
+                                          Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
                               )
-                              .collect(
-                                  Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue))
+                          )
                       )
                   )
               )
-          )
-          .collect(Collectors.toUnmodifiableList());
+              .collect(Collectors.toList())
+      );
     }
   }
 

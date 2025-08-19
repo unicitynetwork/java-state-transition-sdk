@@ -29,11 +29,11 @@ public class Transaction<T extends TransactionData<?>> {
   }
 
   public boolean containsData(byte[] stateData) {
-    if (this.data.getDataHash().isEmpty() != (stateData == null)) {
+    if (this.data.getDataHash().isPresent() != (stateData != null)) {
       return false;
     }
 
-    if (this.data.getDataHash().isEmpty()) {
+    if (!this.data.getDataHash().isPresent()) {
       return true;
     }
 
