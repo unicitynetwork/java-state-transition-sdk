@@ -50,7 +50,7 @@ public class BlockHeightResponseJson {
                 throw MismatchedInputException.from(p, BlockHeightResponse.class,
                     "Expected string value");
               }
-              blockNumber = p.getValueAsLong();
+              blockNumber = p.readValueAs(Long.class);
               break;
             default:
               p.skipChildren();

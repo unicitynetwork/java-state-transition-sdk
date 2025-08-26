@@ -40,7 +40,8 @@ public class SparseMerkleTreePath {
       if (step.getBranch() == null) {
         hash = new byte[]{0};
       } else {
-        byte[] bytes = i == 0 ? step.getBranch().getValue()
+        byte[] bytes = i == 0
+            ? step.getBranch().map(SparseMerkleTreePathStepBranch::getValue).orElse(null)
             : (currentHash != null ? currentHash.getData() : null);
         hash = new DataHasher(HashAlgorithm.SHA256)
             .update(BigIntegerConverter.encode(step.getPath()))
@@ -53,7 +54,7 @@ public class SparseMerkleTreePath {
             .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
       }
 
-      byte[] siblingHash = step.getSibling() != null ? step.getSibling().getData() : new byte[]{0};
+      byte[] siblingHash = step.getSibling().map(DataHash::getData).orElse(new byte[0]);
       boolean isRight = step.getPath().testBit(0);
       currentHash = new DataHasher(HashAlgorithm.SHA256).update(isRight ? siblingHash : hash)
           .update(isRight ? hash : siblingHash).digest();

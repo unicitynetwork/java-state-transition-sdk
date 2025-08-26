@@ -72,7 +72,7 @@ public class MerkleTreePathJson {
               rootHash = p.readValueAs(DataHash.class);
               break;
             case STEPS_FIELD:
-              if (p.currentToken() != JsonToken.START_ARRAY) {
+              if (!p.isExpectedStartArrayToken()) {
                 throw MismatchedInputException.from(p, SparseMerkleTreePath.class,
                     "Expected array value");
               }

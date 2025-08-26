@@ -3,12 +3,7 @@ package com.unicity.sdk.api;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.signing.Signature;
 import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.transaction.MintTransactionData;
-import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.util.HexConverter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 

@@ -1,7 +1,6 @@
 package com.unicity.sdk.token;
 
 import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.address.ProxyAddress;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
@@ -31,7 +30,7 @@ public class TokenTest {
         new TokenId(TestUtils.randomBytes(32)),
         new TokenType(TestUtils.randomBytes(32)),
         TestUtils.randomBytes(10),
-        TokenCoinData.create(Map.of(
+        new TokenCoinData(Map.of(
             new CoinId(TestUtils.randomBytes(10)), BigInteger.valueOf(100),
             new CoinId(TestUtils.randomBytes(4)), BigInteger.valueOf(3))),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32))),
@@ -109,7 +108,7 @@ public class TokenTest {
                     new byte[20],
                     null,
                     "Transfer".getBytes(),
-                    Map.of(ProxyAddress.create(nametagToken.getId()), nametagToken)
+                    List.of(nametagToken)
                 ),
                 new InclusionProof(
                     new SparseMerkleTreePath(

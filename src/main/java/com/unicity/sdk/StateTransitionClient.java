@@ -48,15 +48,15 @@ public class StateTransitionClient {
         .calculateHash(token.getId(), token.getType()), commitment.getAuthenticator());
   }
 
-  public <T extends Transaction<MintTransactionData<?>>> Token<T> finishTransaction(
+  public <T extends Transaction<MintTransactionData<?>>> Token<T> finalizeTransaction(
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction
   ) {
-    return this.finishTransaction(token, state, transaction, List.of());
+    return this.finalizeTransaction(token, state, transaction, List.of());
   }
 
-  public <T extends Transaction<MintTransactionData<?>>> Token<T> finishTransaction(
+  public <T extends Transaction<MintTransactionData<?>>> Token<T> finalizeTransaction(
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,

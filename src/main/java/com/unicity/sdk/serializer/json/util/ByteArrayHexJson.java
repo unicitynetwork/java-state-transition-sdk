@@ -8,10 +8,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.util.HexConverter;
-
 import java.io.IOException;
 
 public class ByteArrayHexJson {
@@ -49,7 +46,7 @@ public class ByteArrayHexJson {
       }
 
       try {
-        return HexConverter.decode(p.getValueAsString());
+        return HexConverter.decode(p.readValueAs(String.class));
       } catch (Exception e) {
         throw MismatchedInputException.from(p, byte[].class, "Expected hex string value");
       }

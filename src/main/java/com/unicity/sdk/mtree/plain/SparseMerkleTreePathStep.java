@@ -3,6 +3,7 @@ package com.unicity.sdk.mtree.plain;
 import com.unicity.sdk.hash.DataHash;
 import java.math.BigInteger;
 import java.util.Objects;
+import java.util.Optional;
 
 public class SparseMerkleTreePathStep {
 
@@ -39,12 +40,12 @@ public class SparseMerkleTreePathStep {
     return this.path;
   }
 
-  public DataHash getSibling() {
-    return this.sibling;
+  public Optional<DataHash> getSibling() {
+    return Optional.ofNullable(this.sibling);
   }
 
-  public SparseMerkleTreePathStepBranch getBranch() {
-    return this.branch;
+  public Optional<SparseMerkleTreePathStepBranch> getBranch() {
+    return Optional.ofNullable(this.branch);
   }
 
   @Override

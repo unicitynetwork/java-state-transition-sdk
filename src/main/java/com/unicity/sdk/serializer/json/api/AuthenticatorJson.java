@@ -76,7 +76,7 @@ public class AuthenticatorJson {
         try {
           switch (fieldName) {
             case ALGORITHM_FIELD:
-              algorithm = p.getValueAsString();
+              algorithm = p.readValueAs(String.class);
               break;
             case PUBLIC_KEY_FIELD:
               publicKey = p.readValueAs(byte[].class);

@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.PredicateType;
 import com.unicity.sdk.predicate.UnmaskedPredicate;
 import java.io.IOException;
@@ -42,7 +41,7 @@ public class UnmaskedPredicateJson {
       gen.writeObjectField(TYPE_FIELD, value.getType());
       gen.writeObjectField(PUBLIC_KEY_FIELD, value.getPublicKey());
       gen.writeObjectField(ALGORITHM_FIELD, value.getAlgorithm());
-      gen.writeObjectField(HASH_ALGORITHM_FIELD, value.getHashAlgorithm());
+      gen.writeObjectField(HASH_ALGORITHM_FIELD, value.getHashAlgorithm().getValue());
       gen.writeObjectField(NONCE_FIELD, value.getNonce());
       gen.writeEndObject();
     }
@@ -78,8 +77,8 @@ public class UnmaskedPredicateJson {
         try {
           switch (fieldName) {
             case TYPE_FIELD:
-              type = PredicateType.valueOf(p.getValueAsString());
-              if (type != PredicateType.MASKED) {
+              type = PredicateType.valueOf(p.readValueAs(String.class));
+              if (type != PredicateType.UNMASKED) {
                 throw MismatchedInputException.from(p, UnmaskedPredicate.class,
                     String.format("Expected type to be %s, but got %s", PredicateType.MASKED,
                         type));
@@ -93,14 +92,14 @@ public class UnmaskedPredicateJson {
                 throw MismatchedInputException.from(p, UnmaskedPredicate.class,
                     "Expected algorithm to be a string");
               }
-              algorithm = p.getValueAsString();
+              algorithm = p.readValueAs(String.class);
               break;
             case HASH_ALGORITHM_FIELD:
-              if (p.currentToken() != JsonToken.VALUE_STRING) {
+              if (p.currentToken() != JsonToken.VALUE_NUMBER_INT) {
                 throw MismatchedInputException.from(p, UnmaskedPredicate.class,
                     "Expected hashAlgorithm to be a string");
               }
-              hashAlgorithm = HashAlgorithm.valueOf(p.getValueAsString());
+              hashAlgorithm = HashAlgorithm.fromValue(p.readValueAs(Integer.class));
               break;
             case NONCE_FIELD:
               nonce = p.readValueAs(byte[].class);

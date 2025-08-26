@@ -141,7 +141,6 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     node.addPOJO(this.coinData);
     node.add(this.recipient.getAddress());
     node.add(this.salt);
-    // TODO: Create cbor serializer for everything to properly encode the reason
     node.addPOJO(this.reason);
 
     try {

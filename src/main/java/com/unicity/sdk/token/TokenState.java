@@ -39,8 +39,8 @@ public class TokenState {
 
   public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.addPOJO(unlockPredicate.calculateHash(tokenId, tokenType));
-    node.add(data);
+    node.addPOJO(this.unlockPredicate.calculateHash(tokenId, tokenType));
+    node.add(this.data);
 
     try {
       return new DataHasher(HashAlgorithm.SHA256).update(

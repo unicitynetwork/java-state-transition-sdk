@@ -37,6 +37,6 @@ public class TestUtils {
         for (int i = 0; i < numCoins; i++) {
             coins.put(new CoinId(randomBytes(32)), randomCoinAmount());
         }
-        return TokenCoinData.create(coins);
+        return new TokenCoinData(coins);
     }
 }

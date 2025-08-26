@@ -11,15 +11,12 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.jsonrpc.JsonRpcError;
-import com.unicity.sdk.jsonrpc.JsonRpcResponse;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 public class TransactionJson {
 
@@ -61,9 +58,9 @@ public class TransactionJson {
     }
 
     @Override
-    public JsonDeserializer<?> createContextual(DeserializationContext ctxt,
+    public JsonDeserializer<?> createContextual(DeserializationContext ctx,
         BeanProperty property) {
-      JavaType wrapperType = ctxt.getContextualType();
+      JavaType wrapperType = ctx.getContextualType();
       JavaType valueType = wrapperType != null ? wrapperType.containedType(0) : null;
       return new TransactionJson.Deserializer(valueType);
     }

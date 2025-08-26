@@ -6,10 +6,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 
 public class RequestIdJson {
@@ -30,7 +28,7 @@ public class RequestIdJson {
         return;
       }
 
-      gen.writePOJO(value.getHash());
+      gen.writeObject(value.getHash());
     }
   }
 

@@ -1,4 +1,4 @@
-package com.unicity.sdk.serializer.json.token;
+package com.unicity.sdk.serializer.cbor.token.fungible;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -10,14 +10,15 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.token.fungible.CoinId;
 import com.unicity.sdk.token.fungible.TokenCoinData;
+import com.unicity.sdk.util.BigIntegerConverter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class TokenCoinDataJson {
+public class TokenCoinDataCbor {
 
-  private TokenCoinDataJson() {
+  private TokenCoinDataCbor() {
   }
 
 
@@ -34,11 +35,12 @@ public class TokenCoinDataJson {
         return;
       }
 
-      gen.writeStartArray();
-      for (Map.Entry<CoinId, BigInteger> entry : value.getCoins().entrySet()) {
-        gen.writeStartArray();
-        gen.writePOJO(entry.getKey().getBytes());
-        gen.writeString(entry.getValue().toString());
+      Map<CoinId, BigInteger> coins = value.getCoins();
+      gen.writeStartArray(value, coins.size());
+      for (Map.Entry<CoinId, BigInteger> entry : coins.entrySet()) {
+        gen.writeStartArray(entry, 2);
+        gen.writeObject(entry.getKey().getBytes());
+        gen.writeObject(BigIntegerConverter.encode(entry.getValue()));
         gen.writeEndArray();
       }
       gen.writeEndArray();
@@ -56,34 +58,24 @@ public class TokenCoinDataJson {
         throw MismatchedInputException.from(p, TokenCoinData.class, "Expected array value");
       }
 
-      Map<CoinId, BigInteger> result = new HashMap<CoinId, BigInteger>();
+      Map<CoinId, BigInteger> coins = new LinkedHashMap<>();
       while (p.nextToken() != JsonToken.END_ARRAY) {
-        if (p.currentToken() != JsonToken.START_ARRAY) {
+        if (!p.isExpectedStartArrayToken()) {
           throw MismatchedInputException.from(p, TokenCoinData.class,
-              "Expected array of coin data");
+              "Expected array value for coin entry");
         }
 
-        if (p.nextToken() != JsonToken.VALUE_STRING) {
-          throw MismatchedInputException.from(p, TokenCoinData.class, "Expected bytes of coin id");
-        }
-        CoinId id = new CoinId(p.readValueAs(byte[].class));
-        if (p.nextToken() != JsonToken.VALUE_STRING) {
-          throw MismatchedInputException.from(p, TokenCoinData.class, "Expected value as string");
-        }
-        BigInteger value = new BigInteger(p.getValueAsString());
-        if (p.nextToken() != JsonToken.END_ARRAY) {
+        CoinId coinId = new CoinId(p.readValueAs(byte[].class));
+        if (coins.containsKey(coinId)) {
           throw MismatchedInputException.from(p, TokenCoinData.class,
-              "Expected end of coin data array");
-        }
-        if (result.containsKey(id)) {
-          throw MismatchedInputException.from(p, TokenCoinData.class,
-              "Duplicate coin id: " + id);
+              "Duplicate coin ID in coin data: " + coinId);
         }
 
-        result.put(id, value);
+        BigInteger amount = BigIntegerConverter.decode(p.readValueAs(byte[].class));
+        coins.put(coinId, amount);
       }
 
-      return TokenCoinData.create(result);
+      return new TokenCoinData(coins);
     }
   }
 }

@@ -5,10 +5,11 @@ import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.token.TokenVerificationResult;
 import com.unicity.sdk.util.HexConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -41,10 +42,24 @@ public class ProxyAddress implements Address {
     return this.toString();
   }
 
-  public static Address resolve(Address address, Map<Address, Token<?>> nametags) {
-    Address targetAddress = address;
+  public static Address resolve(Address inputAddress, List<Token<?>> nametags) {
+    Map<Address, Token<?>> nametagMap = new HashMap<>();
+    for (Token<?> token : nametags) {
+      if (token == null) {
+        throw new IllegalArgumentException("Nametag tokens list cannot contain null elements");
+      }
+
+      Address address = ProxyAddress.create(token.getId());
+      if (nametagMap.containsKey(address)) {
+        throw new IllegalArgumentException(
+            "Nametag tokens list contains duplicate addresses: " + address);
+      }
+      nametagMap.put(address, token);
+    }
+
+    Address targetAddress = inputAddress;
     while (targetAddress.getScheme() != AddressScheme.DIRECT) {
-      Token<?> nametag = nametags.get(targetAddress);
+      Token<?> nametag = nametagMap.get(targetAddress);
       if (nametag == null) {
         return null;
       }

@@ -3,7 +3,6 @@ package com.unicity.sdk.transaction;
 
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.util.HexConverter;
 import java.util.Objects;
 
 
@@ -29,7 +28,7 @@ public class Transaction<T extends TransactionData<?>> {
   }
 
   public boolean containsData(byte[] stateData) {
-    if (this.data.getDataHash().isPresent() != (stateData != null)) {
+    if (this.data.getDataHash().isPresent() == (stateData == null)) {
       return false;
     }
 

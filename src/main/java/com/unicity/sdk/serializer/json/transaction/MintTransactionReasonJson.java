@@ -1,0 +1,22 @@
+package com.unicity.sdk.serializer.json.transaction;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.unicity.sdk.transaction.split.SplitMintReason;
+import com.unicity.sdk.transaction.MintTransactionReason;
+import java.io.IOException;
+
+public class MintTransactionReasonJson {
+
+  private MintTransactionReasonJson() {
+  }
+
+  public static class Deserializer extends JsonDeserializer<MintTransactionReason> {
+
+    @Override
+    public MintTransactionReason deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+      return p.readValueAs(SplitMintReason.class);
+    }
+  }
+}

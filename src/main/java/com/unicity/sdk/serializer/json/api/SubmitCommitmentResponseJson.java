@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.api.BlockHeightResponse;
 import com.unicity.sdk.api.SubmitCommitmentResponse;
 import com.unicity.sdk.api.SubmitCommitmentStatus;
 import java.io.IOException;
@@ -53,7 +52,7 @@ public class SubmitCommitmentResponseJson {
                 throw MismatchedInputException.from(p, SubmitCommitmentResponse.class,
                     "Expected string value");
               }
-              status = SubmitCommitmentStatus.valueOf(p.getValueAsString());
+              status = SubmitCommitmentStatus.valueOf(p.readValueAs(String.class));
               break;
             default:
               p.skipChildren();

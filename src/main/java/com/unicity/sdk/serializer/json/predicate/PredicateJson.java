@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.unicity.sdk.predicate.BurnPredicate;
 import com.unicity.sdk.predicate.Predicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.PredicateType;
@@ -41,6 +42,11 @@ public class PredicateJson {
           JsonParser parser = node.traverse(p.getCodec());
           parser.nextToken();
           return ctx.readValue(parser, UnmaskedPredicate.class);
+        }
+        case BURN: {
+          JsonParser parser = node.traverse(p.getCodec());
+          parser.nextToken();
+          return ctx.readValue(parser, BurnPredicate.class);
         }
         default:
           p.skipChildren();

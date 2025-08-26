@@ -3,7 +3,6 @@ package com.unicity.sdk.jsonrpc;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.unicity.sdk.api.BlockHeightResponse;
 import com.unicity.sdk.serializer.UnicityObjectMapper;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

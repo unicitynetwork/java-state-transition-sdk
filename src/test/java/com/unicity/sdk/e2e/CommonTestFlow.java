@@ -24,7 +24,7 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.CoinId;
-import com.unicity.sdk.token.fungible.SplitMintReason;
+import com.unicity.sdk.transaction.split.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintCommitment;
@@ -34,7 +34,7 @@ import com.unicity.sdk.transaction.TransferCommitment;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.transaction.split.TokenSplitBuilder;
 import com.unicity.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
-import com.unicity.sdk.utils.InclusionProofUtils;
+import com.unicity.sdk.util.InclusionProofUtils;
 import com.unicity.sdk.utils.TestTokenData;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -191,7 +191,7 @@ public class CommonTestFlow {
     );
 
     // Bob finalizes the token
-    Token bobToken = client.finishTransaction(
+    Token bobToken = client.finalizeTransaction(
         aliceToken,
         new TokenState(bobPredicate, bobStateData),
         aliceToBobTransferTransaction,
@@ -246,7 +246,7 @@ public class CommonTestFlow {
         carolNonce
     );
 
-    Token carolToken = client.finishTransaction(
+    Token carolToken = client.finalizeTransaction(
         bobToken,
         new TokenState(carolPredicate, null),
         bobToCarolTransaction
@@ -299,7 +299,7 @@ public class CommonTestFlow {
           nametagMintResponse.getStatus()));
     }
 
-    Token<?> bobSecondUseNametag = client.finishTransaction(
+    Token<?> bobSecondUseNametag = client.finalizeTransaction(
         bobNametagToken,
         nametagSecondUseTokenState,
         nametagSecondUseCommitment.toTransaction(bobNametagToken,
@@ -334,7 +334,7 @@ public class CommonTestFlow {
         carolToBobInclusionProof
     );
 
-    Token<?> carolToBobToken = client.finishTransaction(
+    Token<?> carolToBobToken = client.finalizeTransaction(
         carolToken,
         new TokenState(carolToBobPredicate, null),
         carolToBobTransaction,
@@ -346,22 +346,31 @@ public class CommonTestFlow {
     // SPLIT
     Entry<CoinId, BigInteger>[] splitCoins = coinData.getCoins().entrySet()
         .toArray(Map.Entry[]::new);
+
+    TokenType splitTokenType = new TokenType(randomBytes(32));
+    byte[] splitTokenNonce = randomBytes(32);
+    MaskedPredicate splitTokenPredicate = MaskedPredicate.create(
+        SigningService.createFromSecret(BOB_SECRET, splitTokenNonce),
+        HashAlgorithm.SHA256,
+        splitTokenNonce
+    );
+
     TokenSplit split = new TokenSplitBuilder()
         .createToken(
             new TokenId(randomBytes(32)),
-            new TokenType(randomBytes(32)),
+            splitTokenType,
             null,
-            TokenCoinData.create(Map.ofEntries(splitCoins[0])),
-            DirectAddress.create(new DataHash(HashAlgorithm.SHA256, randomBytes(32))),
+            new TokenCoinData(Map.ofEntries(splitCoins[0])),
+            splitTokenPredicate.getReference(splitTokenType).toAddress(),
             randomBytes(32),
             null
         )
         .createToken(
             new TokenId(randomBytes(32)),
-            new TokenType(randomBytes(32)),
+            splitTokenType,
             null,
-            TokenCoinData.create(Map.ofEntries(splitCoins[1])),
-            DirectAddress.create(new DataHash(HashAlgorithm.SHA256, randomBytes(32))),
+            new TokenCoinData(Map.ofEntries(splitCoins[1])),
+            splitTokenPredicate.getReference(splitTokenType).toAddress(),
             randomBytes(32),
             null
         )
@@ -379,7 +388,8 @@ public class CommonTestFlow {
         burnCommitment.toTransaction(carolToBobToken, InclusionProofUtils.waitInclusionProof(
             client,
             burnCommitment
-        ).get()));
+        ).get())
+    );
 
     List<Transaction<MintTransactionData<SplitMintReason>>> splitTransactions = new ArrayList<>();
     for (MintCommitment<MintTransactionData<SplitMintReason>> commitment : splitCommitments) {
@@ -393,9 +403,17 @@ public class CommonTestFlow {
     Assertions.assertEquals(
         2,
         splitTransactions.stream()
-            .map(transaction -> transaction.getData().getReason().get().verify(transaction))
+            .map(transaction -> transaction.getData().getReason().get().verify(transaction)
+                .isSuccessful())
             .filter(Boolean::booleanValue)
             .count()
+    );
+
+    Assertions.assertTrue(
+        new Token(
+            new TokenState(splitTokenPredicate, null),
+            splitTransactions.get(0)
+        ).verify().isSuccessful()
     );
 
 

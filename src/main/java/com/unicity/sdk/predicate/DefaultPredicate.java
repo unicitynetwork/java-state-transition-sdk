@@ -14,7 +14,6 @@ import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.util.HexConverter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 

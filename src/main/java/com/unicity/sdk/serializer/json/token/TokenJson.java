@@ -43,7 +43,7 @@ public class TokenJson {
       gen.writeObjectField(STATE_FIELD, value.getState());
       gen.writeObjectField(GENESIS_FIELD, value.getGenesis());
       gen.writeObjectField(TRANSACTIONS_FIELD, value.getTransactions());
-      gen.writeObjectField(NAMETAG_FIELD, List.copyOf(value.getNametags().values()));
+      gen.writeObjectField(NAMETAG_FIELD, value.getNametags());
       gen.writeEndObject();
     }
   }

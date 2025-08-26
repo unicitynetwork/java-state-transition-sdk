@@ -1,7 +1,6 @@
-package com.unicity.sdk.utils;
+package com.unicity.sdk.util;
 
 import com.unicity.sdk.StateTransitionClient;
-import com.unicity.sdk.serializer.UnicityObjectMapper;
 import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
