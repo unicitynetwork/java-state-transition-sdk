@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.unicity.sdk.api.InclusionProofRequest;
-import com.unicity.sdk.api.SubmitCommitmentRequest;
 import java.io.IOException;
 
 public class InclusionProofRequestJson {

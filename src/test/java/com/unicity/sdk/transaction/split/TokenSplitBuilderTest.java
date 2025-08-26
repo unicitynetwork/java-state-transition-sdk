@@ -5,10 +5,8 @@ import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.BranchExistsException;
 import com.unicity.sdk.mtree.LeafOutOfBoundsException;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
-import com.unicity.sdk.predicate.BurnPredicate;
 import com.unicity.sdk.predicate.MaskedPredicate;
 import com.unicity.sdk.predicate.Predicate;
-import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.Token;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
@@ -67,12 +65,13 @@ public class TokenSplitBuilderTest {
   public void testTokenSplitIntoMultipleTokens()
       throws LeafOutOfBoundsException, BranchExistsException {
 
-    Token<?> token = this.createToken(TokenCoinData.create(
-        Map.of(
-            new CoinId("coin1".getBytes()),
-            BigInteger.valueOf(100)
-        )
-    ));
+    Token<?> token = this.createToken(
+        new TokenCoinData(
+            Map.of(
+                new CoinId("coin1".getBytes()),
+                BigInteger.valueOf(100)
+            )
+        ));
 
     Predicate predicate = new MaskedPredicate(
         new byte[32],
@@ -88,7 +87,7 @@ public class TokenSplitBuilderTest {
           new TokenId(UUID.randomUUID().toString().getBytes()),
           token.getType(),
           null,
-          TokenCoinData.create(Map.of()),
+          new TokenCoinData(Map.of()),
           predicate.getReference(token.getType()).toAddress(),
           new byte[20],
           null
@@ -99,7 +98,7 @@ public class TokenSplitBuilderTest {
         new TokenId(UUID.randomUUID().toString().getBytes()),
         token.getType(),
         null,
-        TokenCoinData.create(
+        new TokenCoinData(
             Map.of(
                 new CoinId("coin1".getBytes()),
                 BigInteger.valueOf(50)
@@ -121,7 +120,7 @@ public class TokenSplitBuilderTest {
         new TokenId(UUID.randomUUID().toString().getBytes()),
         token.getType(),
         null,
-        TokenCoinData.create(
+        new TokenCoinData(
             Map.of(
                 new CoinId("coin1".getBytes()),
                 BigInteger.valueOf(50)
@@ -154,7 +153,7 @@ public class TokenSplitBuilderTest {
                   new TokenId(UUID.randomUUID().toString().getBytes()),
                   token.getType(),
                   null,
-                  TokenCoinData.create(
+                  new TokenCoinData(
                       Map.of(
                           new CoinId("coin1".getBytes()),
                           BigInteger.valueOf(100)

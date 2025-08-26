@@ -2,15 +2,12 @@ package com.unicity.sdk.serializer.json.token;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
 
 public class TokenIdJson {
@@ -32,7 +29,7 @@ public class TokenIdJson {
         return;
       }
 
-      gen.writePOJO(value.getBytes());
+      gen.writeObject(value.getBytes());
     }
   }
 
@@ -43,7 +40,6 @@ public class TokenIdJson {
 
     @Override
     public TokenId deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-
       try {
         return new TokenId(p.readValueAs(byte[].class));
       } catch (Exception e) {

@@ -76,7 +76,7 @@ public class JsonRpcResponseJson {
                 throw MismatchedInputException.from(p, JsonRpcResponse.class,
                     "Expected string value");
               }
-              version = p.getValueAsString();
+              version = p.readValueAs(String.class);
               break;
             case RESULT_FIELD:
               result = p.getCodec().readValue(p, this.resultType);

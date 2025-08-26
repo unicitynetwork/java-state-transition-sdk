@@ -3,7 +3,6 @@ package com.unicity.sdk;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import org.junit.jupiter.api.Test;
 

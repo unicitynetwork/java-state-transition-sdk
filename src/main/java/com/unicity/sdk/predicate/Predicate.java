@@ -5,7 +5,6 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
-import java.io.IOException;
 
 public interface Predicate {
     String getType();

@@ -1,5 +1,7 @@
 package com.unicity.sdk.transaction;
 
+import com.unicity.sdk.util.VerificationResult;
+
 public interface MintTransactionReason {
-  boolean verify(Transaction<? extends MintTransactionData<?>> genesis);
+  VerificationResult verify(Transaction<? extends MintTransactionData<?>> genesis);
 }

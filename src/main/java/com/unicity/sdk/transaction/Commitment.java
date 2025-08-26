@@ -1,17 +1,8 @@
 
 package com.unicity.sdk.transaction;
 
-import com.unicity.sdk.address.Address;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.hash.DataHasher;
-import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.util.HexConverter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**

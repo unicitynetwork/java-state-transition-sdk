@@ -10,12 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.address.Address;
 import com.unicity.sdk.address.AddressFactory;
-import com.unicity.sdk.address.AddressScheme;
-import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.util.HexConverter;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class AddressJson {
 
@@ -52,7 +47,7 @@ public class AddressJson {
       }
 
       try {
-        return AddressFactory.createAddress(p.getValueAsString());
+        return AddressFactory.createAddress(p.readValueAs(String.class));
       } catch (Exception e) {
         throw MismatchedInputException.from(p, Address.class,
             String.format("Invalid address: %s", e.getMessage()));

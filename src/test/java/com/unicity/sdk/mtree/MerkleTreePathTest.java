@@ -107,7 +107,7 @@ public class MerkleTreePathTest {
                 DataHash.fromImprint(HexConverter.decode(
                     "00006c5ad75422175395b4b63390e9dea5d0a39017f4750b78cc4b89ac6451265345")),
                 new SparseMerkleTreePathStepBranch(HexConverter.decode("76616c75653030303030303030"))),
-            new SparseMerkleTreePathStep(BigInteger.valueOf(4), (DataHash) null, null)
+            new SparseMerkleTreePathStep(BigInteger.valueOf(4), null, null)
         )
     );
 

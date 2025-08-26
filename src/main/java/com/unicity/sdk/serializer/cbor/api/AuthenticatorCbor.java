@@ -4,11 +4,12 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.api.Authenticator;
-
+import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.signing.Signature;
 import java.io.IOException;
 
 public class AuthenticatorCbor {
@@ -39,12 +40,16 @@ public class AuthenticatorCbor {
 
     @Override
     public Authenticator deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-      JsonNode node = ctx.readTree(p);
-      if (node.isNull()) {
-        return null;
+      if (!p.isExpectedStartArrayToken()) {
+        throw MismatchedInputException.from(p, Authenticator.class, "Expected array value");
       }
 
-      return null;
+      return new Authenticator(
+          p.readValueAs(String.class),
+          p.readValueAs(byte[].class),
+          Signature.decode(p.readValueAs(byte[].class)),
+          p.readValueAs(DataHash.class)
+      );
     }
   }
 }

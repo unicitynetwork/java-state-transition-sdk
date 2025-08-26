@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.util.HexConverter;
 
 import java.io.IOException;

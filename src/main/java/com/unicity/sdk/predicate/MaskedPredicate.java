@@ -3,7 +3,6 @@ package com.unicity.sdk.predicate;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.TokenType;
-import java.io.IOException;
 
 public class MaskedPredicate extends DefaultPredicate {
 

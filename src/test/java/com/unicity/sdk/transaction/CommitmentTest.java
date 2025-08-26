@@ -33,7 +33,7 @@ public class CommitmentTest {
         new TokenId(new byte[32]),
         tokenType,
         new byte[5],
-        TokenCoinData.create(Map.of(
+        new TokenCoinData(Map.of(
             new CoinId(new byte[10]), BigInteger.ONE,
             new CoinId(new byte[5]), BigInteger.TEN
         )),

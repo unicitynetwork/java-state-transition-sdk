@@ -3,10 +3,6 @@ package com.unicity.sdk.token;
 
 import org.junit.jupiter.api.Test;
 
-import java.math.BigInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class TokenIdTest {
 
     @Test

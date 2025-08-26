@@ -45,6 +45,7 @@ public class SparseMerkleSumTreePath {
             .map(SparseMerkleSumTreePathStep.Branch::getCounter)
             .orElse(BigInteger.ZERO);
 
+
     for (int i = 0; i < this.steps.size(); i++) {
       SparseMerkleSumTreePathStep step = this.steps.get(i);
       DataHash hash = null;
@@ -144,6 +145,11 @@ public class SparseMerkleSumTreePath {
 
     public BigInteger getCounter() {
       return this.counter;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("Root{hash=%s, counter=%s}", this.hash, this.counter);
     }
   }
 }

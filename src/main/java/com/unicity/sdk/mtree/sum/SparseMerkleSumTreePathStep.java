@@ -95,15 +95,14 @@ public class SparseMerkleSumTreePathStep {
     private final BigInteger counter;
 
     public Branch(byte[] value, BigInteger counter) {
-      Objects.requireNonNull(value, "hash cannot be null");
       Objects.requireNonNull(counter, "counter cannot be null");
 
-      this.value = Arrays.copyOf(value, value.length);
+      this.value = value == null ? null : Arrays.copyOf(value, value.length);
       this.counter = counter;
     }
 
     public byte[] getValue() {
-      return Arrays.copyOf(this.value, this.value.length);
+      return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
     }
 
     public BigInteger getCounter() {

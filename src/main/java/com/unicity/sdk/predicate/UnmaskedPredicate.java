@@ -12,7 +12,6 @@ import com.unicity.sdk.signing.Signature;
 import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
-import java.io.IOException;
 
 public class UnmaskedPredicate extends DefaultPredicate {
 

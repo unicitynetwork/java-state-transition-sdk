@@ -18,8 +18,6 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.CoinId;
-import com.unicity.sdk.token.fungible.SplitMintReason;
-import com.unicity.sdk.token.fungible.SplitMintReasonProof;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
@@ -27,6 +25,7 @@ import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferCommitment;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -139,8 +138,11 @@ public class TokenSplitBuilder {
     public List<MintCommitment<MintTransactionData<SplitMintReason>>> createSplitMintCommitments(
         Transaction<TransferTransactionData> burnTransaction) {
       Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
+
+      byte[] nonce = new byte[32];
+      new SecureRandom().nextBytes(nonce);
       Token<?> burnedToken = this.token.update(
-          new TokenState(new BurnPredicate(this.aggregationRoot.getRootHash()), null),
+          new TokenState(new BurnPredicate(nonce, this.aggregationRoot.getRootHash()), null),
           burnTransaction,
           List.of()
       );
@@ -157,20 +159,18 @@ public class TokenSplitBuilder {
                           request.salt,
                           request.recipientDataHash,
                           new SplitMintReason(burnedToken,
-                              Map.copyOf(
+                              List.copyOf(
                                   request.coinData.getCoins().keySet().stream()
-                                      .map(coinId -> Map.entry(
+                                      .map(coinId -> new SplitMintReasonProof(
                                               coinId,
-                                              new SplitMintReasonProof(
-                                                  this.aggregationRoot.getPath(
-                                                      coinId.toBitString().toBigInteger()),
-                                                  this.coinRoots.get(coinId)
-                                                      .getPath(request.id.toBitString().toBigInteger())
-                                              )
+                                              this.aggregationRoot.getPath(
+                                                  coinId.toBitString().toBigInteger()),
+                                              this.coinRoots.get(coinId)
+                                                  .getPath(request.id.toBitString().toBigInteger())
                                           )
                                       )
                                       .collect(
-                                          Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+                                          Collectors.toList())
                               )
                           )
                       )

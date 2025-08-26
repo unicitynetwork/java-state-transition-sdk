@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.RequestId;
-import com.unicity.sdk.transaction.Commitment;
 import com.unicity.sdk.transaction.MintCommitment;
 import com.unicity.sdk.transaction.MintTransactionData;
 import java.io.IOException;

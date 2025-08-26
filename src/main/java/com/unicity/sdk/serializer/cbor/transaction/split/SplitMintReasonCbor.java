@@ -1,4 +1,4 @@
-package com.unicity.sdk.serializer.json.token.fungible;
+package com.unicity.sdk.serializer.cbor.transaction.split;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -7,23 +7,18 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.token.fungible.CoinId;
-import com.unicity.sdk.token.fungible.SplitMintReason;
-import com.unicity.sdk.token.fungible.SplitMintReasonProof;
+import com.unicity.sdk.token.Token;
+import com.unicity.sdk.transaction.split.SplitMintReason;
+import com.unicity.sdk.transaction.split.SplitMintReasonProof;
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 
-public class SplitMintReasonJson {
-
-  private SplitMintReasonJson() {
+public class SplitMintReasonCbor {
+  private SplitMintReasonCbor() {
   }
 
 
   public static class Serializer extends JsonSerializer<SplitMintReason> {
-    private static final String TOKEN_FIELD = "token";
-    private static final String PROOFS_FIELD = "proofs";
-
-
     public Serializer() {
     }
 
@@ -35,18 +30,10 @@ public class SplitMintReasonJson {
         return;
       }
 
-      gen.writeStartObject();
-      gen.writeObjectField(TOKEN_FIELD, value.getToken());
-      gen.writeFieldName(PROOFS_FIELD);
-      gen.writeStartArray();
-      for (Map.Entry<CoinId, SplitMintReasonProof> entry : value.getProofs().entrySet()) {
-        gen.writeStartArray();
-        gen.writePOJO(entry.getKey());
-        gen.writePOJO(entry.getValue());
-        gen.writeEndArray();
-      }
+      gen.writeStartArray(value, 2);
+      gen.writeObject(value.getToken());
+      gen.writeObject(value.getProofs());
       gen.writeEndArray();
-      gen.writeEndObject();
     }
   }
 
@@ -57,12 +44,14 @@ public class SplitMintReasonJson {
 
     @Override
     public SplitMintReason deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-
-      try {
-        return null;
-      } catch (Exception e) {
-        throw MismatchedInputException.from(p, SplitMintReason.class, "Expected bytes");
+      if (!p.isExpectedStartArrayToken()) {
+        throw MismatchedInputException.from(p, SplitMintReason.class, "Expected array value");
       }
+
+      return new SplitMintReason(
+          p.readValueAs(Token.class),
+          ctx.readValue(p, ctx.getTypeFactory().constructCollectionType(List.class, SplitMintReasonProof.class))
+      );
     }
   }
 

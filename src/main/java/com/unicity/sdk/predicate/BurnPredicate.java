@@ -11,17 +11,19 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
 public class BurnPredicate implements Predicate {
   private final DataHash burnReason;
+  private final byte[] nonce;
 
-  public BurnPredicate(DataHash reason) {
+  public BurnPredicate(byte[] nonce, DataHash reason) {
+    Objects.requireNonNull(nonce, "Nonce cannot be null");
     Objects.requireNonNull(reason, "Burn reason cannot be null");
 
     this.burnReason = reason;
+    this.nonce = Arrays.copyOf(nonce, nonce.length);
   }
 
   public DataHash getReason() {
@@ -33,9 +35,10 @@ public class BurnPredicate implements Predicate {
     return PredicateType.BURN.name();
   }
 
+  // TODO: Do we need nonce for burn predicate?
   @Override
   public byte[] getNonce() {
-    return new byte[0];
+    return Arrays.copyOf(this.nonce, this.nonce.length);
   }
 
   @Override
@@ -54,6 +57,7 @@ public class BurnPredicate implements Predicate {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
     node.addPOJO(this.getReference(tokenType).getHash());
     node.addPOJO(tokenId);
+    node.add(this.nonce);
 
     try {
       return new DataHasher(HashAlgorithm.SHA256)

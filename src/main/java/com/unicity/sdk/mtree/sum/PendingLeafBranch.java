@@ -3,7 +3,6 @@ package com.unicity.sdk.mtree.sum;
 import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Objects;
 
 class PendingLeafBranch implements LeafBranch {

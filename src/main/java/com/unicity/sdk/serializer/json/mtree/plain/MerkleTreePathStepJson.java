@@ -15,6 +15,7 @@ import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class MerkleTreePathStepJson {
@@ -39,7 +40,10 @@ public class MerkleTreePathStepJson {
       gen.writeStartObject();
       gen.writeStringField(PATH_FIELD, value.getPath().toString());
       gen.writeObjectField(SIBLING_FIELD, value.getSibling());
-      gen.writeObjectField(BRANCH_FIELD, value.getBranch());
+      gen.writeObjectField(BRANCH_FIELD, value.getBranch()
+          .map(branch -> List.of(branch.getValue()))
+          .orElse(null)
+      );
       gen.writeEndObject();
     }
   }
@@ -76,15 +80,18 @@ public class MerkleTreePathStepJson {
                 throw MismatchedInputException.from(p, SparseMerkleTreePathStep.class,
                     "Expected string value");
               }
-              path = new BigInteger(p.getValueAsString());
+              path = new BigInteger(p.readValueAs(String.class));
               break;
             case SIBLING_FIELD:
               sibling =
                   p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(DataHash.class) : null;
               break;
             case BRANCH_FIELD:
-              branch = p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(
-                  SparseMerkleTreePathStepBranch.class) : null;
+              List<byte[]> value = ctx.readValue(p,
+                  ctx.getTypeFactory().constructCollectionType(List.class, byte[].class));
+              if (value != null) {
+                branch = new SparseMerkleTreePathStepBranch(value.isEmpty() ? null : value.get(0));
+              }
               break;
             default:
               p.skipChildren();

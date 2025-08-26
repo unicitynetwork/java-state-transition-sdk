@@ -2,7 +2,6 @@ package com.unicity.sdk.integration;
 
 import com.unicity.sdk.StateTransitionClient;
 import com.unicity.sdk.api.AggregatorClient;
-import com.unicity.sdk.e2e.CommonTestFlow;
 import org.junit.jupiter.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;

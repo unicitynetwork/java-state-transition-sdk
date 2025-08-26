@@ -15,7 +15,7 @@ import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.util.HexConverter;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -29,7 +29,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
   private final byte[] salt;
   private final DataHash dataHash;
   private final byte[] message;
-  private final Map<Address, Token<?>> nametags;
+  private final List<Token<?>> nametags;
 
   public TransferTransactionData(
       TokenState sourceState,
@@ -37,7 +37,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
       byte[] salt,
       DataHash dataHash,
       byte[] message,
-      Map<Address, Token<?>> nametags) {
+      List<Token<?>> nametags) {
     Objects.requireNonNull(sourceState, "SourceState cannot be null");
     Objects.requireNonNull(recipient, "Recipient cannot be null");
     Objects.requireNonNull(salt, "Salt cannot be null");
@@ -48,7 +48,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
     this.message = message != null ? Arrays.copyOf(message, message.length) : null;
-    this.nametags = Map.copyOf(nametags);
+    this.nametags = List.copyOf(nametags);
   }
 
   public TokenState getSourceState() {
@@ -73,7 +73,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
         : Optional.empty();
   }
 
-  public Map<Address, Token<?>> getNametags() {
+  public List<Token<?>> getNametags() {
     return this.nametags;
   }
 
