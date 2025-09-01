@@ -1,5 +1,6 @@
 package com.unicity.sdk.mtree.sum;
 
+import com.unicity.sdk.util.HexConverter;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
@@ -18,7 +19,7 @@ public class SparseMerkleSumTreePathStep {
         sibling,
         branch == null
             ? null
-            : new Branch(branch.getValue().getValue(), branch.getValue().getCounter())
+            : new Branch(branch.getValue().getCounter(), branch.getValue().getValue())
     );
   }
 
@@ -28,7 +29,7 @@ public class SparseMerkleSumTreePathStep {
         path,
         sibling,
         branch == null ? null
-            : new Branch(branch.getChildrenHash().getImprint(), branch.getCounter())
+            : new Branch(branch.getCounter(), branch.getChildrenHash().getImprint())
     );
   }
 
@@ -43,7 +44,7 @@ public class SparseMerkleSumTreePathStep {
   SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
     this(
         path,
-        sibling == null ? null : new Branch(sibling.getHash().getImprint(), sibling.getCounter()),
+        sibling == null ? null : new Branch(sibling.getCounter(), sibling.getHash().getImprint()),
         branch
     );
   }
@@ -94,7 +95,7 @@ public class SparseMerkleSumTreePathStep {
     private final byte[] value;
     private final BigInteger counter;
 
-    public Branch(byte[] value, BigInteger counter) {
+    public Branch(BigInteger counter, byte[] value) {
       Objects.requireNonNull(counter, "counter cannot be null");
 
       this.value = value == null ? null : Arrays.copyOf(value, value.length);
@@ -107,6 +108,30 @@ public class SparseMerkleSumTreePathStep {
 
     public BigInteger getCounter() {
       return this.counter;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof Branch)) {
+        return false;
+      }
+      Branch branch = (Branch) o;
+      return Objects.deepEquals(this.value, branch.value) && Objects.equals(this.counter,
+          branch.counter);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(Arrays.hashCode(this.value), this.counter);
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "Branch{value=%s, counter=%s}",
+          this.value == null ? null : HexConverter.encode(this.value),
+          this.counter
+      );
     }
   }
 }

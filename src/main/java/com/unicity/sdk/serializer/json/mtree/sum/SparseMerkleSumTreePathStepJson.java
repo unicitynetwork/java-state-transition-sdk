@@ -12,7 +12,6 @@ import com.unicity.sdk.mtree.sum.SparseMerkleSumTreePathStep;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class SparseMerkleSumTreePathStepJson {
@@ -36,14 +35,8 @@ public class SparseMerkleSumTreePathStepJson {
 
       gen.writeStartObject();
       gen.writeStringField(PATH_FIELD, value.getPath().toString());
-      gen.writeObjectField(SIBLING_FIELD, value.getSibling()
-          .map(branch -> List.of(branch.getCounter(), branch.getValue()))
-          .orElse(null)
-      );
-      gen.writeObjectField(BRANCH_FIELD, value.getBranch()
-          .map(branch -> List.of(branch.getCounter(), branch.getValue()))
-          .orElse(null)
-      );
+      gen.writeObjectField(SIBLING_FIELD, value.getSibling());
+      gen.writeObjectField(BRANCH_FIELD, value.getBranch());
       gen.writeEndObject();
     }
   }
@@ -83,10 +76,10 @@ public class SparseMerkleSumTreePathStepJson {
               path = new BigInteger(p.readValueAs(String.class));
               break;
             case SIBLING_FIELD:
-              sibling = this.readBranch(p);
+              sibling = p.readValueAs(SparseMerkleSumTreePathStep.Branch.class);
               break;
             case BRANCH_FIELD:
-              branch = this.readBranch(p);
+              branch = p.readValueAs(SparseMerkleSumTreePathStep.Branch.class);
               break;
             default:
               p.skipChildren();
@@ -105,28 +98,6 @@ public class SparseMerkleSumTreePathStepJson {
       }
 
       return new SparseMerkleSumTreePathStep(path, sibling, branch);
-    }
-
-    private SparseMerkleSumTreePathStep.Branch readBranch(JsonParser p) throws IOException {
-      if (p.currentToken() == JsonToken.VALUE_NULL) {
-        return null;
-      }
-
-      if (!p.isExpectedStartArrayToken()) {
-        throw MismatchedInputException.from(p, SparseMerkleSumTreePathStep.class,
-            "Expected array");
-      }
-      p.nextToken();
-
-      BigInteger counter = new BigInteger(p.readValueAs(String.class));
-      byte[] value = p.readValueAs(byte[].class);
-
-      if (p.nextToken() != JsonToken.END_ARRAY) {
-        throw MismatchedInputException.from(p, SparseMerkleSumTreePathStep.class,
-            "Expected array end");
-      }
-
-      return new SparseMerkleSumTreePathStep.Branch(value, counter);
     }
   }
 }

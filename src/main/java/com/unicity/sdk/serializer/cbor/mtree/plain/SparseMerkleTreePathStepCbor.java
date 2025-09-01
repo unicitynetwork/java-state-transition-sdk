@@ -7,14 +7,9 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
-import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
 import com.unicity.sdk.util.BigIntegerConverter;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
 
 public class SparseMerkleTreePathStepCbor {
 
@@ -33,11 +28,8 @@ public class SparseMerkleTreePathStepCbor {
 
       gen.writeStartArray(value, 3);
       gen.writeObject(BigIntegerConverter.encode(value.getPath()));
-      gen.writeObject(value.getSibling().map(DataHash::getImprint).orElse(null));
-      gen.writeObject(value.getBranch()
-          .map(branch -> Collections.singletonList(branch.getValue()))
-          .orElse(null)
-      );
+      gen.writeObject(value.getSibling());
+      gen.writeObject(value.getBranch());
       gen.writeEndArray();
     }
   }
@@ -47,23 +39,16 @@ public class SparseMerkleTreePathStepCbor {
     @Override
     public SparseMerkleTreePathStep deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
-      if (!p.isExpectedStartObjectToken()) {
+      if (!p.isExpectedStartArrayToken()) {
         throw MismatchedInputException.from(p, SparseMerkleTreePathStep.class,
-            "Expected object value");
+            "Expected array value");
       }
+      p.nextToken();
 
-      BigInteger path = BigIntegerConverter.decode(p.readValueAs(byte[].class));
-      DataHash sibling = p.readValueAs(DataHash.class);
-      List<byte[]> value = ctx.readValue(p,
-          ctx.getTypeFactory().constructCollectionType(List.class, byte[].class));
-      if (value != null && value.isEmpty()) {
-        throw MismatchedInputException.from(p, SparseMerkleTreePathStep.class,
-            "Expected branch value");
-      }
       return new SparseMerkleTreePathStep(
-          path,
-          sibling,
-          value == null ? null : new SparseMerkleTreePathStepBranch(value.get(0))
+          BigIntegerConverter.decode(p.readValueAs(byte[].class)),
+          p.readValueAs(SparseMerkleTreePathStep.Branch.class),
+          p.readValueAs(SparseMerkleTreePathStep.Branch.class)
       );
     }
   }

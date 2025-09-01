@@ -1,34 +1,47 @@
 package com.unicity.sdk.mtree.plain;
 
-import com.unicity.sdk.hash.DataHash;
+import com.unicity.sdk.util.HexConverter;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 public class SparseMerkleTreePathStep {
 
   private final BigInteger path;
-  private final DataHash sibling;
-  private final SparseMerkleTreePathStepBranch branch;
+  private final Branch sibling;
+  private final Branch branch;
 
-  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
-    this(path, sibling, branch == null ? null : branch.getValue());
-  }
-
-  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedNodeBranch branch) {
-    this(path, sibling, branch == null ? null : branch.getChildrenHash().getData());
-  }
-
-  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, byte[] value) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling,
+      FinalizedLeafBranch branch) {
     this(
         path,
-        sibling != null ? sibling.getHash() : null,
-        value != null ? new SparseMerkleTreePathStepBranch(value) : null
+        sibling,
+        branch == null
+            ? null
+            : new Branch(branch.getValue())
     );
   }
 
-  public SparseMerkleTreePathStep(BigInteger path, DataHash sibling,
-      SparseMerkleTreePathStepBranch branch) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling,
+      FinalizedNodeBranch branch) {
+    this(
+        path,
+        sibling,
+        branch == null ? null
+            : new Branch(branch.getChildrenHash().getData())
+    );
+  }
+
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
+    this(
+        path,
+        sibling == null ? null : new Branch(sibling.getHash().getData()),
+        branch
+    );
+  }
+
+  public SparseMerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -40,11 +53,11 @@ public class SparseMerkleTreePathStep {
     return this.path;
   }
 
-  public Optional<DataHash> getSibling() {
+  public Optional<Branch> getSibling() {
     return Optional.ofNullable(this.sibling);
   }
 
-  public Optional<SparseMerkleTreePathStepBranch> getBranch() {
+  public Optional<Branch> getBranch() {
     return Optional.ofNullable(this.branch);
   }
 
@@ -67,5 +80,40 @@ public class SparseMerkleTreePathStep {
   public String toString() {
     return String.format("MerkleTreePathStep{path=%s, sibling=%s, branch=%s}",
         this.path.toString(2), this.sibling, this.branch);
+  }
+
+  public static class Branch {
+
+    private final byte[] value;
+
+    public Branch(byte[] value) {
+      this.value = value == null ? null : Arrays.copyOf(value, value.length);
+    }
+
+    public byte[] getValue() {
+      return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof Branch)) {
+        return false;
+      }
+      Branch branch = (Branch) o;
+      return Objects.deepEquals(this.value, branch.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(this.value);
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "Branch{value=%s}",
+          this.value == null ? null : HexConverter.encode(this.value)
+      );
+    }
   }
 }

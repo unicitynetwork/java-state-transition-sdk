@@ -40,7 +40,7 @@ public class TokenStateCbor {
     public TokenState deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
       if (!p.isExpectedStartArrayToken()) {
-        throw MismatchedInputException.from(p, TokenState.class, "Expected object value");
+        throw MismatchedInputException.from(p, TokenState.class, "Expected array");
       }
 
       return new TokenState(p.readValueAs(Predicate.class), p.readValueAs(byte[].class));

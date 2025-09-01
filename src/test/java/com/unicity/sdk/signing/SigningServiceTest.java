@@ -93,20 +93,4 @@ public class SigningServiceTest {
         
         assertFalse(isValid);
     }
-    
-    @Test
-    public void testSignatureSerialization() throws Exception {
-        byte[] privateKey = SigningService.generatePrivateKey();
-        SigningService service = new SigningService(privateKey);
-        
-        byte[] testData = "test data".getBytes(StandardCharsets.UTF_8);
-        DataHash hash = new DataHash(HashAlgorithm.SHA256, testData);
-        
-        Signature signature = service.sign(hash);
-        
-        // Test CBOR serialization
-        // byte[] cbor = signature.toCBOR();
-        // assertNotNull(cbor);
-//        assertTrue(cbor.length > 65); // Should be CBOR encoded byte string
-    }
 }

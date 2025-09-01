@@ -35,7 +35,7 @@ dependencies {
     "jvm"("com.google.guava:guava:33.0.0-jre")
 
     // Animal Sniffer signatures
-    signature("com.toasttab.android:gummy-bears-api-31:0.7.0@signature")
+    signature("com.toasttab.android:gummy-bears-api-34:0.7.0@signature")
 
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))

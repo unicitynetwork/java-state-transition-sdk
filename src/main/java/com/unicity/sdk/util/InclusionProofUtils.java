@@ -76,6 +76,9 @@ public class InclusionProofUtils {
         future.completeExceptionally(
             new RuntimeException(String.format("Inclusion proof verification failed: %s", status)));
       }
+    }).exceptionally(e -> {
+      future.completeExceptionally(e);
+      return null;
     });
   }
 }

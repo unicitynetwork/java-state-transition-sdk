@@ -10,6 +10,7 @@ import com.unicity.sdk.signing.SigningService;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.InclusionProofVerificationStatus;
 import com.unicity.sdk.transaction.MintCommitment;
+import com.unicity.sdk.transaction.MintTransactionState;
 import com.unicity.sdk.transaction.MintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransactionData;
@@ -86,18 +87,21 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
   public Token<T> update(
       TokenState state,
       Transaction<TransferTransactionData> transaction,
-      List<Token<?>> nametagTokens
+      List<Token<?>> transactionNametags
   ) {
     Objects.requireNonNull(state, "State is null");
     Objects.requireNonNull(transaction, "Transaction is null");
-    Objects.requireNonNull(nametagTokens, "Nametag tokens are null");
+    Objects.requireNonNull(transactionNametags, "Nametag tokens are null");
 
     if (!transaction.getData().getSourceState().getUnlockPredicate()
         .verify(transaction, this.getId(), this.getType())) {
       throw new RuntimeException("Predicate verification failed");
     }
 
-    Address recipient = ProxyAddress.resolve(transaction.getData().getRecipient(), nametags);
+    Address recipient = ProxyAddress.resolve(
+        transaction.getData().getRecipient(),
+        transactionNametags
+    );
     if (!state.getUnlockPredicate().getReference(this.getType()).toAddress().equals(recipient)) {
       throw new RuntimeException("Recipient address mismatch");
     }
@@ -110,10 +114,9 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
         this.getTransactions());
     transactions.add(transaction);
 
-    return new Token<>(state, this.getGenesis(), transactions, nametagTokens);
+    return new Token<>(state, this.getGenesis(), transactions, transactionNametags);
   }
 
-  // TODO: Move out of token class
   public VerificationResult verify() {
     List<VerificationResult> results = new ArrayList<>();
     results.add(
@@ -221,6 +224,11 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
 
     if (!transaction.getInclusionProof().getTransactionHash().isPresent()) {
       return VerificationResult.fail("Missing transaction hash.");
+    }
+
+    if (!transaction.getData().getSourceState()
+        .equals(MintTransactionState.create(transaction.getData().getTokenId()))) {
+      return VerificationResult.fail("Invalid source state");
     }
 
     SigningService signingService = MintCommitment.createSigningService(transaction.getData());

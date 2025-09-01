@@ -27,8 +27,10 @@ import com.unicity.sdk.serializer.cbor.address.AddressCbor;
 import com.unicity.sdk.serializer.cbor.api.AuthenticatorCbor;
 import com.unicity.sdk.serializer.cbor.hash.DataHashCbor;
 import com.unicity.sdk.serializer.cbor.mtree.plain.SparseMerkleTreePathCbor;
+import com.unicity.sdk.serializer.cbor.mtree.plain.SparseMerkleTreePathStepBranchCbor;
 import com.unicity.sdk.serializer.cbor.mtree.plain.SparseMerkleTreePathStepCbor;
 import com.unicity.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathCbor;
+import com.unicity.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathStepBranchCbor;
 import com.unicity.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathStepCbor;
 import com.unicity.sdk.serializer.cbor.predicate.BurnPredicateCbor;
 import com.unicity.sdk.serializer.cbor.predicate.MaskedPredicateCbor;
@@ -57,9 +59,11 @@ import com.unicity.sdk.serializer.json.hash.DataHashJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcErrorJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcRequestJson;
 import com.unicity.sdk.serializer.json.jsonrpc.JsonRpcResponseJson;
-import com.unicity.sdk.serializer.json.mtree.plain.MerkleTreePathJson;
-import com.unicity.sdk.serializer.json.mtree.plain.MerkleTreePathStepJson;
+import com.unicity.sdk.serializer.json.mtree.plain.SparseMerkleTreePathJson;
+import com.unicity.sdk.serializer.json.mtree.plain.SparseMerkleTreePathStepBranchJson;
+import com.unicity.sdk.serializer.json.mtree.plain.SparseMerkleTreePathStepJson;
 import com.unicity.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathJson;
+import com.unicity.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepBranchJson;
 import com.unicity.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepJson;
 import com.unicity.sdk.serializer.json.predicate.BurnPredicateJson;
 import com.unicity.sdk.serializer.json.predicate.MaskedPredicateJson;
@@ -113,20 +117,26 @@ public class UnicityObjectMapper {
 
     module.addSerializer(SparseMerkleTreePath.class, new SparseMerkleTreePathCbor.Serializer());
     module.addDeserializer(SparseMerkleTreePath.class, new SparseMerkleTreePathCbor.Deserializer());
-
     module.addSerializer(SparseMerkleTreePathStep.class, new SparseMerkleTreePathStepCbor.Serializer());
     module.addDeserializer(SparseMerkleTreePathStep.class,
         new SparseMerkleTreePathStepCbor.Deserializer());
+    module.addSerializer(SparseMerkleTreePathStep.Branch.class,
+        new SparseMerkleTreePathStepBranchCbor.Serializer());
+    module.addDeserializer(SparseMerkleTreePathStep.Branch.class,
+        new SparseMerkleTreePathStepBranchCbor.Deserializer());
 
     module.addSerializer(SparseMerkleSumTreePath.class,
         new SparseMerkleSumTreePathCbor.Serializer());
     module.addDeserializer(SparseMerkleSumTreePath.class,
         new SparseMerkleSumTreePathCbor.Deserializer());
-
     module.addSerializer(SparseMerkleSumTreePathStep.class,
         new SparseMerkleSumTreePathStepCbor.Serializer());
     module.addDeserializer(SparseMerkleSumTreePathStep.class,
         new SparseMerkleSumTreePathStepCbor.Deserializer());
+    module.addSerializer(SparseMerkleSumTreePathStep.Branch.class,
+        new SparseMerkleSumTreePathStepBranchCbor.Serializer());
+    module.addDeserializer(SparseMerkleSumTreePathStep.Branch.class,
+        new SparseMerkleSumTreePathStepBranchCbor.Deserializer());
 
     module.addSerializer(Authenticator.class, new AuthenticatorCbor.Serializer());
     module.addDeserializer(Authenticator.class, new AuthenticatorCbor.Deserializer());
@@ -206,12 +216,17 @@ public class UnicityObjectMapper {
     module.addSerializer(InclusionProof.class, new InclusionProofJson.Serializer());
     module.addDeserializer(InclusionProof.class, new InclusionProofJson.Deserializer());
 
-    module.addSerializer(SparseMerkleTreePath.class, new MerkleTreePathJson.Serializer());
-    module.addDeserializer(SparseMerkleTreePath.class, new MerkleTreePathJson.Deserializer());
+    module.addSerializer(SparseMerkleTreePath.class, new SparseMerkleTreePathJson.Serializer());
+    module.addDeserializer(SparseMerkleTreePath.class, new SparseMerkleTreePathJson.Deserializer());
 
-    module.addSerializer(SparseMerkleTreePathStep.class, new MerkleTreePathStepJson.Serializer());
+    module.addSerializer(SparseMerkleTreePathStep.class, new SparseMerkleTreePathStepJson.Serializer());
     module.addDeserializer(SparseMerkleTreePathStep.class,
-        new MerkleTreePathStepJson.Deserializer());
+        new SparseMerkleTreePathStepJson.Deserializer());
+
+    module.addSerializer(SparseMerkleTreePathStep.Branch.class,
+        new SparseMerkleTreePathStepBranchJson.Serializer());
+    module.addDeserializer(SparseMerkleTreePathStep.Branch.class,
+        new SparseMerkleTreePathStepBranchJson.Deserializer());
 
     module.addSerializer(SparseMerkleSumTreePath.class,
         new SparseMerkleSumTreePathJson.Serializer());
@@ -222,6 +237,11 @@ public class UnicityObjectMapper {
         new SparseMerkleSumTreePathStepJson.Serializer());
     module.addDeserializer(SparseMerkleSumTreePathStep.class,
         new SparseMerkleSumTreePathStepJson.Deserializer());
+
+    module.addSerializer(SparseMerkleSumTreePathStep.Branch.class,
+        new SparseMerkleSumTreePathStepBranchJson.Serializer());
+    module.addDeserializer(SparseMerkleSumTreePathStep.Branch.class,
+        new SparseMerkleSumTreePathStepBranchJson.Deserializer());
 
     module.addSerializer(Authenticator.class, new AuthenticatorJson.Serializer());
     module.addDeserializer(Authenticator.class, new AuthenticatorJson.Deserializer());
