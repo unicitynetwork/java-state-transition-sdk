@@ -30,7 +30,7 @@ public class MaskedPredicateCbor {
       gen.writeStartArray(value, 5);
       gen.writeObject(value.getType());
       gen.writeObject(value.getPublicKey());
-      gen.writeObject(value.getAlgorithm());
+      gen.writeObject(value.getSigningAlgorithm());
       gen.writeObject(value.getHashAlgorithm().getValue());
       gen.writeObject(value.getNonce());
       gen.writeEndArray();

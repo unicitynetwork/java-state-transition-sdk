@@ -17,10 +17,10 @@ public class UnmaskedPredicate extends DefaultPredicate {
 
   public UnmaskedPredicate(
       byte[] publicKey,
-      String algorithm,
+      String signingAlgorithm,
       HashAlgorithm hashAlgorithm,
       byte[] nonce) {
-    super(PredicateType.UNMASKED, publicKey, algorithm, hashAlgorithm, nonce);
+    super(PredicateType.UNMASKED, publicKey, signingAlgorithm, hashAlgorithm, nonce);
   }
 
   public static UnmaskedPredicate create(
@@ -59,7 +59,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
   public UnmaskedPredicateReference getReference(TokenType tokenType) {
     return UnmaskedPredicateReference.create(
         tokenType,
-        this.getAlgorithm(),
+        this.getSigningAlgorithm(),
         this.getPublicKey(),
         this.getHashAlgorithm()
     );

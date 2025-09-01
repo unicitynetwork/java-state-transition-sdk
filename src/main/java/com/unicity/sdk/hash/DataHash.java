@@ -43,7 +43,7 @@ public class DataHash {
 
     // Extract algorithm from first two bytes
     int algorithmValue = ((imprint[0] & 0xFF) << 8) | (imprint[1] & 0xFF);
-    HashAlgorithm algorithm = HashAlgorithm.values()[algorithmValue];
+    HashAlgorithm algorithm = HashAlgorithm.fromValue(algorithmValue);
 
     // Extract hash data
     byte[] hashData = Arrays.copyOfRange(imprint, 2, imprint.length);

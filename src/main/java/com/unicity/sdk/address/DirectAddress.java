@@ -43,13 +43,13 @@ public class DirectAddress implements Address {
       return false;
     }
     DirectAddress that = (DirectAddress) o;
-    return Objects.equals(data, that.data) && Objects.deepEquals(checksum,
+    return Objects.equals(this.data, that.data) && Arrays.equals(this.checksum,
         that.checksum);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(data, Arrays.hashCode(checksum));
+    return Objects.hash(this.data, Arrays.hashCode(checksum));
   }
 
   @Override
