@@ -3,7 +3,6 @@ package com.unicity.sdk.transaction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.unicity.sdk.address.Address;
-import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.hash.DataHasher;
 import com.unicity.sdk.hash.HashAlgorithm;
@@ -19,16 +18,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class MintTransactionData<R extends MintTransactionReason> implements
-    TransactionData<RequestId> {
-
-  private static final byte[] MINT_SUFFIX = HexConverter.decode(
-      "9e82002c144d7c5796c50f6db50a0c7bbd7f717ae3af6c6c71a3e9eba3022730");
+    TransactionData<MintTransactionState> {
 
   private final TokenId tokenId;
   private final TokenType tokenType;
   private final byte[] tokenData;
   private final TokenCoinData coinData;
-  private final RequestId sourceState;
+  private final MintTransactionState sourceState;
   private final Address recipient;
   private final byte[] salt;
   private final DataHash dataHash;
@@ -53,7 +49,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     this.tokenType = tokenType;
     this.tokenData = tokenData == null ? null : Arrays.copyOf(tokenData, tokenData.length);
     this.coinData = coinData;
-    this.sourceState = RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX);
+    this.sourceState = MintTransactionState.create(tokenId);
     this.recipient = recipient;
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
@@ -124,7 +120,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     return Optional.ofNullable(this.reason);
   }
 
-  public RequestId getSourceState() {
+  public MintTransactionState getSourceState() {
     return this.sourceState;
   }
 

@@ -18,12 +18,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class MerkleTreePathJson {
+public class SparseMerkleTreePathJson {
 
   private static final String ROOT_HASH_FIELD = "root";
   private static final String STEPS_FIELD = "steps";
 
-  private MerkleTreePathJson() {
+  private SparseMerkleTreePathJson() {
   }
 
   public static class Serializer extends JsonSerializer<SparseMerkleTreePath> {

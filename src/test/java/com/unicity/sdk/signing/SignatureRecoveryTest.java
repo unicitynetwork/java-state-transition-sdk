@@ -70,10 +70,6 @@ public class SignatureRecoveryTest {
         assertEquals(65, sigBytes.length, "Signature should be 65 bytes");
         
         // Extract components
-        byte[] r = new byte[32];
-        byte[] s = new byte[32];
-        System.arraycopy(sigBytes, 0, r, 0, 32);
-        System.arraycopy(sigBytes, 32, s, 0, 32);
         int recoveryId = sigBytes[64] & 0xFF;
         
         // Create signature object

@@ -2,6 +2,7 @@
 package com.unicity.sdk;
 
 import com.unicity.sdk.api.AggregatorClient;
+import com.unicity.sdk.api.IAggregatorClient;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.SubmitCommitmentResponse;
 import com.unicity.sdk.token.Token;
@@ -20,9 +21,9 @@ import java.util.concurrent.CompletableFuture;
 
 public class StateTransitionClient {
 
-  protected final AggregatorClient client;
+  protected final IAggregatorClient client;
 
-  public StateTransitionClient(AggregatorClient client) {
+  public StateTransitionClient(IAggregatorClient client) {
     this.client = client;
   }
 

@@ -2,7 +2,6 @@
 package com.unicity.sdk.transaction.split;
 
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
-import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
 import com.unicity.sdk.mtree.sum.SparseMerkleSumTreePathStep.Branch;
 import com.unicity.sdk.predicate.BurnPredicate;
 import com.unicity.sdk.predicate.PredicateType;
@@ -75,7 +74,7 @@ public class SplitMintReason implements MintTransactionReason {
           || !Arrays.equals(
           proof.getCoinTreePath().getRoot().getHash().getImprint(),
           aggregationPathSteps.get(0).getBranch()
-              .map(SparseMerkleTreePathStepBranch::getValue)
+              .map(SparseMerkleTreePathStep.Branch::getValue)
               .orElse(null))
       ) {
         return VerificationResult.fail("Coin tree root does not match aggregation path leaf.");

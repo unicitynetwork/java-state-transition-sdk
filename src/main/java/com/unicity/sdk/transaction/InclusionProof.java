@@ -5,11 +5,10 @@ import com.unicity.sdk.api.Authenticator;
 import com.unicity.sdk.api.LeafValue;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.hash.DataHash;
-
 import com.unicity.sdk.mtree.MerkleTreePathVerificationResult;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePath;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
-import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
+import com.unicity.sdk.serializer.cbor.CborSerializationException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -57,10 +56,10 @@ public class InclusionProof {
         LeafValue leafValue = LeafValue.create(this.authenticator, this.transactionHash);
         SparseMerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
         if (step == null || !Arrays.equals(leafValue.getBytes(), step.getBranch().map(
-            SparseMerkleTreePathStepBranch::getValue).orElse(null))) {
+            SparseMerkleTreePathStep.Branch::getValue).orElse(null))) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
         }
-      } catch (IOException e) {
+      } catch (CborSerializationException e) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }
     }

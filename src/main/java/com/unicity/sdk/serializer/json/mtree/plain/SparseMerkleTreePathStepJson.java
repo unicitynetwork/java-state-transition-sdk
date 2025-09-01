@@ -8,23 +8,22 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.unicity.sdk.hash.DataHash;
 
+import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
-import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStepBranch;
+import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep.Branch;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-public class MerkleTreePathStepJson {
+public class SparseMerkleTreePathStepJson {
 
   private static final String PATH_FIELD = "path";
   private static final String SIBLING_FIELD = "sibling";
   private static final String BRANCH_FIELD = "branch";
 
-  private MerkleTreePathStepJson() {
+  private SparseMerkleTreePathStepJson() {
   }
 
   public static class Serializer extends JsonSerializer<SparseMerkleTreePathStep> {
@@ -40,10 +39,7 @@ public class MerkleTreePathStepJson {
       gen.writeStartObject();
       gen.writeStringField(PATH_FIELD, value.getPath().toString());
       gen.writeObjectField(SIBLING_FIELD, value.getSibling());
-      gen.writeObjectField(BRANCH_FIELD, value.getBranch()
-          .map(branch -> List.of(branch.getValue()))
-          .orElse(null)
-      );
+      gen.writeObjectField(BRANCH_FIELD, value.getBranch());
       gen.writeEndObject();
     }
   }
@@ -54,8 +50,8 @@ public class MerkleTreePathStepJson {
     public SparseMerkleTreePathStep deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
       BigInteger path = null;
-      DataHash sibling = null;
-      SparseMerkleTreePathStepBranch branch = null;
+      SparseMerkleTreePathStep.Branch sibling = null;
+      SparseMerkleTreePathStep.Branch branch = null;
 
       Set<String> fields = new HashSet<>();
 
@@ -83,15 +79,10 @@ public class MerkleTreePathStepJson {
               path = new BigInteger(p.readValueAs(String.class));
               break;
             case SIBLING_FIELD:
-              sibling =
-                  p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(DataHash.class) : null;
+              sibling = p.readValueAs(SparseMerkleTreePathStep.Branch.class);
               break;
             case BRANCH_FIELD:
-              List<byte[]> value = ctx.readValue(p,
-                  ctx.getTypeFactory().constructCollectionType(List.class, byte[].class));
-              if (value != null) {
-                branch = new SparseMerkleTreePathStepBranch(value.isEmpty() ? null : value.get(0));
-              }
+              branch = p.readValueAs(SparseMerkleTreePathStep.Branch.class);
               break;
             default:
               p.skipChildren();
