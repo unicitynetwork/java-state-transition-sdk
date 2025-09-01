@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Direct address implementation
+ * Proxy address implementation
  */
 public class ProxyAddress implements Address {
 
@@ -81,13 +81,13 @@ public class ProxyAddress implements Address {
       return false;
     }
     ProxyAddress that = (ProxyAddress) o;
-    return Objects.equals(data, that.data) && Objects.deepEquals(checksum,
+    return Objects.equals(this.data, that.data) && Arrays.equals(this.checksum,
         that.checksum);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(data, Arrays.hashCode(checksum));
+    return Objects.hash(this.data, Arrays.hashCode(this.checksum));
   }
 
   @Override

@@ -24,25 +24,25 @@ public abstract class DefaultPredicate implements Predicate {
 
   private final PredicateType type;
   private final byte[] publicKey;
-  private final String algorithm;
+  private final String signingAlgorithm;
   private final HashAlgorithm hashAlgorithm;
   private final byte[] nonce;
 
   protected DefaultPredicate(
       PredicateType type,
       byte[] publicKey,
-      String algorithm,
+      String signingAlgorithm,
       HashAlgorithm hashAlgorithm,
       byte[] nonce) {
     Objects.requireNonNull(type, "Predicate type cannot be null");
     Objects.requireNonNull(publicKey, "Public key cannot be null");
-    Objects.requireNonNull(algorithm, "Algorithm cannot be null");
+    Objects.requireNonNull(signingAlgorithm, "Signing algorithm cannot be null");
     Objects.requireNonNull(hashAlgorithm, "Hash algorithm cannot be null");
     Objects.requireNonNull(nonce, "Nonce cannot be null");
 
     this.type = type;
     this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
-    this.algorithm = algorithm;
+    this.signingAlgorithm = signingAlgorithm;
     this.hashAlgorithm = hashAlgorithm;
     this.nonce = Arrays.copyOf(nonce, nonce.length);
   }
@@ -55,8 +55,8 @@ public abstract class DefaultPredicate implements Predicate {
     return Arrays.copyOf(this.publicKey, this.publicKey.length);
   }
 
-  public String getAlgorithm() {
-    return this.algorithm;
+  public String getSigningAlgorithm() {
+    return this.signingAlgorithm;
   }
 
   public HashAlgorithm getHashAlgorithm() {
@@ -119,15 +119,16 @@ public abstract class DefaultPredicate implements Predicate {
       return false;
     }
     DefaultPredicate that = (DefaultPredicate) o;
-    return type == that.type && Objects.deepEquals(publicKey, that.publicKey)
-        && Objects.equals(algorithm, that.algorithm) && hashAlgorithm == that.hashAlgorithm
-        && Objects.deepEquals(nonce, that.nonce);
+    return type == that.type && Objects.deepEquals(this.publicKey, that.publicKey)
+        && Objects.equals(this.signingAlgorithm, that.signingAlgorithm)
+        && this.hashAlgorithm == that.hashAlgorithm
+        && Arrays.equals(this.nonce, that.nonce);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, Arrays.hashCode(publicKey), algorithm, hashAlgorithm,
-        Arrays.hashCode(nonce));
+    return Objects.hash(this.type, Arrays.hashCode(this.publicKey), this.signingAlgorithm,
+        this.hashAlgorithm, Arrays.hashCode(nonce));
   }
 
   @Override
@@ -135,7 +136,9 @@ public abstract class DefaultPredicate implements Predicate {
     return String.format(
         "DefaultPredicate{type=%s, publicKey=%s, algorithm=%s, hashAlgorithm=%s, nonce=%s}",
         this.type,
-        HexConverter.encode(this.publicKey), this.algorithm, this.hashAlgorithm,
+        HexConverter.encode(this.publicKey),
+        this.signingAlgorithm,
+        this.hashAlgorithm,
         HexConverter.encode(this.nonce));
   }
 }

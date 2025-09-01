@@ -40,7 +40,7 @@ public class UnmaskedPredicateJson {
       gen.writeStartObject();
       gen.writeObjectField(TYPE_FIELD, value.getType());
       gen.writeObjectField(PUBLIC_KEY_FIELD, value.getPublicKey());
-      gen.writeObjectField(ALGORITHM_FIELD, value.getAlgorithm());
+      gen.writeObjectField(ALGORITHM_FIELD, value.getSigningAlgorithm());
       gen.writeObjectField(HASH_ALGORITHM_FIELD, value.getHashAlgorithm().getValue());
       gen.writeObjectField(NONCE_FIELD, value.getNonce());
       gen.writeEndObject();

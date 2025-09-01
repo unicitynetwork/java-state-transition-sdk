@@ -8,10 +8,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-
-import com.unicity.sdk.hash.DataHash;
 import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep;
-import com.unicity.sdk.mtree.plain.SparseMerkleTreePathStep.Branch;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashSet;

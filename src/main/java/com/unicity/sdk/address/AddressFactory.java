@@ -12,6 +12,10 @@ public class AddressFactory {
     Objects.requireNonNull(address, "Address cannot be null");
 
     String[] result = address.split("://", 2);
+    if (result.length != 2) {
+      throw new IllegalArgumentException("Invalid address format");
+    }
+
     Address expectedAddress;
     byte[] bytes = HexConverter.decode(result[1]);
 
