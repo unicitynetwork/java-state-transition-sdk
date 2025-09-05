@@ -22,16 +22,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class Token<T extends Transaction<MintTransactionData<?>>> {
+public class Token<T extends MintTransactionData<?>> {
 
   public static final String TOKEN_VERSION = "2.0";
 
   private final TokenState state;
-  private final T genesis;
+  private final Transaction<T> genesis;
   private final List<Transaction<TransferTransactionData>> transactions;
   private final List<Token<?>> nametags;
 
-  public Token(TokenState state, T genesis, List<Transaction<TransferTransactionData>> transactions,
+  public Token(TokenState state, Transaction<T> genesis, List<Transaction<TransferTransactionData>> transactions,
       List<Token<?>> nametags) {
     Objects.requireNonNull(state, "State cannot be null");
     Objects.requireNonNull(genesis, "Genesis cannot be null");
@@ -44,7 +44,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     this.nametags = List.copyOf(nametags);
   }
 
-  public Token(TokenState state, T genesis) {
+  public Token(TokenState state, Transaction<T> genesis) {
     this(state, genesis, List.of(), List.of());
   }
 
@@ -72,7 +72,7 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return this.state;
   }
 
-  public T getGenesis() {
+  public Transaction<T> getGenesis() {
     return this.genesis;
   }
 
@@ -216,13 +216,12 @@ public class Token<T extends Transaction<MintTransactionData<?>>> {
     return VerificationResult.success();
   }
 
-  private VerificationResult verifyGenesis(
-      Transaction<MintTransactionData<?>> transaction) {
-    if (!transaction.getInclusionProof().getAuthenticator().isPresent()) {
+  private VerificationResult verifyGenesis(Transaction<T> transaction) {
+    if (transaction.getInclusionProof().getAuthenticator().isEmpty()) {
       return VerificationResult.fail("Missing authenticator.");
     }
 
-    if (!transaction.getInclusionProof().getTransactionHash().isPresent()) {
+    if (transaction.getInclusionProof().getTransactionHash().isEmpty()) {
       return VerificationResult.fail("Missing transaction hash.");
     }
 

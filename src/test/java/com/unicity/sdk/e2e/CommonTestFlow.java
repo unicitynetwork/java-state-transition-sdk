@@ -24,6 +24,7 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.CoinId;
+import com.unicity.sdk.transaction.MintTransactionReason;
 import com.unicity.sdk.transaction.split.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.InclusionProof;
@@ -48,7 +49,6 @@ import org.junit.jupiter.api.Assertions;
 /**
  * Common test flows for token operations, matching TypeScript SDK's CommonTestFlow.
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
 public class CommonTestFlow {
 
   private static final byte[] ALICE_SECRET = "Alice".getBytes(StandardCharsets.UTF_8);
@@ -76,8 +76,8 @@ public class CommonTestFlow {
     Address aliceAddress = alicePredicate.getReference(tokenType).toAddress();
     TokenState aliceTokenState = new TokenState(alicePredicate, null);
 
-    MintCommitment<?> aliceMintCommitment = MintCommitment.create(
-        new MintTransactionData(
+    MintCommitment<MintTransactionData<MintTransactionReason>> aliceMintCommitment = MintCommitment.create(
+        new MintTransactionData<>(
             tokenId,
             tokenType,
             new TestTokenData(randomBytes(32)).getData(),
@@ -104,57 +104,14 @@ public class CommonTestFlow {
     ).get();
 
     // Create mint transaction
-    Token aliceToken = new Token(
+    Token<?> aliceToken = new Token<>(
         aliceTokenState,
         aliceMintCommitment.toTransaction(mintInclusionProof)
     );
 
     assertTrue(aliceToken.verify().isSuccessful());
 
-    // Bob prepares to receive the token
-    byte[] bobNonce = randomBytes(32);
-    SigningService bobSigningService = SigningService.createFromSecret(BOB_SECRET, bobNonce);
-    MaskedPredicate bobPredicate = MaskedPredicate.create(bobSigningService, HashAlgorithm.SHA256,
-        bobNonce);
-    DirectAddress bobAddress = bobPredicate.getReference(tokenType).toAddress();
-
-    // Bob mints a name tag tokens
-    byte[] bobNametagNonce = randomBytes(32);
-    MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
-        SigningService.createFromSecret(BOB_SECRET, bobNametagNonce),
-        HashAlgorithm.SHA256,
-        bobNametagNonce
-    );
-    TokenType bobNametagTokenType = new TokenType(randomBytes(32));
-    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType)
-        .toAddress();
-    MintCommitment<?> nametagMintCommitment = MintCommitment.create(
-        MintTransactionData.createNametag(
-            UUID.randomUUID().toString(),
-            bobNametagTokenType,
-            new byte[10],
-            null,
-            bobNametagAddress,
-            randomBytes(32),
-            bobAddress
-        ));
-    SubmitCommitmentResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment)
-        .get();
-    if (nametagMintResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-      throw new Exception(String.format("Failed to submit nametag mint commitment: %s",
-          nametagMintResponse.getStatus()));
-    }
-
-    Transaction<? extends MintTransactionData<?>> bobNametagGenesis = nametagMintCommitment.toTransaction(
-        InclusionProofUtils.waitInclusionProof(
-            client,
-            nametagMintCommitment
-        ).get()
-    );
-    Token<?> bobNametagToken = new Token(
-        new NameTagTokenState(bobNametagPredicate, bobAddress),
-        bobNametagGenesis
-    );
+    String bobNameTag = UUID.randomUUID().toString();
 
     // Alice transfers to Bob
     String bobCustomData = "Bob's custom data";
@@ -164,7 +121,7 @@ public class CommonTestFlow {
     // Submit transfer transaction
     TransferCommitment aliceToBobTransferCommitment = TransferCommitment.create(
         aliceToken,
-        ProxyAddress.create(bobNametagGenesis.getData().getTokenId()),
+        ProxyAddress.create(bobNameTag),
         randomBytes(32),
         bobDataHash,
         null,
@@ -190,8 +147,55 @@ public class CommonTestFlow {
         aliceToBobTransferInclusionProof
     );
 
+    // Bob prepares to receive the token
+    byte[] bobNonce = randomBytes(32);
+    SigningService bobSigningService = SigningService.createFromSecret(BOB_SECRET, bobNonce);
+    MaskedPredicate bobPredicate = MaskedPredicate.create(bobSigningService, HashAlgorithm.SHA256,
+        bobNonce);
+    DirectAddress bobAddress = bobPredicate.getReference(tokenType).toAddress();
+
+    // Bob mints a name tag tokens
+
+    byte[] bobNametagNonce = randomBytes(32);
+    MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
+        SigningService.createFromSecret(BOB_SECRET, bobNametagNonce),
+        HashAlgorithm.SHA256,
+        bobNametagNonce
+    );
+    TokenType bobNametagTokenType = new TokenType(randomBytes(32));
+    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType)
+        .toAddress();
+    MintCommitment<?> nametagMintCommitment = MintCommitment.create(
+        MintTransactionData.createForNametag(
+            bobNameTag,
+            bobNametagTokenType,
+            new byte[10],
+            null,
+            bobNametagAddress,
+            randomBytes(32),
+            bobAddress
+        ));
+
+    SubmitCommitmentResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment)
+        .get();
+    if (nametagMintResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      throw new Exception(String.format("Failed to submit nametag mint commitment: %s",
+          nametagMintResponse.getStatus()));
+    }
+
+    Transaction<? extends MintTransactionData<?>> bobNametagGenesis = nametagMintCommitment.toTransaction(
+        InclusionProofUtils.waitInclusionProof(
+            client,
+            nametagMintCommitment
+        ).get()
+    );
+    Token<?> bobNametagToken = new Token<>(
+        new NameTagTokenState(bobNametagPredicate, bobAddress),
+        bobNametagGenesis
+    );
+
     // Bob finalizes the token
-    Token bobToken = client.finalizeTransaction(
+    Token<?> bobToken = client.finalizeTransaction(
         aliceToken,
         new TokenState(bobPredicate, bobStateData),
         aliceToBobTransferTransaction,
@@ -246,7 +250,7 @@ public class CommonTestFlow {
         carolNonce
     );
 
-    Token carolToken = client.finalizeTransaction(
+    Token<?> carolToken = client.finalizeTransaction(
         bobToken,
         new TokenState(carolPredicate, null),
         bobToCarolTransaction
@@ -410,7 +414,7 @@ public class CommonTestFlow {
     );
 
     Assertions.assertTrue(
-        new Token(
+        new Token<>(
             new TokenState(splitTokenPredicate, null),
             splitTransactions.get(0)
         ).verify().isSuccessful()

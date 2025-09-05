@@ -1,7 +1,6 @@
 
 package com.unicity.sdk;
 
-import com.unicity.sdk.api.AggregatorClient;
 import com.unicity.sdk.api.IAggregatorClient;
 import com.unicity.sdk.api.RequestId;
 import com.unicity.sdk.api.SubmitCommitmentResponse;
@@ -49,7 +48,7 @@ public class StateTransitionClient {
         .calculateHash(token.getId(), token.getType()), commitment.getAuthenticator());
   }
 
-  public <T extends Transaction<MintTransactionData<?>>> Token<T> finalizeTransaction(
+  public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction
@@ -57,7 +56,7 @@ public class StateTransitionClient {
     return this.finalizeTransaction(token, state, transaction, List.of());
   }
 
-  public <T extends Transaction<MintTransactionData<?>>> Token<T> finalizeTransaction(
+  public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,
@@ -69,7 +68,7 @@ public class StateTransitionClient {
   }
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
-      Token<? extends Transaction<MintTransactionData<?>>> token,
+      Token<? extends MintTransactionData<?>> token,
       byte[] publicKey) {
     RequestId requestId = RequestId.create(publicKey,
         token.getState().calculateHash(token.getId(), token.getType()));

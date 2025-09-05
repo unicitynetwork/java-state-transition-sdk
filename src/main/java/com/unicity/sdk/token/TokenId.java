@@ -1,8 +1,11 @@
 
 package com.unicity.sdk.token;
 
+import com.unicity.sdk.hash.DataHasher;
+import com.unicity.sdk.hash.HashAlgorithm;
 import com.unicity.sdk.util.BitString;
 import com.unicity.sdk.util.HexConverter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -21,6 +24,15 @@ public class TokenId {
 
     public BitString toBitString() {
         return new BitString(this.bytes);
+    }
+
+    public static TokenId fromNameTag(String name) {
+      return new TokenId(
+          new DataHasher(HashAlgorithm.SHA256)
+              .update(name.getBytes(StandardCharsets.UTF_8))
+              .digest()
+              .getImprint()
+      );
     }
 
     @Override

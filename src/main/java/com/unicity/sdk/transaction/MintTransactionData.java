@@ -56,7 +56,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     this.reason = reason;
   }
 
-  public static MintTransactionData<MintTransactionReason> createNametag(
+  public static MintTransactionData<MintTransactionReason> createForNametag(
       String name,
       TokenType tokenType,
       byte[] tokenData,
@@ -69,12 +69,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     Objects.requireNonNull(targetAddress, "Target address cannot be null");
 
     return new MintTransactionData<>(
-        new TokenId(
-            new DataHasher(HashAlgorithm.SHA256)
-                .update(name.getBytes(StandardCharsets.UTF_8))
-                .digest()
-                .getImprint()
-        ),
+        TokenId.fromNameTag(name),
         tokenType,
         tokenData,
         coinData,

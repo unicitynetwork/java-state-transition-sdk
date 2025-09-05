@@ -46,10 +46,10 @@ public class TokenCbor {
   }
 
   public static class Deserializer extends
-      JsonDeserializer<Token<Transaction<MintTransactionData<?>>>> {
+      JsonDeserializer<Token<MintTransactionData<?>>> {
 
     @Override
-    public Token<Transaction<MintTransactionData<?>>> deserialize(JsonParser p,
+    public Token<MintTransactionData<?>> deserialize(JsonParser p,
         DeserializationContext ctx) throws IOException {
       if (!p.isExpectedStartArrayToken()) {
         throw MismatchedInputException.from(p, Token.class, "Expected array value");

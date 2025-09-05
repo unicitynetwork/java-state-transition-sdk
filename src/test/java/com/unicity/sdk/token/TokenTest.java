@@ -47,7 +47,7 @@ public class TokenTest {
             nametagNonce),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)))
     );
-    MintTransactionData<?> nametagGenesisData = MintTransactionData.createNametag(
+    MintTransactionData<?> nametagGenesisData = MintTransactionData.createForNametag(
         UUID.randomUUID().toString(),
         new TokenType(TestUtils.randomBytes(32)),
         TestUtils.randomBytes(5),
