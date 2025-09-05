@@ -11,6 +11,7 @@ import com.unicity.sdk.token.fungible.CoinId;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.InclusionProof;
 import com.unicity.sdk.transaction.MintTransactionData;
+import com.unicity.sdk.transaction.NametagMintTransactionData;
 import com.unicity.sdk.transaction.Transaction;
 import com.unicity.sdk.transaction.TransferTransactionData;
 import com.unicity.sdk.utils.TestUtils;
@@ -47,7 +48,7 @@ public class TokenTest {
             nametagNonce),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)))
     );
-    MintTransactionData<?> nametagGenesisData = MintTransactionData.createForNametag(
+    MintTransactionData<?> nametagGenesisData = new NametagMintTransactionData<>(
         UUID.randomUUID().toString(),
         new TokenType(TestUtils.randomBytes(32)),
         TestUtils.randomBytes(5),
