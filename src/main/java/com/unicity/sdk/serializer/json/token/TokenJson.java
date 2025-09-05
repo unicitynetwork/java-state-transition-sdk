@@ -49,10 +49,10 @@ public class TokenJson {
   }
 
   public static class Deserializer extends
-      JsonDeserializer<Token<Transaction<MintTransactionData<?>>>> {
+      JsonDeserializer<Token<MintTransactionData<?>>> {
 
     @Override
-    public Token<Transaction<MintTransactionData<?>>> deserialize(JsonParser p,
+    public Token<MintTransactionData<?>> deserialize(JsonParser p,
         DeserializationContext ctx)
         throws IOException {
       TokenState state = null;
