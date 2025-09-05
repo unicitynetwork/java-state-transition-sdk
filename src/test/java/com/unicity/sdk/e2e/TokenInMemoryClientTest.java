@@ -34,7 +34,6 @@ import com.unicity.sdk.util.InclusionProofUtils;
 import com.unicity.sdk.utils.TestTokenData;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -192,7 +191,7 @@ public class TokenInMemoryClientTest {
     assertTrue(aliceToken.verify().isSuccessful());
 
     // Bob creates nametag
-    String bobNameTag = UUID.randomUUID().toString();
+    String bobNameTag = "bob@unicity-labs.com";
     byte[] bobStateData = "Bob's custom data".getBytes(StandardCharsets.UTF_8);
 
     // Alice transfers to Bob
