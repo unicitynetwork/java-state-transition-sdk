@@ -1,5 +1,7 @@
 name: Release for JitPack
 
+run-name: Release ${{ github.event.inputs.version }} for JitPack
+
 on:
   workflow_dispatch:
     inputs:
