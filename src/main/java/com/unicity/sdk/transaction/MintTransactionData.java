@@ -12,7 +12,6 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.util.HexConverter;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -54,32 +53,6 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     this.salt = Arrays.copyOf(salt, salt.length);
     this.dataHash = dataHash;
     this.reason = reason;
-  }
-
-  public static MintTransactionData<MintTransactionReason> createForNametag(
-      String name,
-      TokenType tokenType,
-      byte[] tokenData,
-      TokenCoinData coinData,
-      Address recipient,
-      byte[] salt,
-      Address targetAddress
-  ) {
-    Objects.requireNonNull(name, "Name cannot be null");
-    Objects.requireNonNull(targetAddress, "Target address cannot be null");
-
-    return new MintTransactionData<>(
-        TokenId.fromNameTag(name),
-        tokenType,
-        tokenData,
-        coinData,
-        recipient,
-        salt,
-        new DataHasher(HashAlgorithm.SHA256)
-            .update(targetAddress.getAddress().getBytes(StandardCharsets.UTF_8))
-            .digest(),
-        null
-    );
   }
 
   public TokenId getTokenId() {

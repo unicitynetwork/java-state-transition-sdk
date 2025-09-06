@@ -25,6 +25,7 @@ import com.unicity.sdk.token.TokenState;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.CoinId;
 import com.unicity.sdk.transaction.MintTransactionReason;
+import com.unicity.sdk.transaction.NametagMintTransactionData;
 import com.unicity.sdk.transaction.split.SplitMintReason;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.transaction.InclusionProof;
@@ -166,7 +167,7 @@ public class CommonTestFlow {
     DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType)
         .toAddress();
     MintCommitment<?> nametagMintCommitment = MintCommitment.create(
-        MintTransactionData.createForNametag(
+        new NametagMintTransactionData<>(
             bobNameTag,
             bobNametagTokenType,
             new byte[10],

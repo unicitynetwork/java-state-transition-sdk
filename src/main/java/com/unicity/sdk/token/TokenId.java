@@ -7,6 +7,7 @@ import com.unicity.sdk.util.BitString;
 import com.unicity.sdk.util.HexConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Globally unique identifier of a token.
@@ -27,6 +28,8 @@ public class TokenId {
     }
 
     public static TokenId fromNameTag(String name) {
+      Objects.requireNonNull(name, "Name cannot be null");
+
       return new TokenId(
           new DataHasher(HashAlgorithm.SHA256)
               .update(name.getBytes(StandardCharsets.UTF_8))
