@@ -7,8 +7,12 @@ plugins {
 }
 
 group = "com.github.unicitynetwork"
-// JitPack will override this with the tag version via -Pversion
-version = project.findProperty("version") ?: "1.1-SNAPSHOT"
+// Use version property if provided, otherwise use default
+version = if (project.hasProperty("version")) {
+    project.property("version").toString()
+} else {
+    "1.1-SNAPSHOT"
+}
 
 repositories {
     mavenCentral()
@@ -110,17 +114,18 @@ publishing {
             artifactId = "java-state-transition-sdk"
             version = project.version.toString()
             
-            // Add Android JAR as the main artifact
-            artifact(tasks["androidJar"])
+            // Use the Java component as base
+            from(components["java"])
             
-            // Add JVM JAR as a classifier variant
+            // Add Android JAR as additional artifact with classifier
+            artifact(tasks["androidJar"]) {
+                classifier = "android"
+            }
+            
+            // Add JVM JAR as additional artifact with classifier
             artifact(tasks["jvmJar"]) {
                 classifier = "jvm"
             }
-            
-            // Add sources and javadoc
-            artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
             
             pom {
                 name.set("Unicity State Transition SDK")
