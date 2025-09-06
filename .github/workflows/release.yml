@@ -30,30 +30,24 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
           
-      - name: Update version in build.gradle.kts
-        run: |
-          # Remove -SNAPSHOT suffix and set the release version
-          sed -i "s/version = \".*\"/version = \"${{ github.event.inputs.version }}\"/" build.gradle.kts
-          
-          # Show the updated version
-          echo "Updated version to:"
-          grep "^version = " build.gradle.kts
-          
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
-          ./gradlew clean build -x test
+          # Pass version as property instead of modifying file
+          ./gradlew clean build -Pversion=${{ github.event.inputs.version }} -x test
+          
+          echo "Building version ${{ github.event.inputs.version }}"
           
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew test -Pversion=${{ github.event.inputs.version }}
         
       - name: Build JAR artifacts
         run: |
-          ./gradlew jar
-          ./gradlew androidJar
-          ./gradlew jvmJar
-          ./gradlew sourcesJar
-          ./gradlew javadocJar
+          ./gradlew jar -Pversion=${{ github.event.inputs.version }}
+          ./gradlew androidJar -Pversion=${{ github.event.inputs.version }}
+          ./gradlew jvmJar -Pversion=${{ github.event.inputs.version }}
+          ./gradlew sourcesJar -Pversion=${{ github.event.inputs.version }}
+          ./gradlew javadocJar -Pversion=${{ github.event.inputs.version }}
           
       - name: List built artifacts
         run: |

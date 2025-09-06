@@ -7,7 +7,8 @@ plugins {
 }
 
 group = "com.github.unicitynetwork"
-version = "1.1-SNAPSHOT"
+// JitPack will override this with the tag version via -Pversion
+version = project.findProperty("version") ?: "1.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -111,40 +112,66 @@ publishing {
             
             from(components["java"])
             
-            // Add Android JAR as the main artifact (default)
-            artifact(tasks["androidJar"]) {
-                classifier = null
-            }
+            // Replace the default JAR with Android JAR as the main artifact
+            artifacts.clear()
+            artifact(tasks["androidJar"])
             
             // Add JVM JAR as a classifier variant
             artifact(tasks["jvmJar"]) {
                 classifier = "jvm"
             }
             
+            // Add sources and javadoc
+            artifact(tasks["sourcesJar"])
+            artifact(tasks["javadocJar"])
+            
             pom {
                 name.set("Unicity State Transition SDK")
                 description.set("Unicity State Transition SDK for Android and JVM")
+                url.set("https://github.com/unicitynetwork/java-state-transition-sdk")
                 
-                // Android-compatible dependencies for main artifact
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id.set("unicitynetwork")
+                        name.set("Unicity Network")
+                    }
+                }
+                
+                // Modify existing dependencies to use Android Guava
                 withXml {
-                    val dependenciesNode = asNode().appendNode("dependencies")
-                    
-                    configurations["implementation"].dependencies.forEach { dep ->
-                        if (dep.group != "com.google.guava") {
-                            val dependencyNode = dependenciesNode.appendNode("dependency")
-                            dependencyNode.appendNode("groupId", dep.group)
-                            dependencyNode.appendNode("artifactId", dep.name)
-                            dependencyNode.appendNode("version", dep.version)
-                            dependencyNode.appendNode("scope", "compile")
-                        }
+                    val root = asNode()
+                    val dependenciesNodes = root.children().filter { node ->
+                        (node as? groovy.util.Node)?.name()?.toString()?.endsWith("dependencies") == true
                     }
                     
-                    // Add Android-specific Guava for main artifact
-                    val guavaDep = dependenciesNode.appendNode("dependency")
-                    guavaDep.appendNode("groupId", "com.google.guava")
-                    guavaDep.appendNode("artifactId", "guava")
-                    guavaDep.appendNode("version", "33.0.0-android")
-                    guavaDep.appendNode("scope", "compile")
+                    dependenciesNodes.forEach { dependencies ->
+                        val depNode = dependencies as groovy.util.Node
+                        
+                        // Find and update Guava dependency
+                        depNode.children().forEach { dep ->
+                            val dependency = dep as groovy.util.Node
+                            val groupIdNode = dependency.children().find { 
+                                (it as? groovy.util.Node)?.name()?.toString()?.endsWith("groupId") == true 
+                            } as? groovy.util.Node
+                            val artifactIdNode = dependency.children().find { 
+                                (it as? groovy.util.Node)?.name()?.toString()?.endsWith("artifactId") == true 
+                            } as? groovy.util.Node
+                            
+                            if (groupIdNode?.text() == "com.google.guava" && artifactIdNode?.text() == "guava") {
+                                val versionNode = dependency.children().find { 
+                                    (it as? groovy.util.Node)?.name()?.toString()?.endsWith("version") == true 
+                                } as? groovy.util.Node
+                                versionNode?.setValue("33.0.0-android")
+                            }
+                        }
+                    }
                 }
             }
         }
