@@ -108,13 +108,12 @@ tasks.register<Jar>("jvmJar") {
 // Publishing configuration for JitPack
 publishing {
     publications {
-        // Main publication (Android-compatible by default for backward compatibility)
         create<MavenPublication>("maven") {
             groupId = project.group.toString()
             artifactId = "java-state-transition-sdk"
             version = project.version.toString()
             
-            // Use the Java component as base
+            // Use the Java component as base - this includes the standard JAR
             from(components["java"])
             
             // Add Android JAR as additional artifact with classifier
@@ -122,11 +121,12 @@ publishing {
                 classifier = "android"
             }
             
-            // Add JVM JAR as additional artifact with classifier
+            // Add JVM JAR as additional artifact with classifier  
             artifact(tasks["jvmJar"]) {
                 classifier = "jvm"
             }
             
+            // Simple POM configuration without XML manipulation
             pom {
                 name.set("Unicity State Transition SDK")
                 description.set("Unicity State Transition SDK for Android and JVM")
@@ -150,26 +150,6 @@ publishing {
                     connection.set("scm:git:git://github.com/unicitynetwork/java-state-transition-sdk.git")
                     developerConnection.set("scm:git:ssh://github.com/unicitynetwork/java-state-transition-sdk.git")
                     url.set("https://github.com/unicitynetwork/java-state-transition-sdk")
-                }
-                
-                // Manually specify dependencies
-                withXml {
-                    val dependenciesNode = asNode().appendNode("dependencies")
-                    
-                    // Add all implementation dependencies
-                    configurations["implementation"].dependencies.forEach { dep ->
-                        val dependencyNode = dependenciesNode.appendNode("dependency")
-                        dependencyNode.appendNode("groupId", dep.group)
-                        dependencyNode.appendNode("artifactId", dep.name)
-                        dependencyNode.appendNode("version", dep.version)
-                        
-                        // Use Android Guava for the Android artifact
-                        if (dep.group == "com.google.guava" && dep.name == "guava") {
-                            dependencyNode.children().last().let { versionNode ->
-                                (versionNode as groovy.util.Node).setValue("33.0.0-android")
-                            }
-                        }
-                    }
                 }
             }
         }
