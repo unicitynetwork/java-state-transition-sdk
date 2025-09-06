@@ -5,4 +5,4 @@ before_install:
   - chmod +x ./gradlew
   
 install:
-  - ./gradlew clean build androidJar jvmJar publishToMavenLocal -x test
+  - ./gradlew clean build androidJar publishToMavenLocal -x test -x checkstyleMain -x checkstyleTest

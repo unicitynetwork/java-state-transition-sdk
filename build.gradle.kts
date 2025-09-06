@@ -6,7 +6,7 @@ plugins {
     id("ru.vyarus.animalsniffer") version "2.0.1"
 }
 
-group = "com.unicity.sdk"
+group = "com.github.unicitynetwork"
 version = "1.1-SNAPSHOT"
 
 repositories {
@@ -100,18 +100,32 @@ tasks.register<Jar>("jvmJar") {
 }
 
 
-// Publishing configuration
+// Publishing configuration for JitPack
 publishing {
     publications {
-        create<MavenPublication>("android") {
-            artifactId = "unicity-sdk-android"
+        // Main publication (Android-compatible by default for backward compatibility)
+        create<MavenPublication>("maven") {
+            groupId = project.group.toString()
+            artifactId = "java-state-transition-sdk"
+            version = project.version.toString()
+            
             from(components["java"])
-            artifact(tasks["androidJar"])
+            
+            // Add Android JAR as the main artifact (default)
+            artifact(tasks["androidJar"]) {
+                classifier = null
+            }
+            
+            // Add JVM JAR as a classifier variant
+            artifact(tasks["jvmJar"]) {
+                classifier = "jvm"
+            }
             
             pom {
-                name.set("Unicity SDK for Android")
-                description.set("Unicity State Transition SDK for Android 12+")
+                name.set("Unicity State Transition SDK")
+                description.set("Unicity State Transition SDK for Android and JVM")
                 
+                // Android-compatible dependencies for main artifact
                 withXml {
                     val dependenciesNode = asNode().appendNode("dependencies")
                     
@@ -125,24 +139,13 @@ publishing {
                         }
                     }
                     
-                    // Add Android-specific Guava
+                    // Add Android-specific Guava for main artifact
                     val guavaDep = dependenciesNode.appendNode("dependency")
                     guavaDep.appendNode("groupId", "com.google.guava")
                     guavaDep.appendNode("artifactId", "guava")
                     guavaDep.appendNode("version", "33.0.0-android")
                     guavaDep.appendNode("scope", "compile")
                 }
-            }
-        }
-        
-        create<MavenPublication>("jvm") {
-            artifactId = "unicity-sdk"
-            from(components["java"])
-            artifact(tasks["jvmJar"])
-            
-            pom {
-                name.set("Unicity SDK")
-                description.set("Unicity State Transition SDK for JVM")
             }
         }
     }
