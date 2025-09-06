@@ -65,6 +65,7 @@ public abstract class TokenSplitTest {
         this.client,
         secret,
         nametag,
+        // Direct to random address in the beginning
         DirectAddress.create(DataHash.fromImprint(new byte[34]))
     );
 
@@ -167,9 +168,10 @@ public abstract class TokenSplitTest {
       );
 
       SubmitCommitmentResponse nametagTransferResponse = this.client
-          .submitCommitment(nametagToken, nametagCommitment).get();
+          .submitCommitment(nametagToken, nametagCommitment)
+          .get();
       if (nametagTransferResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-        throw new Exception(String.format("Failed to submit burn commitment: %s",
+        throw new Exception(String.format("Failed to submit nametag transfer commitment: %s",
             response.getStatus()));
       }
 
@@ -185,7 +187,8 @@ public abstract class TokenSplitTest {
       Token<MintTransactionData<SplitMintReason>> splitToken = new Token<>(
           state,
           commitment.toTransaction(
-              InclusionProofUtils.waitInclusionProof(this.client, commitment).get()),
+              InclusionProofUtils.waitInclusionProof(this.client, commitment).get()
+          ),
           List.of(nametagToken)
       );
 
