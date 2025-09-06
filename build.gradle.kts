@@ -110,10 +110,7 @@ publishing {
             artifactId = "java-state-transition-sdk"
             version = project.version.toString()
             
-            from(components["java"])
-            
-            // Replace the default JAR with Android JAR as the main artifact
-            artifacts.clear()
+            // Add Android JAR as the main artifact
             artifact(tasks["androidJar"])
             
             // Add JVM JAR as a classifier variant
@@ -144,31 +141,27 @@ publishing {
                     }
                 }
                 
-                // Modify existing dependencies to use Android Guava
+                scm {
+                    connection.set("scm:git:git://github.com/unicitynetwork/java-state-transition-sdk.git")
+                    developerConnection.set("scm:git:ssh://github.com/unicitynetwork/java-state-transition-sdk.git")
+                    url.set("https://github.com/unicitynetwork/java-state-transition-sdk")
+                }
+                
+                // Manually specify dependencies
                 withXml {
-                    val root = asNode()
-                    val dependenciesNodes = root.children().filter { node ->
-                        (node as? groovy.util.Node)?.name()?.toString()?.endsWith("dependencies") == true
-                    }
+                    val dependenciesNode = asNode().appendNode("dependencies")
                     
-                    dependenciesNodes.forEach { dependencies ->
-                        val depNode = dependencies as groovy.util.Node
+                    // Add all implementation dependencies
+                    configurations["implementation"].dependencies.forEach { dep ->
+                        val dependencyNode = dependenciesNode.appendNode("dependency")
+                        dependencyNode.appendNode("groupId", dep.group)
+                        dependencyNode.appendNode("artifactId", dep.name)
+                        dependencyNode.appendNode("version", dep.version)
                         
-                        // Find and update Guava dependency
-                        depNode.children().forEach { dep ->
-                            val dependency = dep as groovy.util.Node
-                            val groupIdNode = dependency.children().find { 
-                                (it as? groovy.util.Node)?.name()?.toString()?.endsWith("groupId") == true 
-                            } as? groovy.util.Node
-                            val artifactIdNode = dependency.children().find { 
-                                (it as? groovy.util.Node)?.name()?.toString()?.endsWith("artifactId") == true 
-                            } as? groovy.util.Node
-                            
-                            if (groupIdNode?.text() == "com.google.guava" && artifactIdNode?.text() == "guava") {
-                                val versionNode = dependency.children().find { 
-                                    (it as? groovy.util.Node)?.name()?.toString()?.endsWith("version") == true 
-                                } as? groovy.util.Node
-                                versionNode?.setValue("33.0.0-android")
+                        // Use Android Guava for the Android artifact
+                        if (dep.group == "com.google.guava" && dep.name == "guava") {
+                            dependencyNode.children().last().let { versionNode ->
+                                (versionNode as groovy.util.Node).setValue("33.0.0-android")
                             }
                         }
                     }
