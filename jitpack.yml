@@ -1,0 +1,8 @@
+jdk:
+  - openjdk11
+  
+before_install:
+  - chmod +x ./gradlew
+  
+install:
+  - ./gradlew clean build androidJar jvmJar publishToMavenLocal -x test
