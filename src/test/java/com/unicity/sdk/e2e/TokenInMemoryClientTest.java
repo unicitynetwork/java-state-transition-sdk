@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
  */
 public class TokenInMemoryClientTest {
   private static final byte[] ALICE_SECRET = "ALICE".getBytes(StandardCharsets.UTF_8);
-  private static final byte[] BOB_SECRET = "ALICE".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] BOB_SECRET = "BOB".getBytes(StandardCharsets.UTF_8);
 
   @Test
   public void testNametagTransfer() throws Exception {
