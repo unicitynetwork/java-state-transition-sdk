@@ -12,7 +12,6 @@ import com.unicity.sdk.token.TokenId;
 import com.unicity.sdk.token.TokenType;
 import com.unicity.sdk.token.fungible.TokenCoinData;
 import com.unicity.sdk.util.HexConverter;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;

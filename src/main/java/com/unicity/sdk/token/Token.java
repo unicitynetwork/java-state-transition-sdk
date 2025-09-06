@@ -44,6 +44,10 @@ public class Token<T extends MintTransactionData<?>> {
     this.nametags = List.copyOf(nametags);
   }
 
+  public Token(TokenState state, Transaction<T> genesis, List<Token<?>> nametags) {
+    this(state, genesis, List.of(), nametags);
+  }
+
   public Token(TokenState state, Transaction<T> genesis) {
     this(state, genesis, List.of(), List.of());
   }
