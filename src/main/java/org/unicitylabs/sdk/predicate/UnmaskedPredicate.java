@@ -1,0 +1,67 @@
+
+package org.unicitylabs.sdk.predicate;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.signing.Signature;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.token.TokenType;
+
+public class UnmaskedPredicate extends DefaultPredicate {
+
+  public UnmaskedPredicate(
+      byte[] publicKey,
+      String signingAlgorithm,
+      HashAlgorithm hashAlgorithm,
+      byte[] nonce) {
+    super(PredicateType.UNMASKED, publicKey, signingAlgorithm, hashAlgorithm, nonce);
+  }
+
+  public static UnmaskedPredicate create(
+      SigningService signingService,
+      HashAlgorithm hashAlgorithm,
+      byte[] salt
+  ) {
+    Signature nonce = signingService.sign(
+        new DataHasher(HashAlgorithm.SHA256).update(salt).digest());
+
+    return new UnmaskedPredicate(
+        signingService.getPublicKey(),
+        signingService.getAlgorithm(),
+        hashAlgorithm,
+        nonce.getBytes());
+  }
+
+  @Override
+  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
+    IPredicateReference reference = this.getReference(tokenType);
+
+    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
+    node.addPOJO(reference.getHash());
+    node.addPOJO(tokenId);
+    node.addPOJO(this.getNonce());
+
+    try {
+      return new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(reference.getHash()))
+          .digest();
+    } catch (JsonProcessingException e) {
+      throw new CborSerializationException(e);
+    }
+  }
+
+  public UnmaskedPredicateReference getReference(TokenType tokenType) {
+    return UnmaskedPredicateReference.create(
+        tokenType,
+        this.getSigningAlgorithm(),
+        this.getPublicKey(),
+        this.getHashAlgorithm()
+    );
+  }
+}

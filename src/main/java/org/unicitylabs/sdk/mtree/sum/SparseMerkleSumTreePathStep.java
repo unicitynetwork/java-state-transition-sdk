@@ -1,0 +1,137 @@
+package org.unicitylabs.sdk.mtree.sum;
+
+import org.unicitylabs.sdk.util.HexConverter;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
+
+public class SparseMerkleSumTreePathStep {
+
+  private final BigInteger path;
+  private final Branch sibling;
+  private final Branch branch;
+
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling,
+      FinalizedLeafBranch branch) {
+    this(
+        path,
+        sibling,
+        branch == null
+            ? null
+            : new Branch(branch.getValue().getCounter(), branch.getValue().getValue())
+    );
+  }
+
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling,
+      FinalizedNodeBranch branch) {
+    this(
+        path,
+        sibling,
+        branch == null ? null
+            : new Branch(branch.getCounter(), branch.getChildrenHash().getImprint())
+    );
+  }
+
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling) {
+    this(
+        path,
+        sibling,
+        (Branch) null
+    );
+  }
+
+  SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
+    this(
+        path,
+        sibling == null ? null : new Branch(sibling.getCounter(), sibling.getHash().getImprint()),
+        branch
+    );
+  }
+
+  public SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+    Objects.requireNonNull(path, "path cannot be null");
+
+    this.path = path;
+    this.sibling = sibling;
+    this.branch = branch;
+  }
+
+  public BigInteger getPath() {
+    return this.path;
+  }
+
+  public Optional<Branch> getSibling() {
+    return Optional.ofNullable(this.sibling);
+  }
+
+  public Optional<Branch> getBranch() {
+    return Optional.ofNullable(this.branch);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof SparseMerkleSumTreePathStep)) {
+      return false;
+    }
+    SparseMerkleSumTreePathStep that = (SparseMerkleSumTreePathStep) o;
+    return Objects.equals(this.path, that.path) && Objects.equals(this.sibling, that.sibling)
+        && Objects.equals(this.branch, that.branch);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.path, this.sibling, this.branch);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("MerkleTreePathStep{path=%s, sibling=%s, branch=%s}",
+        this.path.toString(2), this.sibling, this.branch);
+  }
+
+  public static class Branch {
+
+    private final byte[] value;
+    private final BigInteger counter;
+
+    public Branch(BigInteger counter, byte[] value) {
+      Objects.requireNonNull(counter, "counter cannot be null");
+
+      this.value = value == null ? null : Arrays.copyOf(value, value.length);
+      this.counter = counter;
+    }
+
+    public byte[] getValue() {
+      return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
+    }
+
+    public BigInteger getCounter() {
+      return this.counter;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof Branch)) {
+        return false;
+      }
+      Branch branch = (Branch) o;
+      return Objects.deepEquals(this.value, branch.value) && Objects.equals(this.counter,
+          branch.counter);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(Arrays.hashCode(this.value), this.counter);
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "Branch{value=%s, counter=%s}",
+          this.value == null ? null : HexConverter.encode(this.value),
+          this.counter
+      );
+    }
+  }
+}

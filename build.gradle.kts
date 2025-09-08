@@ -6,7 +6,7 @@ plugins {
     id("ru.vyarus.animalsniffer") version "2.0.1"
 }
 
-group = "com.github.unicitynetwork"
+group = "org.unicitylabs"
 // Use version property if provided, otherwise use default
 version = if (project.hasProperty("version")) {
     project.property("version").toString()
