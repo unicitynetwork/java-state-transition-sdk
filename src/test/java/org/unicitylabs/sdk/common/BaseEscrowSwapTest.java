@@ -1,18 +1,12 @@
 package org.unicitylabs.sdk.common;
 
 import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
-import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.shadow.com.univocity.parsers.common.ContextWrapper;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.ProxyAddress;
@@ -28,8 +22,6 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.token.fungible.CoinId;
-import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
@@ -37,7 +29,17 @@ import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
-public class BaseEscrowSwap {
+/**
+ * Alice has a nametag and acts as an escrow for the swap
+ * Bob transfers token to Alice
+ * Carol transfers token to Alice
+ * <p>
+ * Alice transfers Bob's token to Carol
+ * Alice transfers Carol's token to Bob
+ * <p>
+ * Everyone's happy :)
+ */
+public class BaseEscrowSwapTest {
 
   protected StateTransitionClient client;
   private final byte[] ALICE_SECRET = "ALICE_SECRET".getBytes(StandardCharsets.UTF_8);

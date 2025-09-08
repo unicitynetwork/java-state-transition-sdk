@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.api.AggregatorClient;
-import org.unicitylabs.sdk.common.BaseEscrowSwap;
+import org.unicitylabs.sdk.common.BaseEscrowSwapTest;
 
 @Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
-public class E2EEscrowSwapTest extends BaseEscrowSwap {
+public class E2EEscrowSwapTest extends BaseEscrowSwapTest {
   @BeforeEach
   void setUp() {
     String aggregatorUrl = System.getenv("AGGREGATOR_URL");
