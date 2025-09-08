@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.common;
 
 import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
+import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +9,7 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.shadow.com.univocity.parsers.common.ContextWrapper;
@@ -31,6 +33,7 @@ import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
@@ -40,6 +43,10 @@ public class BaseEscrowSwap {
   private final byte[] ALICE_SECRET = "ALICE_SECRET".getBytes(StandardCharsets.UTF_8);
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
   private final byte[] CAROL_SECRET = "CAROL_SECRET".getBytes(StandardCharsets.UTF_8);
+
+  private final String ALICE_NAMETAG = String.format("ALICE_%s", System.currentTimeMillis());
+  private final String BOB_NAMETAG = String.format("BOB_%s", System.currentTimeMillis());
+  private final String CAROL_NAMETAG = String.format("CAROL_%s", System.currentTimeMillis());
 
   private String[] transferToken(Token<?> token, byte[] secret, String nametag) throws Exception {
     TransferCommitment commitment = TransferCommitment.create(
@@ -68,14 +75,10 @@ public class BaseEscrowSwap {
         this.client,
         secret,
         new TokenId(randomBytes(32)),
-        new TokenType(randomBytes(32)),
+        new TokenType(HexConverter.decode(
+            "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
         randomBytes(32),
-        new TokenCoinData(Map.of(
-            new CoinId("test_eur".getBytes(StandardCharsets.UTF_8)),
-            BigInteger.valueOf(100),
-            new CoinId("test_usd".getBytes(StandardCharsets.UTF_8)),
-            BigInteger.valueOf(100)
-        )),
+        null,
         randomBytes(32),
         randomBytes(32),
         null
@@ -113,53 +116,72 @@ public class BaseEscrowSwap {
 
   @Test
   void testEscrow() throws Exception {
-    String[] bobData = transferToken(
+    // Make nametags unique for each test run
+    String[] bobSerializedData = transferToken(
         mintToken(BOB_SECRET),
         BOB_SECRET,
-        "ALICE"
+        ALICE_NAMETAG
     );
-    String[] carolData = transferToken(
+    String[] carolSerializedData = transferToken(
         mintToken(CAROL_SECRET),
         CAROL_SECRET,
-        "ALICE"
+        ALICE_NAMETAG
     );
 
     NametagWrapper aliceNametagToken = new NametagWrapper(
         TokenUtils.mintNametagToken(
             this.client,
             ALICE_SECRET,
-            "ALICE",
-            null
+            new TokenType(HexConverter.decode(
+                "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
+            randomBytes(32),
+            null,
+            ALICE_NAMETAG,
+            null,
+            randomBytes(32),
+            randomBytes(32)
         )
     );
 
-    Token<?> aliceBobToken = receiveToken(bobData, ALICE_SECRET, aliceNametagToken);
+    Token<?> aliceBobToken = receiveToken(bobSerializedData, ALICE_SECRET, aliceNametagToken);
     Assertions.assertTrue(aliceBobToken.verify().isSuccessful());
-    Token<?> aliceCarolToken = receiveToken(carolData, ALICE_SECRET, aliceNametagToken);
+    Token<?> aliceCarolToken = receiveToken(carolSerializedData, ALICE_SECRET, aliceNametagToken);
     Assertions.assertTrue(aliceCarolToken.verify().isSuccessful());
 
     Token<?> aliceToCarolToken = receiveToken(
-        transferToken(aliceBobToken, ALICE_SECRET, "CAROL"),
+        transferToken(aliceBobToken, ALICE_SECRET, CAROL_NAMETAG),
         CAROL_SECRET,
         new NametagWrapper(
             TokenUtils.mintNametagToken(
                 this.client,
                 CAROL_SECRET,
-                "CAROL",
-                null
+                new TokenType(HexConverter.decode(
+                    "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
+                randomBytes(32),
+                null,
+                CAROL_NAMETAG,
+                null,
+                randomBytes(32),
+                randomBytes(32)
             )
         ));
     Assertions.assertTrue(aliceToCarolToken.verify().isSuccessful());
 
     Token<?> aliceToBobToken = receiveToken(
-        transferToken(aliceCarolToken, ALICE_SECRET, "BOB"),
+        transferToken(aliceCarolToken, ALICE_SECRET, BOB_NAMETAG),
         BOB_SECRET,
         new NametagWrapper(
             TokenUtils.mintNametagToken(
                 this.client,
                 BOB_SECRET,
-                "BOB",
-                null
+                new TokenType(HexConverter.decode(
+                    "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
+                randomBytes(32),
+                null,
+                BOB_NAMETAG,
+                null,
+                randomBytes(32),
+                randomBytes(32)
             )
         ));
     Assertions.assertTrue(aliceToBobToken.verify().isSuccessful());
