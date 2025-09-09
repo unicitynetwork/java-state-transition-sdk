@@ -39,7 +39,7 @@ public class TestAggregatorClient implements IAggregatorClient {
           new SubmitCommitmentResponse(SubmitCommitmentStatus.SUCCESS)
       );
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Aggregator commitment failed", e);
     }
   }
 
