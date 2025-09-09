@@ -140,7 +140,6 @@ public class Token<T extends MintTransactionData<?>> {
       Transaction<TransferTransactionData> transaction = this.transactions.get(i);
       Address recipient = previousTransaction.getData().getRecipient();
 
-
       results.add(
           VerificationResult.fromChildren(
               "Transaction verification",
@@ -197,8 +196,11 @@ public class Token<T extends MintTransactionData<?>> {
   }
 
   private VerificationResult verifyTransaction(
-      List<Transaction<TransferTransactionData>> transactions, DataHash dataHash, Address recipient) {
-    Transaction<TransferTransactionData> transaction = transactions.getLast();
+      List<Transaction<TransferTransactionData>> transactions,
+      DataHash dataHash,
+      Address recipient
+  ) {
+    Transaction<TransferTransactionData> transaction = transactions.get(transactions.size() - 1);
     for (Token<?> nametag : transaction.getData().getNametags()) {
       if (!nametag.verify().isSuccessful()) {
         return VerificationResult.fail(
