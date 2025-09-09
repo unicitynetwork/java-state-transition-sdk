@@ -9,16 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.address.Address;
-import org.unicitylabs.sdk.address.DirectAddress;
-import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
-import org.unicitylabs.sdk.common.BaseEscrowSwapTest;
-import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
@@ -34,7 +28,7 @@ import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
-public class FunctionalNametagDoubleSpendTest {
+public class FunctionalUnsignedPredicateDoubleSpendTest {
   protected StateTransitionClient client = new StateTransitionClient(new TestAggregatorClient());
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
