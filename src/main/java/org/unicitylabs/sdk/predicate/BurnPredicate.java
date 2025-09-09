@@ -2,11 +2,14 @@ package org.unicitylabs.sdk.predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.List;
+import java.util.ListIterator;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.transaction.Transaction;
@@ -47,8 +50,10 @@ public class BurnPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Transaction<TransferTransactionData> transaction, TokenId tokenId,
-      TokenType tokenType) {
+  public boolean verify(
+      List<Transaction<TransferTransactionData>> transactions,
+      Token<?> token
+  ) {
     return false;
   }
 

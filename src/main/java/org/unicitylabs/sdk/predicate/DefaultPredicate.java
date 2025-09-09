@@ -2,20 +2,22 @@ package org.unicitylabs.sdk.predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Base class for unmasked and masked predicates
@@ -91,8 +93,11 @@ public abstract class DefaultPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Transaction<TransferTransactionData> transaction, TokenId tokenId,
-      TokenType tokenType) {
+  public boolean verify(
+      List<Transaction<TransferTransactionData>> transactions,
+      Token<?> token) {
+    Transaction<TransferTransactionData> transaction = transactions.getLast();
+
     Authenticator authenticator = transaction.getInclusionProof().getAuthenticator().orElse(null);
     DataHash transactionHash = transaction.getInclusionProof().getTransactionHash().orElse(null);
 
@@ -104,12 +109,12 @@ public abstract class DefaultPredicate implements Predicate {
       return false;
     }
 
-    if (!authenticator.verify(transaction.getData().calculateHash(tokenId, tokenType))) {
+    if (!authenticator.verify(transaction.getData().calculateHash(token.getId(), token.getType()))) {
       return false;
     }
 
     RequestId requestId = RequestId.create(this.publicKey,
-        transaction.getData().getSourceState().calculateHash(tokenId, tokenType));
+        transaction.getData().getSourceState().calculateHash(token.getId(), token.getType()));
     return transaction.getInclusionProof().verify(requestId) == InclusionProofVerificationStatus.OK;
   }
 

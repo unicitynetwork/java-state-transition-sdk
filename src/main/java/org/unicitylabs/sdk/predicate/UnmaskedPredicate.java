@@ -3,6 +3,8 @@ package org.unicitylabs.sdk.predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.List;
+import java.util.ListIterator;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -10,8 +12,12 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.signing.Signature;
 import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnmaskedPredicate extends DefaultPredicate {
 
@@ -36,6 +42,24 @@ public class UnmaskedPredicate extends DefaultPredicate {
         signingService.getAlgorithm(),
         hashAlgorithm,
         nonce.getBytes());
+  }
+
+  @Override
+  public boolean verify(
+      List<Transaction<TransferTransactionData>> transactions,
+      Token<?> token
+  ) {
+    return super.verify(transactions, token) && SigningService.verifyWithPublicKey(
+        new DataHasher(HashAlgorithm.SHA256)
+            .update(
+                transactions.size() > 1
+                    ? transactions.get(transactions.size() - 2).getData().getSalt()
+                    : token.getGenesis().getData().getSalt()
+            )
+            .digest(),
+        this.getNonce(),
+        this.getPublicKey()
+    );
   }
 
   @Override
