@@ -1,10 +1,18 @@
 package org.unicitylabs.sdk.e2e;
 
-import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
-import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
+import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.DirectAddress;
@@ -24,29 +32,20 @@ import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
-import org.unicitylabs.sdk.transaction.MintTransactionReason;
-import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
-import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
+import org.unicitylabs.sdk.transaction.MintTransactionReason;
+import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
-import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestTokenData;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Common test flows for token operations, matching TypeScript SDK's CommonTestFlow.

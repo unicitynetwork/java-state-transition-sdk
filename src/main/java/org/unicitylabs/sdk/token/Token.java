@@ -1,7 +1,11 @@
 package org.unicitylabs.sdk.token;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.RequestId;
@@ -12,17 +16,12 @@ import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
+import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransactionData;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.util.VerificationResult;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 public class Token<T extends MintTransactionData<?>> {
 

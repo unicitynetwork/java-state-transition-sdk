@@ -10,7 +10,6 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnmaskedPredicateReference implements IPredicateReference {
 
