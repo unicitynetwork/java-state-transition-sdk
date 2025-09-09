@@ -39,7 +39,7 @@ import org.unicitylabs.sdk.utils.TokenUtils;
  * <p>
  * Everyone's happy :)
  */
-public class BaseEscrowSwapTest {
+public abstract class BaseEscrowSwapTest {
 
   protected StateTransitionClient client;
   private final byte[] ALICE_SECRET = "ALICE_SECRET".getBytes(StandardCharsets.UTF_8);
