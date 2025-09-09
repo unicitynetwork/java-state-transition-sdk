@@ -2,8 +2,9 @@ package org.unicitylabs.sdk.predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.Arrays;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -14,8 +15,6 @@ import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
-import java.util.Arrays;
-import java.util.Objects;
 
 public class BurnPredicate implements Predicate {
   private final DataHash burnReason;
