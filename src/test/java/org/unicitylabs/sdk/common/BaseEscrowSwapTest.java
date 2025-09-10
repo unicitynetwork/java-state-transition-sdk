@@ -4,18 +4,16 @@ import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
-import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
@@ -30,18 +28,20 @@ import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 /**
- * Alice has a nametag and acts as an escrow for the swap
- * Bob transfers token to Alice
- * Carol transfers token to Alice
+ * Alice has a nametag and acts as an escrow for the swap Bob transfers token to Alice Carol
+ * transfers token to Alice
  * <p>
- * Alice transfers Bob's token to Carol
- * Alice transfers Carol's token to Bob
+ * Alice transfers Bob's token to Carol Alice transfers Carol's token to Bob
  * <p>
  * Everyone's happy :)
  */
 public abstract class BaseEscrowSwapTest {
 
   protected StateTransitionClient client;
+  private final TokenType tokenType = new TokenType(HexConverter.decode(
+      "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509"));
+
+
   private final byte[] ALICE_SECRET = "ALICE_SECRET".getBytes(StandardCharsets.UTF_8);
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
   private final byte[] CAROL_SECRET = "CAROL_SECRET".getBytes(StandardCharsets.UTF_8);
@@ -50,15 +50,20 @@ public abstract class BaseEscrowSwapTest {
   private final String BOB_NAMETAG = String.format("BOB_%s", System.currentTimeMillis());
   private final String CAROL_NAMETAG = String.format("CAROL_%s", System.currentTimeMillis());
 
-  private String[] transferToken(Token<?> token, byte[] secret, String nametag) throws Exception {
+  private String[] transferToken(Token<?> token, SigningService signingService, String nametag) throws Exception {
     TransferCommitment commitment = TransferCommitment.create(
         token,
         ProxyAddress.create(nametag),
         randomBytes(32),
         null,
         null,
-        SigningService.createFromSecret(secret, token.getState().getUnlockPredicate().getNonce())
+        signingService
     );
+
+    System.out.println("TRANSFER");
+    System.out.println(commitment.getTransactionData().getSourceState().getUnlockPredicate());
+    System.out.println(commitment.getTransactionData().getSourceState().getUnlockPredicate().calculateHash(token.getId(), token.getType()));
+    System.out.println(commitment.getTransactionData().getSourceState().calculateHash(token.getId(), token.getType()));
 
     SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
     if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
@@ -77,8 +82,7 @@ public abstract class BaseEscrowSwapTest {
         this.client,
         secret,
         new TokenId(randomBytes(32)),
-        new TokenType(HexConverter.decode(
-            "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
+        this.tokenType,
         randomBytes(32),
         null,
         randomBytes(32),
@@ -87,157 +91,119 @@ public abstract class BaseEscrowSwapTest {
     );
   }
 
-  private Token<?> receiveToken(String[] tokenInfo, byte[] secret,
-      NametagWrapper nametagToken) throws Exception {
+  private Token<?> receiveToken(String[] tokenInfo, SigningService signingService,
+      Token<?> nametagToken) throws Exception {
     Token<?> token = UnicityObjectMapper.JSON.readValue(tokenInfo[0], Token.class);
     Transaction<TransferTransactionData> transaction = UnicityObjectMapper.JSON.readValue(
         tokenInfo[1],
         UnicityObjectMapper.JSON.getTypeFactory()
             .constructParametricType(Transaction.class, TransferTransactionData.class));
 
-    byte[] nonce = randomBytes(32);
     TokenState state = new TokenState(
-        MaskedPredicate.create(
-            SigningService.createFromSecret(secret, nonce),
+        UnmaskedPredicate.create(
+            signingService,
             HashAlgorithm.SHA256,
-            nonce
+            transaction.getData().getSalt()
         ),
         null
     );
-
-    nametagToken.updateNameTag(this.client, secret,
-        state.getUnlockPredicate().getReference(token.getType()).toAddress());
 
     return this.client.finalizeTransaction(
         token,
         state,
         transaction,
-        List.of(nametagToken.getNametagToken())
+        List.of(nametagToken)
     );
   }
 
   @Test
   void testEscrow() throws Exception {
     // Make nametags unique for each test run
+    Token<?> bobToken = mintToken(BOB_SECRET);
     String[] bobSerializedData = transferToken(
-        mintToken(BOB_SECRET),
-        BOB_SECRET,
-        ALICE_NAMETAG
-    );
-    String[] carolSerializedData = transferToken(
-        mintToken(CAROL_SECRET),
-        CAROL_SECRET,
+        bobToken,
+        SigningService.createFromSecret(BOB_SECRET, bobToken.getState().getUnlockPredicate().getNonce()),
         ALICE_NAMETAG
     );
 
-    NametagWrapper aliceNametagToken = new NametagWrapper(
+    Token<?> carolToken = mintToken(CAROL_SECRET);
+    String[] carolSerializedData = transferToken(
+        carolToken,
+        SigningService.createFromSecret(CAROL_SECRET, carolToken.getState().getUnlockPredicate().getNonce()),
+        ALICE_NAMETAG
+    );
+
+    Token<?> aliceNametagToken = TokenUtils.mintNametagToken(
+        this.client,
+        ALICE_SECRET,
+        this.tokenType,
+        ALICE_NAMETAG,
+        UnmaskedPredicateReference.create(
+            this.tokenType,
+            SigningService.createFromSecret(ALICE_SECRET, null),
+            HashAlgorithm.SHA256
+        ).toAddress(),
+        randomBytes(32),
+        randomBytes(32)
+    );
+
+    Token<?> aliceBobToken = receiveToken(
+        bobSerializedData,
+        SigningService.createFromSecret(ALICE_SECRET, null),
+        aliceNametagToken
+    );
+    Assertions.assertTrue(aliceBobToken.verify().isSuccessful());
+    Token<?> aliceCarolToken = receiveToken(
+        carolSerializedData,
+        SigningService.createFromSecret(ALICE_SECRET, null),
+        aliceNametagToken
+    );
+    Assertions.assertTrue(aliceCarolToken.verify().isSuccessful());
+
+    Token<?> aliceToCarolToken = receiveToken(
+        transferToken(
+            aliceBobToken,
+            SigningService.createFromSecret(ALICE_SECRET, null),
+            CAROL_NAMETAG
+        ),
+        SigningService.createFromSecret(CAROL_SECRET, null),
         TokenUtils.mintNametagToken(
             this.client,
-            ALICE_SECRET,
-            new TokenType(HexConverter.decode(
-                "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
-            randomBytes(32),
-            null,
-            ALICE_NAMETAG,
-            null,
+            CAROL_SECRET,
+            this.tokenType,
+            CAROL_NAMETAG,
+            UnmaskedPredicateReference.create(
+                this.tokenType,
+                SigningService.createFromSecret(CAROL_SECRET, null),
+                HashAlgorithm.SHA256
+            ).toAddress(),
             randomBytes(32),
             randomBytes(32)
         )
     );
-
-    Token<?> aliceBobToken = receiveToken(bobSerializedData, ALICE_SECRET, aliceNametagToken);
-    Assertions.assertTrue(aliceBobToken.verify().isSuccessful());
-    Token<?> aliceCarolToken = receiveToken(carolSerializedData, ALICE_SECRET, aliceNametagToken);
-    Assertions.assertTrue(aliceCarolToken.verify().isSuccessful());
-
-    Token<?> aliceToCarolToken = receiveToken(
-        transferToken(aliceBobToken, ALICE_SECRET, CAROL_NAMETAG),
-        CAROL_SECRET,
-        new NametagWrapper(
-            TokenUtils.mintNametagToken(
-                this.client,
-                CAROL_SECRET,
-                new TokenType(HexConverter.decode(
-                    "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
-                randomBytes(32),
-                null,
-                CAROL_NAMETAG,
-                null,
-                randomBytes(32),
-                randomBytes(32)
-            )
-        ));
     Assertions.assertTrue(aliceToCarolToken.verify().isSuccessful());
 
     Token<?> aliceToBobToken = receiveToken(
-        transferToken(aliceCarolToken, ALICE_SECRET, BOB_NAMETAG),
-        BOB_SECRET,
-        new NametagWrapper(
-            TokenUtils.mintNametagToken(
-                this.client,
-                BOB_SECRET,
-                new TokenType(HexConverter.decode(
-                    "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509")),
-                randomBytes(32),
-                null,
-                BOB_NAMETAG,
-                null,
-                randomBytes(32),
-                randomBytes(32)
-            )
-        ));
+        transferToken(
+            aliceCarolToken,
+            SigningService.createFromSecret(ALICE_SECRET, null),
+            BOB_NAMETAG
+        ),
+        SigningService.createFromSecret(BOB_SECRET, null),
+        TokenUtils.mintNametagToken(
+            this.client,
+            BOB_SECRET,
+            this.tokenType,
+            BOB_NAMETAG,
+            UnmaskedPredicateReference.create(
+                this.tokenType,
+                SigningService.createFromSecret(BOB_SECRET, null),
+                HashAlgorithm.SHA256
+            ).toAddress(),
+            randomBytes(32),
+            randomBytes(32)
+        )
+    );
     Assertions.assertTrue(aliceToBobToken.verify().isSuccessful());
-  }
-
-  static class NametagWrapper {
-
-    private Token<?> nametagToken;
-
-    public NametagWrapper(Token<?> nametagToken) {
-      this.nametagToken = nametagToken;
-    }
-
-    public Token<?> getNametagToken() {
-      return this.nametagToken;
-    }
-
-    public void updateNameTag(StateTransitionClient client, byte[] secret, Address address)
-        throws Exception {
-      byte[] nonce = randomBytes(32);
-      Predicate predicate = MaskedPredicate.create(
-          SigningService.createFromSecret(secret, nonce),
-          HashAlgorithm.SHA256,
-          nonce
-      );
-
-      TransferCommitment commitment = TransferCommitment.create(
-          this.nametagToken,
-          predicate.getReference(this.nametagToken.getType()).toAddress(),
-          randomBytes(32),
-          new DataHasher(HashAlgorithm.SHA256)
-              .update(address.getAddress().getBytes(StandardCharsets.UTF_8))
-              .digest(),
-          null,
-          SigningService.createFromSecret(
-              secret,
-              this.nametagToken.getState().getUnlockPredicate().getNonce()
-          )
-      );
-
-      SubmitCommitmentResponse response = client.submitCommitment(this.nametagToken, commitment)
-          .get();
-      if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-        throw new RuntimeException("Failed to submit transfer commitment: " + response);
-      }
-
-      this.nametagToken = client.finalizeTransaction(
-          this.nametagToken,
-          new TokenState(predicate, address.getAddress().getBytes(StandardCharsets.UTF_8)),
-          commitment.toTransaction(
-              this.nametagToken,
-              InclusionProofUtils.waitInclusionProof(client, commitment).get()
-          )
-      );
-    }
   }
 }

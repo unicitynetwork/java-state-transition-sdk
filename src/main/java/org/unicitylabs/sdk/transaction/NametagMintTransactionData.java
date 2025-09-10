@@ -14,8 +14,6 @@ public class NametagMintTransactionData<R extends MintTransactionReason> extends
   public NametagMintTransactionData(
       String name,
       TokenType tokenType,
-      byte[] tokenData,
-      TokenCoinData coinData,
       Address recipient,
       byte[] salt,
       Address targetAddress
@@ -23,15 +21,11 @@ public class NametagMintTransactionData<R extends MintTransactionReason> extends
     super(
         TokenId.fromNameTag(name),
         tokenType,
-        tokenData,
-        coinData,
+        targetAddress.getAddress().getBytes(StandardCharsets.UTF_8),
+        null,
         recipient,
         salt,
-        targetAddress == null
-            ? null
-            : new DataHasher(HashAlgorithm.SHA256)
-                .update(targetAddress.getAddress().getBytes(StandardCharsets.UTF_8))
-                .digest(),
+        null,
         null
     );
   }

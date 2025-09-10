@@ -26,7 +26,6 @@ import org.unicitylabs.sdk.predicate.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.token.NameTagTokenState;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
@@ -149,11 +148,11 @@ public class CommonTestFlow {
     );
 
     // Bob prepares to receive the token
-    byte[] bobNonce = randomBytes(32);
-    SigningService bobSigningService = SigningService.createFromSecret(BOB_SECRET, bobNonce);
-    MaskedPredicate bobPredicate = MaskedPredicate.create(bobSigningService, HashAlgorithm.SHA256,
-        bobNonce);
-    DirectAddress bobAddress = bobPredicate.getReference(tokenType).toAddress();
+    DirectAddress bobAddress = UnmaskedPredicateReference.create(
+        tokenType,
+        SigningService.createFromSecret(BOB_SECRET, null),
+        HashAlgorithm.SHA256
+    ).toAddress();
 
     // Bob mints a name tag tokens
 
@@ -170,8 +169,6 @@ public class CommonTestFlow {
         new NametagMintTransactionData<>(
             bobNameTag,
             bobNametagTokenType,
-            new byte[10],
-            null,
             bobNametagAddress,
             randomBytes(32),
             bobAddress
@@ -191,21 +188,30 @@ public class CommonTestFlow {
         ).get()
     );
     Token<?> bobNametagToken = new Token<>(
-        new NameTagTokenState(bobNametagPredicate, bobAddress),
+        new TokenState(bobNametagPredicate, null),
         bobNametagGenesis
     );
 
     // Bob finalizes the token
     Token<?> bobToken = client.finalizeTransaction(
         aliceToken,
-        new TokenState(bobPredicate, bobStateData),
+        new TokenState(
+            UnmaskedPredicate.create(
+                SigningService.createFromSecret(BOB_SECRET, null),
+                HashAlgorithm.SHA256,
+                aliceToBobTransferTransaction.getData().getSalt()
+            ),
+            bobStateData
+        ),
         aliceToBobTransferTransaction,
         List.of(bobNametagToken)
     );
 
     // Verify Bob is now the owner
     assertTrue(bobToken.verify().isSuccessful());
-    assertTrue(bobToken.getState().getUnlockPredicate().isOwner(bobSigningService.getPublicKey()));
+    assertTrue(bobToken.getState().getUnlockPredicate()
+        .isOwner(SigningService.createFromSecret(BOB_SECRET, null).getPublicKey())
+    );
     assertEquals(aliceToken.getId(), bobToken.getId());
     assertEquals(aliceToken.getType(), bobToken.getType());
 
@@ -223,7 +229,7 @@ public class CommonTestFlow {
         randomBytes(32),
         null,
         null,
-        bobSigningService
+        SigningService.createFromSecret(BOB_SECRET, null)
     );
     SubmitCommitmentResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
         bobToken,
@@ -289,58 +295,6 @@ public class CommonTestFlow {
         carolToBobInclusionProof
     );
 
-    byte[] bobNametagSecondUseNonce = randomBytes(32);
-    NameTagTokenState nametagSecondUseTokenState = new NameTagTokenState(
-        MaskedPredicate.create(
-            SigningService.createFromSecret(BOB_SECRET, bobNametagSecondUseNonce),
-            HashAlgorithm.SHA256,
-            bobNametagSecondUseNonce
-        ),
-        UnmaskedPredicateReference.create(
-            carolToken.getType(),
-            SigningService.createFromSecret(BOB_SECRET, null),
-            HashAlgorithm.SHA256
-        ).toAddress()
-    );
-
-    TransferCommitment nametagSecondUseCommitment = TransferCommitment.create(
-        bobNametagToken,
-        nametagSecondUseTokenState.getUnlockPredicate().getReference(bobNametagToken.getType())
-            .toAddress(),
-        randomBytes(32),
-        new DataHasher(HashAlgorithm.SHA256)
-            .update(
-                nametagSecondUseTokenState.getAddress()
-                    .getAddress().getBytes(StandardCharsets.UTF_8)
-            )
-            .digest(),
-        null,
-        SigningService.createFromSecret(
-            BOB_SECRET,
-            bobNametagToken.getState().getUnlockPredicate().getNonce()
-        )
-    );
-    SubmitCommitmentResponse nametagSecondUseResponse = client.submitCommitment(
-        bobNametagToken,
-        nametagSecondUseCommitment
-    ).get();
-
-    if (nametagSecondUseResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-      throw new Exception(String.format("Failed to submit nametag transfer commitment: %s",
-          nametagMintResponse.getStatus()));
-    }
-
-    Token<?> bobSecondUseNametag = client.finalizeTransaction(
-        bobNametagToken,
-        nametagSecondUseTokenState,
-        nametagSecondUseCommitment.toTransaction(
-            bobNametagToken,
-            InclusionProofUtils.waitInclusionProof(client, nametagSecondUseCommitment).get()
-        )
-    );
-
-    Assertions.assertTrue(bobSecondUseNametag.verify().isSuccessful());
-
     Token<?> carolToBobToken = client.finalizeTransaction(
         carolToken,
         new TokenState(
@@ -352,7 +306,7 @@ public class CommonTestFlow {
             null
         ),
         carolToBobTransaction,
-        List.of(bobSecondUseNametag)
+        List.of(bobNametagToken)
     );
 
     assertTrue(carolToBobToken.verify().isSuccessful());
