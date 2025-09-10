@@ -11,7 +11,6 @@ import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;

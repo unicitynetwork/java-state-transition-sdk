@@ -29,7 +29,7 @@ import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 public class FunctionalUnsignedPredicateDoubleSpendTest {
-  protected StateTransitionClient client = new StateTransitionClient(new TestAggregatorClient());
+  protected final StateTransitionClient client = new StateTransitionClient(new TestAggregatorClient());
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
   private String[] transferToken(Token<?> token, byte[] secret, Address address) throws Exception {
@@ -103,11 +103,17 @@ public class FunctionalUnsignedPredicateDoubleSpendTest {
         HashAlgorithm.SHA256
     );
 
-    Assertions.assertTrue(receiveToken(transferToken(token, BOB_SECRET, reference.toAddress()), BOB_SECRET).verify().isSuccessful());
+    Assertions.assertTrue(
+        receiveToken(
+            transferToken(token, BOB_SECRET, reference.toAddress()),
+            BOB_SECRET
+        ).verify().isSuccessful());
     RuntimeException ex = Assertions.assertThrows(
         RuntimeException.class,
-        () -> receiveToken(transferToken(token, BOB_SECRET, reference.toAddress()),
-            BOB_SECRET).verify().isSuccessful()
+        () -> receiveToken(
+            transferToken(token, BOB_SECRET, reference.toAddress()),
+            BOB_SECRET
+        ).verify()
     );
 
     Assertions.assertInstanceOf(BranchExistsException.class, ex.getCause());

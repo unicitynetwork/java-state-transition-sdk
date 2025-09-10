@@ -21,13 +21,13 @@ public class MerkleTreePathTest {
 
   @Test
   public void testConstructorThrowsOnNullArguments() {
-    Exception exception = assertThrows(NullPointerException.class, () -> {
-      new SparseMerkleTreePath(null, null);
-    });
+    Exception exception = assertThrows(NullPointerException.class,
+        () -> new SparseMerkleTreePath(null, null)
+    );
     assertEquals("rootHash cannot be null", exception.getMessage());
-    exception = assertThrows(NullPointerException.class, () -> {
-      new SparseMerkleTreePath(new DataHash(HashAlgorithm.SHA256, new byte[32]), null);
-    });
+    exception = assertThrows(NullPointerException.class,
+        () -> new SparseMerkleTreePath(new DataHash(HashAlgorithm.SHA256, new byte[32]), null)
+    );
     assertEquals("steps cannot be null", exception.getMessage());
   }
 

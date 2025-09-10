@@ -33,9 +33,9 @@ public class DataHashTest {
         objectMapper.readValue(
             "\"00000000000000000000000000000000000000000000000000000000000000000000\"",
             DataHash.class));
-    JsonMappingException exception = Assertions.assertThrows(JsonMappingException.class,
+    Assertions.assertThrows(JsonMappingException.class,
         () -> objectMapper.readValue("[]", DataHash.class));
-    exception = Assertions.assertThrows(JsonMappingException.class,
+    Assertions.assertThrows(JsonMappingException.class,
         () -> objectMapper.readValue("\"AABBGG\"", DataHash.class));
   }
 }

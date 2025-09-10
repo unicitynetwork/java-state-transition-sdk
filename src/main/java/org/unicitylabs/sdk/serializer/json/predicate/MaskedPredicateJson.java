@@ -52,7 +52,7 @@ public class MaskedPredicateJson {
     @Override
     public MaskedPredicate deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
-      PredicateType type = null;
+      PredicateType type;
       byte[] publicKey = null;
       String algorithm = null;
       HashAlgorithm hashAlgorithm = null;
