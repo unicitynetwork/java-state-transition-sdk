@@ -82,17 +82,17 @@ public class TokenSplitBuilderTest {
 
     TokenSplitBuilder builder = new TokenSplitBuilder();
 
-    Assertions.assertThrows(IllegalArgumentException.class, () -> {
-      builder.createToken(
-          new TokenId(UUID.randomUUID().toString().getBytes()),
-          token.getType(),
-          null,
-          new TokenCoinData(Map.of()),
-          predicate.getReference(token.getType()).toAddress(),
-          new byte[20],
-          null
-      );
-    });
+    Assertions.assertThrows(IllegalArgumentException.class,
+        () -> builder.createToken(
+            new TokenId(UUID.randomUUID().toString().getBytes()),
+            token.getType(),
+            null,
+            new TokenCoinData(Map.of()),
+            predicate.getReference(token.getType()).toAddress(),
+            new byte[20],
+            null
+        )
+    );
 
     builder.createToken(
         new TokenId(UUID.randomUUID().toString().getBytes()),
