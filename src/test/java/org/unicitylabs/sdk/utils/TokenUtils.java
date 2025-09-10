@@ -11,7 +11,6 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.MaskedPredicate;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.token.NameTagTokenState;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
@@ -106,8 +105,6 @@ public class TokenUtils {
         client,
         secret,
         new TokenType(randomBytes(32)),
-        randomBytes(32),
-        randomCoinData(2),
         nametag,
         targetAddress,
         randomBytes(32),
@@ -119,8 +116,6 @@ public class TokenUtils {
       StateTransitionClient client,
       byte[] secret,
       TokenType tokenType,
-      byte[] tokenData,
-      TokenCoinData coinData,
       String nametag,
       Address targetAddress,
       byte[] nonce,
@@ -135,14 +130,11 @@ public class TokenUtils {
     );
 
     Address address = predicate.getReference(tokenType).toAddress();
-    TokenState tokenState = new NameTagTokenState(predicate, targetAddress);
 
     MintCommitment<NametagMintTransactionData<MintTransactionReason>> commitment = MintCommitment.create(
         new NametagMintTransactionData<>(
             nametag,
             tokenType,
-            tokenData,
-            coinData,
             address,
             salt,
             targetAddress
@@ -166,7 +158,7 @@ public class TokenUtils {
 
     // Create mint transaction
     return new Token<>(
-        tokenState,
+        new TokenState(predicate, null),
         commitment.toTransaction(inclusionProof)
     );
   }

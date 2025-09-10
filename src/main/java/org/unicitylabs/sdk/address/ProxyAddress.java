@@ -64,12 +64,12 @@ public class ProxyAddress implements Address {
     Address targetAddress = inputAddress;
     while (targetAddress.getScheme() != AddressScheme.DIRECT) {
       Token<?> nametag = nametagMap.get(targetAddress);
-      if (nametag == null || nametag.getState().getData().isEmpty()) {
+      if (nametag == null || nametag.getData().isEmpty()) {
         return null;
       }
 
       targetAddress = AddressFactory.createAddress(
-          new String(nametag.getState().getData().get(), StandardCharsets.UTF_8));
+          new String(nametag.getData().get(), StandardCharsets.UTF_8));
     }
 
     return targetAddress;

@@ -41,25 +41,21 @@ public class TokenTest {
     );
 
     byte[] nametagNonce = TestUtils.randomBytes(32);
-    NameTagTokenState nametagTokenState = new NameTagTokenState(
-        MaskedPredicate.create(
-            SigningService.createFromSecret(TestUtils.randomBytes(32), nametagNonce),
-            HashAlgorithm.SHA256,
-            nametagNonce),
-        DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)))
-    );
     MintTransactionData<?> nametagGenesisData = new NametagMintTransactionData<>(
         UUID.randomUUID().toString(),
         new TokenType(TestUtils.randomBytes(32)),
-        TestUtils.randomBytes(5),
-        null,
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32))),
         TestUtils.randomBytes(32),
-        nametagTokenState.getAddress()
+        DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)))
     );
 
     Token<?> nametagToken = new Token<>(
-        nametagTokenState,
+        new TokenState(
+            MaskedPredicate.create(
+                SigningService.createFromSecret(TestUtils.randomBytes(32), nametagNonce),
+                HashAlgorithm.SHA256,
+                nametagNonce),
+            null),
         new Transaction<>(
             nametagGenesisData,
             new InclusionProof(
