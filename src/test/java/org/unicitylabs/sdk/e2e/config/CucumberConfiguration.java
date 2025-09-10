@@ -1,6 +1,6 @@
-package com.unicity.sdk.e2e.config;
+package org.unicitylabs.sdk.e2e.config;
 
-import com.unicity.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.e2e.context.TestContext;
 import io.cucumber.java.Before;
 import io.cucumber.java.After;
 

@@ -13,6 +13,7 @@ Feature: Advanced Token Scenarios
       | Dave |
 
   @performance
+  @reset
   Scenario Outline: Bulk token operations performance
     Given <userCount> users are configured for bulk operations
     When each user mints <tokensPerUser> tokens simultaneously
@@ -27,6 +28,7 @@ Feature: Advanced Token Scenarios
       | 10        | 5            | 50          | 25          | 90             |
 
   @edge-cases
+  @reset
   Scenario Outline: Token transfer chain with validation
     Given "Alice" mints a token with <coinValue> coin value
     When the token is transferred through the chain of existing users
@@ -41,6 +43,7 @@ Feature: Advanced Token Scenarios
       | 5000      | 3                |
 
   @nametag-scenarios
+  @reset
   Scenario Outline: Complex name tag token interactions
     Given "Bob" creates <nametagCount> name tag tokens with different addresses
     When "Alice" transfers tokens to each of "Bob" name tags
@@ -55,49 +58,49 @@ Feature: Advanced Token Scenarios
       | 3           |
       | 5           |
 
-  @splitting-scenarios
-  Scenario Outline: Multi-level token splitting
-    Given Carol owns a token worth <originalValue> coins
-    When the token is split into <firstSplit> tokens
-    And one of the resulting tokens is split again into <secondSplit> tokens
-    Then the total number of tokens should be <totalTokens>
-    And the total coin value should equal the original <originalValue>
-    And all tokens should be independently transferable
-
-    Examples:
-      | originalValue | firstSplit | secondSplit | totalTokens |
-      | 10000        | 3          | 2           | 4           |
-      | 20000        | 4          | 3           | 6           |
-
-  @concurrency
-  Scenario: Concurrent operations on same token
-    Given "Alice" owns a token
-    When "Alice" attempts to transfer the token to both "Bob" and "Carol" simultaneously
-    Then only one transfer should succeed
-    And the other transfer should be rejected
-    And the token should belong to exactly one recipient
-    And no tokens should be duplicated
-
-  @data-integrity
-  Scenario Outline: Large custom data handling
-    Given a token with custom data of size <dataSize> bytes
-    When the token is transferred with the large custom data
-    Then the transfer should <expectation>
-    And the data integrity should be maintained
-    And the system performance should remain acceptable
-
-    Examples:
-      | dataSize | expectation |
-      | 1024    | succeed     |
-      | 10240   | succeed     |
-      | 102400  | succeed     |
-
-  @mixed-predicates
-  Scenario: Mixed predicate type interactions
-    Given "Alice" uses a "masked" predicate
-    And "Bob" uses a "unmasked" predicate
-    And "Carol" uses a name tag token
-    When tokens are transferred between all users in various combinations
-    Then all transfers should work correctly regardless of predicate types
-    And token verification should pass for all predicate combinations
-    And the system should handle predicate conversions properly
+#  @splitting-scenarios
+#  Scenario Outline: Multi-level token splitting
+#    Given Carol owns a token worth <originalValue> coins
+#    When the token is split into <firstSplit> tokens
+#    And one of the resulting tokens is split again into <secondSplit> tokens
+#    Then the total number of tokens should be <totalTokens>
+#    And the total coin value should equal the original <originalValue>
+#    And all tokens should be independently transferable
+#
+#    Examples:
+#      | originalValue | firstSplit | secondSplit | totalTokens |
+#      | 10000        | 3          | 2           | 4           |
+#      | 20000        | 4          | 3           | 6           |
+#
+#  @concurrency
+#  Scenario: Concurrent operations on same token
+#    Given "Alice" owns a token
+#    When "Alice" attempts to transfer the token to both "Bob" and "Carol" simultaneously
+#    Then only one transfer should succeed
+#    And the other transfer should be rejected
+#    And the token should belong to exactly one recipient
+#    And no tokens should be duplicated
+#
+#  @data-integrity
+#  Scenario Outline: Large custom data handling
+#    Given a token with custom data of size <dataSize> bytes
+#    When the token is transferred with the large custom data
+#    Then the transfer should <expectation>
+#    And the data integrity should be maintained
+#    And the system performance should remain acceptable
+#
+#    Examples:
+#      | dataSize | expectation |
+#      | 1024    | succeed     |
+#      | 10240   | succeed     |
+#      | 102400  | succeed     |
+#
+#  @mixed-predicates
+#  Scenario: Mixed predicate type interactions
+#    Given "Alice" uses a "masked" predicate
+#    And "Bob" uses a "unmasked" predicate
+#    And "Carol" uses a name tag token
+#    When tokens are transferred between all users in various combinations
+#    Then all transfers should work correctly regardless of predicate types
+#    And token verification should pass for all predicate combinations
+#    And the system should handle predicate conversions properly

@@ -3,25 +3,21 @@ package org.unicitylabs.sdk.utils;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 
-import com.unicity.sdk.StateTransitionClient;
-import com.unicity.sdk.address.Address;
-import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.api.SubmitCommitmentResponse;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.hash.DataHasher;
-import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.MaskedPredicate;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.token.TokenState;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.token.fungible.CoinId;
-import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.transaction.*;
-import com.unicity.sdk.util.InclusionProofUtils;
-import com.unicity.sdk.utils.TestTokenData;
+import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.address.Address;
+import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.*;
+import org.unicitylabs.sdk.util.InclusionProofUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -225,26 +221,12 @@ public class TestUtils {
         return token.getState().getUnlockPredicate().isOwner(signingService.getPublicKey());
     }
 
-    /**
-     * Creates a request ID for commitment operations
-     */
-//    public static var createRequestId(SigningService signingService, DataHash stateHash) {
-//        return com.unicity.sdk.api.RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
-//    }
-//
-//    /**
-//     * Creates an authenticator for commitment operations
-//     */
-//    public static var createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
-//        return com.unicity.sdk.api.Authenticator.create(signingService, txDataHash, stateHash);
-//    }
-
-    public static com.unicity.sdk.api.RequestId createRequestId(SigningService signingService, DataHash stateHash) {
-        return com.unicity.sdk.api.RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
+    public static org.unicitylabs.sdk.api.RequestId createRequestId(SigningService signingService, DataHash stateHash) {
+        return org.unicitylabs.sdk.api.RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
     }
 
-    public static com.unicity.sdk.api.Authenticator createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
-        return com.unicity.sdk.api.Authenticator.create(signingService, txDataHash, stateHash);
+    public static org.unicitylabs.sdk.api.Authenticator createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
+        return org.unicitylabs.sdk.api.Authenticator.create(signingService, txDataHash, stateHash);
     }
 
     /**

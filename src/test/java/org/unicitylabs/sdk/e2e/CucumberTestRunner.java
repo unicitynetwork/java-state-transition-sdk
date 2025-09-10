@@ -1,4 +1,4 @@
-package com.unicity.sdk.e2e;
+package org.unicitylabs.sdk.e2e;
 
 import io.cucumber.junit.platform.engine.Constants;
 import org.junit.platform.suite.api.ConfigurationParameter;
@@ -14,7 +14,7 @@ import org.junit.platform.suite.api.Suite;
 @Suite
 @IncludeEngines("cucumber")
 @SelectClasspathResource("features")
-@ConfigurationParameter(key = Constants.GLUE_PROPERTY_NAME, value = "com.unicity.sdk.e2e.steps,com.unicity.sdk.e2e.steps.shared,com.unicity.sdk.e2e.config")
+@ConfigurationParameter(key = Constants.GLUE_PROPERTY_NAME, value = "org.unicitylabs.sdk.e2e.steps,org.unicitylabs.sdk.e2e.steps.shared,org.unicitylabs.sdk.e2e.config")
 @ConfigurationParameter(key = Constants.PLUGIN_PROPERTY_NAME, value = "pretty,html:target/cucumber-reports,json:target/cucumber-reports/Cucumber.json,junit:target/cucumber-reports/Cucumber.xml")
 @ConfigurationParameter(key = Constants.FILTER_TAGS_PROPERTY_NAME, value = "not @ignore")
 @ConfigurationParameter(key = Constants.EXECUTION_DRY_RUN_PROPERTY_NAME, value = "false")

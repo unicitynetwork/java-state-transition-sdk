@@ -1,31 +1,31 @@
-package com.unicity.sdk.e2e.steps.shared;
+package org.unicitylabs.sdk.e2e.steps.shared;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.unicity.sdk.StateTransitionClient;
-import com.unicity.sdk.TestAggregatorClient;
-import com.unicity.sdk.address.Address;
-import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.address.ProxyAddress;
-import com.unicity.sdk.api.AggregatorClient;
-import com.unicity.sdk.api.SubmitCommitmentResponse;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
-import com.unicity.sdk.e2e.config.CucumberConfiguration;
-import com.unicity.sdk.e2e.context.TestContext;
-import com.unicity.sdk.predicate.UnmaskedPredicate;
-import com.unicity.sdk.serializer.UnicityObjectMapper;
-import com.unicity.sdk.transaction.*;
-import com.unicity.sdk.utils.TestUtils;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.MaskedPredicate;
-import com.unicity.sdk.predicate.UnmaskedPredicateReference;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.token.TokenState;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.util.InclusionProofUtils;
+import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.TestAggregatorClient;
+import org.unicitylabs.sdk.address.Address;
+import org.unicitylabs.sdk.address.DirectAddress;
+import org.unicitylabs.sdk.address.ProxyAddress;
+import org.unicitylabs.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
+import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.transaction.*;
+import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.util.InclusionProofUtils;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
@@ -41,11 +41,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.unicity.sdk.utils.TestUtils.randomBytes;
-import static com.unicity.sdk.utils.TestUtils.randomCoinData;
+import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
+import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.unicity.sdk.e2e.steps.shared.StepHelper;
+import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
 
 
 /**
@@ -256,7 +256,7 @@ public class SharedStepDefinitions {
         ProxyAddress proxyAddress = ProxyAddress.create(nameTagToken.getId());
 
         String customData = "Transfer from " + fromUser + " to " + toUser;
-        helper.transferToken(fromUser, toUser, sourceToken, proxyAddress, customData);
+        helper.transferTokenAndFinalize(fromUser, toUser, sourceToken, proxyAddress, customData);
     }
 
     @When("{string} transfers the token to {string} using an unmasked predicate")
@@ -273,7 +273,7 @@ public class SharedStepDefinitions {
 
         DirectAddress toAddress = userPredicate.getReference(sourceToken.getType()).toAddress();
 
-        helper.transferToken(fromUser, toUser, sourceToken, toAddress, null);
+        helper.transferTokenAndFinalize(fromUser, toUser, sourceToken, toAddress, null);
     }
 
     @And("{string} finalizes the token with custom data {string}")
@@ -302,7 +302,6 @@ public class SharedStepDefinitions {
         Token token = context.getUserToken(userName);
         context.setCurrentUser(userName);
         SigningService signingService = context.getUserSigningServices().get(userName);
-
         assertTrue(token.verify().isSuccessful(), "Token should be valid");
         assertTrue(token.getState().getUnlockPredicate().isOwner(signingService.getPublicKey()),
                 userName + " should own the token");

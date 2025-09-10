@@ -1,8 +1,8 @@
-package com.unicity.sdk.utils.helpers;
+package org.unicitylabs.sdk.utils.helpers;
 
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.TransferTransactionData;
 
 public class PendingTransfer {
     private final Token sourceToken;

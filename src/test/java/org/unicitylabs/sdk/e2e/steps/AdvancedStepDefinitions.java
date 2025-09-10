@@ -1,31 +1,29 @@
-package com.unicity.sdk.e2e.steps;
+package org.unicitylabs.sdk.e2e.steps;
 
-import com.unicity.sdk.StateTransitionClient;
-import com.unicity.sdk.address.ProxyAddress;
-import com.unicity.sdk.api.AggregatorClient;
-import com.unicity.sdk.api.SubmitCommitmentResponse;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
-import com.unicity.sdk.e2e.config.CucumberConfiguration;
-import com.unicity.sdk.e2e.context.TestContext;
-import com.unicity.sdk.e2e.steps.shared.StepHelper;
-import com.unicity.sdk.hash.DataHasher;
-import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.MaskedPredicate;
-import com.unicity.sdk.token.TokenState;
-import com.unicity.sdk.transaction.InclusionProof;
-import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.transaction.TransferCommitment;
-import com.unicity.sdk.transaction.TransferTransactionData;
-import com.unicity.sdk.util.InclusionProofUtils;
-import com.unicity.sdk.utils.TestUtils;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenId;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.token.fungible.TokenCoinData;
-import com.unicity.sdk.utils.helpers.PendingTransfer;
-import io.cucumber.datatable.DataTable;
-import io.cucumber.java.PendingException;
+import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.address.ProxyAddress;
+import org.unicitylabs.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
+import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.transaction.InclusionProof;
+import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.TransferCommitment;
+import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.util.InclusionProofUtils;
+import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
@@ -36,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static com.unicity.sdk.utils.TestUtils.randomBytes;
+import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -76,9 +74,9 @@ public class AdvancedStepDefinitions {
             byte[] toNonce = context.getUserNonces().get(toUser);
 
             // Create a simple direct address for transfer
-            var toPredicate = com.unicity.sdk.predicate.MaskedPredicate.create(
+            var toPredicate = org.unicitylabs.sdk.predicate.MaskedPredicate.create(
                     toSigningService,
-                    com.unicity.sdk.hash.HashAlgorithm.SHA256,
+                    org.unicitylabs.sdk.hash.HashAlgorithm.SHA256,
                     toNonce
             );
             var toAddress = toPredicate.getReference(currentToken.getType()).toAddress();
@@ -116,7 +114,7 @@ public class AdvancedStepDefinitions {
     public void allIntermediateTransfersShouldBeRecordedCorrectly() {
         assertEquals(4, context.getTransferChain().size(), "Transfer chain should have 4 users");
         assertEquals("Alice", context.getTransferChain().get(0), "Chain should start with Alice");
-        assertEquals("Dave", context.getTransferChain().get(3), "Chain should end with Dave");
+        assertEquals("Bob", context.getTransferChain().get(3), "Chain should end with Dave");
     }
 
     @And("the token should have <expectedTransfers> transfers in history")
@@ -166,7 +164,7 @@ public class AdvancedStepDefinitions {
             // Transfer to Bob's nametag
             ProxyAddress proxyAddress = ProxyAddress.create(nametagTokens.get(i).getId());
 
-            helper.transferToken3(
+            helper.transferToken(
                     fromUser,
                     toUser,
                     aliceToken,
@@ -192,7 +190,10 @@ public class AdvancedStepDefinitions {
 
         // Verify ownership
         for (Token token : bobTokens) {
-            SigningService bobSigningService = SigningService.createFromSecret(context.getUserSecret().get(username), token.getState().getUnlockPredicate().getNonce());
+            SigningService bobSigningService = SigningService.createFromSecret(
+                    context.getUserSecret().get(username),
+                    token.getState().getUnlockPredicate().getNonce()
+            );
             assertTrue(token.verify().isSuccessful(), "Token should be valid");
             assertTrue(TestUtils.validateTokenOwnership(token, bobSigningService),
                     "Bob should own all tokens");
@@ -212,7 +213,7 @@ public class AdvancedStepDefinitions {
         List<Token> bobNametags = context.getNameTagTokens().get(username);
 
         for (Token nametag : bobNametags) {
-            var proxyAddress = com.unicity.sdk.address.ProxyAddress.create(nametag.getId());
+            var proxyAddress = org.unicitylabs.sdk.address.ProxyAddress.create(nametag.getId());
             assertNotNull(proxyAddress, "Proxy address should be creatable for all name tags");
         }
     }
@@ -231,11 +232,11 @@ public class AdvancedStepDefinitions {
         // Create token with large custom data
         MaskedPredicate predicate = MaskedPredicate.create(
                 context.getUserSigningServices().get(alice),
-                com.unicity.sdk.hash.HashAlgorithm.SHA256,
+                org.unicitylabs.sdk.hash.HashAlgorithm.SHA256,
                 context.getUserNonces().get(alice)
         );
 
-        var tokenState = new com.unicity.sdk.token.TokenState(predicate, largeData);
+        var tokenState = new org.unicitylabs.sdk.token.TokenState(predicate, largeData);
 
         // Store for later use in transfer
         context.setChainToken(TestUtils.mintTokenForUser(

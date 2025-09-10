@@ -1,32 +1,29 @@
-package com.unicity.sdk.e2e.steps.shared;
+package org.unicitylabs.sdk.e2e.steps.shared;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.unicity.sdk.address.Address;
-import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.address.ProxyAddress;
-import com.unicity.sdk.api.SubmitCommitmentResponse;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
-import com.unicity.sdk.e2e.config.CucumberConfiguration;
-import com.unicity.sdk.e2e.context.TestContext;
-import com.unicity.sdk.hash.DataHash;
-import com.unicity.sdk.hash.DataHasher;
-import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.MaskedPredicate;
-import com.unicity.sdk.serializer.UnicityObjectMapper;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenState;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.transaction.*;
-import com.unicity.sdk.util.InclusionProofUtils;
-import com.unicity.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.address.Address;
+import org.unicitylabs.sdk.address.DirectAddress;
+import org.unicitylabs.sdk.address.ProxyAddress;
+import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
+import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.*;
+import org.unicitylabs.sdk.util.InclusionProofUtils;
+import org.unicitylabs.sdk.utils.TestUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
-import static com.unicity.sdk.utils.TestUtils.randomBytes;
+import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 
 
 public class StepHelper {
@@ -57,7 +54,7 @@ public class StepHelper {
 
         DirectAddress userAddress = userPredicate.getReference(type).toAddress();
 
-        var nametagMintCommitment = com.unicity.sdk.transaction.MintCommitment.create(
+        var nametagMintCommitment = org.unicitylabs.sdk.transaction.MintCommitment.create(
                 new NametagMintTransactionData<>(
                         nametag,
                         nametagTokenType,
@@ -78,12 +75,12 @@ public class StepHelper {
         Transaction<? extends MintTransactionData<?>> nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
 
         return new Token(
-                new com.unicity.sdk.token.NameTagTokenState(nametagPredicate, userAddress),
+                new org.unicitylabs.sdk.token.NameTagTokenState(nametagPredicate, userAddress),
                 nametagGenesis
         );
     }
 
-    public void transferToken(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
+    public void transferTokenAndFinalize(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
         SigningService fromSigningService = context.getUserSigningServices().get(fromUser);
 
         // Create data hash and state data if custom data provided
@@ -118,15 +115,6 @@ public class StepHelper {
                 token,
                 inclusionProof
         );
-
-        String txJson = UnicityObjectMapper.JSON.writerWithDefaultPrettyPrinter().writeValueAsString(transferTransaction);
-        System.out.println(txJson);
-
-        Transaction<TransferTransactionData> txOnReceipient = UnicityObjectMapper.JSON.readValue(
-                txJson,
-                new TypeReference<Transaction<TransferTransactionData>>() {}
-        );
-
 
         // Finalize transaction with custom data in the token state
         List<Token<?>> additionalTokens = new ArrayList<>();
@@ -145,155 +133,7 @@ public class StepHelper {
         context.addUserToken(toUser, finalizedToken);
     }
 
-    public void transferToken2(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
-        SigningService fromSigningService = context.getUserSigningServices().get(fromUser);
-
-        // Create data hash and state data if custom data provided
-        DataHash dataHash = null;
-        byte[] stateData = null;
-        if (customData != null && !customData.isEmpty()) {
-            stateData = customData.getBytes(StandardCharsets.UTF_8);
-            dataHash = TestUtils.hashData(stateData);
-        }
-
-        // Submit transfer commitment
-        TransferCommitment transferCommitment = TransferCommitment.create(
-                token,
-                toAddress,
-                randomBytes(32),
-                dataHash,
-                null,
-                fromSigningService
-        );
-
-        SubmitCommitmentResponse response = context.getClient().submitCommitment(token, transferCommitment).get();
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-            throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
-        }
-
-        // Wait for inclusion proof
-        InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
-                context.getClient(),
-                transferCommitment
-        ).get();
-        Transaction<TransferTransactionData> transferTransaction = transferCommitment.toTransaction(
-                token,
-                inclusionProof
-        );
-
-        String txJson = UnicityObjectMapper.JSON.writerWithDefaultPrettyPrinter().writeValueAsString(transferTransaction);
-        System.out.println(txJson);
-
-
-
-
-        Transaction<TransferTransactionData> txOnReceipient = UnicityObjectMapper.JSON.readValue(
-                txJson,
-                new TypeReference<Transaction<TransferTransactionData>>() {}
-        );
-
-
-
-
-
-
-
-        byte[] nonce = randomBytes(32);
-        TokenState state = new TokenState(
-                MaskedPredicate.create(
-                        SigningService.createFromSecret(context.getUserSecret().get(toUser), nonce),
-                        HashAlgorithm.SHA256,
-                        nonce
-                ),
-                null
-        );
-        Address address = state.getUnlockPredicate()
-                .getReference(
-                        token.getType()
-                )
-                .toAddress();
-
-        byte[] nametagNonce = randomBytes(32);
-        TokenState nametagTokenState = new TokenState(
-                MaskedPredicate.create(
-                        SigningService.createFromSecret(context.getUserSecret().get(toUser), nametagNonce),
-                        HashAlgorithm.SHA256,
-                        nametagNonce
-                ),
-                address.getAddress().getBytes(StandardCharsets.UTF_8)
-        );
-
-
-        Token currentNameTagToken = context.getNameTagToken(toUser);
-        List<Token> nametagTokens = context.getNameTagTokens().get(toUser);
-        for (int i = 0; i < nametagTokens.size(); i++) {
-            String actualNametagAddress = txOnReceipient.getData().getRecipient().getAddress();
-            String expectedProxyAddress = ProxyAddress.create(nametagTokens.get(i).getId()).getAddress();
-
-            if(actualNametagAddress.equalsIgnoreCase(expectedProxyAddress)){
-                currentNameTagToken = nametagTokens.get(i);
-            }
-        }
-
-        TransferCommitment nametagCommitment = TransferCommitment.create(
-                currentNameTagToken,
-                nametagTokenState.getUnlockPredicate().getReference(currentNameTagToken.getType()).toAddress(),
-                randomBytes(32),
-                new DataHasher(HashAlgorithm.SHA256)
-                        .update(address.getAddress().getBytes(StandardCharsets.UTF_8))
-                        .digest(),
-                null,
-                SigningService.createFromSecret(
-                        context.getUserSecret().get(toUser),
-                        currentNameTagToken.getState().getUnlockPredicate().getNonce()
-                )
-        );
-
-        SubmitCommitmentResponse nametagTransferResponse = context.getClient()
-                .submitCommitment(currentNameTagToken, nametagCommitment)
-                .get();
-        if (nametagTransferResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-            throw new Exception(String.format("Failed to submit nametag transfer commitment: %s",
-                    response.getStatus()));
-        }
-
-        currentNameTagToken = context.getClient().finalizeTransaction(
-                currentNameTagToken,
-                nametagTokenState,
-                nametagCommitment.toTransaction(
-                        currentNameTagToken,
-                        InclusionProofUtils.waitInclusionProof(context.getClient(), nametagCommitment).get()
-                )
-        );
-
-
-        // Finalize transaction with custom data in the token state
-        List<Token<?>> additionalTokens = new ArrayList<>();
-        Token nameTagToken = currentNameTagToken;
-        if (nameTagToken != null) {
-            additionalTokens.add(nameTagToken);
-        }
-
-        TokenState recipientState = new TokenState(
-                MaskedPredicate.create(
-                        SigningService.createFromSecret(context.getUserSecret().get(toUser), nonce),
-                        HashAlgorithm.SHA256,
-                        nonce
-                ),
-                stateData
-        );
-
-        Token finalizedToken = context.getClient().finalizeTransaction(
-                token,
-                recipientState,
-                transferTransaction,
-                additionalTokens
-        );
-
-        context.addUserToken(toUser, finalizedToken);
-    }
-
-    public void transferToken3(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
+    public void transferToken(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
         SigningService fromSigningService = context.getUserSigningServices().get(fromUser);
 
         // Create data hash and state data if custom data provided

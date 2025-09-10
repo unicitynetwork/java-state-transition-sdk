@@ -1,24 +1,24 @@
-package com.unicity.sdk.e2e.context;
+package org.unicitylabs.sdk.e2e.context;
 
-import com.unicity.sdk.StateTransitionClient;
-import com.unicity.sdk.TestAggregatorClient;
-import com.unicity.sdk.address.DirectAddress;
-import com.unicity.sdk.api.AggregatorClient;
-import com.unicity.sdk.api.SubmitCommitmentResponse;
-import com.unicity.sdk.api.SubmitCommitmentStatus;
-import com.unicity.sdk.hash.HashAlgorithm;
-import com.unicity.sdk.predicate.MaskedPredicate;
-import com.unicity.sdk.predicate.Predicate;
-import com.unicity.sdk.signing.SigningService;
-import com.unicity.sdk.token.Token;
-import com.unicity.sdk.token.TokenType;
-import com.unicity.sdk.transaction.InclusionProof;
-import com.unicity.sdk.transaction.MintTransactionData;
-import com.unicity.sdk.transaction.Transaction;
-import com.unicity.sdk.transaction.TransferTransactionData;
-import com.unicity.sdk.util.InclusionProofUtils;
-import com.unicity.sdk.utils.TestUtils;
-import com.unicity.sdk.utils.helpers.PendingTransfer;
+import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.TestAggregatorClient;
+import org.unicitylabs.sdk.address.DirectAddress;
+import org.unicitylabs.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.InclusionProof;
+import org.unicitylabs.sdk.transaction.MintTransactionData;
+import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.util.InclusionProofUtils;
+import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
 import io.cucumber.java.en.Given;
 
 import java.util.*;
@@ -49,8 +49,8 @@ public class TestContext {
     private Long blockHeight;
     private byte[] randomSecret;
     private byte[] stateBytes;
-    private com.unicity.sdk.hash.DataHash stateHash;
-    private com.unicity.sdk.hash.DataHash txDataHash;
+    private org.unicitylabs.sdk.hash.DataHash stateHash;
+    private org.unicitylabs.sdk.hash.DataHash txDataHash;
     private SubmitCommitmentResponse commitmentResponse;
     private long submissionDuration;
     private Exception lastError;
@@ -61,7 +61,7 @@ public class TestContext {
     private int configuredCommitmentsPerThread;
     private List<Future<Boolean>> concurrentResults = new ArrayList<>();
     private long concurrentSubmissionDuration;
-    private List<com.unicity.sdk.utils.TestUtils.TokenOperationResult> bulkResults = new ArrayList<>();
+    private List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> bulkResults = new ArrayList<>();
     private long bulkOperationDuration;
 
     // Transfer chain tracking
@@ -119,11 +119,11 @@ public class TestContext {
     public byte[] getStateBytes() { return stateBytes; }
     public void setStateBytes(byte[] stateBytes) { this.stateBytes = stateBytes; }
 
-    public com.unicity.sdk.hash.DataHash getStateHash() { return stateHash; }
-    public void setStateHash(com.unicity.sdk.hash.DataHash stateHash) { this.stateHash = stateHash; }
+    public org.unicitylabs.sdk.hash.DataHash getStateHash() { return stateHash; }
+    public void setStateHash(org.unicitylabs.sdk.hash.DataHash stateHash) { this.stateHash = stateHash; }
 
-    public com.unicity.sdk.hash.DataHash getTxDataHash() { return txDataHash; }
-    public void setTxDataHash(com.unicity.sdk.hash.DataHash txDataHash) { this.txDataHash = txDataHash; }
+    public org.unicitylabs.sdk.hash.DataHash getTxDataHash() { return txDataHash; }
+    public void setTxDataHash(org.unicitylabs.sdk.hash.DataHash txDataHash) { this.txDataHash = txDataHash; }
 
     public SubmitCommitmentResponse getCommitmentResponse() { return commitmentResponse; }
     public void setCommitmentResponse(SubmitCommitmentResponse commitmentResponse) { this.commitmentResponse = commitmentResponse; }
@@ -149,8 +149,8 @@ public class TestContext {
     public long getConcurrentSubmissionDuration() { return concurrentSubmissionDuration; }
     public void setConcurrentSubmissionDuration(long concurrentSubmissionDuration) { this.concurrentSubmissionDuration = concurrentSubmissionDuration; }
 
-    public List<com.unicity.sdk.utils.TestUtils.TokenOperationResult> getBulkResults() { return bulkResults; }
-    public void setBulkResults(List<com.unicity.sdk.utils.TestUtils.TokenOperationResult> bulkResults) { this.bulkResults = bulkResults; }
+    public List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> getBulkResults() { return bulkResults; }
+    public void setBulkResults(List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> bulkResults) { this.bulkResults = bulkResults; }
 
     public long getBulkOperationDuration() { return bulkOperationDuration; }
     public void setBulkOperationDuration(long bulkOperationDuration) { this.bulkOperationDuration = bulkOperationDuration; }
@@ -226,6 +226,7 @@ public class TestContext {
     }
 
     public void clearTestState() {
+        configuredUserCount = 0;
         blockHeight = null;
         randomSecret = null;
         stateBytes = null;
