@@ -59,11 +59,6 @@ public abstract class BaseEscrowSwapTest {
         signingService
     );
 
-    System.out.println("TRANSFER");
-    System.out.println(commitment.getTransactionData().getSourceState().getUnlockPredicate());
-    System.out.println(commitment.getTransactionData().getSourceState().getUnlockPredicate().calculateHash(token.getId(), token.getType()));
-    System.out.println(commitment.getTransactionData().getSourceState().calculateHash(token.getId(), token.getType()));
-
     SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
     if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new RuntimeException("Failed to submit transfer commitment: " + response);
