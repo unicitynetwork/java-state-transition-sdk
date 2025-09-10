@@ -116,14 +116,14 @@ public abstract class BaseEscrowSwapTest {
     Token<?> bobToken = mintToken(BOB_SECRET);
     String[] bobSerializedData = transferToken(
         bobToken,
-        SigningService.createFromSecret(BOB_SECRET, bobToken.getState().getUnlockPredicate().getNonce()),
+        SigningService.createFromMaskedSecret(BOB_SECRET, bobToken.getState().getUnlockPredicate().getNonce()),
         ALICE_NAMETAG
     );
 
     Token<?> carolToken = mintToken(CAROL_SECRET);
     String[] carolSerializedData = transferToken(
         carolToken,
-        SigningService.createFromSecret(CAROL_SECRET, carolToken.getState().getUnlockPredicate().getNonce()),
+        SigningService.createFromMaskedSecret(CAROL_SECRET, carolToken.getState().getUnlockPredicate().getNonce()),
         ALICE_NAMETAG
     );
 
@@ -134,7 +134,7 @@ public abstract class BaseEscrowSwapTest {
         ALICE_NAMETAG,
         UnmaskedPredicateReference.create(
             this.tokenType,
-            SigningService.createFromSecret(ALICE_SECRET, null),
+            SigningService.createFromSecret(ALICE_SECRET),
             HashAlgorithm.SHA256
         ).toAddress(),
         randomBytes(32),
@@ -143,13 +143,13 @@ public abstract class BaseEscrowSwapTest {
 
     Token<?> aliceBobToken = receiveToken(
         bobSerializedData,
-        SigningService.createFromSecret(ALICE_SECRET, null),
+        SigningService.createFromSecret(ALICE_SECRET),
         aliceNametagToken
     );
     Assertions.assertTrue(aliceBobToken.verify().isSuccessful());
     Token<?> aliceCarolToken = receiveToken(
         carolSerializedData,
-        SigningService.createFromSecret(ALICE_SECRET, null),
+        SigningService.createFromSecret(ALICE_SECRET),
         aliceNametagToken
     );
     Assertions.assertTrue(aliceCarolToken.verify().isSuccessful());
@@ -157,10 +157,10 @@ public abstract class BaseEscrowSwapTest {
     Token<?> aliceToCarolToken = receiveToken(
         transferToken(
             aliceBobToken,
-            SigningService.createFromSecret(ALICE_SECRET, null),
+            SigningService.createFromSecret(ALICE_SECRET),
             CAROL_NAMETAG
         ),
-        SigningService.createFromSecret(CAROL_SECRET, null),
+        SigningService.createFromSecret(CAROL_SECRET),
         TokenUtils.mintNametagToken(
             this.client,
             CAROL_SECRET,
@@ -168,7 +168,7 @@ public abstract class BaseEscrowSwapTest {
             CAROL_NAMETAG,
             UnmaskedPredicateReference.create(
                 this.tokenType,
-                SigningService.createFromSecret(CAROL_SECRET, null),
+                SigningService.createFromSecret(CAROL_SECRET),
                 HashAlgorithm.SHA256
             ).toAddress(),
             randomBytes(32),
@@ -180,10 +180,10 @@ public abstract class BaseEscrowSwapTest {
     Token<?> aliceToBobToken = receiveToken(
         transferToken(
             aliceCarolToken,
-            SigningService.createFromSecret(ALICE_SECRET, null),
+            SigningService.createFromSecret(ALICE_SECRET),
             BOB_NAMETAG
         ),
-        SigningService.createFromSecret(BOB_SECRET, null),
+        SigningService.createFromSecret(BOB_SECRET),
         TokenUtils.mintNametagToken(
             this.client,
             BOB_SECRET,
@@ -191,7 +191,7 @@ public abstract class BaseEscrowSwapTest {
             BOB_NAMETAG,
             UnmaskedPredicateReference.create(
                 this.tokenType,
-                SigningService.createFromSecret(BOB_SECRET, null),
+                SigningService.createFromSecret(BOB_SECRET),
                 HashAlgorithm.SHA256
             ).toAddress(),
             randomBytes(32),

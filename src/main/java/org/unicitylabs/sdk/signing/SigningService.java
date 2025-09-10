@@ -79,9 +79,16 @@ public class SigningService {
   }
 
   /**
-   * Create signing service from secret and optional nonce.
+   * Create signing service from secret.
    */
-  public static SigningService createFromSecret(byte[] secret, byte[] nonce) {
+  public static SigningService createFromSecret(byte[] secret) {
+    return SigningService.createFromMaskedSecret(secret, null);
+  }
+
+  /**
+   * Create signing service from secret and nonce.
+   */
+  public static SigningService createFromMaskedSecret(byte[] secret, byte[] nonce) {
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
     hasher.update(secret);
     if (nonce != null) {

@@ -28,7 +28,7 @@ import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
-public class FunctionalUnsignedPredicateDoubleSpendTest {
+public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
   protected final StateTransitionClient client = new StateTransitionClient(new TestAggregatorClient());
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
@@ -39,7 +39,7 @@ public class FunctionalUnsignedPredicateDoubleSpendTest {
         randomBytes(32),
         null,
         null,
-        SigningService.createFromSecret(secret, token.getState().getUnlockPredicate().getNonce())
+        SigningService.createFromMaskedSecret(secret, token.getState().getUnlockPredicate().getNonce())
     );
 
     SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
@@ -78,7 +78,7 @@ public class FunctionalUnsignedPredicateDoubleSpendTest {
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
-            SigningService.createFromSecret(secret, null),
+            SigningService.createFromSecret(secret),
             HashAlgorithm.SHA256,
             transaction.getData().getSalt()
         ),
@@ -99,7 +99,7 @@ public class FunctionalUnsignedPredicateDoubleSpendTest {
 
     UnmaskedPredicateReference reference = UnmaskedPredicateReference.create(
         token.getType(),
-        SigningService.createFromSecret(BOB_SECRET, null),
+        SigningService.createFromSecret(BOB_SECRET),
         HashAlgorithm.SHA256
     );
 

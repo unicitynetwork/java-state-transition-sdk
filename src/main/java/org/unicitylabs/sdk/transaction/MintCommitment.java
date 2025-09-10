@@ -40,7 +40,7 @@ public class MintCommitment<T extends MintTransactionData<?>> extends Commitment
   }
 
   public static SigningService createSigningService(MintTransactionData<?> transactionData) {
-    return SigningService.createFromSecret(MINTER_SECRET, transactionData.getTokenId().getBytes());
+    return SigningService.createFromMaskedSecret(MINTER_SECRET, transactionData.getTokenId().getBytes());
   }
 
   public Transaction<T> toTransaction(InclusionProof inclusionProof) {

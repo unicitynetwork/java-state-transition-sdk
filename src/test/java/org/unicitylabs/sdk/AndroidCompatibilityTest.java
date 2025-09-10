@@ -27,7 +27,7 @@ public class AndroidCompatibilityTest {
         // Test 2: Signing Service (uses Bouncy Castle)
         byte[] secret = "test secret".getBytes(StandardCharsets.UTF_8);
         byte[] nonce = new byte[32];
-        var signingService = SigningService.createFromSecret(secret, nonce);
+        var signingService = SigningService.createFromMaskedSecret(secret, nonce);
         assertNotNull(signingService.getPublicKey());
         
         // Test 3: Token IDs and Types

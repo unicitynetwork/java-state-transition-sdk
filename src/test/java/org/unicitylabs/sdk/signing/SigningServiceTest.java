@@ -28,7 +28,7 @@ public class SigningServiceTest {
         byte[] secret = "test secret".getBytes(StandardCharsets.UTF_8);
         byte[] nonce = "test nonce".getBytes(StandardCharsets.UTF_8);
         
-        SigningService signingService = SigningService.createFromSecret(secret, nonce);
+        SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
         
         assertNotNull(signingService);
         assertNotNull(signingService.getPublicKey());

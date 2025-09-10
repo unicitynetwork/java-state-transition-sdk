@@ -65,7 +65,8 @@ public class CommonTestFlow {
 
     // Alice mints a token
     byte[] aliceNonce = randomBytes(32);
-    SigningService aliceSigningService = SigningService.createFromSecret(ALICE_SECRET, aliceNonce);
+    SigningService aliceSigningService = SigningService.createFromMaskedSecret(ALICE_SECRET,
+        aliceNonce);
 
     MaskedPredicate alicePredicate = MaskedPredicate.create(
         aliceSigningService,
@@ -150,7 +151,7 @@ public class CommonTestFlow {
     // Bob prepares to receive the token
     DirectAddress bobAddress = UnmaskedPredicateReference.create(
         tokenType,
-        SigningService.createFromSecret(BOB_SECRET, null),
+        SigningService.createFromSecret(BOB_SECRET),
         HashAlgorithm.SHA256
     ).toAddress();
 
@@ -158,7 +159,7 @@ public class CommonTestFlow {
 
     byte[] bobNametagNonce = randomBytes(32);
     MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
-        SigningService.createFromSecret(BOB_SECRET, bobNametagNonce),
+        SigningService.createFromMaskedSecret(BOB_SECRET, bobNametagNonce),
         HashAlgorithm.SHA256,
         bobNametagNonce
     );
@@ -197,7 +198,7 @@ public class CommonTestFlow {
         aliceToken,
         new TokenState(
             UnmaskedPredicate.create(
-                SigningService.createFromSecret(BOB_SECRET, null),
+                SigningService.createFromSecret(BOB_SECRET),
                 HashAlgorithm.SHA256,
                 aliceToBobTransferTransaction.getData().getSalt()
             ),
@@ -210,7 +211,7 @@ public class CommonTestFlow {
     // Verify Bob is now the owner
     assertTrue(bobToken.verify().isSuccessful());
     assertTrue(bobToken.getState().getUnlockPredicate()
-        .isOwner(SigningService.createFromSecret(BOB_SECRET, null).getPublicKey())
+        .isOwner(SigningService.createFromSecret(BOB_SECRET).getPublicKey())
     );
     assertEquals(aliceToken.getId(), bobToken.getId());
     assertEquals(aliceToken.getType(), bobToken.getType());
@@ -218,7 +219,7 @@ public class CommonTestFlow {
     // Transfer to Carol with UnmaskedPredicate
     DirectAddress carolAddress = UnmaskedPredicateReference.create(
         tokenType,
-        SigningService.createFromSecret(CAROL_SECRET, null),
+        SigningService.createFromSecret(CAROL_SECRET),
         HashAlgorithm.SHA256).toAddress();
 
     // Bob transfers to Carol (no custom data)
@@ -229,7 +230,7 @@ public class CommonTestFlow {
         randomBytes(32),
         null,
         null,
-        SigningService.createFromSecret(BOB_SECRET, null)
+        SigningService.createFromSecret(BOB_SECRET)
     );
     SubmitCommitmentResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
         bobToken,
@@ -252,7 +253,7 @@ public class CommonTestFlow {
 
     // Carol creates UnmaskedPredicate and finalizes
     UnmaskedPredicate carolPredicate = UnmaskedPredicate.create(
-        SigningService.createFromSecret(CAROL_SECRET, null),
+        SigningService.createFromSecret(CAROL_SECRET),
         HashAlgorithm.SHA256,
         bobToCarolTransaction.getData().getSalt()
     );
@@ -273,7 +274,7 @@ public class CommonTestFlow {
         randomBytes(32),
         null,
         null,
-        SigningService.createFromSecret(CAROL_SECRET, null)
+        SigningService.createFromSecret(CAROL_SECRET)
     );
     SubmitCommitmentResponse carolToBobTransferSubmitResponse = client.submitCommitment(
         carolToken,
@@ -299,7 +300,7 @@ public class CommonTestFlow {
         carolToken,
         new TokenState(
             UnmaskedPredicate.create(
-                SigningService.createFromSecret(BOB_SECRET, null),
+                SigningService.createFromSecret(BOB_SECRET),
                 HashAlgorithm.SHA256,
                 carolToBobTransaction.getData().getSalt()
             ),
@@ -318,7 +319,7 @@ public class CommonTestFlow {
     TokenType splitTokenType = new TokenType(randomBytes(32));
     byte[] splitTokenNonce = randomBytes(32);
     MaskedPredicate splitTokenPredicate = MaskedPredicate.create(
-        SigningService.createFromSecret(BOB_SECRET, splitTokenNonce),
+        SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
         HashAlgorithm.SHA256,
         splitTokenNonce
     );
@@ -346,7 +347,7 @@ public class CommonTestFlow {
 
     TransferCommitment burnCommitment = split.createBurnCommitment(
         randomBytes(32),
-        SigningService.createFromSecret(BOB_SECRET, null)
+        SigningService.createFromSecret(BOB_SECRET)
     );
 
     if (client.submitCommitment(carolToBobToken, burnCommitment).get().getStatus()
