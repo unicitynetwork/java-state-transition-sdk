@@ -53,7 +53,7 @@ public class BasicE2ETest {
         sr.nextBytes(stateBytes);
         DataHash stateHash = new DataHasher(HashAlgorithm.SHA256).update(stateBytes).digest();
         DataHash txDataHash = new DataHasher(HashAlgorithm.SHA256).update("test commitment performance".getBytes()).digest();
-        SigningService signingService = SigningService.createFromSecret(randomSecret, null);
+        SigningService signingService = SigningService.createFromSecret(randomSecret);
         RequestId requestId = RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
         Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
         SubmitCommitmentResponse response = aggregatorClient.submitCommitment(requestId, txDataHash, auth).get();
@@ -98,7 +98,7 @@ public class BasicE2ETest {
 
                         DataHash stateHash = new DataHasher(HashAlgorithm.SHA256).update(stateBytes).digest();
                         DataHash txDataHash = new DataHasher(HashAlgorithm.SHA256).update(txData).digest();
-                        SigningService signingService = SigningService.createFromSecret(randomSecret, null);
+                        SigningService signingService = SigningService.createFromSecret(randomSecret);
                         RequestId requestId = RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
                         Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
                         SubmitCommitmentResponse response = aggregatorClient.submitCommitment(requestId, txDataHash, auth).get();

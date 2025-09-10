@@ -49,7 +49,7 @@ public class TokenUtils {
       byte[] salt,
       DataHash dataHash
   ) throws Exception {
-    SigningService signingService = SigningService.createFromSecret(secret, nonce);
+    SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
 
     MaskedPredicate predicate = MaskedPredicate.create(
         signingService,
@@ -121,7 +121,7 @@ public class TokenUtils {
       byte[] nonce,
       byte[] salt
   ) throws Exception {
-    SigningService signingService = SigningService.createFromSecret(secret, nonce);
+    SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
 
     MaskedPredicate predicate = MaskedPredicate.create(
         signingService,

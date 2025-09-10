@@ -52,7 +52,7 @@ public class TokenTest {
     Token<?> nametagToken = new Token<>(
         new TokenState(
             MaskedPredicate.create(
-                SigningService.createFromSecret(TestUtils.randomBytes(32), nametagNonce),
+                SigningService.createFromMaskedSecret(TestUtils.randomBytes(32), nametagNonce),
                 HashAlgorithm.SHA256,
                 nametagNonce),
             null),
@@ -72,8 +72,10 @@ public class TokenTest {
     Token<?> token = new Token<>(
         new TokenState(
             MaskedPredicate.create(
-                SigningService.createFromSecret(TestUtils.randomBytes(32),
-                    genesisData.getTokenId().getBytes()),
+                SigningService.createFromMaskedSecret(
+                    TestUtils.randomBytes(32),
+                    genesisData.getTokenId().getBytes()
+                ),
                 HashAlgorithm.SHA256,
                 TestUtils.randomBytes(24)),
             null

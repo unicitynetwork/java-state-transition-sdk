@@ -68,7 +68,7 @@ public abstract class BaseTokenSplitTest {
         nametag,
         UnmaskedPredicateReference.create(
             tokenType,
-            SigningService.createFromSecret(secret, null),
+            SigningService.createFromSecret(secret),
             HashAlgorithm.SHA256
         ).toAddress()
     );
@@ -103,7 +103,7 @@ public abstract class BaseTokenSplitTest {
 
     TransferCommitment burnCommitment = split.createBurnCommitment(
         randomBytes(32),
-        SigningService.createFromSecret(secret, token.getState().getUnlockPredicate().getNonce())
+        SigningService.createFromMaskedSecret(secret, token.getState().getUnlockPredicate().getNonce())
     );
 
     SubmitCommitmentResponse burnCommitmentResponse = this.client
@@ -134,7 +134,7 @@ public abstract class BaseTokenSplitTest {
 
       TokenState state = new TokenState(
           UnmaskedPredicate.create(
-              SigningService.createFromSecret(secret, null),
+              SigningService.createFromSecret(secret),
               HashAlgorithm.SHA256,
               commitment.getTransactionData().getSalt()
           ),
