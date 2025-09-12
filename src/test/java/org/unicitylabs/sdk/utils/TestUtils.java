@@ -194,7 +194,7 @@ public class TestUtils {
      */
     public static SigningService createSigningServiceForUser(String userName, byte[] nonce) {
         byte[] secret = userName.getBytes(StandardCharsets.UTF_8);
-        return SigningService.createFromSecret(secret, nonce);
+        return SigningService.createFromMaskedSecret(secret, nonce);
     }
 
     /**
@@ -206,7 +206,7 @@ public class TestUtils {
                                  Map<String, byte[]> userSecret) {
         byte[] secret = userName.getBytes(StandardCharsets.UTF_8);
         byte[] nonce = generateRandomBytes(32);
-        SigningService signingService = SigningService.createFromSecret(secret, nonce);
+        SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
 
         userSigningServices.put(userName, signingService);
         userNonces.put(userName, nonce);

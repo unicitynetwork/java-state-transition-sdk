@@ -122,7 +122,7 @@ public class SharedStepDefinitions {
     public void iSubmitACommitmentWithTheGeneratedData() throws Exception {
         long startTime = System.currentTimeMillis();
 
-        SigningService signingService = SigningService.createFromSecret(context.getRandomSecret(), null);
+        SigningService signingService = SigningService.createFromSecret(context.getRandomSecret());
         var requestId = TestUtils.createRequestId(signingService, context.getStateHash());
         var authenticator = TestUtils.createAuthenticator(signingService, context.getTxDataHash(), context.getStateHash());
 

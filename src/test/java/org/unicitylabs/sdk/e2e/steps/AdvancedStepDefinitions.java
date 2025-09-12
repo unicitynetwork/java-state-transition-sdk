@@ -190,7 +190,7 @@ public class AdvancedStepDefinitions {
 
         // Verify ownership
         for (Token token : bobTokens) {
-            SigningService bobSigningService = SigningService.createFromSecret(
+            SigningService bobSigningService = SigningService.createFromMaskedSecret(
                     context.getUserSecret().get(username),
                     token.getState().getUnlockPredicate().getNonce()
             );

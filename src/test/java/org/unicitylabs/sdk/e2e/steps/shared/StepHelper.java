@@ -43,7 +43,7 @@ public class StepHelper {
         byte[] nametagNonce = TestUtils.generateRandomBytes(32);
 
         MaskedPredicate nametagPredicate = MaskedPredicate.create(
-                SigningService.createFromSecret(context.getUserSecret().get(userName), nametagNonce),
+                SigningService.createFromMaskedSecret(context.getUserSecret().get(userName), nametagNonce),
                 HashAlgorithm.SHA256,
                 nametagNonce
         );
@@ -62,8 +62,6 @@ public class StepHelper {
                 new NametagMintTransactionData<>(
                         nametag,
                         nametagTokenType,
-                        nametagData.getBytes(StandardCharsets.UTF_8),
-                        null,
                         nametagAddress,
                         TestUtils.generateRandomBytes(32),
                         userAddress
@@ -79,7 +77,7 @@ public class StepHelper {
         Transaction<? extends MintTransactionData<?>> nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
 
         return new Token(
-                new org.unicitylabs.sdk.token.NameTagTokenState(nametagPredicate, userAddress),
+                new org.unicitylabs.sdk.token.TokenState(nametagPredicate, null),
                 nametagGenesis
         );
     }
@@ -183,7 +181,7 @@ public class StepHelper {
         byte[] nonce = randomBytes(32);
         TokenState state = new TokenState(
                 MaskedPredicate.create(
-                        SigningService.createFromSecret(secret, nonce),
+                        SigningService.createFromMaskedSecret(secret, nonce),
                         HashAlgorithm.SHA256,
                         nonce
                 ),
@@ -198,7 +196,7 @@ public class StepHelper {
         byte[] nametagNonce = randomBytes(32);
         TokenState nametagTokenState = new TokenState(
                 MaskedPredicate.create(
-                        SigningService.createFromSecret(secret, nametagNonce),
+                        SigningService.createFromMaskedSecret(secret, nametagNonce),
                         HashAlgorithm.SHA256,
                         nametagNonce
                 ),
@@ -224,7 +222,7 @@ public class StepHelper {
                         .update(address.getAddress().getBytes(StandardCharsets.UTF_8))
                         .digest(),
                 null,
-                SigningService.createFromSecret(
+                SigningService.createFromMaskedSecret(
                         context.getUserSecret().get(username),
                         currentNameTagToken.getState().getUnlockPredicate().getNonce()
                 )
@@ -253,7 +251,7 @@ public class StepHelper {
 
         TokenState recipientState = new TokenState(
                 MaskedPredicate.create(
-                        SigningService.createFromSecret(context.getUserSecret().get(username), nonce),
+                        SigningService.createFromMaskedSecret(context.getUserSecret().get(username), nonce),
                         HashAlgorithm.SHA256,
                         nonce
                 ),
@@ -278,7 +276,7 @@ public class StepHelper {
 
             DataHash stateHash = TestUtils.hashData(stateBytes);
             DataHash txDataHash = TestUtils.hashData(txData);
-            SigningService signingService = SigningService.createFromSecret(randomSecret, null);
+            SigningService signingService = SigningService.createFromSecret(randomSecret);
             var requestId = TestUtils.createRequestId(signingService, stateHash);
             var authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
 
