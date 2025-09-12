@@ -2,25 +2,17 @@ package org.unicitylabs.sdk.e2e.context;
 
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
-import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
-import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.transaction.InclusionProof;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
-import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
-import io.cucumber.java.en.Given;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -51,8 +43,8 @@ public class TestContext {
     private Long blockHeight;
     private byte[] randomSecret;
     private byte[] stateBytes;
-    private org.unicitylabs.sdk.hash.DataHash stateHash;
-    private org.unicitylabs.sdk.hash.DataHash txDataHash;
+    private DataHash stateHash;
+    private DataHash txDataHash;
     private SubmitCommitmentResponse commitmentResponse;
     private long submissionDuration;
     private Exception lastError;
@@ -66,7 +58,7 @@ public class TestContext {
 
     private List<Future<Boolean>> concurrentResults = new ArrayList<>();
     private long concurrentSubmissionDuration;
-    private List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> bulkResults = new ArrayList<>();
+    private List<TestUtils.TokenOperationResult> bulkResults = new ArrayList<>();
     private long bulkOperationDuration;
 
     // Transfer chain tracking
