@@ -116,11 +116,11 @@ public class TestContext {
     public byte[] getStateBytes() { return stateBytes; }
     public void setStateBytes(byte[] stateBytes) { this.stateBytes = stateBytes; }
 
-    public org.unicitylabs.sdk.hash.DataHash getStateHash() { return stateHash; }
-    public void setStateHash(org.unicitylabs.sdk.hash.DataHash stateHash) { this.stateHash = stateHash; }
+    public DataHash getStateHash() { return stateHash; }
+    public void setStateHash(DataHash stateHash) { this.stateHash = stateHash; }
 
-    public org.unicitylabs.sdk.hash.DataHash getTxDataHash() { return txDataHash; }
-    public void setTxDataHash(org.unicitylabs.sdk.hash.DataHash txDataHash) { this.txDataHash = txDataHash; }
+    public DataHash getTxDataHash() { return txDataHash; }
+    public void setTxDataHash(DataHash txDataHash) { this.txDataHash = txDataHash; }
 
     public SubmitCommitmentResponse getCommitmentResponse() { return commitmentResponse; }
     public void setCommitmentResponse(SubmitCommitmentResponse commitmentResponse) { this.commitmentResponse = commitmentResponse; }
@@ -146,8 +146,8 @@ public class TestContext {
     public long getConcurrentSubmissionDuration() { return concurrentSubmissionDuration; }
     public void setConcurrentSubmissionDuration(long concurrentSubmissionDuration) { this.concurrentSubmissionDuration = concurrentSubmissionDuration; }
 
-    public List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> getBulkResults() { return bulkResults; }
-    public void setBulkResults(List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> bulkResults) { this.bulkResults = bulkResults; }
+    public List<TestUtils.TokenOperationResult> getBulkResults() { return bulkResults; }
+    public void setBulkResults(List<TestUtils.TokenOperationResult> bulkResults) { this.bulkResults = bulkResults; }
 
     public long getBulkOperationDuration() { return bulkOperationDuration; }
     public void setBulkOperationDuration(long bulkOperationDuration) { this.bulkOperationDuration = bulkOperationDuration; }
