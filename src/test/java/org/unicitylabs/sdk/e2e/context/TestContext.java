@@ -18,10 +18,12 @@ import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
 import io.cucumber.java.en.Given;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 /**
@@ -59,6 +61,9 @@ public class TestContext {
     // Performance testing
     private int configuredThreadCount;
     private int configuredCommitmentsPerThread;
+    private long timeoutSeconds;
+    private long logIntervalSeconds;
+
     private List<Future<Boolean>> concurrentResults = new ArrayList<>();
     private long concurrentSubmissionDuration;
     private List<org.unicitylabs.sdk.utils.TestUtils.TokenOperationResult> bulkResults = new ArrayList<>();
@@ -251,5 +256,15 @@ public class TestContext {
         aggregatorClient = null;
         testAggregatorClient = null;
         client = null;
+    }
+
+    private List<CompletableFuture<CommitmentResult>> commitmentFutures = new ArrayList<>();
+
+    public void setCommitmentFutures(List<CompletableFuture<CommitmentResult>> futures) {
+        this.commitmentFutures = futures;
+    }
+
+    public List<CompletableFuture<CommitmentResult>> getCommitmentFutures() {
+        return commitmentFutures;
     }
 }

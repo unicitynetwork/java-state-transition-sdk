@@ -16,13 +16,17 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.transaction.*;
-import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
+import static org.unicitylabs.sdk.util.InclusionProofUtils.waitInclusionProof;
 import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 
 
@@ -71,7 +75,7 @@ public class StepHelper {
             throw new Exception("Failed to submit nametag mint commitment: " + response.getStatus());
         }
 
-        InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(context.getClient(), nametagMintCommitment).get();
+        InclusionProof inclusionProof = waitInclusionProof(context.getClient(), nametagMintCommitment).get();
         Transaction<? extends MintTransactionData<?>> nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
 
         return new Token(
@@ -107,7 +111,7 @@ public class StepHelper {
         }
 
         // Wait for inclusion proof
-        InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
+        InclusionProof inclusionProof = waitInclusionProof(
                 context.getClient(),
                 transferCommitment
         ).get();
@@ -160,7 +164,7 @@ public class StepHelper {
         }
 
         // Wait for inclusion proof
-        InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
+        InclusionProof inclusionProof = waitInclusionProof(
                 context.getClient(),
                 transferCommitment
         ).get();
@@ -239,7 +243,7 @@ public class StepHelper {
                 nametagTokenState,
                 nametagCommitment.toTransaction(
                         currentNameTagToken,
-                        InclusionProofUtils.waitInclusionProof(context.getClient(), nametagCommitment).get()
+                        waitInclusionProof(context.getClient(), nametagCommitment).get()
                 )
         );
 
@@ -284,5 +288,91 @@ public class StepHelper {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public void verifyAllInclusionProofsInParallel(int timeoutSeconds)
+            throws InterruptedException {
+        List<CommitmentResult> results = collectCommitmentResults();
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        CountDownLatch latch = new CountDownLatch(results.size());
+
+        long startAll = System.nanoTime();
+        long globalTimeout = startAll + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+
+        for (CommitmentResult result : results) {
+            executor.submit(() -> {
+                long inclStart = System.nanoTime();
+                boolean verified = false;
+                String errorMessage = "Global timeout reached";
+
+                try {
+                    while (System.nanoTime() < globalTimeout && !verified) {
+                        try {
+                            InclusionProof proof = context.getAggregatorClient()
+                                    .getInclusionProof(result.getRequestId())
+                                    .get(calculateRemainingTimeout(globalTimeout), TimeUnit.MILLISECONDS);
+
+                            if (proof != null && proof.verify(result.getRequestId())
+                                    == InclusionProofVerificationStatus.OK) {
+                                result.markVerified(inclStart, System.nanoTime());
+                                verified = true;
+                            } else {
+                                // Неуспешная верификация, но продолжаем пытаться
+                                InclusionProofVerificationStatus status = proof.verify(result.getRequestId());
+                                errorMessage = status.toString();
+                                Thread.sleep(1000); // Небольшая пауза перед повторной попыткой
+                            }
+                        } catch (TimeoutException e) {
+                            // Таймаут отдельной операции, продолжаем цикл
+                            errorMessage = "Individual operation timeout: " + e.getMessage();
+                        } catch (ExecutionException e) {
+                            // Ошибка выполнения, продолжаем цикл
+                            errorMessage = "Execution error: " + e.getMessage();
+                            Thread.sleep(1000); // Пауза перед повторной попыткой
+                        }
+                    }
+
+                    if (!verified) {
+                        result.markFailedVerification(inclStart, System.nanoTime(), errorMessage);
+                    }
+
+                } catch (Exception e) {
+                    result.markFailedVerification(inclStart, System.nanoTime(),
+                            "Unexpected error: " + e.getMessage());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        // Wait for all tasks to complete or timeout
+        boolean finished = latch.await(timeoutSeconds, TimeUnit.SECONDS);
+        executor.shutdownNow();
+
+        long endAll = System.nanoTime();
+        System.out.println("All inclusion proofs completed in: " + ((endAll - startAll) / 1_000_000) + " ms");
+
+        if (!finished) {
+            System.err.println("Timeout reached before all inclusion proofs were verified");
+        }
+    }
+
+    private long calculateRemainingTimeout(long globalTimeoutNanos) {
+        long remaining = globalTimeoutNanos - System.nanoTime();
+        return TimeUnit.NANOSECONDS.toMillis(Math.max(remaining, 100)); // Минимум 100мс
+    }
+
+    public List<CommitmentResult> collectCommitmentResults() {
+        return context.getCommitmentFutures().stream()
+                .map(f -> {
+                    try {
+                        return f.get(); // wait for completion
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

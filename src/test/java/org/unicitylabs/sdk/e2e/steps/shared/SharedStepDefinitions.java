@@ -1,33 +1,22 @@
 package org.unicitylabs.sdk.e2e.steps.shared;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.TestAggregatorClient;
-import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
-import org.unicitylabs.sdk.api.AggregatorClient;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.*;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.transaction.*;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
-import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.util.InclusionProofUtils;
 import io.cucumber.datatable.DataTable;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -36,16 +25,13 @@ import io.cucumber.java.en.When;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.Map;
+import java.util.concurrent.*;
 
-import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
+import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 
 
 /**
@@ -167,57 +153,68 @@ public class SharedStepDefinitions {
     public void iConfigureThreadsWithCommitmentsEach(int threadCount, int commitmentsPerThread) {
         context.setConfiguredThreadCount(threadCount);
         context.setConfiguredCommitmentsPerThread(commitmentsPerThread);
+
+        // Reuse existing user setup to create <threadsCount> users
+        context.setConfiguredUserCount(threadCount);
+
+        // Setup additional users if needed
+        for (int i = 0; i < threadCount; i++) {
+            String userName = "BulkUser" + i;
+            TestUtils.setupUser(userName, context.getUserSigningServices(), context.getUserNonces(), context.getUserSecret());
+            context.getUserTokens().put(userName, new ArrayList<>());
+        }
     }
 
-    @When("I submit all commitments concurrently")
-    public void iSubmitAllCommitmentsConcurrently() throws Exception {
-        ExecutorService executor = Executors.newFixedThreadPool(context.getConfiguredThreadCount());
-        CountDownLatch latch = new CountDownLatch(
-                context.getConfiguredThreadCount() * context.getConfiguredCommitmentsPerThread()
-        );
-        List<Future<Boolean>> results = new ArrayList<>();
+    @When("I submit all mint commitments concurrently")
+    public void iSubmitAllMintCommitmentsConcurrently() throws Exception {
+        int threadsCount = context.getConfiguredThreadCount();
+        int commitmentsPerThread = context.getConfiguredCommitmentsPerThread();
 
-        long startTime = System.currentTimeMillis();
+        Map<String, SigningService> userSigningServices = context.getUserSigningServices();
+        ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
 
-        for (int t = 0; t < context.getConfiguredThreadCount(); t++) {
-            for (int c = 0; c < context.getConfiguredCommitmentsPerThread(); c++) {
-                results.add(executor.submit(() -> {
+        List<CompletableFuture<CommitmentResult>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, SigningService> entry : userSigningServices.entrySet()) {
+            String userName = entry.getKey();
+            SigningService signingService = entry.getValue();
+
+            for (int i = 0; i < commitmentsPerThread; i++) {
+                CompletableFuture<CommitmentResult> future = CompletableFuture.supplyAsync(() -> {
+                    long start = System.nanoTime();
+                    byte[] stateBytes = TestUtils.generateRandomBytes(32);
+                    byte[] txData = TestUtils.generateRandomBytes(32);
+
+                    DataHash stateHash = TestUtils.hashData(stateBytes);
+                    DataHash txDataHash = TestUtils.hashData(txData);
+                    RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+
                     try {
-                        return helper.submitSingleCommitment();
-                    } finally {
-                        latch.countDown();
+                        Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+
+                        SubmitCommitmentResponse response = context.getAggregatorClient()
+                                .submitCommitment(requestId, txDataHash, authenticator).get();
+
+                        boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                        long end = System.nanoTime();
+
+                        return new CommitmentResult(userName, Thread.currentThread().getName(),
+                                requestId, success, start, end);
+                    } catch (Exception e) {
+                        long end = System.nanoTime();
+                        return new CommitmentResult(userName, Thread.currentThread().getName(),
+                                requestId, false, start, end);
                     }
-                }));
+                }, executor);
+
+                futures.add(future);
             }
         }
 
-        latch.await();
-        long endTime = System.currentTimeMillis();
+        context.setCommitmentFutures(futures);
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         executor.shutdown();
-
-        context.setConcurrentResults(results);
-        context.setConcurrentSubmissionDuration(endTime - startTime);
-    }
-
-    @Then("all commitments should be submitted successfully")
-    public void allCommitmentsShouldBeSubmittedSuccessfully() throws Exception {
-        int expectedTotal = context.getConfiguredThreadCount() * context.getConfiguredCommitmentsPerThread();
-        long successCount = context.getConcurrentResults().stream()
-                .filter(f -> {
-                    try { return f.get(); } catch (Exception e) { return false; }
-                })
-                .count();
-
-        assertEquals(expectedTotal, successCount, "All commitments should succeed");
-        System.out.println("Total commitments: " + expectedTotal);
-        System.out.println("Successful: " + successCount);
-    }
-
-    @And("all submissions should complete within a reasonable time")
-    public void allSubmissionsShouldCompleteWithinAReasonableTime() {
-        System.out.println("Concurrent submission took: " + context.getConcurrentSubmissionDuration() + " ms");
-        assertTrue(context.getConcurrentSubmissionDuration() < 30000,
-                "Concurrent submissions should complete in reasonable time");
     }
 
     // Token Operations
@@ -305,5 +302,25 @@ public class SharedStepDefinitions {
         assertTrue(token.verify().isSuccessful(), "Token should be valid");
         assertTrue(token.getState().getUnlockPredicate().isOwner(signingService.getPublicKey()),
                 userName + " should own the token");
+    }
+
+    @Then("all mint commitments should receive inclusion proofs within {int} seconds")
+    public void allMintCommitmentsShouldReceiveInclusionProofs(int timeoutSeconds) throws Exception {
+        List<CommitmentResult> results = helper.collectCommitmentResults();
+        helper.verifyAllInclusionProofsInParallel(timeoutSeconds);
+
+        long verifiedCount = results.stream()
+                .filter(CommitmentResult::isVerified)
+                .count();
+
+        System.out.println("Verified commitments: " + verifiedCount + " / " + results.size());
+        // Print failed ones (not verified)
+        results.stream()
+                .filter(r -> !r.isVerified())
+                .forEach(r -> System.out.println(
+                        "❌ Commitment failed: requestId=" + r.getRequestId().toString() + ", status=" + r.getStatus()
+                ));
+
+        assertEquals(results.size(), verifiedCount, "All commitments should be verified");
     }
 }

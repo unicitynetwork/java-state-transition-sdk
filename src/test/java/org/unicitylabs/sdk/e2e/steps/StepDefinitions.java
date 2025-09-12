@@ -17,13 +17,12 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -182,8 +181,13 @@ public class StepDefinitions {
     public void eachUserMintsTokensSimultaneously(int tokensPerUser) throws Exception {
         context.setConfiguredTokensPerUser(tokensPerUser);
 
-        ExecutorService executor = Executors.newFixedThreadPool(context.getConfiguredUserCount() * 2);
+        //Lower the thread pool size to avoid overload
+        int poolSize = Math.min(500, context.getConfiguredUserCount() * 2);
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+
+        //ExecutorService executor = Executors.newFixedThreadPool(context.getConfiguredUserCount() * 2);
         List<CompletableFuture<TestUtils.TokenOperationResult>> futures = new ArrayList<>();
+        Map<CompletableFuture<TestUtils.TokenOperationResult>, String> futureOwners = new ConcurrentHashMap<>();
 
         long startTime = System.currentTimeMillis();
 
@@ -194,6 +198,8 @@ public class StepDefinitions {
             byte[] nonce = context.getUserNonces().get(userName);
 
             for (int tokenIndex = 0; tokenIndex < tokensPerUser; tokenIndex++) {
+                String requestId = userName + "-token" + tokenIndex; // helpful identifier
+
                 CompletableFuture<TestUtils.TokenOperationResult> future = CompletableFuture.supplyAsync(() -> {
                     try {
                         TokenId tokenId = TestUtils.generateRandomTokenId();
@@ -201,36 +207,69 @@ public class StepDefinitions {
                         TokenCoinData coinData = TestUtils.createRandomCoinData(2);
 
                         Token token = TestUtils.mintTokenForUser(context.getClient(), signingService, nonce, tokenId, tokenType, coinData);
-                        return TestUtils.TokenOperationResult.success("Token minted successfully", token);
+                        System.out.println(token.getGenesis().getData().getSourceState());
+                        // do post-processing here (still in parallel)
+                        for (var entry : context.getUserSigningServices().entrySet()) {
+                            if (TestUtils.validateTokenOwnership(token, entry.getValue())) {
+                                context.addUserToken(entry.getKey(), token);
+                                break;
+                            }
+                        }
+                        System.out.println("[Collector] Got result from " + requestId +
+                                " on thread " + Thread.currentThread().getName());
+                        return TestUtils.TokenOperationResult.success("Token minted successfully (" + requestId + ")", token);
                     } catch (Exception e) {
-                        return TestUtils.TokenOperationResult.failure("Failed to mint token", e);
+                        e.printStackTrace();
+                        System.out.println("[Collector] Failed " + requestId + " on thread " + Thread.currentThread().getName() +
+                                " with " + e.getMessage());
+                        return TestUtils.TokenOperationResult.failure("Failed to mint token (" + requestId + ")", e);
                     }
-                }, executor);
+                }, executor).orTimeout(30, TimeUnit.SECONDS)
+                        .exceptionally(ex -> TestUtils.TokenOperationResult.failure("Timeout (" + requestId + ")", (Exception) ex));;
 
                 futures.add(future);
+                futureOwners.put(future, requestId);
             }
         }
+
+        // Start monitoring thread
+        ScheduledExecutorService monitor = Executors.newSingleThreadScheduledExecutor();
+        monitor.scheduleAtFixedRate(() -> {
+            long doneCount = futures.stream().filter(CompletableFuture::isDone).count();
+            long total = futures.size();
+            long pending = total - doneCount;
+
+            System.out.println("[Monitor] " + doneCount + "/" + total + " completed, " + pending + " still pending");
+
+            if (pending == 0) {
+                System.out.println("[Monitor] All requests completed. Stopping monitor.");
+                monitor.shutdown();  // ✅ stop the monitor here
+            }
+
+            // After 15s, dump details of stuck ones
+            if (System.currentTimeMillis() - startTime > 15_000 && pending > 0) {
+                List<String> pendingRequests = futures.stream()
+                        .filter(f -> !f.isDone())
+                        .map(futureOwners::get)
+                        .collect(Collectors.toList());
+                System.out.println("[Monitor] Still waiting for requests: " + pendingRequests);
+            }
+        }, 5, 5, TimeUnit.SECONDS);
 
         // Wait for all operations to complete and collect results
-        List<TestUtils.TokenOperationResult> results = new ArrayList<>();
-        for (CompletableFuture<TestUtils.TokenOperationResult> future : futures) {
-            TestUtils.TokenOperationResult result = future.get();
-            results.add(result);
+        List<TestUtils.TokenOperationResult> results = futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
 
-            if (result.isSuccess() && result.getToken() != null) {
-                // Find which user this token belongs to by checking the signing service
-                for (var entry : context.getUserSigningServices().entrySet()) {
-                    if (TestUtils.validateTokenOwnership(result.getToken(), entry.getValue())) {
-                        context.addUserToken(entry.getKey(), result.getToken());
-                        break;
-                    }
-                }
-            }
-        }
+        long successes = results.stream().filter(TestUtils.TokenOperationResult::isSuccess).count();
+        long failures = results.size() - successes;
+
+        System.out.println("[Summary] Successes: " + successes + ", Failures: " + failures);
 
         long endTime = System.currentTimeMillis();
         context.setBulkResults(results);
         context.setBulkOperationDuration(endTime - startTime);
+
         executor.shutdown();
     }
 

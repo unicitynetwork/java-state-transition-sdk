@@ -1,5 +1,7 @@
 package org.unicitylabs.sdk.utils;
 
+import org.unicitylabs.sdk.api.Authenticator;
+import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 
@@ -221,12 +223,12 @@ public class TestUtils {
         return token.getState().getUnlockPredicate().isOwner(signingService.getPublicKey());
     }
 
-    public static org.unicitylabs.sdk.api.RequestId createRequestId(SigningService signingService, DataHash stateHash) {
-        return org.unicitylabs.sdk.api.RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
+    public static RequestId createRequestId(SigningService signingService, DataHash stateHash) {
+        return RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
     }
 
-    public static org.unicitylabs.sdk.api.Authenticator createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
-        return org.unicitylabs.sdk.api.Authenticator.create(signingService, txDataHash, stateHash);
+    public static Authenticator createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
+        return Authenticator.create(signingService, txDataHash, stateHash);
     }
 
     /**

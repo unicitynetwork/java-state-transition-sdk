@@ -25,14 +25,26 @@ Feature: Aggregator Connectivity and Basic Operations
       | 32          | 32          | test commitment performance | 5000        |
       | 16          | 24          | simple test data           | 3000        |
 
-  Scenario Outline: Multi-threaded commitment performance
-    Given I configure <threadCount> threads with <commitmentsPerThread> commitments each
-    When I submit all commitments concurrently
-    Then all commitments should be submitted successfully
-    And all submissions should complete within a reasonable time
+  Scenario Outline: Parallel mint commitments with inclusion proof verification
+    Given I configure <threadsCount> threads with <commitmentsPerThread> commitments each
+    When I submit all mint commitments concurrently
+    Then all mint commitments should receive inclusion proofs within <timeoutSeconds> seconds
 
     Examples:
-      | threadCount | commitmentsPerThread |
-      | 10          | 5                    |
-      | 50          | 10                   |
-      | 100         | 10                   |
+      | threadsCount | commitmentsPerThread | timeoutSeconds |
+      | 1            | 10                   | 120            |
+      | 5            | 10                   | 120            |
+      | 10           | 10                   | 120            |
+      | 20           | 10                   | 120            |
+      | 40           | 10                   | 120            |
+      | 80           | 10                   | 120            |
+      | 160          | 10                   | 120            |
+      | 200          | 10                   | 120            |
+      | 250          | 10                   | 120            |
+      | 300          | 10                   | 120            |
+      | 350          | 10                   | 120            |
+      | 400          | 10                   | 120            |
+      | 450          | 10                   | 120            |
+      | 500          | 10                   | 120            |
+      | 550          | 10                   | 120            |
+      | 600          | 10                   | 120            |

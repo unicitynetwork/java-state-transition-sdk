@@ -24,8 +24,8 @@ Feature: Advanced Token Scenarios
 
     Examples:
       | userCount | tokensPerUser | totalTokens | maxDuration | minSuccessRate |
-      | 5         | 10           | 50          | 30          | 95             |
-      | 10        | 5            | 50          | 25          | 90             |
+      | 5         | 10            | 50          | 30          | 95             |
+      | 10        | 5             | 50          | 25          | 90             |
 
   @edge-cases
   @reset
