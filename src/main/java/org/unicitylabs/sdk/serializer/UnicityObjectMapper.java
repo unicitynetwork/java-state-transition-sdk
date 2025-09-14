@@ -11,6 +11,11 @@ import org.unicitylabs.sdk.api.InclusionProofRequest;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentRequest;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.bft.InputRecord;
+import org.unicitylabs.sdk.bft.ShardTreeCertificate;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.UnicitySeal;
+import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.jsonrpc.JsonRpcError;
 import org.unicitylabs.sdk.jsonrpc.JsonRpcRequest;
@@ -25,6 +30,12 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
 import org.unicitylabs.sdk.serializer.cbor.address.AddressCbor;
 import org.unicitylabs.sdk.serializer.cbor.api.AuthenticatorCbor;
+import org.unicitylabs.sdk.serializer.cbor.bft.InputRecordCbor;
+import org.unicitylabs.sdk.serializer.cbor.bft.ShardTreeCertificateCbor;
+import org.unicitylabs.sdk.serializer.cbor.bft.UnicityCertificateCbor;
+import org.unicitylabs.sdk.serializer.cbor.bft.UnicitySealCbor;
+import org.unicitylabs.sdk.serializer.cbor.bft.UnicityTreeCertificateCbor;
+import org.unicitylabs.sdk.serializer.cbor.bft.UnicityTreeCertificateHashStepCbor;
 import org.unicitylabs.sdk.serializer.cbor.hash.DataHashCbor;
 import org.unicitylabs.sdk.serializer.cbor.mtree.plain.SparseMerkleTreePathCbor;
 import org.unicitylabs.sdk.serializer.cbor.mtree.plain.SparseMerkleTreePathStepBranchCbor;
@@ -186,6 +197,20 @@ public class UnicityObjectMapper {
     module.addDeserializer(UnmaskedPredicate.class, new UnmaskedPredicateCbor.Deserializer());
     module.addSerializer(BurnPredicate.class, new BurnPredicateCbor.Serializer());
     module.addDeserializer(BurnPredicate.class, new BurnPredicateCbor.Deserializer());
+
+    // BFT - UnicityCertificate
+    module.addSerializer(UnicityCertificate.class, new UnicityCertificateCbor.Serializer());
+    module.addDeserializer(UnicityCertificate.class, new UnicityCertificateCbor.Deserializer());
+    module.addSerializer(InputRecord.class, new InputRecordCbor.Serializer());
+    module.addDeserializer(InputRecord.class, new InputRecordCbor.Deserializer());
+    module.addSerializer(ShardTreeCertificate.class, new ShardTreeCertificateCbor.Serializer());
+    module.addDeserializer(ShardTreeCertificate.class, new ShardTreeCertificateCbor.Deserializer());
+    module.addSerializer(UnicityTreeCertificate.class, new UnicityTreeCertificateCbor.Serializer());
+    module.addDeserializer(UnicityTreeCertificate.class, new UnicityTreeCertificateCbor.Deserializer());
+    module.addSerializer(UnicityTreeCertificate.HashStep.class, new UnicityTreeCertificateHashStepCbor.Serializer());
+    module.addDeserializer(UnicityTreeCertificate.HashStep.class, new UnicityTreeCertificateHashStepCbor.Deserializer());
+    module.addSerializer(UnicitySeal.class, new UnicitySealCbor.Serializer());
+    module.addDeserializer(UnicitySeal.class, new UnicitySealCbor.Deserializer());
 
     ObjectMapper objectMapper = new CBORMapper();
     objectMapper.registerModule(new Jdk8Module());
