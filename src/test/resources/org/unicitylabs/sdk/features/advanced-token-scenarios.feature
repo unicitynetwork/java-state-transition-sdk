@@ -1,3 +1,4 @@
+@advanced-token
 Feature: Advanced Token Scenarios
   As a developer using the Unicity SDK
   I want to test complex token operations and edge cases
@@ -50,7 +51,7 @@ Feature: Advanced Token Scenarios
     And "Bob" finalizes all received tokens
     And "Bob" consolidates all received tokens
     Then "Bob" should own <nametagCount> tokens
-    And all "Bob" name tag tokens should remain valid
+    And all "Bob" nametag tokens should remain valid
     And proxy addressing should work for all "Bob" name tags
 
     Examples:

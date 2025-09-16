@@ -149,15 +149,14 @@ public class AdvancedStepDefinitions {
         // Create tokens for Alice to transfer
         for (int i = 0; i < nametagTokens.size(); i++) {
             TokenId tokenId = TestUtils.generateRandomTokenId();
-            TokenType tokenType = TestUtils.generateRandomTokenType();
             TokenCoinData coinData = TestUtils.createRandomCoinData(1);
 
-            Token aliceToken = TestUtils.mintTokenForUser(
+            Token <?> aliceToken = TestUtils.mintTokenForUser(
                     context.getClient(),
                     context.getUserSigningServices().get(fromUser),
                     context.getUserNonces().get(fromUser),
                     tokenId,
-                    tokenType,
+                    nametagTokens.get(i).getType(),
                     coinData
             );
 
@@ -178,29 +177,28 @@ public class AdvancedStepDefinitions {
     public void userConsolidatesAllReceivedTokens(String username) {
         // Consolidation logic would depend on specific requirements
         // For now, we ensure Bob has received all the tokens
-        List<Token> bobTokens = context.getUserTokens().getOrDefault(username, new ArrayList<>());
+        List<Token> tokens = context.getUserTokens().getOrDefault(username, new ArrayList<>());
         // Verify Bob has received tokens
-        assertFalse(bobTokens.isEmpty(), "Bob should have received tokens");
+        assertFalse(tokens.isEmpty(), "Bob should have received tokens");
     }
 
     @Then("{string} should own {int} tokens")
     public void userShouldOwnTokens(String username, int expectedTokenCount) {
-        List<Token> bobTokens = context.getUserTokens().getOrDefault(username, new ArrayList<>());
-        assertEquals(expectedTokenCount, bobTokens.size(), "Bob should own expected number of tokens");
+        List<Token> tokens = context.getUserTokens().getOrDefault(username, new ArrayList<>());
+        assertEquals(expectedTokenCount, tokens.size(), "Bob should own expected number of tokens");
 
         // Verify ownership
-        for (Token token : bobTokens) {
-            SigningService bobSigningService = SigningService.createFromMaskedSecret(
-                    context.getUserSecret().get(username),
-                    token.getState().getUnlockPredicate().getNonce()
+        for (Token token : tokens) {
+            SigningService signingService = SigningService.createFromSecret(
+                    context.getUserSecret().get(username)
             );
             assertTrue(token.verify().isSuccessful(), "Token should be valid");
-            assertTrue(TestUtils.validateTokenOwnership(token, bobSigningService),
+            assertTrue(TestUtils.validateTokenOwnership(token, signingService),
                     "Bob should own all tokens");
         }
     }
 
-    @And("all {string} name tag tokens should remain valid")
+    @And("all {string} nametag tokens should remain valid")
     public void allNameTagTokensShouldRemainValid(String username) {
         List<Token> bobNametags = context.getNameTagTokens().get(username);
         for (Token nametag : bobNametags) {
@@ -254,7 +252,7 @@ public class AdvancedStepDefinitions {
         List<PendingTransfer> pendingTransfers = context.getPendingTransfers(username);
 
         for (PendingTransfer pending : pendingTransfers) {
-            Token token = pending.getSourceToken();
+            Token <?> token = pending.getSourceToken();
             Transaction<TransferTransactionData> tx = pending.getTransaction();
             helper.finalizeTransfer(
                     username,

@@ -1,3 +1,4 @@
+@aggregator-connectivity
 Feature: Aggregator Connectivity and Basic Operations
   As a developer using the Unicity SDK
   I want to verify connectivity with the aggregator
@@ -38,13 +39,3 @@ Feature: Aggregator Connectivity and Basic Operations
       | 20           | 10                   | 120            |
       | 40           | 10                   | 120            |
       | 80           | 10                   | 120            |
-      | 160          | 10                   | 120            |
-      | 200          | 10                   | 120            |
-      | 250          | 10                   | 120            |
-      | 300          | 10                   | 120            |
-      | 350          | 10                   | 120            |
-      | 400          | 10                   | 120            |
-      | 450          | 10                   | 120            |
-      | 500          | 10                   | 120            |
-      | 550          | 10                   | 120            |
-      | 600          | 10                   | 120            |

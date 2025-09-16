@@ -11,6 +11,9 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
@@ -39,7 +42,6 @@ public class StepHelper {
     }
 
     public Token createNameTagTokenForUser(String userName, TokenType type, String nametag, String nametagData) throws Exception {
-        SigningService signingService = context.getUserSigningServices().get(userName);
         byte[] nametagNonce = TestUtils.generateRandomBytes(32);
 
         MaskedPredicate nametagPredicate = MaskedPredicate.create(
@@ -51,12 +53,11 @@ public class StepHelper {
         TokenType nametagTokenType = TestUtils.generateRandomTokenType();
         DirectAddress nametagAddress = nametagPredicate.getReference(nametagTokenType).toAddress();
 
-        // Get user's main address for the nametag
-        byte[] userNonce = context.getUserNonces().get(userName);
-        MaskedPredicate userPredicate = MaskedPredicate.create(signingService, HashAlgorithm.SHA256, userNonce);
-        context.getUserPredicate().put(userName, userPredicate);
-
-        DirectAddress userAddress = userPredicate.getReference(type).toAddress();
+        DirectAddress userAddress = UnmaskedPredicateReference.create(
+                nametagTokenType,
+                SigningService.createFromSecret(context.getUserSecret().get(userName)),
+                HashAlgorithm.SHA256
+        ).toAddress();
 
         var nametagMintCommitment = org.unicitylabs.sdk.transaction.MintCommitment.create(
                 new NametagMintTransactionData<>(
@@ -80,59 +81,6 @@ public class StepHelper {
                 new org.unicitylabs.sdk.token.TokenState(nametagPredicate, null),
                 nametagGenesis
         );
-    }
-
-    public void transferTokenAndFinalize(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
-        SigningService fromSigningService = context.getUserSigningServices().get(fromUser);
-
-        // Create data hash and state data if custom data provided
-        DataHash dataHash = null;
-        byte[] stateData = null;
-        if (customData != null && !customData.isEmpty()) {
-            stateData = customData.getBytes(StandardCharsets.UTF_8);
-            dataHash = TestUtils.hashData(stateData);
-        }
-
-        // Submit transfer commitment
-        TransferCommitment transferCommitment = TransferCommitment.create(
-                token,
-                toAddress,
-                randomBytes(32),
-                dataHash,
-                null,
-                fromSigningService
-        );
-
-        SubmitCommitmentResponse response = context.getClient().submitCommitment(token, transferCommitment).get();
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-            throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
-        }
-
-        // Wait for inclusion proof
-        InclusionProof inclusionProof = waitInclusionProof(
-                context.getClient(),
-                transferCommitment
-        ).get();
-        Transaction<TransferTransactionData> transferTransaction = transferCommitment.toTransaction(
-                token,
-                inclusionProof
-        );
-
-        // Finalize transaction with custom data in the token state
-        List<Token<?>> additionalTokens = new ArrayList<>();
-        Token nameTagToken = context.getNameTagToken(toUser);
-        if (nameTagToken != null) {
-            additionalTokens.add(nameTagToken);
-        }
-
-        Token finalizedToken = context.getClient().finalizeTransaction(
-                token,
-                new TokenState(context.getUserPredicate().get(toUser), stateData),
-                transferTransaction,
-                additionalTokens
-        );
-
-        context.addUserToken(toUser, finalizedToken);
     }
 
     public void transferToken(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
@@ -174,87 +122,41 @@ public class StepHelper {
         context.savePendingTransfer(toUser, token, transferTransaction);
     }
 
-    public void finalizeTransfer(String username, Token token, Transaction<TransferTransactionData> tx) throws Exception {
+    public void finalizeTransfer(String username, Token <?> token, Transaction<TransferTransactionData> tx) throws Exception {
 
         byte[] secret = context.getUserSecret().get(username);
 
-        byte[] nonce = randomBytes(32);
-        TokenState state = new TokenState(
-                MaskedPredicate.create(
-                        SigningService.createFromMaskedSecret(secret, nonce),
-                        HashAlgorithm.SHA256,
-                        nonce
-                ),
-                null
-        );
-        Address address = state.getUnlockPredicate()
-                .getReference(
-                        token.getType()
-                )
-                .toAddress();
-
-        byte[] nametagNonce = randomBytes(32);
-        TokenState nametagTokenState = new TokenState(
-                MaskedPredicate.create(
-                        SigningService.createFromMaskedSecret(secret, nametagNonce),
-                        HashAlgorithm.SHA256,
-                        nametagNonce
-                ),
-                address.getAddress().getBytes(StandardCharsets.UTF_8)
-        );
-
-        Token currentNameTagToken = context.getNameTagToken(username);
+        Token <?> currentNameTagToken = context.getNameTagToken(username);
         List<Token> nametagTokens = context.getNameTagTokens().get(username);
-        for (int i = 0; i < nametagTokens.size(); i++) {
-            String actualNametagAddress = tx.getData().getRecipient().getAddress();
-            String expectedProxyAddress = ProxyAddress.create(nametagTokens.get(i).getId()).getAddress();
+        if (nametagTokens != null && !nametagTokens.isEmpty()) {
+            for (Token<?> t : nametagTokens) {
+                String actualNametagAddress = tx.getData().getRecipient().getAddress();
+                String expectedProxyAddress = ProxyAddress.create(t.getId()).getAddress();
 
-            if(actualNametagAddress.equalsIgnoreCase(expectedProxyAddress)){
-                currentNameTagToken = nametagTokens.get(i);
+                if (actualNametagAddress.equalsIgnoreCase(expectedProxyAddress)) {
+                    currentNameTagToken = t;
+                    break;
+                }
             }
         }
 
-        TransferCommitment nametagCommitment = TransferCommitment.create(
-                currentNameTagToken,
-                nametagTokenState.getUnlockPredicate().getReference(currentNameTagToken.getType()).toAddress(),
-                randomBytes(32),
-                new DataHasher(HashAlgorithm.SHA256)
-                        .update(address.getAddress().getBytes(StandardCharsets.UTF_8))
-                        .digest(),
-                null,
-                SigningService.createFromMaskedSecret(
-                        context.getUserSecret().get(username),
-                        currentNameTagToken.getState().getUnlockPredicate().getNonce()
-                )
-        );
-
-        SubmitCommitmentResponse nametagTransferResponse = context.getClient()
-                .submitCommitment(currentNameTagToken, nametagCommitment)
-                .get();
-        if (nametagTransferResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
-            throw new Exception(String.format("Failed to submit nametag transfer commitment: %s",
-                    nametagTransferResponse.getStatus()));
+        List<Token<?>> additionalTokens = new ArrayList<>();
+        if (currentNameTagToken != null) {
+            additionalTokens.add(currentNameTagToken);
         }
 
-        currentNameTagToken = context.getClient().finalizeTransaction(
-                currentNameTagToken,
-                nametagTokenState,
-                nametagCommitment.toTransaction(
-                        currentNameTagToken,
-                        waitInclusionProof(context.getClient(), nametagCommitment).get()
-                )
-        );
-
-        // Finalize transaction with custom data in the token state
-        List<Token<?>> additionalTokens = new ArrayList<>();
-        additionalTokens.add(currentNameTagToken);
+        Predicate unlockPredicate = context.getUserPredicate().get(username);
+        if (unlockPredicate == null){
+            context.getUserSigningServices().put(username, SigningService.createFromSecret(secret));
+            unlockPredicate = UnmaskedPredicate.create(
+                        context.getUserSigningServices().get(username),
+                        HashAlgorithm.SHA256,
+                        tx.getData().getSalt()
+                );
+        }
 
         TokenState recipientState = new TokenState(
-                MaskedPredicate.create(
-                        SigningService.createFromMaskedSecret(context.getUserSecret().get(username), nonce),
-                        HashAlgorithm.SHA256,
-                        nonce
-                ),
+                unlockPredicate,
                 null
         );
 

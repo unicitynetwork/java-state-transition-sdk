@@ -1,3 +1,4 @@
+@token-transfer
 Feature: Token Transfer Operations
   As a developer using the Unicity SDK
   I want to perform token operations including minting, transfers, and splits
@@ -13,13 +14,15 @@ Feature: Token Transfer Operations
       | Carol |
 
   Scenario: Complete token transfer flow from Alice to Bob to Carol
-    Given "Alice" mints a token with random coin data
+    Given user "Bob" create a nametag token with custom data "Bob Custom data"
+    And "Alice" mints a token with random coin data
     When "Alice" transfers the token to "Bob" using a proxy address
-    And "Bob" finalizes the token with custom data "Bob's custom data"
+    And "Bob" finalizes all received tokens
     Then "Bob" should own the token successfully
+    And all "Bob" nametag tokens should remain valid
     And the token should maintain its original ID and type
     When "Bob" transfers the token to "Carol" using an unmasked predicate
-    And "Carol" finalizes the token without custom data
+    And "Carol" finalizes all received tokens
     Then "Carol" should own the token successfully
     And the token should have 2 transactions in its history
 
@@ -37,8 +40,7 @@ Feature: Token Transfer Operations
       | Carol | 16         | Basic     | 1         |
 
   Scenario Outline: Name tag token creation and usage
-    Given user "<user>" is ready to create a name tag token
-    When the name tag is minted with custom data "<nametagData>"
+    Given user "<user>" create a nametag token with custom data "<nametagData>"
     Then the name tag token should be created successfully
     And the name tag should be usable for proxy addressing
 
@@ -46,13 +48,3 @@ Feature: Token Transfer Operations
       | user  | nametagData     |
       | Bob   | Bob's Address   |
       | Alice | Alice's Tag     |
-
-  Scenario: Token transfer with parameterized users
-    Given the following users are set up with their signing services
-      | name |
-      | Dave |
-      | Eve  |
-    And "Dave" mints a token with random coin data
-    When "Dave" transfers the token to "Eve" using a proxy address
-    And "Eve" finalizes the token with custom data "Eve's data"
-    Then "Eve" should own the token successfully

@@ -128,26 +128,6 @@ public class StepDefinitions {
                 "Token should belong to the user");
     }
 
-    // Name Tag Operations
-    @Given("user {string} is ready to create a name tag token")
-    public void userCreatesANameTagToken(String userName) {
-        TestUtils.setupUser(userName, context.getUserSigningServices(), context.getUserNonces(), context.getUserSecret());
-        context.getUserTokens().put(userName, new ArrayList<>());
-        context.setCurrentUser(userName);
-    }
-
-    @When("the name tag is minted with custom data {string}")
-    public void theNameTagIsMintedWithCustomData(String nametagData) throws Exception {
-        String user = context.getCurrentUser();
-        Token nametagToken = helper.createNameTagTokenForUser(
-                user,
-                TestUtils.generateRandomTokenType(),
-                java.util.UUID.randomUUID().toString(),
-                nametagData
-        );
-        context.addNameTagToken(user, nametagToken);
-    }
-
     @Then("the name tag token should be created successfully")
     public void theNameTagTokenShouldBeCreatedSuccessfully() {
         String user = context.getCurrentUser();

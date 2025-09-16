@@ -176,7 +176,7 @@ public class TestContext {
     public int getConfiguredTokensPerUser() { return configuredTokensPerUser; }
     public void setConfiguredTokensPerUser(int configuredTokensPerUser) { this.configuredTokensPerUser = configuredTokensPerUser; }
 
-    public void savePendingTransfer(String user, Token token, Transaction<TransferTransactionData> tx) {
+    public void savePendingTransfer(String user, Token <?> token, Transaction<TransferTransactionData> tx) {
         pendingTransfers.computeIfAbsent(user, k -> new ArrayList<>())
                 .add(new PendingTransfer(token, tx));
     }

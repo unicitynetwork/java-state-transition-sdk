@@ -219,41 +219,29 @@ public class SharedStepDefinitions {
 
     // Token Operations
     @Given("{string} mints a token with random coin data")
-    public void userMintsATokenWithRandomCoinData(String userName) throws Exception {
+    public void userMintsATokenWithRandomCoinData(String username) throws Exception {
         TokenId tokenId = TestUtils.generateRandomTokenId();
-        TokenType tokenType = TestUtils.generateRandomTokenType();
+        TokenType tokenType = context.getNameTagToken(context.getCurrentUser()).getType();
         TokenCoinData coinData = randomCoinData(2);
 
         Token token = TestUtils.mintTokenForUser(
                 context.getClient(),
-                context.getUserSigningServices().get(userName),
-                context.getUserNonces().get(userName),
+                context.getUserSigningServices().get(username),
+                context.getUserNonces().get(username),
                 tokenId,
                 tokenType,
                 coinData
         );
 
-        context.addUserToken(userName, token);
-        context.setCurrentUser(userName);
+        context.addUserToken(username, token);
+        context.setCurrentUser(username);
     }
 
     @When("{string} transfers the token to {string} using a proxy address")
     public void userTransfersTheTokenToUserUsingAProxyAddress(String fromUser, String toUser) throws Exception {
-        // Create nametag token for recipient
-        Token nameTagToken = helper.createNameTagTokenForUser(
-                toUser,
-                context.getUserToken(fromUser).getType(),
-                java.util.UUID.randomUUID().toString(),
-                "test"
-        );
-        context.addNameTagToken(toUser, nameTagToken);
-
         Token sourceToken = context.getUserToken(fromUser);
-
-        ProxyAddress proxyAddress = ProxyAddress.create(nameTagToken.getId());
-
-        String customData = "Transfer from " + fromUser + " to " + toUser;
-        helper.transferTokenAndFinalize(fromUser, toUser, sourceToken, proxyAddress, customData);
+        ProxyAddress proxyAddress = ProxyAddress.create(context.getNameTagToken(toUser).getId());
+        helper.transferToken(fromUser, toUser, sourceToken, proxyAddress, null);
     }
 
     @When("{string} transfers the token to {string} using an unmasked predicate")
@@ -270,38 +258,17 @@ public class SharedStepDefinitions {
 
         DirectAddress toAddress = userPredicate.getReference(sourceToken.getType()).toAddress();
 
-        helper.transferTokenAndFinalize(fromUser, toUser, sourceToken, toAddress, null);
-    }
-
-    @And("{string} finalizes the token with custom data {string}")
-    public void userFinalizesTheTokenWithCustomData(String userName, String customData) {
-        Token token = context.getUserToken(userName);
-        assertNotNull(token, userName + " should have received the token");
-
-        // Verify that the token state contains the expected custom data
-        if (token.getState().getData().isPresent() && customData != null && !customData.isEmpty()) {
-            byte[] actualData = token.getState().getData().get();
-            String actualCustomData = new String(actualData, StandardCharsets.UTF_8);
-            assertTrue(actualCustomData.contains(userName), "Token should contain data related to " + userName);
-        } else if (customData != null && !customData.isEmpty()) {
-            fail("Token should contain custom data but none was found");
-        }
-    }
-
-    @And("{string} finalizes the token without custom data")
-    public void userFinalizesTheTokenWithoutCustomData(String userName) {
-        Token token = context.getUserToken(userName);
-        assertNotNull(token, userName + " should have received the token");
+        helper.transferToken(fromUser, toUser, sourceToken, toAddress, null);
     }
 
     @Then("{string} should own the token successfully")
-    public void userShouldOwnTheTokenSuccessfully(String userName) {
-        Token token = context.getUserToken(userName);
-        context.setCurrentUser(userName);
-        SigningService signingService = context.getUserSigningServices().get(userName);
+    public void userShouldOwnTheTokenSuccessfully(String username) {
+        Token token = context.getUserToken(username);
+        context.setCurrentUser(username);
+        SigningService signingService = context.getUserSigningServices().get(username);
         assertTrue(token.verify().isSuccessful(), "Token should be valid");
         assertTrue(token.getState().getUnlockPredicate().isOwner(signingService.getPublicKey()),
-                userName + " should own the token");
+               username + " should own the token");
     }
 
     @Then("all mint commitments should receive inclusion proofs within {int} seconds")
@@ -322,5 +289,19 @@ public class SharedStepDefinitions {
                 ));
 
         assertEquals(results.size(), verifiedCount, "All commitments should be verified");
+    }
+
+    @Given("user {string} create a nametag token with custom data {string}")
+    public void userCreateANametagTokenWithCustomData(String username, String customData) throws Exception {
+        Token nametagToken = helper.createNameTagTokenForUser(
+                username,
+                TestUtils.generateRandomTokenType(),
+                java.util.UUID.randomUUID().toString(),
+                customData
+        );
+        assertNotNull(nametagToken, "Name tag token should be created");
+        assertTrue(nametagToken.verify().isSuccessful(), "Name tag token should be valid");
+        context.addNameTagToken(username, nametagToken);
+        context.setCurrentUser(username);
     }
 }
