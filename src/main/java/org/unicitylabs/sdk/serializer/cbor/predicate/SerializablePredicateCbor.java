@@ -1,4 +1,4 @@
-package org.unicitylabs.sdk.serializer.json.predicate;
+package org.unicitylabs.sdk.serializer.cbor.predicate;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -9,13 +9,14 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
-import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineType;
-import java.io.IOException;
 import org.unicitylabs.sdk.predicate.SerializablePredicate;
+import org.unicitylabs.sdk.predicate.Predicate;
+import java.io.IOException;
 
-public class PredicateJson {
-  private PredicateJson() {
+public class SerializablePredicateCbor {
+
+  private SerializablePredicateCbor() {
   }
 
   public static class Serializer extends JsonSerializer<SerializablePredicate> {

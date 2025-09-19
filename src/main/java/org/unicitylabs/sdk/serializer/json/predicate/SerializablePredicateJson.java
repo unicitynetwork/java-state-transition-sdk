@@ -1,27 +1,21 @@
-package org.unicitylabs.sdk.serializer.cbor.predicate;
+package org.unicitylabs.sdk.serializer.json.predicate;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
-import org.unicitylabs.sdk.predicate.PredicateEngineType;
-import org.unicitylabs.sdk.predicate.SerializablePredicate;
-import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
-import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.Predicate;
-import org.unicitylabs.sdk.predicate.embedded.EmbeddedPredicateType;
-import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.PredicateEngineType;
 import java.io.IOException;
+import org.unicitylabs.sdk.predicate.SerializablePredicate;
 
-public class PredicateCbor {
-
-  private PredicateCbor() {
+public class SerializablePredicateJson {
+  private SerializablePredicateJson() {
   }
 
   public static class Serializer extends JsonSerializer<SerializablePredicate> {

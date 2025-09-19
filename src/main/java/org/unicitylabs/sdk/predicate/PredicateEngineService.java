@@ -14,7 +14,8 @@ public class PredicateEngineService {
   public static Predicate createPredicate(SerializablePredicate predicate) {
     PredicateEngine engine = PredicateEngineService.ENGINES.get(predicate.getEngine());
     if (engine == null) {
-      throw new IllegalArgumentException("Unsupported predicate engine type: " + predicate.getEngine());
+      throw new IllegalArgumentException(
+          "Unsupported predicate engine type: " + predicate.getEngine());
     }
 
     return engine.create(predicate);

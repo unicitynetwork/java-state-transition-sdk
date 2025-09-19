@@ -27,7 +27,6 @@ import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep;
 import org.unicitylabs.sdk.predicate.SerializablePredicate;
 import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.serializer.cbor.address.AddressCbor;
 import org.unicitylabs.sdk.serializer.cbor.api.AuthenticatorCbor;
@@ -46,7 +45,7 @@ import org.unicitylabs.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathStep
 import org.unicitylabs.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathStepCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.BurnPredicateCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.MaskedPredicateCbor;
-import org.unicitylabs.sdk.serializer.cbor.predicate.PredicateCbor;
+import org.unicitylabs.sdk.serializer.cbor.predicate.SerializablePredicateCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.UnmaskedPredicateCbor;
 import org.unicitylabs.sdk.serializer.cbor.token.TokenCbor;
 import org.unicitylabs.sdk.serializer.cbor.token.TokenIdCbor;
@@ -77,7 +76,7 @@ import org.unicitylabs.sdk.serializer.json.mtree.plain.SparseMerkleTreePathStepJ
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathJson;
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepBranchJson;
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepJson;
-import org.unicitylabs.sdk.serializer.json.predicate.PredicateJson;
+import org.unicitylabs.sdk.serializer.json.predicate.SerializablePredicateJson;
 import org.unicitylabs.sdk.serializer.json.token.fungible.TokenCoinDataJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenIdJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenJson;
@@ -188,8 +187,8 @@ public class UnicityObjectMapper {
     module.addSerializer(TokenState.class, new TokenStateCbor.Serializer());
     module.addDeserializer(TokenState.class, new TokenStateCbor.Deserializer());
 
-    module.addSerializer(SerializablePredicate.class, new PredicateCbor.Serializer());
-    module.addDeserializer(SerializablePredicate.class, new PredicateCbor.Deserializer());
+    module.addSerializer(SerializablePredicate.class, new SerializablePredicateCbor.Serializer());
+    module.addDeserializer(SerializablePredicate.class, new SerializablePredicateCbor.Deserializer());
 
     module.addDeserializer(MaskedPredicate.class, new MaskedPredicateCbor.Deserializer());
     module.addDeserializer(UnmaskedPredicate.class, new UnmaskedPredicateCbor.Deserializer());
@@ -282,8 +281,8 @@ public class UnicityObjectMapper {
     module.addSerializer(TokenState.class, new TokenStateJson.Serializer());
     module.addDeserializer(TokenState.class, new TokenStateJson.Deserializer());
 
-    module.addSerializer(SerializablePredicate.class, new PredicateJson.Serializer());
-    module.addDeserializer(SerializablePredicate.class, new PredicateJson.Deserializer());
+    module.addSerializer(SerializablePredicate.class, new SerializablePredicateJson.Serializer());
+    module.addDeserializer(SerializablePredicate.class, new SerializablePredicateJson.Deserializer());
 
     module.addSerializer(Transaction.class, new TransactionJson.Serializer());
     module.addDeserializer(Transaction.class, new TransactionJson.Deserializer());
