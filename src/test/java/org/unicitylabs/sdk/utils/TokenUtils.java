@@ -9,7 +9,8 @@ import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -24,6 +25,7 @@ import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 
 public class TokenUtils {
+
   public static Token<?> mintToken(StateTransitionClient client, byte[] secret) throws Exception {
     return TokenUtils.mintToken(
         client,
@@ -52,12 +54,14 @@ public class TokenUtils {
     SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
 
     MaskedPredicate predicate = MaskedPredicate.create(
+        tokenId,
+        tokenType,
         signingService,
         HashAlgorithm.SHA256,
         nonce
     );
 
-    Address address = predicate.getReference(tokenType).toAddress();
+    Address address = predicate.getReference().toAddress();
     TokenState tokenState = new TokenState(predicate, null);
 
     MintCommitment<MintTransactionData<MintTransactionReason>> commitment = MintCommitment.create(
@@ -123,13 +127,11 @@ public class TokenUtils {
   ) throws Exception {
     SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
 
-    MaskedPredicate predicate = MaskedPredicate.create(
+    Address address = MaskedPredicateReference.create(
+        tokenType,
         signingService,
         HashAlgorithm.SHA256,
-        nonce
-    );
-
-    Address address = predicate.getReference(tokenType).toAddress();
+        nonce).toAddress();
 
     MintCommitment<NametagMintTransactionData<MintTransactionReason>> commitment = MintCommitment.create(
         new NametagMintTransactionData<>(
@@ -158,7 +160,16 @@ public class TokenUtils {
 
     // Create mint transaction
     return new Token<>(
-        new TokenState(predicate, null),
+        new TokenState(
+            MaskedPredicate.create(
+                commitment.getTransactionData().getTokenId(),
+                commitment.getTransactionData().getTokenType(),
+                signingService,
+                HashAlgorithm.SHA256,
+                nonce
+            ),
+            null
+        ),
         commitment.toTransaction(inclusionProof)
     );
   }

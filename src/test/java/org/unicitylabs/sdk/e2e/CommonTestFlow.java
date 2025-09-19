@@ -22,9 +22,12 @@ import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -43,6 +46,7 @@ import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
+import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestTokenData;
 
@@ -68,14 +72,12 @@ public class CommonTestFlow {
     SigningService aliceSigningService = SigningService.createFromMaskedSecret(ALICE_SECRET,
         aliceNonce);
 
-    MaskedPredicate alicePredicate = MaskedPredicate.create(
+    Address aliceAddress = MaskedPredicateReference.create(
+        tokenType,
         aliceSigningService,
         HashAlgorithm.SHA256,
         aliceNonce
-    );
-
-    Address aliceAddress = alicePredicate.getReference(tokenType).toAddress();
-    TokenState aliceTokenState = new TokenState(alicePredicate, null);
+    ).toAddress();
 
     MintCommitment<MintTransactionData<MintTransactionReason>> aliceMintCommitment = MintCommitment.create(
         new MintTransactionData<>(
@@ -106,7 +108,16 @@ public class CommonTestFlow {
 
     // Create mint transaction
     Token<?> aliceToken = new Token<>(
-        aliceTokenState,
+        new TokenState(
+            MaskedPredicate.create(
+                tokenId,
+                tokenType,
+                aliceSigningService,
+                HashAlgorithm.SHA256,
+                aliceNonce
+            ),
+            null
+        ),
         aliceMintCommitment.toTransaction(mintInclusionProof)
     );
 
@@ -158,13 +169,13 @@ public class CommonTestFlow {
     // Bob mints a name tag tokens
 
     byte[] bobNametagNonce = randomBytes(32);
-    MaskedPredicate bobNametagPredicate = MaskedPredicate.create(
-        SigningService.createFromMaskedSecret(BOB_SECRET, bobNametagNonce),
-        HashAlgorithm.SHA256,
-        bobNametagNonce
-    );
     TokenType bobNametagTokenType = new TokenType(randomBytes(32));
-    DirectAddress bobNametagAddress = bobNametagPredicate.getReference(bobNametagTokenType)
+    DirectAddress bobNametagAddress = MaskedPredicateReference.create(
+            bobNametagTokenType,
+            SigningService.createFromMaskedSecret(BOB_SECRET, bobNametagNonce),
+            HashAlgorithm.SHA256,
+            bobNametagNonce
+        )
         .toAddress();
     MintCommitment<?> nametagMintCommitment = MintCommitment.create(
         new NametagMintTransactionData<>(
@@ -189,7 +200,16 @@ public class CommonTestFlow {
         ).get()
     );
     Token<?> bobNametagToken = new Token<>(
-        new TokenState(bobNametagPredicate, null),
+        new TokenState(
+            MaskedPredicate.create(
+                bobNametagGenesis.getData().getTokenId(),
+                bobNametagGenesis.getData().getTokenType(),
+                SigningService.createFromMaskedSecret(BOB_SECRET, bobNametagNonce),
+                HashAlgorithm.SHA256,
+                bobNametagNonce
+            ),
+            null
+        ),
         bobNametagGenesis
     );
 
@@ -198,6 +218,8 @@ public class CommonTestFlow {
         aliceToken,
         new TokenState(
             UnmaskedPredicate.create(
+                aliceToken.getId(),
+                aliceToken.getType(),
                 SigningService.createFromSecret(BOB_SECRET),
                 HashAlgorithm.SHA256,
                 aliceToBobTransferTransaction.getData().getSalt()
@@ -210,7 +232,8 @@ public class CommonTestFlow {
 
     // Verify Bob is now the owner
     assertTrue(bobToken.verify().isSuccessful());
-    assertTrue(bobToken.getState().getUnlockPredicate()
+    assertTrue(PredicateEngineService
+        .createPredicate(bobToken.getState().getPredicate())
         .isOwner(SigningService.createFromSecret(BOB_SECRET).getPublicKey())
     );
     assertEquals(aliceToken.getId(), bobToken.getId());
@@ -253,6 +276,8 @@ public class CommonTestFlow {
 
     // Carol creates UnmaskedPredicate and finalizes
     UnmaskedPredicate carolPredicate = UnmaskedPredicate.create(
+        bobToken.getId(),
+        bobToken.getType(),
         SigningService.createFromSecret(CAROL_SECRET),
         HashAlgorithm.SHA256,
         bobToCarolTransaction.getData().getSalt()
@@ -300,6 +325,8 @@ public class CommonTestFlow {
         carolToken,
         new TokenState(
             UnmaskedPredicate.create(
+                carolToken.getId(),
+                carolToken.getType(),
                 SigningService.createFromSecret(BOB_SECRET),
                 HashAlgorithm.SHA256,
                 carolToBobTransaction.getData().getSalt()
@@ -318,11 +345,6 @@ public class CommonTestFlow {
 
     TokenType splitTokenType = new TokenType(randomBytes(32));
     byte[] splitTokenNonce = randomBytes(32);
-    MaskedPredicate splitTokenPredicate = MaskedPredicate.create(
-        SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
-        HashAlgorithm.SHA256,
-        splitTokenNonce
-    );
 
     TokenSplit split = new TokenSplitBuilder()
         .createToken(
@@ -330,7 +352,12 @@ public class CommonTestFlow {
             splitTokenType,
             null,
             new TokenCoinData(Map.ofEntries(splitCoins[0])),
-            splitTokenPredicate.getReference(splitTokenType).toAddress(),
+            MaskedPredicateReference.create(
+                splitTokenType,
+                SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
+                HashAlgorithm.SHA256,
+                splitTokenNonce
+            ).toAddress(),
             randomBytes(32),
             null
         )
@@ -339,7 +366,12 @@ public class CommonTestFlow {
             splitTokenType,
             null,
             new TokenCoinData(Map.ofEntries(splitCoins[1])),
-            splitTokenPredicate.getReference(splitTokenType).toAddress(),
+            MaskedPredicateReference.create(
+                splitTokenType,
+                SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
+                HashAlgorithm.SHA256,
+                splitTokenNonce
+            ).toAddress(),
             randomBytes(32),
             null
         )
@@ -380,13 +412,19 @@ public class CommonTestFlow {
             .count()
     );
 
+    MaskedPredicate splitTokenPredicate = MaskedPredicate.create(
+        splitTransactions.get(0).getData().getTokenId(),
+        splitTransactions.get(0).getData().getTokenType(),
+        SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
+        HashAlgorithm.SHA256,
+        splitTokenNonce
+    );
+
     Assertions.assertTrue(
         new Token<>(
             new TokenState(splitTokenPredicate, null),
             splitTransactions.get(0)
         ).verify().isSuccessful()
     );
-
-
   }
 }

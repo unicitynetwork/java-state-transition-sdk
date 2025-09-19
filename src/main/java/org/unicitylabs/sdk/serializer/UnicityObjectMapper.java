@@ -24,10 +24,11 @@ import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePath;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep;
-import org.unicitylabs.sdk.predicate.BurnPredicate;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.SerializablePredicate;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.Predicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.serializer.cbor.address.AddressCbor;
 import org.unicitylabs.sdk.serializer.cbor.api.AuthenticatorCbor;
 import org.unicitylabs.sdk.serializer.cbor.bft.InputRecordCbor;
@@ -76,10 +77,7 @@ import org.unicitylabs.sdk.serializer.json.mtree.plain.SparseMerkleTreePathStepJ
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathJson;
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepBranchJson;
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepJson;
-import org.unicitylabs.sdk.serializer.json.predicate.BurnPredicateJson;
-import org.unicitylabs.sdk.serializer.json.predicate.MaskedPredicateJson;
 import org.unicitylabs.sdk.serializer.json.predicate.PredicateJson;
-import org.unicitylabs.sdk.serializer.json.predicate.UnmaskedPredicateJson;
 import org.unicitylabs.sdk.serializer.json.token.fungible.TokenCoinDataJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenIdJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenJson;
@@ -190,13 +188,13 @@ public class UnicityObjectMapper {
     module.addSerializer(TokenState.class, new TokenStateCbor.Serializer());
     module.addDeserializer(TokenState.class, new TokenStateCbor.Deserializer());
 
-    module.addDeserializer(Predicate.class, new PredicateCbor.Deserializer());
-    module.addSerializer(MaskedPredicate.class, new MaskedPredicateCbor.Serializer());
+    module.addSerializer(SerializablePredicate.class, new PredicateCbor.Serializer());
+    module.addDeserializer(SerializablePredicate.class, new PredicateCbor.Deserializer());
+
     module.addDeserializer(MaskedPredicate.class, new MaskedPredicateCbor.Deserializer());
-    module.addSerializer(UnmaskedPredicate.class, new UnmaskedPredicateCbor.Serializer());
     module.addDeserializer(UnmaskedPredicate.class, new UnmaskedPredicateCbor.Deserializer());
-    module.addSerializer(BurnPredicate.class, new BurnPredicateCbor.Serializer());
     module.addDeserializer(BurnPredicate.class, new BurnPredicateCbor.Deserializer());
+
 
     // BFT - UnicityCertificate
     module.addSerializer(UnicityCertificate.class, new UnicityCertificateCbor.Serializer());
@@ -284,13 +282,8 @@ public class UnicityObjectMapper {
     module.addSerializer(TokenState.class, new TokenStateJson.Serializer());
     module.addDeserializer(TokenState.class, new TokenStateJson.Deserializer());
 
-    module.addDeserializer(Predicate.class, new PredicateJson.Deserializer());
-    module.addSerializer(MaskedPredicate.class, new MaskedPredicateJson.Serializer());
-    module.addDeserializer(MaskedPredicate.class, new MaskedPredicateJson.Deserializer());
-    module.addSerializer(UnmaskedPredicate.class, new UnmaskedPredicateJson.Serializer());
-    module.addDeserializer(UnmaskedPredicate.class, new UnmaskedPredicateJson.Deserializer());
-    module.addSerializer(BurnPredicate.class, new BurnPredicateJson.Serializer());
-    module.addDeserializer(BurnPredicate.class, new BurnPredicateJson.Deserializer());
+    module.addSerializer(SerializablePredicate.class, new PredicateJson.Serializer());
+    module.addDeserializer(SerializablePredicate.class, new PredicateJson.Deserializer());
 
     module.addSerializer(Transaction.class, new TransactionJson.Serializer());
     module.addDeserializer(Transaction.class, new TransactionJson.Deserializer());

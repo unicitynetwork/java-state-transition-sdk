@@ -77,9 +77,9 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return this.nametags;
   }
 
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
+  public DataHash calculateHash() {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.addPOJO(this.sourceState.calculateHash(tokenId, tokenType));
+    node.addPOJO(this.sourceState.calculateHash());
     node.addPOJO(this.dataHash);
     node.addPOJO(this.recipient);
     node.add(this.salt);
@@ -120,7 +120,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
             + "salt=%s, "
             + "dataHash=%s, "
             + "message=%s, "
-            + "nametagTokens=%s"
+            + "nametags=%s"
             + "}",
         this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
         this.message != null ? HexConverter.encode(this.message) : null, this.nametags);

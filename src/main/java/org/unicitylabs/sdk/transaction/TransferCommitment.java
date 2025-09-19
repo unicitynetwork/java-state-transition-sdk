@@ -35,9 +35,8 @@ public class TransferCommitment extends Commitment<TransferTransactionData> {
     TransferTransactionData transactionData = new TransferTransactionData(
         token.getState(), recipient, salt, dataHash, message, token.getNametags());
 
-    DataHash sourceStateHash = transactionData.getSourceState()
-        .calculateHash(token.getId(), token.getType());
-    DataHash transactionHash = transactionData.calculateHash(token.getId(), token.getType());
+    DataHash sourceStateHash = transactionData.getSourceState().calculateHash();
+    DataHash transactionHash = transactionData.calculateHash();
 
     RequestId requestId = RequestId.create(signingService.getPublicKey(), sourceStateHash);
     Authenticator authenticator = Authenticator.create(signingService, transactionHash,
@@ -56,7 +55,7 @@ public class TransferCommitment extends Commitment<TransferTransactionData> {
       throw new RuntimeException("Authenticator is missing from inclusion proof.");
     }
 
-    if (!this.getTransactionData().calculateHash(token.getId(), token.getType())
+    if (!this.getTransactionData().calculateHash()
         .equals(inclusionProof.getTransactionHash().orElse(null))) {
       throw new RuntimeException("Payload hash mismatch.");
     }

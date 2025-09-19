@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.transaction.MintReasonType;
 import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.SplitMintReasonProof;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 public class SplitMintReasonJson {
+  private static final String TYPE_FIELD = "type";
   private static final String TOKEN_FIELD = "token";
   private static final String PROOFS_FIELD = "proofs";
 
@@ -38,6 +40,7 @@ public class SplitMintReasonJson {
       }
 
       gen.writeStartObject();
+      gen.writeObjectField(TYPE_FIELD, value.getType());
       gen.writeObjectField(TOKEN_FIELD, value.getToken());
       gen.writeObjectField(PROOFS_FIELD, value.getProofs());
       gen.writeEndObject();
@@ -51,6 +54,7 @@ public class SplitMintReasonJson {
 
     @Override
     public SplitMintReason deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+      String type = null;
       Token<?> token = null;
       List<SplitMintReasonProof> proofs = new ArrayList<>();
 
@@ -71,6 +75,13 @@ public class SplitMintReasonJson {
         p.nextToken();
         try {
           switch (fieldName) {
+            case TYPE_FIELD:
+              type = p.getValueAsString();
+              if (!MintReasonType.TOKEN_SPLIT.name().equals(type)) {
+                throw MismatchedInputException.from(p, SplitMintReason.class,
+                    String.format("Invalid type: %s", type));
+              }
+              break;
             case TOKEN_FIELD:
               token = p.readValueAs(Token.class);
               break;
@@ -91,7 +102,7 @@ public class SplitMintReasonJson {
         }
       }
 
-      Set<String> missingFields = new HashSet<>(Set.of(TOKEN_FIELD, PROOFS_FIELD));
+      Set<String> missingFields = new HashSet<>(Set.of(TYPE_FIELD, TOKEN_FIELD, PROOFS_FIELD));
       missingFields.removeAll(fields);
       if (!missingFields.isEmpty()) {
         throw MismatchedInputException.from(p, SplitMintReason.class,

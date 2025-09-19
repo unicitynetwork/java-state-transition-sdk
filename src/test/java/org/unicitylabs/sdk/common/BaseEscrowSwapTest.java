@@ -11,8 +11,9 @@ import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
@@ -95,6 +96,8 @@ public abstract class BaseEscrowSwapTest {
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
+            token.getId(),
+            token.getType(),
             signingService,
             HashAlgorithm.SHA256,
             transaction.getData().getSalt()
@@ -114,16 +117,22 @@ public abstract class BaseEscrowSwapTest {
   void testEscrow() throws Exception {
     // Make nametags unique for each test run
     Token<?> bobToken = mintToken(BOB_SECRET);
-    String[] bobSerializedData = transferToken(
+    String[] bobSerializedData = this.transferToken(
         bobToken,
-        SigningService.createFromMaskedSecret(BOB_SECRET, bobToken.getState().getUnlockPredicate().getNonce()),
+        SigningService.createFromMaskedSecret(
+            BOB_SECRET,
+            ((MaskedPredicate) bobToken.getState().getPredicate()).getNonce()
+        ),
         ALICE_NAMETAG
     );
 
     Token<?> carolToken = mintToken(CAROL_SECRET);
-    String[] carolSerializedData = transferToken(
+    String[] carolSerializedData = this.transferToken(
         carolToken,
-        SigningService.createFromMaskedSecret(CAROL_SECRET, carolToken.getState().getUnlockPredicate().getNonce()),
+        SigningService.createFromMaskedSecret(
+            CAROL_SECRET,
+            ((MaskedPredicate) carolToken.getState().getPredicate()).getNonce()
+        ),
         ALICE_NAMETAG
     );
 

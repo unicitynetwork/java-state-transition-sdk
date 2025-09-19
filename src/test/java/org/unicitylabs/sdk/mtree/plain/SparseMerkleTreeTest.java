@@ -4,6 +4,7 @@ import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -169,8 +170,8 @@ public class SparseMerkleTreeTest {
     Assertions.assertTrue(result.isPathValid());
     Assertions.assertFalse(result.isValid());
 
-    path = root.getPath(BigInteger.valueOf(0b10));
-    result = path.verify(BigInteger.valueOf(0b10));
+    path = root.getPath(BigInteger.valueOf(0b111100101));
+    result = path.verify(BigInteger.valueOf(0b111100101));
     Assertions.assertTrue(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
     Assertions.assertTrue(result.isValid());

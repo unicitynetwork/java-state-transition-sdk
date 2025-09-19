@@ -10,8 +10,8 @@ import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreeRootNode;
-import org.unicitylabs.sdk.predicate.BurnPredicate;
-import org.unicitylabs.sdk.predicate.BurnPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -139,10 +139,15 @@ public class TokenSplitBuilder {
         Transaction<TransferTransactionData> burnTransaction) {
       Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
 
-      byte[] nonce = new byte[32];
-      new SecureRandom().nextBytes(nonce);
       Token<?> burnedToken = this.token.update(
-          new TokenState(new BurnPredicate(nonce, this.aggregationRoot.getRootHash()), null),
+          new TokenState(
+              new BurnPredicate(
+                  this.token.getId(),
+                  this.token.getType(),
+                  this.aggregationRoot.getRootHash()
+              ),
+              null
+          ),
           burnTransaction,
           List.of()
       );

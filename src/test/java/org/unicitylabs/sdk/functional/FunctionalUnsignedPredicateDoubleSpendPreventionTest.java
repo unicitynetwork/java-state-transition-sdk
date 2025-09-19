@@ -13,8 +13,9 @@ import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
@@ -39,7 +40,10 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         randomBytes(32),
         null,
         null,
-        SigningService.createFromMaskedSecret(secret, token.getState().getUnlockPredicate().getNonce())
+        SigningService.createFromMaskedSecret(
+            secret,
+            ((MaskedPredicate) token.getState().getPredicate()).getNonce()
+        )
     );
 
     SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
@@ -78,6 +82,8 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
+            token.getId(),
+            token.getType(),
             SigningService.createFromSecret(secret),
             HashAlgorithm.SHA256,
             transaction.getData().getSalt()

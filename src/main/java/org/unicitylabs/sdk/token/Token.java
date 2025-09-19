@@ -12,14 +12,16 @@ import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransactionData;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.util.VerificationResult;
 
@@ -102,26 +104,13 @@ public class Token<T extends MintTransactionData<?>> {
     Objects.requireNonNull(transaction, "Transaction is null");
     Objects.requireNonNull(transactionNametags, "Nametag tokens are null");
 
-    LinkedList<Transaction<TransferTransactionData>> verificationTransactions = new LinkedList<>(this.transactions);
-    verificationTransactions.add(transaction);
-    if (!transaction.getData().getSourceState().getUnlockPredicate().verify(verificationTransactions, this)) {
-      throw new RuntimeException("Predicate verification failed");
+    if (!this.verifyTransaction(this, transaction).isSuccessful()) {
+      // TODO: Add method to return why it failed
+      throw new RuntimeException("Transaction verification failed");
     }
 
-    Address recipient = ProxyAddress.resolve(
-        transaction.getData().getRecipient(),
-        transactionNametags
-    );
-    if (!state.getUnlockPredicate().getReference(this.getType()).toAddress().equals(recipient)) {
-      throw new RuntimeException("Recipient address mismatch");
-    }
-
-    if (!transaction.containsData(state.getData().orElse(null))) {
-      throw new RuntimeException("State data is not part of transaction.");
-    }
-
-    List<Transaction<TransferTransactionData>> transactions = new ArrayList<>(
-        this.getTransactions());
+    LinkedList<Transaction<TransferTransactionData>> transactions = new LinkedList<>(
+        this.transactions);
     transactions.add(transaction);
 
     return new Token<>(state, this.getGenesis(), transactions, transactionNametags);
@@ -135,94 +124,64 @@ public class Token<T extends MintTransactionData<?>> {
             List.of(this.verifyGenesis(this.genesis)))
     );
 
-    Transaction<? extends TransactionData<?>> previousTransaction = this.genesis;
     for (int i = 0; i < this.transactions.size(); i++) {
       Transaction<TransferTransactionData> transaction = this.transactions.get(i);
-      Address recipient = previousTransaction.getData().getRecipient();
 
       results.add(
           VerificationResult.fromChildren(
               "Transaction verification",
               List.of(
                   this.verifyTransaction(
-                      this.transactions.subList(0, i + 1),
-                      previousTransaction.getData().getDataHash().orElse(null),
-                      recipient
+                      new Token<>(
+                          transaction.getData().getSourceState(),
+                          this.genesis,
+                          this.transactions.subList(0, i),
+                          transaction.getData().getNametags()
+                      ),
+                      transaction
                   )
               )
           )
       );
-
-      previousTransaction = transaction;
     }
 
     results.add(VerificationResult.fromChildren(
-        "Token data verification",
-        List.of(
-            this.transactionContainsData(
-                previousTransaction.getData().getDataHash().orElse(null),
-                this.getState().getData().orElse(null)
-            )
-                ? VerificationResult.success()
-                : VerificationResult.fail("Invalid token data")
-        )
-    ));
-
-    List<VerificationResult> nametagResults = new ArrayList<>();
-    for (Token<?> nametag : this.nametags) {
-      nametagResults.add(nametag.verify());
-    }
-    results.add(VerificationResult.fromChildren(
-        "Token nametags verification",
-        nametagResults
-    ));
-
-    Address expectedAddress = this.getState().getUnlockPredicate().getReference(this.getType())
-        .toAddress();
-
-    Address recipient = ProxyAddress.resolve(previousTransaction.getData().getRecipient(),
-        this.nametags);
-
-    results.add(VerificationResult.fromChildren(
-        "Token recipient verification",
-        List.of(
-            expectedAddress.equals(recipient)
-                ? VerificationResult.success()
-                : VerificationResult.fail("Invalid recipient address")
-        )
+        "Token current state verification",
+        List.of(this.verifyTransaction(this, null))
     ));
 
     return VerificationResult.fromChildren("Token verification", results);
   }
 
   private VerificationResult verifyTransaction(
-      List<Transaction<TransferTransactionData>> transactions,
-      DataHash dataHash,
-      Address recipient
+      Token<?> token,
+      Transaction<TransferTransactionData> transaction
   ) {
-    Transaction<TransferTransactionData> transaction = transactions.get(transactions.size() - 1);
-    for (Token<?> nametag : transaction.getData().getNametags()) {
+    for (Token<?> nametag : token.getNametags()) {
       if (!nametag.verify().isSuccessful()) {
         return VerificationResult.fail(
             String.format("Nametag token %s verification failed", nametag.getId()));
       }
     }
 
-    Address expectedRecipient = transaction.getData().getSourceState().getUnlockPredicate()
-        .getReference(this.getType()).toAddress();
+    Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
+    Address expectedRecipient = predicate.getReference().toAddress();
 
+    Transaction<?> previousTransaction = !token.transactions.isEmpty()
+        ? token.transactions.getLast()
+        : token.genesis;
     if (!expectedRecipient.equals(
-        ProxyAddress.resolve(recipient, transaction.getData().getNametags()))) {
+        ProxyAddress.resolve(previousTransaction.getData().getRecipient(), token.getNametags()))) {
       return VerificationResult.fail("recipient mismatch");
     }
 
     if (!this.transactionContainsData(
-        dataHash,
-        transaction.getData().getSourceState().getData().orElse(null))) {
+        previousTransaction.getData().getDataHash().orElse(null),
+        token.getState().getData().orElse(null))) {
       return VerificationResult.fail("data mismatch");
     }
 
-    if (!transaction.getData().getSourceState().getUnlockPredicate().verify(transactions, this)) {
+    if (transaction != null && !predicate.verify(token, transaction)) {
       return VerificationResult.fail("predicate verification failed");
     }
 
@@ -308,7 +267,7 @@ public class Token<T extends MintTransactionData<?>> {
 
   @Override
   public String toString() {
-    return String.format("Token{state=%s, genesis=%s, transactions=%s, nametagTokens=%s}",
+    return String.format("Token{state=%s, genesis=%s, transactions=%s, nametags=%s}",
         this.state, this.genesis, this.transactions, this.nametags);
   }
 }

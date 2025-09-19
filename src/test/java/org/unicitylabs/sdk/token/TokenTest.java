@@ -4,7 +4,7 @@ import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.CoinId;
@@ -52,6 +52,8 @@ public class TokenTest {
     Token<?> nametagToken = new Token<>(
         new TokenState(
             MaskedPredicate.create(
+                nametagGenesisData.getTokenId(),
+                nametagGenesisData.getTokenType(),
                 SigningService.createFromMaskedSecret(TestUtils.randomBytes(32), nametagNonce),
                 HashAlgorithm.SHA256,
                 nametagNonce),
@@ -72,6 +74,8 @@ public class TokenTest {
     Token<?> token = new Token<>(
         new TokenState(
             MaskedPredicate.create(
+                genesisData.getTokenId(),
+                genesisData.getTokenType(),
                 SigningService.createFromMaskedSecret(
                     TestUtils.randomBytes(32),
                     genesisData.getTokenId().getBytes()
@@ -96,6 +100,8 @@ public class TokenTest {
                 new TransferTransactionData(
                     new TokenState(
                         new MaskedPredicate(
+                            genesisData.getTokenId(),
+                            genesisData.getTokenType(),
                             new byte[24],
                             "secp256k1",
                             HashAlgorithm.SHA256,

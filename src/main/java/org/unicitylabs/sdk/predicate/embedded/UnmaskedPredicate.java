@@ -1,27 +1,38 @@
 
-package org.unicitylabs.sdk.predicate;
+package org.unicitylabs.sdk.predicate.embedded;
 
-import java.util.List;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.PredicateEngineType;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.signing.Signature;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 
 public class UnmaskedPredicate extends DefaultPredicate {
 
   public UnmaskedPredicate(
+      TokenId tokenId,
+      TokenType tokenType,
       byte[] publicKey,
       String signingAlgorithm,
       HashAlgorithm hashAlgorithm,
-      byte[] nonce) {
-    super(PredicateType.UNMASKED, publicKey, signingAlgorithm, hashAlgorithm, nonce);
+      byte[] nonce
+  ) {
+    super(EmbeddedPredicateType.UNMASKED, tokenId, tokenType, publicKey, signingAlgorithm,
+        hashAlgorithm, nonce);
   }
 
   public static UnmaskedPredicate create(
+      TokenId tokenId,
+      TokenType tokenType,
       SigningService signingService,
       HashAlgorithm hashAlgorithm,
       byte[] salt
@@ -30,6 +41,8 @@ public class UnmaskedPredicate extends DefaultPredicate {
         new DataHasher(HashAlgorithm.SHA256).update(salt).digest());
 
     return new UnmaskedPredicate(
+        tokenId,
+        tokenType,
         signingService.getPublicKey(),
         signingService.getAlgorithm(),
         hashAlgorithm,
@@ -37,16 +50,13 @@ public class UnmaskedPredicate extends DefaultPredicate {
   }
 
   @Override
-  public boolean verify(
-      List<Transaction<TransferTransactionData>> transactions,
-      Token<?> token
-  ) {
-    return super.verify(transactions, token) && SigningService.verifyWithPublicKey(
+  public boolean verify(Token<?> token, Transaction<TransferTransactionData> transaction) {
+    return super.verify(token, transaction) && SigningService.verifyWithPublicKey(
         new DataHasher(HashAlgorithm.SHA256)
             .update(
-                transactions.size() > 1
-                    ? transactions.get(transactions.size() - 2).getData().getSalt()
-                    : token.getGenesis().getData().getSalt()
+                token.getTransactions().isEmpty()
+                    ? token.getGenesis().getData().getSalt()
+                    : token.getTransactions().getLast().getData().getSalt()
             )
             .digest(),
         this.getNonce(),
@@ -54,9 +64,9 @@ public class UnmaskedPredicate extends DefaultPredicate {
     );
   }
 
-  public UnmaskedPredicateReference getReference(TokenType tokenType) {
+  public UnmaskedPredicateReference getReference() {
     return UnmaskedPredicateReference.create(
-        tokenType,
+        this.getTokenType(),
         this.getSigningAlgorithm(),
         this.getPublicKey(),
         this.getHashAlgorithm()

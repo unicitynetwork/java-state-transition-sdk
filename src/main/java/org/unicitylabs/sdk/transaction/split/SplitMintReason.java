@@ -3,11 +3,15 @@ package org.unicitylabs.sdk.transaction.split;
 
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep.Branch;
-import org.unicitylabs.sdk.predicate.BurnPredicate;
-import org.unicitylabs.sdk.predicate.PredicateType;
+import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
+import org.unicitylabs.sdk.predicate.embedded.EmbeddedPredicateType;
+import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.PredicateEngineType;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.MintReasonType;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.transaction.Transaction;
@@ -32,6 +36,10 @@ public class SplitMintReason implements MintTransactionReason {
     this.proofs = List.copyOf(proofs);
   }
 
+  public String getType() {
+    return MintReasonType.TOKEN_SPLIT.name();
+  }
+
   public Token<?> getToken() {
     return this.token;
   }
@@ -41,11 +49,13 @@ public class SplitMintReason implements MintTransactionReason {
   }
 
   public VerificationResult verify(Transaction<? extends MintTransactionData<?>> transaction) {
-    if (!transaction.getData().getCoinData().isPresent()) {
+    if (transaction.getData().getCoinData().isEmpty()) {
       return VerificationResult.fail("Coin data is missing.");
     }
 
-    if (!PredicateType.BURN.name().equals(this.token.getState().getUnlockPredicate().getType())) {
+    Predicate predicate = PredicateEngineService.createPredicate(
+        this.token.getState().getPredicate());
+    if (!(predicate instanceof BurnPredicate)) {
       return VerificationResult.fail("Token is not burned");
     }
 
@@ -85,8 +95,8 @@ public class SplitMintReason implements MintTransactionReason {
         return VerificationResult.fail("Coin amount in token does not match coin tree leaf.");
       }
 
-      BurnPredicate predicate = (BurnPredicate) this.token.getState().getUnlockPredicate();
-      if (!proof.getAggregationPath().getRootHash().equals(predicate.getReason())) {
+      if (!proof.getAggregationPath().getRootHash()
+          .equals(((BurnPredicate) predicate).getReason())) {
         return VerificationResult.fail("Burn reason does not match aggregation root.");
       }
     }

@@ -4,6 +4,7 @@ package org.unicitylabs.sdk;
 import org.unicitylabs.sdk.api.IAggregatorClient;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.transaction.Commitment;
@@ -38,14 +39,17 @@ public class StateTransitionClient {
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
       Token<?> token,
       TransferCommitment commitment) {
-    if (!commitment.getTransactionData().getSourceState().getUnlockPredicate()
-        .isOwner(commitment.getAuthenticator().getPublicKey())) {
+    if (
+        !PredicateEngineService.createPredicate(
+            commitment.getTransactionData().getSourceState().getPredicate()
+        ).isOwner(commitment.getAuthenticator().getPublicKey())
+    ) {
       throw new IllegalArgumentException(
           "Ownership verification failed: Authenticator does not match source state predicate.");
     }
 
     return this.client.submitCommitment(commitment.getRequestId(), commitment.getTransactionData()
-        .calculateHash(token.getId(), token.getType()), commitment.getAuthenticator());
+        .calculateHash(), commitment.getAuthenticator());
   }
 
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
@@ -60,18 +64,17 @@ public class StateTransitionClient {
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,
-      List<Token<?>> nametagTokens
+      List<Token<?>> nametags
   ) {
     Objects.requireNonNull(token, "Token is null");
 
-    return token.update(state, transaction, nametagTokens);
+    return token.update(state, transaction, nametags);
   }
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
       Token<? extends MintTransactionData<?>> token,
       byte[] publicKey) {
-    RequestId requestId = RequestId.create(publicKey,
-        token.getState().calculateHash(token.getId(), token.getType()));
+    RequestId requestId = RequestId.create(publicKey, token.getState().calculateHash());
     return this.client.getInclusionProof(requestId)
         .thenApply(inclusionProof -> inclusionProof.verify(requestId));
   }

@@ -14,8 +14,9 @@ import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -49,12 +50,14 @@ public abstract class BaseTokenSplitTest {
         new TokenId(randomBytes(32)),
         tokenType,
         randomBytes(32),
-        new TokenCoinData(Map.of(
-            new CoinId("test_eur".getBytes(StandardCharsets.UTF_8)),
-            BigInteger.valueOf(100),
-            new CoinId("test_usd".getBytes(StandardCharsets.UTF_8)),
-            BigInteger.valueOf(100)
-        )),
+        new TokenCoinData(
+            Map.of(
+                new CoinId("test_eur".getBytes(StandardCharsets.UTF_8)),
+                BigInteger.valueOf(100),
+                new CoinId("test_usd".getBytes(StandardCharsets.UTF_8)),
+                BigInteger.valueOf(100)
+            )
+        ),
         randomBytes(32),
         randomBytes(32),
         null
@@ -103,7 +106,10 @@ public abstract class BaseTokenSplitTest {
 
     TransferCommitment burnCommitment = split.createBurnCommitment(
         randomBytes(32),
-        SigningService.createFromMaskedSecret(secret, token.getState().getUnlockPredicate().getNonce())
+        SigningService.createFromMaskedSecret(
+            secret,
+            ((MaskedPredicate) token.getState().getPredicate()).getNonce()
+        )
     );
 
     SubmitCommitmentResponse burnCommitmentResponse = this.client
@@ -134,6 +140,8 @@ public abstract class BaseTokenSplitTest {
 
       TokenState state = new TokenState(
           UnmaskedPredicate.create(
+              commitment.getTransactionData().getTokenId(),
+              commitment.getTransactionData().getTokenType(),
               SigningService.createFromSecret(secret),
               HashAlgorithm.SHA256,
               commitment.getTransactionData().getSalt()
