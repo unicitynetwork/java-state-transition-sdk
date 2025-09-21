@@ -6,6 +6,7 @@ import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 
 public class MaskedPredicate extends DefaultPredicate {
+
   public MaskedPredicate(
       TokenId tokenId,
       TokenType tokenType,
@@ -30,8 +31,8 @@ public class MaskedPredicate extends DefaultPredicate {
       SigningService signingService,
       HashAlgorithm hashAlgorithm,
       byte[] nonce) {
-    return new MaskedPredicate(tokenId, tokenType, signingService.getPublicKey(), signingService.getAlgorithm(),
-        hashAlgorithm, nonce);
+    return new MaskedPredicate(tokenId, tokenType, signingService.getPublicKey(),
+        signingService.getAlgorithm(), hashAlgorithm, nonce);
   }
 
   @Override

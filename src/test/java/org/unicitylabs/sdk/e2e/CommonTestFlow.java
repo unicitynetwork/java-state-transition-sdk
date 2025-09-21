@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.unicitylabs.sdk.StateTransitionClient;
@@ -27,7 +26,6 @@ import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -46,7 +44,6 @@ import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
-import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestTokenData;
 
@@ -340,8 +337,8 @@ public class CommonTestFlow {
     assertTrue(carolToBobToken.verify().isSuccessful());
 
     // SPLIT
-    Entry<CoinId, BigInteger>[] splitCoins = coinData.getCoins().entrySet()
-        .toArray(Map.Entry[]::new);
+    List<Map.Entry<CoinId, BigInteger>> splitCoins =
+        new ArrayList<>(coinData.getCoins().entrySet());
 
     TokenType splitTokenType = new TokenType(randomBytes(32));
     byte[] splitTokenNonce = randomBytes(32);
@@ -351,7 +348,7 @@ public class CommonTestFlow {
             new TokenId(randomBytes(32)),
             splitTokenType,
             null,
-            new TokenCoinData(Map.ofEntries(splitCoins[0])),
+            new TokenCoinData(Map.ofEntries(splitCoins.get(0))),
             MaskedPredicateReference.create(
                 splitTokenType,
                 SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
@@ -365,7 +362,7 @@ public class CommonTestFlow {
             new TokenId(randomBytes(32)),
             splitTokenType,
             null,
-            new TokenCoinData(Map.ofEntries(splitCoins[1])),
+            new TokenCoinData(Map.ofEntries(splitCoins.get(1))),
             MaskedPredicateReference.create(
                 splitTokenType,
                 SigningService.createFromMaskedSecret(BOB_SECRET, splitTokenNonce),
@@ -406,8 +403,11 @@ public class CommonTestFlow {
     Assertions.assertEquals(
         2,
         splitTransactions.stream()
-            .map(transaction -> transaction.getData().getReason().get().verify(transaction)
-                .isSuccessful())
+            .map(transaction -> transaction.getData()
+                .getReason()
+                .map(reason -> reason.verify(transaction).isSuccessful())
+                .orElse(false)
+            )
             .filter(Boolean::booleanValue)
             .count()
     );

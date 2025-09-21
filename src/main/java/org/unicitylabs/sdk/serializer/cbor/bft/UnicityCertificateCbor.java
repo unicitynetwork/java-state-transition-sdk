@@ -8,18 +8,13 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import java.io.IOException;
 import java.math.BigInteger;
-import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.bft.InputRecord;
 import org.unicitylabs.sdk.bft.ShardTreeCertificate;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.bft.UnicitySeal;
 import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.signing.Signature;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityCertificateCbor {
 

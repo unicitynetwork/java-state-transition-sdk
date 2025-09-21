@@ -16,14 +16,13 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
-import org.unicitylabs.sdk.util.VerificationResult;
+import org.unicitylabs.sdk.verification.VerificationResult;
 
 public class Token<T extends MintTransactionData<?>> {
 

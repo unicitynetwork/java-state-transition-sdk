@@ -26,6 +26,7 @@ import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePath;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep;
 import org.unicitylabs.sdk.predicate.SerializablePredicate;
 import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
+import org.unicitylabs.sdk.predicate.embedded.DefaultPredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.serializer.cbor.address.AddressCbor;
@@ -44,6 +45,7 @@ import org.unicitylabs.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathCbor
 import org.unicitylabs.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathStepBranchCbor;
 import org.unicitylabs.sdk.serializer.cbor.mtree.sum.SparseMerkleSumTreePathStepCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.BurnPredicateCbor;
+import org.unicitylabs.sdk.serializer.cbor.predicate.DefaultPredicateCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.MaskedPredicateCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.SerializablePredicateCbor;
 import org.unicitylabs.sdk.serializer.cbor.predicate.UnmaskedPredicateCbor;
@@ -77,12 +79,11 @@ import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathJson
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepBranchJson;
 import org.unicitylabs.sdk.serializer.json.mtree.sum.SparseMerkleSumTreePathStepJson;
 import org.unicitylabs.sdk.serializer.json.predicate.SerializablePredicateJson;
-import org.unicitylabs.sdk.serializer.json.token.fungible.TokenCoinDataJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenIdJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenStateJson;
 import org.unicitylabs.sdk.serializer.json.token.TokenTypeJson;
-import org.unicitylabs.sdk.serializer.json.transaction.split.SplitMintReasonJson;
+import org.unicitylabs.sdk.serializer.json.token.fungible.TokenCoinDataJson;
 import org.unicitylabs.sdk.serializer.json.transaction.CommitmentJson;
 import org.unicitylabs.sdk.serializer.json.transaction.InclusionProofJson;
 import org.unicitylabs.sdk.serializer.json.transaction.MintCommitmentJson;
@@ -91,13 +92,13 @@ import org.unicitylabs.sdk.serializer.json.transaction.MintTransactionReasonJson
 import org.unicitylabs.sdk.serializer.json.transaction.TransactionJson;
 import org.unicitylabs.sdk.serializer.json.transaction.TransferCommitmentJson;
 import org.unicitylabs.sdk.serializer.json.transaction.TransferTransactionDataJson;
+import org.unicitylabs.sdk.serializer.json.transaction.split.SplitMintReasonJson;
 import org.unicitylabs.sdk.serializer.json.transaction.split.SplitMintReasonProofJson;
 import org.unicitylabs.sdk.serializer.json.util.ByteArrayHexJson;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.Commitment;
 import org.unicitylabs.sdk.transaction.InclusionProof;
@@ -107,6 +108,7 @@ import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.SplitMintReasonProof;
 
 public class UnicityObjectMapper {
@@ -190,10 +192,11 @@ public class UnicityObjectMapper {
     module.addSerializer(SerializablePredicate.class, new SerializablePredicateCbor.Serializer());
     module.addDeserializer(SerializablePredicate.class, new SerializablePredicateCbor.Deserializer());
 
+    module.addSerializer(DefaultPredicate.class, new DefaultPredicateCbor.Serializer());
+    module.addSerializer(BurnPredicate.class, new BurnPredicateCbor.Serializer());
     module.addDeserializer(MaskedPredicate.class, new MaskedPredicateCbor.Deserializer());
     module.addDeserializer(UnmaskedPredicate.class, new UnmaskedPredicateCbor.Deserializer());
     module.addDeserializer(BurnPredicate.class, new BurnPredicateCbor.Deserializer());
-
 
     // BFT - UnicityCertificate
     module.addSerializer(UnicityCertificate.class, new UnicityCertificateCbor.Serializer());

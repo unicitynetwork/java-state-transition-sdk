@@ -3,7 +3,6 @@ package org.unicitylabs.sdk.bft;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.util.HexConverter;

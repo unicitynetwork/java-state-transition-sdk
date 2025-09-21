@@ -8,19 +8,10 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import org.unicitylabs.sdk.bft.InputRecord;
 import org.unicitylabs.sdk.bft.ShardTreeCertificate;
-import org.unicitylabs.sdk.bft.UnicityCertificate;
-import org.unicitylabs.sdk.bft.UnicitySeal;
-import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
-import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public class ShardTreeCertificateCbor {
 

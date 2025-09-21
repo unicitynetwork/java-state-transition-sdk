@@ -155,15 +155,7 @@ public abstract class DefaultPredicate implements Predicate {
   @Override
   public byte[] encodeParameters() {
     try {
-      return UnicityObjectMapper.CBOR.writeValueAsBytes(
-          UnicityObjectMapper.CBOR.createArrayNode()
-              .addPOJO(this.tokenId)
-              .addPOJO(this.tokenType)
-              .add(this.publicKey)
-              .add(this.signingAlgorithm)
-              .addPOJO(this.hashAlgorithm)
-              .add(this.nonce)
-      );
+      return UnicityObjectMapper.CBOR.writeValueAsBytes(this);
     } catch (JsonProcessingException e) {
       throw new CborSerializationException(e);
     }

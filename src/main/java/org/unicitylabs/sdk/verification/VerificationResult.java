@@ -1,4 +1,4 @@
-package org.unicitylabs.sdk.util;
+package org.unicitylabs.sdk.verification;
 
 import java.util.List;
 

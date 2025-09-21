@@ -87,12 +87,7 @@ public class BurnPredicate implements Predicate {
   @Override
   public byte[] encodeParameters() {
     try {
-      return UnicityObjectMapper.CBOR.writeValueAsBytes(
-          UnicityObjectMapper.CBOR.createArrayNode()
-              .addPOJO(this.tokenId)
-              .addPOJO(this.tokenType)
-              .addPOJO(this.burnReason)
-      );
+      return UnicityObjectMapper.CBOR.writeValueAsBytes(this);
     } catch (JsonProcessingException e) {
       throw new CborSerializationException(e);
     }

@@ -1,6 +1,6 @@
 package org.unicitylabs.sdk.transaction;
 
-import org.unicitylabs.sdk.util.VerificationResult;
+import org.unicitylabs.sdk.verification.VerificationResult;
 
 public interface MintTransactionReason {
   String getType();

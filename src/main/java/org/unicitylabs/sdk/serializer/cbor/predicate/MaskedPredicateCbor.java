@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import java.io.IOException;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 

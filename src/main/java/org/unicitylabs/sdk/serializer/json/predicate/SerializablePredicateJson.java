@@ -13,6 +13,7 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineType;
 import java.io.IOException;
 import org.unicitylabs.sdk.predicate.SerializablePredicate;
+import org.unicitylabs.sdk.predicate.embedded.EmbeddedPredicateType;
 
 public class SerializablePredicateJson {
   private SerializablePredicateJson() {
