@@ -45,12 +45,14 @@ dependencies {
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.testcontainers:testcontainers:1.19.8")
     testImplementation("org.testcontainers:junit-jupiter:1.19.8")
     testImplementation("org.testcontainers:mongodb:1.19.8")
     testImplementation("org.awaitility:awaitility:4.2.0")
     testImplementation("org.slf4j:slf4j-simple:2.0.13")
     testImplementation("com.google.guava:guava:33.0.0-jre")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     // ✅ Cucumber for BDD
     testImplementation("io.cucumber:cucumber-java:7.27.2")

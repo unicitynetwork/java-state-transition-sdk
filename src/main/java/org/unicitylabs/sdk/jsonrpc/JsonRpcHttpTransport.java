@@ -13,14 +13,18 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+
 /**
  * JSON-RPC HTTP service.
  */
 public class JsonRpcHttpTransport {
 
-  private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
+    private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+    private static final String HTTP_RETRY_AFTER = "Retry-After";
 
-  private final String url;
+    private final String url;
   private final OkHttpClient httpClient;
 
   /**
@@ -35,17 +39,29 @@ public class JsonRpcHttpTransport {
    * Send a JSON-RPC request.
    */
   public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType) {
+    return request(method, params, resultType, null);
+  }
+
+  /**
+   * Send a JSON-RPC request with optional API key.
+   */
+  public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType, String apiKey) {
     CompletableFuture<T> future = new CompletableFuture<>();
 
     try {
-      Request request = new Request.Builder()
+      Request.Builder requestBuilder = new Request.Builder()
           .url(this.url)
           .post(
               RequestBody.create(
                   UnicityObjectMapper.JSON.writeValueAsString(new JsonRpcRequest(method, params)),
                   JsonRpcHttpTransport.MEDIA_TYPE_JSON)
-          )
-          .build();
+          );
+      
+      if (apiKey != null) {
+        requestBuilder.header("Authorization", "Bearer " + apiKey);
+      }
+      
+      Request request = requestBuilder.build();
 
       this.httpClient.newCall(request).enqueue(new Callback() {
         @Override
@@ -58,8 +74,21 @@ public class JsonRpcHttpTransport {
           try (ResponseBody body = response.body()) {
             if (!response.isSuccessful()) {
               String error = body != null ? body.string() : "";
-              future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
-              return;
+              
+              if (response.code() == HTTP_UNAUTHORIZED) {
+                future.completeExceptionally(new UnauthorizedException(
+                    "Unauthorized: Invalid or missing API key"));
+                return;
+              } else if (response.code() == HTTP_TOO_MANY_REQUESTS) {
+                int retryAfterSeconds = extractRetryAfterSeconds(response);
+                future.completeExceptionally(new RateLimitExceededException(
+                    "Rate limit exceeded. Please retry after " + retryAfterSeconds + " seconds",
+                    retryAfterSeconds));
+                return;
+              } else {
+                  future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
+                  return;
+              }
             }
 
             JsonRpcResponse<T> data = UnicityObjectMapper.JSON.readValue(
@@ -84,5 +113,17 @@ public class JsonRpcHttpTransport {
     }
 
     return future;
+  }
+
+  private int extractRetryAfterSeconds(Response response) {
+    String retryAfterHeader = response.header(HTTP_RETRY_AFTER);
+    if (retryAfterHeader != null) {
+      try {
+        return Integer.parseInt(retryAfterHeader);
+      } catch (NumberFormatException ignored) {
+      }
+    }
+    // Default to 60 seconds if the HTTP header is missing, e.g. if the response is coming from a different component that is not using this header.
+    return 60;
   }
 }
