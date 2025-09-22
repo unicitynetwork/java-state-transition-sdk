@@ -1,6 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -8,22 +7,32 @@ import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityTreeCertificate {
 
-  private final BigInteger version;
-  private final BigInteger partitionIdentifier;
+  private final int version;
+  private final int partitionIdentifier;
   private final List<HashStep> steps;
 
   public UnicityTreeCertificate(
-      BigInteger version,
-      BigInteger partitionIdentifier,
+      int version,
+      int partitionIdentifier,
       List<HashStep> steps
   ) {
-    Objects.requireNonNull(version, "Version cannot be null");
-    Objects.requireNonNull(partitionIdentifier, "Partition identifier cannot be null");
     Objects.requireNonNull(steps, "Steps cannot be null");
 
     this.version = version;
     this.partitionIdentifier = partitionIdentifier;
-    this.steps = steps;
+    this.steps = List.copyOf(steps);
+  }
+
+  public int getVersion() {
+    return this.version;
+  }
+
+  public int getPartitionIdentifier() {
+    return this.partitionIdentifier;
+  }
+
+  public List<HashStep> getSteps() {
+    return this.steps;
   }
 
   @Override
@@ -49,17 +58,24 @@ public class UnicityTreeCertificate {
   }
 
   public static class HashStep {
-
-    private final BigInteger key;
+    private final int key;
     private final byte[] hash;
 
-    public HashStep(BigInteger key, byte[] hash) {
-      Objects.requireNonNull(key, "Key cannot be null");
+    public HashStep(int key, byte[] hash) {
       Objects.requireNonNull(hash, "Hash cannot be null");
 
       this.key = key;
-      this.hash = hash;
+      this.hash = Arrays.copyOf(hash, hash.length);
     }
+
+    public int getKey() {
+      return this.key;
+    }
+
+    public byte[] getHash() {
+      return Arrays.copyOf(this.hash, this.hash.length);
+    }
+
 
     @Override
     public boolean equals(Object o) {

@@ -101,4 +101,9 @@ public class SplitMintReason implements MintTransactionReason {
 
     return VerificationResult.success();
   }
+
+  @Override
+  public String toString() {
+    return String.format("SplitMintReason{token=%s, proofs=%s}", this.token, this.proofs);
+  }
 }

@@ -92,4 +92,10 @@ public class BurnPredicate implements Predicate {
       throw new CborSerializationException(e);
     }
   }
+
+  @Override
+  public String toString() {
+    return String.format("BurnPredicate{tokenId=%s, tokenType=%s, burnReason=%s}", this.tokenId,
+        this.tokenType, this.burnReason);
+  }
 }

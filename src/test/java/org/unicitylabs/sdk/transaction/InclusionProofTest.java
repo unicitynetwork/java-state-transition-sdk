@@ -1,5 +1,9 @@
 package org.unicitylabs.sdk.transaction;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
@@ -10,10 +14,7 @@ import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
@@ -43,8 +44,12 @@ public class InclusionProofTest {
 
   @Test
   public void testJsonSerialization() throws Exception {
-    InclusionProof inclusionProof = new InclusionProof(merkleTreePath, authenticator,
-        transactionHash);
+    InclusionProof inclusionProof = new InclusionProof(
+        merkleTreePath,
+        authenticator,
+        transactionHash,
+        UnicityCertificateUtils.generateCertificate()
+    );
     Assertions.assertEquals(inclusionProof, UnicityObjectMapper.JSON.readValue(
         UnicityObjectMapper.JSON.writeValueAsString(inclusionProof), InclusionProof.class));
   }
@@ -52,19 +57,63 @@ public class InclusionProofTest {
   @Test
   public void testStructure() {
     Assertions.assertThrows(IllegalArgumentException.class,
-        () -> new InclusionProof(merkleTreePath, authenticator, null));
+        () -> new InclusionProof(
+            merkleTreePath,
+            authenticator,
+            null,
+            UnicityCertificateUtils.generateCertificate()
+        )
+    );
     Assertions.assertThrows(IllegalArgumentException.class,
-        () -> new InclusionProof(merkleTreePath, null, transactionHash));
+        () -> new InclusionProof(
+            merkleTreePath,
+            null,
+            transactionHash,
+            UnicityCertificateUtils.generateCertificate()
+        )
+    );
+    Assertions.assertThrows(NullPointerException.class,
+        () -> new InclusionProof(
+            null,
+            authenticator,
+            transactionHash,
+            UnicityCertificateUtils.generateCertificate()
+        )
+    );
+    Assertions.assertThrows(NullPointerException.class,
+        () -> new InclusionProof(
+            merkleTreePath,
+            authenticator,
+            transactionHash,
+            null
+        )
+    );
     Assertions.assertInstanceOf(InclusionProof.class,
-        new InclusionProof(merkleTreePath, authenticator, transactionHash));
+        new InclusionProof(
+            merkleTreePath,
+            authenticator,
+            transactionHash,
+            UnicityCertificateUtils.generateCertificate()
+        )
+    );
     Assertions.assertInstanceOf(InclusionProof.class,
-        new InclusionProof(merkleTreePath, null, null));
+        new InclusionProof(
+            merkleTreePath,
+            null,
+            null,
+            UnicityCertificateUtils.generateCertificate()
+        )
+    );
   }
 
   @Test
   public void testItVerifies() {
-    InclusionProof inclusionProof = new InclusionProof(merkleTreePath, authenticator,
-        transactionHash);
+    InclusionProof inclusionProof = new InclusionProof(
+        merkleTreePath,
+        authenticator,
+        transactionHash,
+        UnicityCertificateUtils.generateCertificate()
+    );
     Assertions.assertEquals(InclusionProofVerificationStatus.OK, inclusionProof.verify(requestId));
     Assertions.assertEquals(InclusionProofVerificationStatus.PATH_NOT_INCLUDED,
         inclusionProof.verify(
@@ -76,7 +125,8 @@ public class InclusionProofTest {
         new DataHash(
             HashAlgorithm.SHA224,
             HexConverter.decode("FF000000000000000000000000000000000000000000000000000000000000FF")
-        )
+        ),
+        UnicityCertificateUtils.generateCertificate()
     );
 
     Assertions.assertEquals(InclusionProofVerificationStatus.NOT_AUTHENTICATED,

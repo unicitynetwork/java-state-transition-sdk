@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 public class TestAggregatorClient implements IAggregatorClient {
 
@@ -53,7 +54,8 @@ public class TestAggregatorClient implements IAggregatorClient {
             new InclusionProof(
                 root.getPath(requestId.toBitString().toBigInteger()),
                 entry.getKey(),
-                entry.getValue()
+                entry.getValue(),
+                UnicityCertificateUtils.generateCertificate()
             )
         )
     );

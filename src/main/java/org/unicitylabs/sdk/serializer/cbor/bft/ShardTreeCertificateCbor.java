@@ -28,7 +28,9 @@ public class ShardTreeCertificateCbor {
         return;
       }
 
-      gen.writeStartArray(value, 0);
+      gen.writeStartArray(value, 2);
+      gen.writeObject(value.getShard());
+      gen.writeObject(value.getSiblingHashList());
       gen.writeEndArray();
     }
   }

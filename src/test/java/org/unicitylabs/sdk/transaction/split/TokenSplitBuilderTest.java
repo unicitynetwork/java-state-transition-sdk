@@ -1,5 +1,10 @@
 package org.unicitylabs.sdk.transaction.split;
 
+import org.unicitylabs.sdk.bft.InputRecord;
+import org.unicitylabs.sdk.bft.ShardTreeCertificate;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.UnicitySeal;
+import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
@@ -22,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 public class TokenSplitBuilderTest {
 
@@ -57,7 +63,8 @@ public class TokenSplitBuilderTest {
                     List.of()
                 ),
                 null,
-                null
+                null,
+                UnicityCertificateUtils.generateCertificate()
             )
         )
     );

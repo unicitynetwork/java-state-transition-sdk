@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.unicitylabs.sdk.bft.UnicitySeal;
@@ -29,7 +29,22 @@ public class UnicitySealCbor {
         return;
       }
 
-      gen.writeStartArray(value, 0);
+      ((CBORGenerator) gen).writeTag(1001);
+      gen.writeStartArray(value, 8);
+      gen.writeObject(value.getVersion());
+      gen.writeObject(value.getNetworkId());
+      gen.writeObject(value.getRootChainRoundNumber());
+      gen.writeObject(value.getEpoch());
+      gen.writeObject(value.getTimestamp());
+      gen.writeObject(value.getPreviousHash());
+      gen.writeObject(value.getHash());
+      gen.writeStartObject(value.getSignatures(), value.getSignatures().size());
+      for (Map.Entry<String, byte[]> entry : value.getSignatures().entrySet()) {
+        gen.writeFieldName(entry.getKey());
+        gen.writeObject(entry.getValue());
+      }
+      gen.writeEndObject();
+
       gen.writeEndArray();
     }
   }
@@ -43,11 +58,11 @@ public class UnicitySealCbor {
       }
       p.nextToken();
 
-      BigInteger version = p.readValueAs(BigInteger.class);
-      BigInteger networkId = p.readValueAs(BigInteger.class);
-      BigInteger rootChainRoundNumber = p.readValueAs(BigInteger.class);
-      BigInteger epoch = p.readValueAs(BigInteger.class);
-      BigInteger timestamp = p.readValueAs(BigInteger.class);
+      int version = p.readValueAs(int.class);
+      short networkId = p.readValueAs(short.class);
+      long rootChainRoundNumber = p.readValueAs(long.class);
+      long epoch = p.readValueAs(long.class);
+      long timestamp = p.readValueAs(long.class);
       byte[] previousHash = p.readValueAs(byte[].class);
       byte[] hash = p.readValueAs(byte[].class);
 

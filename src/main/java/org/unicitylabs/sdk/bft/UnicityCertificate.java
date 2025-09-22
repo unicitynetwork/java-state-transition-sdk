@@ -1,13 +1,12 @@
 package org.unicitylabs.sdk.bft;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityCertificate {
 
-  private final BigInteger version;
+  private final int version;
   private final InputRecord inputRecord;
   private final byte[] technicalRecordHash;
   private final byte[] shardConfigurationHash;
@@ -16,7 +15,7 @@ public class UnicityCertificate {
   public final UnicitySeal unicitySeal;
 
   public UnicityCertificate(
-      BigInteger version,
+      int version,
       InputRecord inputRecord,
       byte[] technicalRecordHash,
       byte[] shardConfigurationHash,
@@ -24,7 +23,6 @@ public class UnicityCertificate {
       UnicityTreeCertificate unicityTreeCertificate,
       UnicitySeal unicitySeal
   ) {
-    Objects.requireNonNull(version, "Version cannot be null");
     Objects.requireNonNull(inputRecord, "Input record cannot be null");
     Objects.requireNonNull(shardConfigurationHash, "Shard configuration hash cannot be null");
     Objects.requireNonNull(shardTreeCertificate, "Shard tree certificate cannot be null");
@@ -33,11 +31,42 @@ public class UnicityCertificate {
 
     this.version = version;
     this.inputRecord = inputRecord;
-    this.technicalRecordHash = technicalRecordHash;
-    this.shardConfigurationHash = shardConfigurationHash;
+    this.technicalRecordHash = Arrays.copyOf(technicalRecordHash, technicalRecordHash.length);
+    this.shardConfigurationHash = Arrays.copyOf(
+        shardConfigurationHash,
+        shardConfigurationHash.length
+    );
     this.shardTreeCertificate = shardTreeCertificate;
     this.unicityTreeCertificate = unicityTreeCertificate;
     this.unicitySeal = unicitySeal;
+  }
+
+  public int getVersion() {
+    return this.version;
+  }
+
+  public InputRecord getInputRecord() {
+    return this.inputRecord;
+  }
+
+  public byte[] getTechnicalRecordHash() {
+    return Arrays.copyOf(this.technicalRecordHash, this.technicalRecordHash.length);
+  }
+
+  public byte[] getShardConfigurationHash() {
+    return Arrays.copyOf(this.shardConfigurationHash, this.shardConfigurationHash.length);
+  }
+
+  public ShardTreeCertificate getShardTreeCertificate() {
+    return this.shardTreeCertificate;
+  }
+
+  public UnicityTreeCertificate getUnicityTreeCertificate() {
+    return this.unicityTreeCertificate;
+  }
+
+  public UnicitySeal getUnicitySeal() {
+    return this.unicitySeal;
   }
 
   @Override
@@ -64,8 +93,8 @@ public class UnicityCertificate {
   @Override
   public String toString() {
     return String.format("UnicityCertificate{version=%s, inputRecord=%s, technicalRecordHash=%s, "
-        + "shardConfigurationHash=%s, shardTreeCertificate=%s, unicityTreeCertificate=%s, "
-        + "unicitySeal=%s}",
+            + "shardConfigurationHash=%s, shardTreeCertificate=%s, unicityTreeCertificate=%s, "
+            + "unicitySeal=%s}",
         this.version,
         this.inputRecord,
         this.technicalRecordHash != null ? HexConverter.encode(this.technicalRecordHash) : null,

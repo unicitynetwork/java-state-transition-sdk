@@ -1,6 +1,11 @@
 package org.unicitylabs.sdk.token;
 
 import org.unicitylabs.sdk.address.DirectAddress;
+import org.unicitylabs.sdk.bft.InputRecord;
+import org.unicitylabs.sdk.bft.ShardTreeCertificate;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.UnicitySeal;
+import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
@@ -22,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 public class TokenTest {
 
@@ -66,7 +72,8 @@ public class TokenTest {
                     List.of()
                 ),
                 null,
-                null
+                null,
+                UnicityCertificateUtils.generateCertificate()
             )
         )
     );
@@ -92,7 +99,8 @@ public class TokenTest {
                     List.of()
                 ),
                 null,
-                null
+                null,
+                UnicityCertificateUtils.generateCertificate()
             )
         ),
         List.of(
@@ -121,7 +129,8 @@ public class TokenTest {
                         List.of()
                     ),
                     null,
-                    null
+                    null,
+                    UnicityCertificateUtils.generateCertificate()
                 )
             )
         ),

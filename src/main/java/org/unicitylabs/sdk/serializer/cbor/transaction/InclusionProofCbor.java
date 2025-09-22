@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.unicitylabs.sdk.api.Authenticator;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.transaction.InclusionProof;
@@ -28,10 +29,11 @@ public class InclusionProofCbor {
         return;
       }
 
-      gen.writeStartArray(value, 3);
+      gen.writeStartArray(value, 4);
       gen.writeObject(value.getMerkleTreePath());
       gen.writeObject(value.getAuthenticator());
       gen.writeObject(value.getTransactionHash());
+      gen.writeObject(value.getUnicityCertificate());
       gen.writeEndArray();
     }
   }
@@ -47,7 +49,8 @@ public class InclusionProofCbor {
       return new InclusionProof(
           p.readValueAs(SparseMerkleTreePath.class),
           p.readValueAs(Authenticator.class),
-          p.readValueAs(DataHash.class)
+          p.readValueAs(DataHash.class),
+          p.readValueAs(UnicityCertificate.class)
       );
     }
   }

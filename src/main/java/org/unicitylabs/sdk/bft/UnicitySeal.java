@@ -1,6 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -9,30 +8,25 @@ import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicitySeal {
 
-  private final BigInteger version;
-  private final BigInteger networkId;
-  private final BigInteger rootChainRoundNumber;
-  private final BigInteger epoch;
-  private final BigInteger timestamp;
+  private final int version;
+  private final short networkId;
+  private final long rootChainRoundNumber;
+  private final long epoch;
+  private final long timestamp;
   private final byte[] previousHash; // nullable
   private final byte[] hash;
   private final Map<String, byte[]> signatures;
 
   public UnicitySeal(
-      BigInteger version,
-      BigInteger networkId,
-      BigInteger rootChainRoundNumber,
-      BigInteger epoch,
-      BigInteger timestamp,
+      int version,
+      short networkId,
+      long rootChainRoundNumber,
+      long epoch,
+      long timestamp,
       byte[] previousHash,
       byte[] hash,
       Map<String, byte[]> signatures
   ) {
-    Objects.requireNonNull(version, "Version cannot be null");
-    Objects.requireNonNull(networkId, "Network ID cannot be null");
-    Objects.requireNonNull(rootChainRoundNumber, "Root chain round number cannot be null");
-    Objects.requireNonNull(epoch, "Epoch cannot be null");
-    Objects.requireNonNull(timestamp, "Timestamp cannot be null");
     Objects.requireNonNull(hash, "Hash cannot be null");
     Objects.requireNonNull(signatures, "Signatures cannot be null");
 
@@ -43,7 +37,51 @@ public class UnicitySeal {
     this.timestamp = timestamp;
     this.previousHash = previousHash;
     this.hash = hash;
-    this.signatures = signatures;
+    this.signatures = signatures.entrySet().stream()
+        .map(entry -> Map.entry(
+                entry.getKey(),
+                Arrays.copyOf(entry.getValue(), entry.getValue().length)
+            )
+        )
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  public int getVersion() {
+    return this.version;
+  }
+
+  public short getNetworkId() {
+    return this.networkId;
+  }
+
+  public long getRootChainRoundNumber() {
+    return this.rootChainRoundNumber;
+  }
+
+  public long getEpoch() {
+    return this.epoch;
+  }
+
+  public long getTimestamp() {
+    return this.timestamp;
+  }
+
+  public byte[] getPreviousHash() {
+    return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length) : null;
+  }
+
+  public byte[] getHash() {
+    return Arrays.copyOf(this.hash, this.hash.length);
+  }
+
+  public Map<String, byte[]> getSignatures() {
+    return this.signatures.entrySet().stream()
+        .map(entry -> Map.entry(
+                entry.getKey(),
+                Arrays.copyOf(entry.getValue(), entry.getValue().length)
+            )
+        )
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override
@@ -81,7 +119,8 @@ public class UnicitySeal {
         HexConverter.encode(this.hash),
         this.signatures.entrySet()
             .stream()
-            .map(entry -> String.format("%s: %s", entry.getKey(), HexConverter.encode(entry.getValue())))
+            .map(entry -> String.format("%s: %s", entry.getKey(),
+                HexConverter.encode(entry.getValue())))
             .collect(Collectors.toList())
     );
   }

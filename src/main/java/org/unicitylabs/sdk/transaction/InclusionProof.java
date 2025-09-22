@@ -4,6 +4,7 @@ package org.unicitylabs.sdk.transaction;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
@@ -21,9 +22,17 @@ public class InclusionProof {
   private final SparseMerkleTreePath merkleTreePath;
   private final Authenticator authenticator;
   private final DataHash transactionHash;
+  private final UnicityCertificate unicityCertificate;
 
-  public InclusionProof(SparseMerkleTreePath merkleTreePath, Authenticator authenticator,
-      DataHash transactionHash) {
+  public InclusionProof(
+      SparseMerkleTreePath merkleTreePath,
+      Authenticator authenticator,
+      DataHash transactionHash,
+      UnicityCertificate unicityCertificate
+  ) {
+    Objects.requireNonNull(merkleTreePath, "Merkle tree path cannot be null.");
+    Objects.requireNonNull(unicityCertificate, "Unicity certificate cannot be null.");
+
     if ((authenticator == null) != (transactionHash == null)) {
       throw new IllegalArgumentException(
           "Authenticator and transaction hash must be both set or both null.");
@@ -31,10 +40,15 @@ public class InclusionProof {
     this.merkleTreePath = merkleTreePath;
     this.authenticator = authenticator;
     this.transactionHash = transactionHash;
+    this.unicityCertificate = unicityCertificate;
   }
 
   public SparseMerkleTreePath getMerkleTreePath() {
     return this.merkleTreePath;
+  }
+
+  public UnicityCertificate getUnicityCertificate() {
+    return this.unicityCertificate;
   }
 
   public Optional<Authenticator> getAuthenticator() {

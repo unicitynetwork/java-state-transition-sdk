@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
-import java.math.BigInteger;
 import org.unicitylabs.sdk.bft.InputRecord;
 import org.unicitylabs.sdk.bft.ShardTreeCertificate;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
@@ -31,7 +31,15 @@ public class UnicityCertificateCbor {
         return;
       }
 
-      gen.writeStartArray(value, 0);
+      ((CBORGenerator) gen).writeTag(1007);
+      gen.writeStartArray(value, 7);
+      gen.writeObject(value.getVersion());
+      gen.writeObject(value.getInputRecord());
+      gen.writeObject(value.getTechnicalRecordHash());
+      gen.writeObject(value.getShardConfigurationHash());
+      gen.writeObject(value.getShardTreeCertificate());
+      gen.writeObject(value.getUnicityTreeCertificate());
+      gen.writeObject(value.getUnicitySeal());
       gen.writeEndArray();
     }
   }
@@ -46,7 +54,7 @@ public class UnicityCertificateCbor {
       p.nextToken();
 
       UnicityCertificate result = new UnicityCertificate(
-          p.readValueAs(BigInteger.class),
+          p.readValueAs(int.class),
           p.readValueAs(InputRecord.class),
           p.readValueAs(byte[].class),
           p.readValueAs(byte[].class),

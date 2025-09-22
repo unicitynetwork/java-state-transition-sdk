@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import java.io.IOException;
-import java.math.BigInteger;
 import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 
 public class UnicityTreeCertificateHashStepCbor {
@@ -26,7 +25,9 @@ public class UnicityTreeCertificateHashStepCbor {
         return;
       }
 
-      gen.writeStartArray(value, 0);
+      gen.writeStartArray(value, 2);
+      gen.writeObject(value.getKey());
+      gen.writeObject(value.getHash());
       gen.writeEndArray();
     }
   }
@@ -41,7 +42,7 @@ public class UnicityTreeCertificateHashStepCbor {
       p.nextToken();
 
       return new UnicityTreeCertificate.HashStep(
-          p.readValueAs(BigInteger.class),
+          p.readValueAs(int.class),
           p.readValueAs(byte[].class)
       );
     }

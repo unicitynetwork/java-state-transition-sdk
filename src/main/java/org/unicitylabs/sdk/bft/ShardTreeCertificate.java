@@ -3,6 +3,7 @@ package org.unicitylabs.sdk.bft;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class ShardTreeCertificate {
@@ -14,8 +15,20 @@ public class ShardTreeCertificate {
     Objects.requireNonNull(shard, "Shard cannot be null");
     Objects.requireNonNull(siblingHashList, "Sibling hash list cannot be null");
 
-    this.shard = shard;
-    this.siblingHashList = siblingHashList;
+    this.shard = Arrays.copyOf(shard, shard.length);
+    this.siblingHashList = siblingHashList.stream()
+        .map(hash -> Arrays.copyOf(hash, hash.length))
+        .collect(Collectors.toList());
+  }
+
+  public byte[] getShard() {
+    return Arrays.copyOf(this.shard, this.shard.length);
+  }
+
+  public List<byte[]> getSiblingHashList() {
+    return this.siblingHashList.stream()
+        .map(hash -> Arrays.copyOf(hash, hash.length))
+        .collect(Collectors.toList());
   }
 
   @Override

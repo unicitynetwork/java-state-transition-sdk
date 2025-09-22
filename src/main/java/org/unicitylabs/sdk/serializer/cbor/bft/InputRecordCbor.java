@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import org.unicitylabs.sdk.bft.InputRecord;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -29,7 +29,26 @@ public class InputRecordCbor {
         return;
       }
 
-      gen.writeStartArray(value, 0);
+      ((CBORGenerator) gen).writeTag(1008);
+      gen.writeStartArray(value, 10);
+      gen.writeObject(value.getVersion());
+      gen.writeObject(value.getRoundNumber());
+      gen.writeObject(value.getEpoch());
+      gen.writeObject(
+          value.getPreviousHash() == null
+              ? null
+              : HexConverter.encode(value.getPreviousHash()).getBytes(StandardCharsets.UTF_8)
+      );
+      gen.writeObject(
+          value.getHash() == null
+              ? null
+              : HexConverter.encode(value.getHash()).getBytes(StandardCharsets.UTF_8)
+      );
+      gen.writeObject(value.getSummaryValue());
+      gen.writeObject(value.getTimestamp());
+      gen.writeObject(value.getBlockHash());
+      gen.writeObject(value.getSumOfEarnedFees());
+      gen.writeObject(value.getExecutedTransactionsHash());
       gen.writeEndArray();
     }
   }
@@ -43,18 +62,16 @@ public class InputRecordCbor {
       }
       p.nextToken();
 
-      BigInteger version = p.readValueAs(BigInteger.class);
-
-      BigInteger roundNumber = p.readValueAs(BigInteger.class);
-      BigInteger epoch = p.readValueAs(BigInteger.class);
+      int version = p.readValueAs(int.class);
+      long roundNumber = p.readValueAs(long.class);
+      long epoch = p.readValueAs(long.class);
       byte[] previousHash = p.readValueAs(byte[].class);
       byte[] hash = p.readValueAs(byte[].class);
       byte[] summaryValue = p.readValueAs(byte[].class);
-      BigInteger timestamp = p.readValueAs(BigInteger.class);
+      long timestamp = p.readValueAs(long.class);
       byte[] blockHash = p.readValueAs(byte[].class);
-      BigInteger sumOfEarnedFees = p.readValueAs(BigInteger.class);
+      long sumOfEarnedFees = p.readValueAs(long.class);
       byte[] executedTransactionsHash = p.readValueAs(byte[].class);
-
 
       InputRecord result = new InputRecord(
           version,
