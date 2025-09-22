@@ -23,10 +23,9 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 import static org.junit.jupiter.api.Assertions.*;
@@ -303,5 +302,315 @@ public class SharedStepDefinitions {
         assertTrue(nametagToken.verify().isSuccessful(), "Name tag token should be valid");
         context.addNameTagToken(username, nametagToken);
         context.setCurrentUser(username);
+    }
+
+    @Given("the aggregator URLs are configured")
+    public void theAggregatorURLsAreConfigured() {
+        // You can either use environment variables or hardcode the URLs
+        List<String> aggregatorUrls = Arrays.asList(
+                System.getenv("AGGREGATOR_URL")
+        );
+
+        assertNotNull(aggregatorUrls, "Aggregator URLs must be configured");
+        assertFalse(aggregatorUrls.isEmpty(), "At least one aggregator URL must be provided");
+
+        List<AggregatorClient> clients = new ArrayList<>();
+        for (String url : aggregatorUrls) {
+            clients.add(new AggregatorClient(url.trim()));
+        }
+
+        context.setAggregatorClients(clients);
+    }
+
+    @And("the aggregator clients are initialized")
+    public void theAggregatorClientsAreInitialized() {
+        List<AggregatorClient> clients = context.getAggregatorClients();
+        assertNotNull(clients, "Aggregator clients should be initialized");
+        assertFalse(clients.isEmpty(), "At least one aggregator client should be initialized");
+    }
+
+    @When("I submit all mint commitments concurrently to all aggregators")
+    public void iSubmitAllMintCommitmentsConcurrentlyToAllAggregators() {
+        int threadsCount = context.getConfiguredThreadCount();
+        int commitmentsPerThread = context.getConfiguredCommitmentsPerThread();
+        List<AggregatorClient> aggregatorClients = context.getAggregatorClients();
+
+        Map<String, SigningService> userSigningServices = context.getUserSigningServices();
+
+        // Calculate total thread pool size: threads * aggregators
+        int totalThreadPoolSize = threadsCount * aggregatorClients.size();
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreadPoolSize);
+
+        List<CompletableFuture<CommitmentResult>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, SigningService> entry : userSigningServices.entrySet()) {
+            String userName = entry.getKey();
+            SigningService signingService = entry.getValue();
+
+            for (int i = 0; i < commitmentsPerThread; i++) {
+                // Generate the commitment data once for this iteration
+                byte[] stateBytes = TestUtils.generateRandomBytes(32);
+                byte[] txData = TestUtils.generateRandomBytes(32);
+                DataHash stateHash = TestUtils.hashData(stateBytes);
+                DataHash txDataHash = TestUtils.hashData(txData);
+                RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+
+                // Submit the same commitment to all aggregators concurrently
+                for (int aggIndex = 0; aggIndex < aggregatorClients.size(); aggIndex++) {
+                    AggregatorClient aggregatorClient = aggregatorClients.get(aggIndex);
+                    String aggregatorId = "Aggregator" + aggIndex;
+
+                    CompletableFuture<CommitmentResult> future = CompletableFuture.supplyAsync(() -> {
+                        long start = System.nanoTime();
+
+                        try {
+                            Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+
+                            SubmitCommitmentResponse response = aggregatorClient
+                                    .submitCommitment(requestId, txDataHash, authenticator).get();
+
+                            boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                            long end = System.nanoTime();
+
+                            return new CommitmentResult(userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    requestId, success, start, end);
+                        } catch (Exception e) {
+                            long end = System.nanoTime();
+                            return new CommitmentResult(userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    requestId, false, start, end);
+                        }
+                    }, executor);
+
+                    futures.add(future);
+                }
+            }
+        }
+
+        context.setCommitmentFutures(futures);
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executor.shutdown();
+    }
+
+    @Then("all commitments should be processed successfully")
+    public void allCommitmentsShouldBeProcessedSuccessfully() {
+        int threadsCount = context.getConfiguredThreadCount();
+        int commitmentsPerThread = context.getConfiguredCommitmentsPerThread();
+        List<AggregatorClient> aggregatorClients = context.getAggregatorClients();
+
+        Map<String, SigningService> userSigningServices = context.getUserSigningServices();
+        ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+
+        List<CompletableFuture<List<CommitmentResult>>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, SigningService> entry : userSigningServices.entrySet()) {
+            String userName = entry.getKey();
+            SigningService signingService = entry.getValue();
+
+            for (int i = 0; i < commitmentsPerThread; i++) {
+                CompletableFuture<List<CommitmentResult>> future = CompletableFuture.supplyAsync(() -> {
+                    List<CommitmentResult> results = new ArrayList<>();
+
+                    // Generate commitment data once
+                    byte[] stateBytes = TestUtils.generateRandomBytes(32);
+                    byte[] txData = TestUtils.generateRandomBytes(32);
+                    DataHash stateHash = TestUtils.hashData(stateBytes);
+                    DataHash txDataHash = TestUtils.hashData(txData);
+                    RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+
+                    // Submit to all aggregators with the same data
+                    for (int aggIndex = 0; aggIndex < aggregatorClients.size(); aggIndex++) {
+                        AggregatorClient aggregatorClient = aggregatorClients.get(aggIndex);
+                        String aggregatorId = "Aggregator" + aggIndex;
+
+                        long start = System.nanoTime();
+                        try {
+                            Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+
+                            SubmitCommitmentResponse response = aggregatorClient
+                                    .submitCommitment(requestId, txDataHash, authenticator).get();
+
+                            boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                            long end = System.nanoTime();
+
+                            results.add(new CommitmentResult(userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    requestId, success, start, end));
+                        } catch (Exception e) {
+                            long end = System.nanoTime();
+                            results.add(new CommitmentResult(userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    requestId, false, start, end));
+                        }
+                    }
+
+                    return results;
+                }, executor);
+
+                futures.add(future);
+            }
+        }
+
+        // Flatten the results
+        List<CompletableFuture<CommitmentResult>> flattenedFutures = new ArrayList<>();
+        for (CompletableFuture<List<CommitmentResult>> future : futures) {
+            CompletableFuture<CommitmentResult> flattened = future.thenCompose(results -> {
+                // Return the first result (or you could return all)
+                return CompletableFuture.completedFuture(results.get(0));
+            });
+            flattenedFutures.add(flattened);
+        }
+
+        context.setCommitmentFutures(flattenedFutures);
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executor.shutdown();
+    }
+
+    @Then("all mint commitments should receive inclusion proofs from all aggregators within {int} seconds")
+    public void allMintCommitmentsShouldReceiveInclusionProofsFromAllAggregatorsWithinSeconds(int timeoutSeconds) throws Exception {
+        List<CommitmentResult> results = helper.collectCommitmentResults();
+
+        // Verify inclusion proofs for all aggregators in parallel
+        helper.verifyAllInclusionProofsInParallelForMultipleAggregators(timeoutSeconds, context.getAggregatorClients());
+
+        long verifiedCount = results.stream()
+                .filter(CommitmentResult::isVerified)
+                .count();
+
+        System.out.println("=== Inclusion Proof Verification Results ===");
+        System.out.println("Total commitments: " + results.size());
+        System.out.println("Verified commitments: " + verifiedCount + " / " + results.size());
+
+        // Group results by aggregator for detailed reporting
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> helper.extractAggregatorFromUserName(r.getUserName())));
+
+        for (Map.Entry<String, List<CommitmentResult>> entry : resultsByAggregator.entrySet()) {
+            String aggregatorId = entry.getKey();
+            List<CommitmentResult> aggregatorResults = entry.getValue();
+
+            long aggregatorVerifiedCount = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .count();
+
+            System.out.println("\n" + aggregatorId + ":");
+            System.out.println("  Verified: " + aggregatorVerifiedCount + " / " + aggregatorResults.size());
+
+            // Print failed ones for this aggregator
+            aggregatorResults.stream()
+                    .filter(r -> !r.isVerified())
+                    .forEach(r -> System.out.println(
+                            "  ❌ Failed: requestId=" + r.getRequestId().toString() +
+                                    ", status=" + (r.getStatus() != null ? r.getStatus() : "Unknown") +
+                                    ", user=" + r.getUserName()
+                    ));
+
+            // Print successful ones (optional, for debugging)
+            if (aggregatorVerifiedCount > 0) {
+                System.out.println("  ✅ Successfully verified " + aggregatorVerifiedCount + " commitments");
+            }
+        }
+
+        assertEquals(results.size(), verifiedCount, "All commitments should be verified");
+    }
+
+    @Then("all mint commitments should receive inclusion proofs within {int} seconds with {int}% success rate")
+    public void allMintCommitmentsShouldReceiveInclusionProofsWithSuccessRate(int timeoutSeconds, int expectedSuccessRate) throws Exception {
+        List<CommitmentResult> results = helper.collectCommitmentResults();
+
+        // Verify inclusion proofs for all aggregators in parallel
+        helper.verifyAllInclusionProofsInParallelForMultipleAggregators(timeoutSeconds, context.getAggregatorClients());
+
+        long verifiedCount = results.stream()
+                .filter(CommitmentResult::isVerified)
+                .count();
+
+        double actualSuccessRate = (double) verifiedCount / results.size() * 100;
+
+        System.out.println("=== Inclusion Proof Verification Results ===");
+        System.out.println("Total commitments: " + results.size());
+        System.out.println("Verified commitments: " + verifiedCount + " / " + results.size());
+        System.out.println("Actual success rate: " + String.format("%.2f%%", actualSuccessRate));
+        System.out.println("Expected success rate: " + expectedSuccessRate + "%");
+
+        // Detailed reporting by aggregator
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> helper.extractAggregatorFromUserName(r.getUserName())));
+
+        for (Map.Entry<String, List<CommitmentResult>> entry : resultsByAggregator.entrySet()) {
+            String aggregatorId = entry.getKey();
+            List<CommitmentResult> aggregatorResults = entry.getValue();
+
+            long aggregatorVerifiedCount = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .count();
+
+            double aggregatorSuccessRate = (double) aggregatorVerifiedCount / aggregatorResults.size() * 100;
+
+            System.out.println("\n" + aggregatorId + ":");
+            System.out.println("  Success rate: " + String.format("%.2f%%", aggregatorSuccessRate) +
+                    " (" + aggregatorVerifiedCount + " / " + aggregatorResults.size() + ")");
+        }
+
+        assertTrue(actualSuccessRate >= expectedSuccessRate,
+                String.format("Expected success rate of at least %d%%, but got %.2f%%",
+                        expectedSuccessRate, actualSuccessRate));
+    }
+
+    @Then("I should see performance metrics for each aggregator")
+    public void iShouldSeePerformanceMetricsForEachAggregator() {
+        List<CommitmentResult> results = helper.collectCommitmentResults();
+        List<AggregatorClient> aggregatorClients = context.getAggregatorClients();
+
+        System.out.println("\n=== 📊 AGGREGATOR PERFORMANCE COMPARISON ===");
+
+        // Print detailed breakdown
+        helper.printDetailedResultsByAggregator(results, aggregatorClients.size());
+
+        // Additional performance analysis
+        helper.printPerformanceComparison(results, aggregatorClients.size());
+    }
+
+    @Then("aggregator performance should meet minimum thresholds")
+    public void aggregatorPerformanceShouldMeetMinimumThresholds() {
+        List<CommitmentResult> results = helper.collectCommitmentResults();
+        List<AggregatorClient> aggregatorClients = context.getAggregatorClients();
+
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> helper.extractAggregatorFromUserName(r.getUserName())));
+
+        for (int i = 0; i < aggregatorClients.size(); i++) {
+            String aggregatorId = "-Aggregator" + i;
+            List<CommitmentResult> aggregatorResults = resultsByAggregator.getOrDefault(aggregatorId, new ArrayList<>());
+
+            if (aggregatorResults.isEmpty()) continue;
+
+            long verifiedCount = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .count();
+
+            double successRate = (double) verifiedCount / aggregatorResults.size() * 100;
+
+            // Assert minimum success rate (configurable)
+            assertTrue(successRate >= 90.0,
+                    String.format("Aggregator%d success rate (%.2f%%) should be at least 90%%", i, successRate));
+
+            // Assert reasonable average inclusion time
+            OptionalDouble avgInclusionTime = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .mapToDouble(CommitmentResult::getInclusionDurationMillis)
+                    .average();
+
+            if (avgInclusionTime.isPresent()) {
+                assertTrue(avgInclusionTime.getAsDouble() <= 30000, // 30 seconds max
+                        String.format("Aggregator%d average inclusion time (%.2fms) should be under 30 seconds",
+                                i, avgInclusionTime.getAsDouble()));
+            }
+
+            System.out.println("✅ Aggregator" + i + " meets performance thresholds");
+        }
     }
 }

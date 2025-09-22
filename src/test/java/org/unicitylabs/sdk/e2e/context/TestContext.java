@@ -53,9 +53,7 @@ public class TestContext {
     // Performance testing
     private int configuredThreadCount;
     private int configuredCommitmentsPerThread;
-    private long timeoutSeconds;
-    private long logIntervalSeconds;
-
+    private List<AggregatorClient> aggregatorClients;
     private List<Future<Boolean>> concurrentResults = new ArrayList<>();
     private long concurrentSubmissionDuration;
     private List<TestUtils.TokenOperationResult> bulkResults = new ArrayList<>();
@@ -99,6 +97,14 @@ public class TestContext {
 
     public void setUserPredicate(Map<String, Predicate> userPredicate) {
         this.userPredicate = userPredicate;
+    }
+
+    public List<AggregatorClient> getAggregatorClients() {
+        return aggregatorClients;
+    }
+
+    public void setAggregatorClients(List<AggregatorClient> aggregatorClients) {
+        this.aggregatorClients = aggregatorClients;
     }
 
     public Map<String, List<Token>> getUserTokens() { return userTokens; }
@@ -176,7 +182,7 @@ public class TestContext {
     public int getConfiguredTokensPerUser() { return configuredTokensPerUser; }
     public void setConfiguredTokensPerUser(int configuredTokensPerUser) { this.configuredTokensPerUser = configuredTokensPerUser; }
 
-    public void savePendingTransfer(String user, Token <?> token, Transaction<TransferTransactionData> tx) {
+    public void savePendingTransfer(String user, Token<?> token, Transaction<TransferTransactionData> tx) {
         pendingTransfers.computeIfAbsent(user, k -> new ArrayList<>())
                 .add(new PendingTransfer(token, tx));
     }

@@ -3,12 +3,12 @@ package org.unicitylabs.sdk.e2e.steps.shared;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
+import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.Predicate;
@@ -23,9 +23,7 @@ import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -122,11 +120,11 @@ public class StepHelper {
         context.savePendingTransfer(toUser, token, transferTransaction);
     }
 
-    public void finalizeTransfer(String username, Token <?> token, Transaction<TransferTransactionData> tx) throws Exception {
+    public void finalizeTransfer(String username, Token<?> token, Transaction<TransferTransactionData> tx) throws Exception {
 
         byte[] secret = context.getUserSecret().get(username);
 
-        Token <?> currentNameTagToken = context.getNameTagToken(username);
+        Token<?> currentNameTagToken = context.getNameTagToken(username);
         List<Token> nametagTokens = context.getNameTagTokens().get(username);
         if (nametagTokens != null && !nametagTokens.isEmpty()) {
             for (Token<?> t : nametagTokens) {
@@ -274,5 +272,207 @@ public class StepHelper {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    // Helper method to extract aggregator info from username
+    public String extractAggregatorFromUserName(String userName) {
+        if (userName.contains("-Aggregator")) {
+            return userName.substring(userName.indexOf("-Aggregator"));
+        }
+        return "Unknown-Aggregator";
+    }
+
+    // Updated helper method for your existing CommitmentResult class
+    public void verifyAllInclusionProofsInParallelForMultipleAggregators(int timeoutSeconds, List<AggregatorClient> aggregatorClients) throws Exception {
+        List<CommitmentResult> results = collectCommitmentResults();
+
+        // Group results by aggregator
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> extractAggregatorFromUserName(r.getUserName())));
+
+        ExecutorService executor = Executors.newFixedThreadPool(aggregatorClients.size());
+        List<CompletableFuture<Void>> verificationFutures = new ArrayList<>();
+
+        for (int i = 0; i < aggregatorClients.size(); i++) {
+            AggregatorClient aggregatorClient = aggregatorClients.get(i);
+            String aggregatorId = "Aggregator" + i;
+            List<CommitmentResult> aggregatorResults = resultsByAggregator.getOrDefault("-" + aggregatorId, new ArrayList<>());
+
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    verifyInclusionProofsForAggregator(aggregatorClient, aggregatorResults, timeoutSeconds);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to verify inclusion proofs for " + aggregatorId, e);
+                }
+            }, executor);
+
+            verificationFutures.add(future);
+        }
+
+        try {
+            CompletableFuture.allOf(verificationFutures.toArray(new CompletableFuture[0]))
+                    .get(timeoutSeconds + 10, TimeUnit.SECONDS); // Add buffer time for processing
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    private void verifyInclusionProofsForAggregator(AggregatorClient aggregatorClient,
+                                                    List<CommitmentResult> results,
+                                                    int timeoutSeconds) throws Exception {
+        long globalStartTime = System.currentTimeMillis();
+        long timeoutMillis = timeoutSeconds * 1000L;
+
+        for (CommitmentResult result : results) {
+            long inclusionStartTime = System.nanoTime();
+
+            if (!result.isSuccess()) {
+                long inclusionEndTime = System.nanoTime();
+                result.markFailedVerification(inclusionStartTime, inclusionEndTime, "Commitment submission failed");
+                continue;
+            }
+
+            boolean verified = false;
+            String statusMessage = "Timeout waiting for inclusion proof";
+
+            // Poll for inclusion proof with timeout
+            while (System.currentTimeMillis() - globalStartTime < timeoutMillis) {
+                try {
+                    // Check if inclusion proof is available
+                     InclusionProof proofResponse = aggregatorClient
+                            .getInclusionProof(result.getRequestId()).get(5, TimeUnit.SECONDS);
+                    if (proofResponse != null && proofResponse.verify(result.getRequestId())
+                            == InclusionProofVerificationStatus.OK) {
+                        System.out.println("InclusionProofVerificationStatus.OK");
+                        result.markVerified(inclusionStartTime, System.nanoTime());
+                        verified = true;
+                        break;
+                    } else {
+                        InclusionProofVerificationStatus status = proofResponse.verify(result.getRequestId());
+                        System.out.println(status.toString());
+                        statusMessage = status.toString();
+                    }
+                    Thread.sleep(1000);
+                } catch (TimeoutException e) {
+                    // Continue polling
+                    statusMessage = "Timeout during proof retrieval";
+                } catch (Exception e) {
+                    statusMessage = "Error retrieving proof: " + e.getMessage();
+                    break;
+                }
+            }
+
+            long inclusionEndTime = System.nanoTime();
+
+            // Use your existing methods to mark verification result
+            if (verified) {
+                result.markVerified(inclusionStartTime, inclusionEndTime);
+            } else {
+                result.markFailedVerification(inclusionStartTime, inclusionEndTime, statusMessage);
+            }
+        }
+    }
+
+    // Method to print detailed results by aggregator
+    public void printDetailedResultsByAggregator(List<CommitmentResult> results, int aggregatorCount) {
+        System.out.println("\n=== Detailed Results by Aggregator ===");
+
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> extractAggregatorFromUserName(r.getUserName())));
+
+        for (int i = 0; i < aggregatorCount; i++) {
+            String aggregatorId = "-Aggregator" + i;
+            List<CommitmentResult> aggregatorResults = resultsByAggregator.getOrDefault(aggregatorId, new ArrayList<>());
+
+            long verifiedCount = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .count();
+
+            double successRate = aggregatorResults.isEmpty() ? 0 :
+                    (double) verifiedCount / aggregatorResults.size() * 100;
+
+            // Calculate average inclusion proof time for verified commitments
+            OptionalDouble avgInclusionTime = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .mapToDouble(CommitmentResult::getInclusionDurationMillis)
+                    .average();
+
+            System.out.println("Aggregator" + i + " (localhost:" + (3000 + i * 5080) + "):");
+            System.out.println("  Total commitments: " + aggregatorResults.size());
+            System.out.println("  Verified: " + verifiedCount + " / " + aggregatorResults.size());
+            System.out.println("  Success rate: " + String.format("%.2f%%", successRate));
+
+            if (avgInclusionTime.isPresent()) {
+                System.out.println("  Average inclusion time: " + String.format("%.2f ms", avgInclusionTime.getAsDouble()));
+            }
+
+            // Print failed verifications
+            List<CommitmentResult> failed = aggregatorResults.stream()
+                    .filter(r -> !r.isVerified())
+                    .collect(Collectors.toList());
+
+            if (!failed.isEmpty()) {
+                System.out.println("  Failed verifications (" + failed.size() + "):");
+                failed.forEach(r -> System.out.println("    ❌ " + r.getRequestId() +
+                        " - " + (r.getStatus() != null ? r.getStatus() : "Unknown error")));
+            } else {
+                System.out.println("  ✅ All commitments verified successfully!");
+            }
+
+            System.out.println();
+        }
+    }
+
+    public void printPerformanceComparison(List<CommitmentResult> results, int aggregatorCount) {
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> extractAggregatorFromUserName(r.getUserName())));
+
+        System.out.println("=== 🏆 PERFORMANCE WINNER ANALYSIS ===");
+
+        // Find best success rate
+        double bestSuccessRate = 0;
+        String bestSuccessAggregator = "";
+
+        // Find fastest average inclusion time
+        double fastestAvgTime = Double.MAX_VALUE;
+        String fastestAggregator = "";
+
+        for (int i = 0; i < aggregatorCount; i++) {
+            String aggregatorId = "-Aggregator" + i;
+            List<CommitmentResult> aggregatorResults = resultsByAggregator.getOrDefault(aggregatorId, new ArrayList<>());
+
+            if (aggregatorResults.isEmpty()) continue;
+
+            long verifiedCount = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .count();
+
+            double successRate = (double) verifiedCount / aggregatorResults.size() * 100;
+
+            if (successRate > bestSuccessRate) {
+                bestSuccessRate = successRate;
+                bestSuccessAggregator = "Aggregator" + i;
+            }
+
+            OptionalDouble avgInclusionTime = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .mapToDouble(CommitmentResult::getInclusionDurationMillis)
+                    .average();
+
+            if (avgInclusionTime.isPresent() && avgInclusionTime.getAsDouble() < fastestAvgTime) {
+                fastestAvgTime = avgInclusionTime.getAsDouble();
+                fastestAggregator = "Aggregator" + i;
+            }
+        }
+
+        System.out.println("🥇 Highest Success Rate: " + bestSuccessAggregator +
+                " (" + String.format("%.2f%%", bestSuccessRate) + ")");
+
+        if (fastestAvgTime != Double.MAX_VALUE) {
+            System.out.println("⚡ Fastest Inclusion Time: " + fastestAggregator +
+                    " (" + String.format("%.2f ms", fastestAvgTime) + ")");
+        }
+
+        System.out.println("=====================================\n");
     }
 }

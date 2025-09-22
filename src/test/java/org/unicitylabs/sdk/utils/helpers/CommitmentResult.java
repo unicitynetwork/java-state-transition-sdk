@@ -54,4 +54,22 @@ public class CommitmentResult {
         return this.status;
     }
 
+    // Add these getter methods for the multi-aggregator functionality
+    public String getUserName() {
+        return this.userName;
+    }
+
+    public String getThreadName() {
+        return this.threadName;
+    }
+
+    // Helper method to get inclusion proof verification duration
+    public long getInclusionDurationNanos() {
+        return this.inclusionEnd - this.inclusionStart;
+    }
+
+    public double getInclusionDurationMillis() {
+        return getInclusionDurationNanos() / 1_000_000.0;
+    }
+
 }
