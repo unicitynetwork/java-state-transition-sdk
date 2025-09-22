@@ -2,6 +2,7 @@ package org.unicitylabs.sdk;
 
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.IAggregatorClient;
+import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
@@ -44,14 +45,17 @@ public class TestAggregatorClient implements IAggregatorClient {
   }
 
   @Override
-  public CompletableFuture<InclusionProof> getInclusionProof(RequestId requestId) {
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
     Entry<Authenticator, DataHash> entry = requests.get(requestId);
     SparseMerkleTreeRootNode root = tree.calculateRoot();
     return CompletableFuture.completedFuture(
-        new InclusionProof(
-            root.getPath(requestId.toBitString().toBigInteger()),
-            entry.getKey(),
-            entry.getValue())
+        new InclusionProofResponse(
+            new InclusionProof(
+                root.getPath(requestId.toBitString().toBigInteger()),
+                entry.getKey(),
+                entry.getValue()
+            )
+        )
     );
   }
 

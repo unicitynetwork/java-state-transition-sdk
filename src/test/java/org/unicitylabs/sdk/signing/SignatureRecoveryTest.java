@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SignatureRecoveryTest {
     
     @Test
-    void testSignatureRecoveryId() throws Exception {
+    void testSignatureRecoveryId() {
         // Create a signing service with a known private key
         byte[] privateKey = HexConverter.decode("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4");
         SigningService signingService = new SigningService(privateKey);
@@ -38,7 +38,7 @@ public class SignatureRecoveryTest {
     }
     
     @Test
-    void testPublicKeyRecovery() throws Exception {
+    void testPublicKeyRecovery() {
         // Create a signing service with a known private key
         byte[] privateKey = HexConverter.decode("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4");
         SigningService signingService = new SigningService(privateKey);
@@ -59,7 +59,7 @@ public class SignatureRecoveryTest {
     }
     
     @Test
-    void testSignatureFormatCompliance() throws Exception {
+    void testSignatureFormatCompliance() {
         // Test with the exact values from TypeScript test
         String transactionHashHex = "0000d6035b65700f0af73cc62a580eb833c20f40aaee460087f5fb43ebb3c047f1d4";
         String signatureHex = "301c7f19d5e0a7e350012ab7bbaf26a0152a751eec06d18563f96bcf06d2380e7de7ce6cebb8c11479d1bd9c463c3ba47396b5f815c552b344d430b0d011a2e701";

@@ -38,7 +38,7 @@ public class InclusionProofUtils {
       StateTransitionClient client,
       Commitment<?> commitment,
       Duration timeout,
-      Duration interval) throws ExecutionException, InterruptedException {
+      Duration interval) {
 
     CompletableFuture<InclusionProof> future = new CompletableFuture<>();
 
@@ -62,10 +62,11 @@ public class InclusionProofUtils {
       future.completeExceptionally(new TimeoutException("Timeout waiting for inclusion proof"));
     }
 
-    client.getInclusionProof(commitment).thenAccept(inclusionProof -> {
-      InclusionProofVerificationStatus status = inclusionProof.verify(commitment.getRequestId());
+    client.getInclusionProof(commitment).thenAccept(response -> {
+      InclusionProofVerificationStatus status = response.getInclusionProof()
+          .verify(commitment.getRequestId());
       if (status == InclusionProofVerificationStatus.OK) {
-        future.complete(inclusionProof);
+        future.complete(response.getInclusionProof());
       }
 
       if (status == InclusionProofVerificationStatus.PATH_NOT_INCLUDED) {

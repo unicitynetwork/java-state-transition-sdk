@@ -1,10 +1,9 @@
 package org.unicitylabs.sdk.api;
 
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
-import org.unicitylabs.sdk.transaction.InclusionProof;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
 
 public class AggregatorClient implements IAggregatorClient {
 
@@ -24,10 +23,10 @@ public class AggregatorClient implements IAggregatorClient {
     return this.transport.request("submit_commitment", request, SubmitCommitmentResponse.class);
   }
 
-  public CompletableFuture<InclusionProof> getInclusionProof(RequestId requestId) {
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
     InclusionProofRequest request = new InclusionProofRequest(requestId);
 
-    return this.transport.request("get_inclusion_proof", request, InclusionProof.class);
+    return this.transport.request("get_inclusion_proof", request, InclusionProofResponse.class);
   }
 
   public CompletableFuture<Long> getBlockHeight() {

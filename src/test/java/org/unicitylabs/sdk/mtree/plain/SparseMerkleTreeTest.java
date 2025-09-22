@@ -77,9 +77,6 @@ public class SparseMerkleTreeTest {
       HashAlgorithm.SHA256
   );
 
-  public SparseMerkleTreeTest() throws Exception {
-  }
-
   @Test
   public void treeShouldBeHalfCalculated() throws Exception {
     SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DataHasherTest {
 
   @Test
-  public void testSha256WithUpdate() throws Exception {
+  public void testSha256WithUpdate() {
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
     assertEquals(HashAlgorithm.SHA256, hasher.getAlgorithm());
 
@@ -33,7 +33,7 @@ public class DataHasherTest {
   }
 
   @Test
-  public void testMultipleUpdates() throws Exception {
+  public void testMultipleUpdates() {
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
 
     hasher.update("hel".getBytes(StandardCharsets.UTF_8));

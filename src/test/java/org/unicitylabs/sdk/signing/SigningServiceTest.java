@@ -24,7 +24,7 @@ public class SigningServiceTest {
     }
     
     @Test
-    public void testCreateFromSecret() throws Exception {
+    public void testCreateFromSecret() {
         byte[] secret = "test secret".getBytes(StandardCharsets.UTF_8);
         byte[] nonce = "test nonce".getBytes(StandardCharsets.UTF_8);
         
@@ -36,7 +36,7 @@ public class SigningServiceTest {
     }
     
     @Test
-    public void testSignAndVerify() throws Exception {
+    public void testSignAndVerify() {
         byte[] privateKey = SigningService.generatePrivateKey();
         SigningService service = new SigningService(privateKey);
         
@@ -57,7 +57,7 @@ public class SigningServiceTest {
     }
     
     @Test
-    public void testVerifyWithPublicKey() throws Exception {
+    public void testVerifyWithPublicKey() {
         byte[] privateKey = SigningService.generatePrivateKey();
         SigningService service = new SigningService(privateKey);
         byte[] publicKey = service.getPublicKey();
@@ -76,7 +76,7 @@ public class SigningServiceTest {
     }
     
     @Test
-    public void testInvalidSignature() throws Exception {
+    public void testInvalidSignature() {
         byte[] privateKey = SigningService.generatePrivateKey();
         SigningService service = new SigningService(privateKey);
         

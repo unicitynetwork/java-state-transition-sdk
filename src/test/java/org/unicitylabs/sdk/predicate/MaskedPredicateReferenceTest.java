@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class MaskedPredicateReferenceTest {
 
   @Test
-  void testReferenceAddress() throws Exception {
+  void testReferenceAddress() {
     Assertions.assertEquals(
         "DIRECT://000095ca469ab7a37f8be976b7da1a6023369182ba3cdd1293c07a4b2bf40aa5118d60f5bf36",
         MaskedPredicateReference.create(

@@ -2,6 +2,7 @@
 package org.unicitylabs.sdk;
 
 import org.unicitylabs.sdk.api.IAggregatorClient;
+import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
@@ -76,10 +77,10 @@ public class StateTransitionClient {
       byte[] publicKey) {
     RequestId requestId = RequestId.create(publicKey, token.getState().calculateHash());
     return this.client.getInclusionProof(requestId)
-        .thenApply(inclusionProof -> inclusionProof.verify(requestId));
+        .thenApply(response -> response.getInclusionProof().verify(requestId));
   }
 
-  public CompletableFuture<InclusionProof> getInclusionProof(Commitment<?> commitment) {
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(Commitment<?> commitment) {
     return this.client.getInclusionProof(commitment.getRequestId());
   }
 }

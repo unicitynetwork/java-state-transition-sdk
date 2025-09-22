@@ -54,7 +54,7 @@ public class JsonRpcHttpTransport {
         }
 
         @Override
-        public void onResponse(Call call, Response response) throws IOException {
+        public void onResponse(Call call, Response response) {
           try (ResponseBody body = response.body()) {
             if (!response.isSuccessful()) {
               String error = body != null ? body.string() : "";

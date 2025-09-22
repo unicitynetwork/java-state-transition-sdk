@@ -13,7 +13,7 @@ public interface IAggregatorClient {
       DataHash transactionHash,
       Authenticator authenticator);
 
-  CompletableFuture<InclusionProof> getInclusionProof(RequestId requestId);
+  CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId);
 
   CompletableFuture<Long> getBlockHeight();
 }
