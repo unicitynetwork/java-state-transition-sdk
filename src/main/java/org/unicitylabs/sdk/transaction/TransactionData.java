@@ -7,5 +7,6 @@ import java.util.Optional;
 public interface TransactionData<T> {
     T getSourceState();
     Address getRecipient();
+    DataHash calculateHash();
     Optional<DataHash> getDataHash();
 }
