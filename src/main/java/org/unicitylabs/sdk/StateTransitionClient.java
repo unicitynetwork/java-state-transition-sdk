@@ -1,6 +1,9 @@
 
 package org.unicitylabs.sdk;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import org.unicitylabs.sdk.api.IAggregatorClient;
 import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
@@ -9,16 +12,12 @@ import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.transaction.Commitment;
-import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 public class StateTransitionClient {
 
@@ -29,7 +28,8 @@ public class StateTransitionClient {
   }
 
   public <T extends MintTransactionData<?>> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      MintCommitment<T> commitment) {
+      MintCommitment<T> commitment
+  ) {
     return this.client.submitCommitment(
         commitment.getRequestId(),
         commitment.getTransactionData().calculateHash(),
@@ -38,8 +38,8 @@ public class StateTransitionClient {
   }
 
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      Token<?> token,
-      TransferCommitment commitment) {
+      TransferCommitment commitment
+  ) {
     if (
         !PredicateEngineService.createPredicate(
             commitment.getTransactionData().getSourceState().getPredicate()
@@ -74,7 +74,8 @@ public class StateTransitionClient {
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
       Token<? extends MintTransactionData<?>> token,
-      byte[] publicKey) {
+      byte[] publicKey
+  ) {
     RequestId requestId = RequestId.create(publicKey, token.getState().calculateHash());
     return this.client.getInclusionProof(requestId)
         .thenApply(response -> response.getInclusionProof().verify(requestId));

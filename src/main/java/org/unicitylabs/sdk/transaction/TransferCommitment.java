@@ -44,22 +44,4 @@ public class TransferCommitment extends Commitment<TransferTransactionData> {
 
     return new TransferCommitment(requestId, transactionData, authenticator);
   }
-
-  public Transaction<TransferTransactionData> toTransaction(Token<?> token,
-      InclusionProof inclusionProof) {
-    if (inclusionProof.verify(this.getRequestId()) != InclusionProofVerificationStatus.OK) {
-      throw new RuntimeException("Inclusion proof verification failed.");
-    }
-
-    if (inclusionProof.getAuthenticator().isEmpty()) {
-      throw new RuntimeException("Authenticator is missing from inclusion proof.");
-    }
-
-    if (!this.getTransactionData().calculateHash()
-        .equals(inclusionProof.getTransactionHash().orElse(null))) {
-      throw new RuntimeException("Payload hash mismatch.");
-    }
-
-    return new Transaction<>(this.getTransactionData(), inclusionProof);
-  }
 }

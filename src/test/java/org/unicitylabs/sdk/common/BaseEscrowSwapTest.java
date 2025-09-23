@@ -50,7 +50,8 @@ public abstract class BaseEscrowSwapTest {
   private final String BOB_NAMETAG = String.format("BOB_%s", System.currentTimeMillis());
   private final String CAROL_NAMETAG = String.format("CAROL_%s", System.currentTimeMillis());
 
-  private String[] transferToken(Token<?> token, SigningService signingService, String nametag) throws Exception {
+  private String[] transferToken(Token<?> token, SigningService signingService, String nametag)
+      throws Exception {
     TransferCommitment commitment = TransferCommitment.create(
         token,
         ProxyAddress.create(nametag),
@@ -60,15 +61,18 @@ public abstract class BaseEscrowSwapTest {
         signingService
     );
 
-    SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
+    SubmitCommitmentResponse response = this.client.submitCommitment(commitment).get();
     if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new RuntimeException("Failed to submit transfer commitment: " + response);
     }
 
     return new String[]{
         UnicityObjectMapper.JSON.writeValueAsString(token),
-        UnicityObjectMapper.JSON.writeValueAsString(commitment.toTransaction(token,
-            InclusionProofUtils.waitInclusionProof(client, commitment).get()))
+        UnicityObjectMapper.JSON.writeValueAsString(
+            commitment.toTransaction(
+                InclusionProofUtils.waitInclusionProof(client, commitment).get()
+            )
+        )
     };
   }
 

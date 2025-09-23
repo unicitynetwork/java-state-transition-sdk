@@ -113,7 +113,7 @@ public abstract class BaseTokenSplitTest {
     );
 
     SubmitCommitmentResponse burnCommitmentResponse = this.client
-        .submitCommitment(token, burnCommitment)
+        .submitCommitment(burnCommitment)
         .get();
 
     if (burnCommitmentResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
@@ -123,7 +123,6 @@ public abstract class BaseTokenSplitTest {
 
     List<MintCommitment<MintTransactionData<SplitMintReason>>> mintCommitments = split.createSplitMintCommitments(
         burnCommitment.toTransaction(
-            token,
             InclusionProofUtils.waitInclusionProof(this.client, burnCommitment).get()
         )
     );

@@ -30,7 +30,9 @@ import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
-  protected final StateTransitionClient client = new StateTransitionClient(new TestAggregatorClient());
+
+  protected final StateTransitionClient client = new StateTransitionClient(
+      new TestAggregatorClient());
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
   private String[] transferToken(Token<?> token, byte[] secret, Address address) throws Exception {
@@ -46,15 +48,18 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         )
     );
 
-    SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
+    SubmitCommitmentResponse response = this.client.submitCommitment(commitment).get();
     if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new RuntimeException("Failed to submit transfer commitment: " + response);
     }
 
     return new String[]{
         UnicityObjectMapper.JSON.writeValueAsString(token),
-        UnicityObjectMapper.JSON.writeValueAsString(commitment.toTransaction(token,
-            InclusionProofUtils.waitInclusionProof(client, commitment).get()))
+        UnicityObjectMapper.JSON.writeValueAsString(
+            commitment.toTransaction(
+                InclusionProofUtils.waitInclusionProof(client, commitment).get()
+            )
+        )
     };
   }
 

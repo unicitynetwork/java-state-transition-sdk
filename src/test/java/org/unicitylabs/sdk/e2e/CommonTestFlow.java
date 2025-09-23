@@ -136,8 +136,9 @@ public class CommonTestFlow {
         null,
         aliceSigningService
     );
-    SubmitCommitmentResponse aliceToBobTransferSubmitResponse = client.submitCommitment(aliceToken,
-        aliceToBobTransferCommitment).get();
+    SubmitCommitmentResponse aliceToBobTransferSubmitResponse = client.submitCommitment(
+        aliceToBobTransferCommitment
+    ).get();
 
     if (aliceToBobTransferSubmitResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit transaction commitment: %s",
@@ -152,7 +153,6 @@ public class CommonTestFlow {
 
     // Create transfer transaction
     Transaction<TransferTransactionData> aliceToBobTransferTransaction = aliceToBobTransferCommitment.toTransaction(
-        aliceToken,
         aliceToBobTransferInclusionProof
     );
 
@@ -253,7 +253,6 @@ public class CommonTestFlow {
         SigningService.createFromSecret(BOB_SECRET)
     );
     SubmitCommitmentResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
-        bobToken,
         bobToCarolTransferCommitment
     ).get();
 
@@ -267,7 +266,6 @@ public class CommonTestFlow {
         bobToCarolTransferCommitment
     ).get();
     Transaction<TransferTransactionData> bobToCarolTransaction = bobToCarolTransferCommitment.toTransaction(
-        bobToken,
         bobToCarolInclusionProof
     );
 
@@ -299,7 +297,6 @@ public class CommonTestFlow {
         SigningService.createFromSecret(CAROL_SECRET)
     );
     SubmitCommitmentResponse carolToBobTransferSubmitResponse = client.submitCommitment(
-        carolToken,
         carolToBobTransferCommitment
     ).get();
 
@@ -314,7 +311,6 @@ public class CommonTestFlow {
     ).get();
 
     Transaction<TransferTransactionData> carolToBobTransaction = carolToBobTransferCommitment.toTransaction(
-        carolToken,
         carolToBobInclusionProof
     );
 
@@ -379,16 +375,18 @@ public class CommonTestFlow {
         SigningService.createFromSecret(BOB_SECRET)
     );
 
-    if (client.submitCommitment(carolToBobToken, burnCommitment).get().getStatus()
+    if (client.submitCommitment(burnCommitment).get().getStatus()
         != SubmitCommitmentStatus.SUCCESS) {
       throw new Exception("Failed to submit burn commitment");
     }
 
     List<MintCommitment<MintTransactionData<SplitMintReason>>> splitCommitments = split.createSplitMintCommitments(
-        burnCommitment.toTransaction(carolToBobToken, InclusionProofUtils.waitInclusionProof(
-            client,
-            burnCommitment
-        ).get())
+        burnCommitment.toTransaction(
+            InclusionProofUtils.waitInclusionProof(
+                client,
+                burnCommitment
+            ).get()
+        )
     );
 
     List<Transaction<MintTransactionData<SplitMintReason>>> splitTransactions = new ArrayList<>();
