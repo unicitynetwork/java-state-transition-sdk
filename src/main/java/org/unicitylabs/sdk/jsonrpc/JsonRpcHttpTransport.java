@@ -1,7 +1,6 @@
 
 package org.unicitylabs.sdk.jsonrpc;
 
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import okhttp3.Call;
@@ -12,6 +11,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
 /**
  * JSON-RPC HTTP service.
@@ -68,6 +68,7 @@ public class JsonRpcHttpTransport {
                     .constructParametricType(JsonRpcResponse.class, resultType));
 
             if (data.getError() != null) {
+
               future.completeExceptionally(new JsonRpcDataError(data.getError()));
               return;
             }

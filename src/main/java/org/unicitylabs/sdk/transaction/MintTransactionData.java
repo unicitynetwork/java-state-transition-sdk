@@ -104,7 +104,6 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     node.addPOJO(this.reason);
 
     try {
-      System.out.println(this.reason);
       return new DataHasher(HashAlgorithm.SHA256)
           .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
           .digest();

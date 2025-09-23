@@ -59,13 +59,11 @@ public class UnicityTreeCertificateCbor {
         steps.add(ctx.readValue(p, UnicityTreeCertificate.HashStep.class));
       }
 
-      UnicityTreeCertificate result = new UnicityTreeCertificate(version, partitionIdentifier, steps);
-
       if (p.nextToken() != JsonToken.END_ARRAY) {
         throw MismatchedInputException.from(p, UnicityTreeCertificate.HashStep.class, "Expected end of array");
       }
 
-      return result;
+      return new UnicityTreeCertificate(version, partitionIdentifier, steps);
     }
   }
 }

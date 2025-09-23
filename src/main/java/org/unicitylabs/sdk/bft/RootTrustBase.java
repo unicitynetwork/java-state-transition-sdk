@@ -1,18 +1,18 @@
 package org.unicitylabs.sdk.bft;
 
-import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RootTrustBase {
-  public final long version;
-  public final long epoch;
-  public final long epochStartRound;
-  public final List<NodeInfo> rootNodes;
-  public final long quorumThreshold;
+  private final long version;
+  private final int networkId;
+  private final long epoch;
+  private final long epochStartRound;
+  private final Set<NodeInfo> rootNodes;
+  private final long quorumThreshold;
   private final byte[] stateHash;
   private final byte[] changeRecordHash;
   private final byte[] previousEntryHash;
@@ -20,9 +20,10 @@ public class RootTrustBase {
 
   public RootTrustBase(
       long version,
+      int networkId,
       long epoch,
       long epochStartRound,
-      List<NodeInfo> rootNodes,
+      Set<NodeInfo> rootNodes,
       long quorumThreshold,
       byte[] stateHash,
       byte[] changeRecordHash,
@@ -30,9 +31,10 @@ public class RootTrustBase {
       Map<String, byte[]> signatures
   ) {
     this.version = version;
+    this.networkId = networkId;
     this.epoch = epoch;
     this.epochStartRound = epochStartRound;
-    this.rootNodes = Collections.unmodifiableList(rootNodes);
+    this.rootNodes = Set.copyOf(rootNodes);
     this.quorumThreshold = quorumThreshold;
     this.stateHash = Arrays.copyOf(stateHash, stateHash.length);
     this.changeRecordHash = Arrays.copyOf(changeRecordHash, changeRecordHash.length);
@@ -44,6 +46,30 @@ public class RootTrustBase {
                 e -> Arrays.copyOf(e.getValue(), e.getValue().length)
             )
         );
+  }
+
+  public long getVersion() {
+    return this.version;
+  }
+
+  public int getNetworkId() {
+    return this.networkId;
+  }
+
+  public long getEpoch() {
+    return this.epoch;
+  }
+
+  public long getEpochStartRound() {
+    return this.epochStartRound;
+  }
+
+  public Set<NodeInfo> getRootNodes() {
+    return this.rootNodes;
+  }
+
+  public long getQuorumThreshold() {
+    return this.quorumThreshold;
   }
 
   public byte[] getStateHash() {
@@ -66,5 +92,43 @@ public class RootTrustBase {
                 e -> Arrays.copyOf(e.getValue(), e.getValue().length)
             )
         );
+  }
+
+  public static class NodeInfo {
+    private final String nodeId;
+    private final byte[] signingKey;
+    private final long stakedAmount;
+
+    public NodeInfo(String nodeId, byte[] signingKey, long stakedAmount) {
+      this.nodeId = nodeId;
+      this.signingKey = Arrays.copyOf(signingKey, signingKey.length);
+      this.stakedAmount = stakedAmount;
+    }
+
+    public String getNodeId() {
+      return this.nodeId;
+    }
+
+    public byte[] getSigningKey() {
+      return Arrays.copyOf(this.signingKey, this.signingKey.length);
+    }
+
+    public long getStakedAmount() {
+      return this.stakedAmount;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof NodeInfo)) {
+        return false;
+      }
+      NodeInfo nodeInfo = (NodeInfo) o;
+      return Objects.equals(this.nodeId, nodeInfo.nodeId);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(nodeId);
+    }
   }
 }

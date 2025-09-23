@@ -12,7 +12,7 @@ public abstract class CompositeVerificationRule<CTX> extends VerificationRule<CT
       String message,
       VerificationRule<CTX> firstRule
   ) {
-    super(firstRule);
+    super(message);
 
     this.firstRule = firstRule;
     this.message = message;

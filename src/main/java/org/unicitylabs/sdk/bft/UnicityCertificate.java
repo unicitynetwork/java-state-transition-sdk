@@ -10,9 +10,9 @@ public class UnicityCertificate {
   private final InputRecord inputRecord;
   private final byte[] technicalRecordHash;
   private final byte[] shardConfigurationHash;
-  public final ShardTreeCertificate shardTreeCertificate;
-  public final UnicityTreeCertificate unicityTreeCertificate;
-  public final UnicitySeal unicitySeal;
+  private final ShardTreeCertificate shardTreeCertificate;
+  private final UnicityTreeCertificate unicityTreeCertificate;
+  private final UnicitySeal unicitySeal;
 
   public UnicityCertificate(
       int version,

@@ -34,16 +34,8 @@ public class InputRecordCbor {
       gen.writeObject(value.getVersion());
       gen.writeObject(value.getRoundNumber());
       gen.writeObject(value.getEpoch());
-      gen.writeObject(
-          value.getPreviousHash() == null
-              ? null
-              : HexConverter.encode(value.getPreviousHash()).getBytes(StandardCharsets.UTF_8)
-      );
-      gen.writeObject(
-          value.getHash() == null
-              ? null
-              : HexConverter.encode(value.getHash()).getBytes(StandardCharsets.UTF_8)
-      );
+      gen.writeObject(value.getPreviousHash());
+      gen.writeObject(value.getHash());
       gen.writeObject(value.getSummaryValue());
       gen.writeObject(value.getTimestamp());
       gen.writeObject(value.getBlockHash());
@@ -73,28 +65,22 @@ public class InputRecordCbor {
       long sumOfEarnedFees = p.readValueAs(long.class);
       byte[] executedTransactionsHash = p.readValueAs(byte[].class);
 
-      InputRecord result = new InputRecord(
+      if (p.nextToken() != JsonToken.END_ARRAY) {
+        throw MismatchedInputException.from(p, InputRecord.class, "Expected end of array");
+      }
+
+      return new InputRecord(
           version,
           roundNumber,
           epoch,
-          previousHash != null
-              ? HexConverter.decode(new String(previousHash, StandardCharsets.UTF_8))
-              : null,
-          hash != null
-              ? HexConverter.decode(new String(hash, StandardCharsets.UTF_8))
-              : null,
+          previousHash,
+          hash,
           summaryValue,
           timestamp,
           blockHash,
           sumOfEarnedFees,
           executedTransactionsHash
       );
-
-      if (p.nextToken() != JsonToken.END_ARRAY) {
-        throw MismatchedInputException.from(p, InputRecord.class, "Expected end of array");
-      }
-
-      return result;
     }
   }
 }

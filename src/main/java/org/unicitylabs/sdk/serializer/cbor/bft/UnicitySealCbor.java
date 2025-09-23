@@ -10,8 +10,9 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import org.unicitylabs.sdk.bft.InputRecord;
 import org.unicitylabs.sdk.bft.UnicitySeal;
 
 public class UnicitySealCbor {
@@ -70,11 +71,15 @@ public class UnicitySealCbor {
         throw MismatchedInputException.from(p, UnicitySeal.class, "Expected map value");
       }
 
-      Map<String, byte[]> signatures = new HashMap<>();
+      Map<String, byte[]> signatures = new LinkedHashMap<>();
       while (p.nextToken() != JsonToken.END_OBJECT) {
         String name = p.currentName();
         p.nextToken();
         signatures.put(name, p.readValueAs(byte[].class));
+      }
+
+      if (p.nextToken() != JsonToken.END_ARRAY) {
+        throw MismatchedInputException.from(p, InputRecord.class, "Expected end of array");
       }
 
       return new UnicitySeal(

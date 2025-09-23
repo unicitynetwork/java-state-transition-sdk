@@ -2,12 +2,14 @@ package org.unicitylabs.sdk.serializer.cbor.bft;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import java.io.IOException;
+import org.unicitylabs.sdk.bft.InputRecord;
 import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 
 public class UnicityTreeCertificateHashStepCbor {
@@ -41,10 +43,16 @@ public class UnicityTreeCertificateHashStepCbor {
       }
       p.nextToken();
 
-      return new UnicityTreeCertificate.HashStep(
+      UnicityTreeCertificate.HashStep result = new UnicityTreeCertificate.HashStep(
           p.readValueAs(int.class),
           p.readValueAs(byte[].class)
       );
+
+      if (p.nextToken() != JsonToken.END_ARRAY) {
+        throw MismatchedInputException.from(p, InputRecord.class, "Expected end of array");
+      }
+
+      return result;
     }
   }
 }

@@ -1,17 +1,21 @@
 package org.unicitylabs.sdk.serializer;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.BlockHeightResponse;
 import org.unicitylabs.sdk.api.InclusionProofRequest;
+import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentRequest;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.bft.InputRecord;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.ShardTreeCertificate;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.bft.UnicitySeal;
@@ -65,9 +69,12 @@ import org.unicitylabs.sdk.serializer.json.address.AddressJson;
 import org.unicitylabs.sdk.serializer.json.api.AuthenticatorJson;
 import org.unicitylabs.sdk.serializer.json.api.BlockHeightResponseJson;
 import org.unicitylabs.sdk.serializer.json.api.InclusionProofRequestJson;
+import org.unicitylabs.sdk.serializer.json.api.InclusionProofResponseJson;
 import org.unicitylabs.sdk.serializer.json.api.RequestIdJson;
 import org.unicitylabs.sdk.serializer.json.api.SubmitCommitmentRequestJson;
 import org.unicitylabs.sdk.serializer.json.api.SubmitCommitmentResponseJson;
+import org.unicitylabs.sdk.serializer.json.bft.RootTrustBaseJson;
+import org.unicitylabs.sdk.serializer.json.bft.RootTrustBaseNodeInfoJson;
 import org.unicitylabs.sdk.serializer.json.hash.DataHashJson;
 import org.unicitylabs.sdk.serializer.json.jsonrpc.JsonRpcErrorJson;
 import org.unicitylabs.sdk.serializer.json.jsonrpc.JsonRpcRequestJson;
@@ -127,7 +134,8 @@ public class UnicityObjectMapper {
 
     module.addSerializer(SparseMerkleTreePath.class, new SparseMerkleTreePathCbor.Serializer());
     module.addDeserializer(SparseMerkleTreePath.class, new SparseMerkleTreePathCbor.Deserializer());
-    module.addSerializer(SparseMerkleTreePathStep.class, new SparseMerkleTreePathStepCbor.Serializer());
+    module.addSerializer(SparseMerkleTreePathStep.class,
+        new SparseMerkleTreePathStepCbor.Serializer());
     module.addDeserializer(SparseMerkleTreePathStep.class,
         new SparseMerkleTreePathStepCbor.Deserializer());
     module.addSerializer(SparseMerkleTreePathStep.Branch.class,
@@ -190,7 +198,8 @@ public class UnicityObjectMapper {
     module.addDeserializer(TokenState.class, new TokenStateCbor.Deserializer());
 
     module.addSerializer(SerializablePredicate.class, new SerializablePredicateCbor.Serializer());
-    module.addDeserializer(SerializablePredicate.class, new SerializablePredicateCbor.Deserializer());
+    module.addDeserializer(SerializablePredicate.class,
+        new SerializablePredicateCbor.Deserializer());
 
     module.addSerializer(DefaultPredicate.class, new DefaultPredicateCbor.Serializer());
     module.addSerializer(BurnPredicate.class, new BurnPredicateCbor.Serializer());
@@ -206,9 +215,12 @@ public class UnicityObjectMapper {
     module.addSerializer(ShardTreeCertificate.class, new ShardTreeCertificateCbor.Serializer());
     module.addDeserializer(ShardTreeCertificate.class, new ShardTreeCertificateCbor.Deserializer());
     module.addSerializer(UnicityTreeCertificate.class, new UnicityTreeCertificateCbor.Serializer());
-    module.addDeserializer(UnicityTreeCertificate.class, new UnicityTreeCertificateCbor.Deserializer());
-    module.addSerializer(UnicityTreeCertificate.HashStep.class, new UnicityTreeCertificateHashStepCbor.Serializer());
-    module.addDeserializer(UnicityTreeCertificate.HashStep.class, new UnicityTreeCertificateHashStepCbor.Deserializer());
+    module.addDeserializer(UnicityTreeCertificate.class,
+        new UnicityTreeCertificateCbor.Deserializer());
+    module.addSerializer(UnicityTreeCertificate.HashStep.class,
+        new UnicityTreeCertificateHashStepCbor.Serializer());
+    module.addDeserializer(UnicityTreeCertificate.HashStep.class,
+        new UnicityTreeCertificateHashStepCbor.Deserializer());
     module.addSerializer(UnicitySeal.class, new UnicitySealCbor.Serializer());
     module.addDeserializer(UnicitySeal.class, new UnicitySealCbor.Deserializer());
 
@@ -244,7 +256,8 @@ public class UnicityObjectMapper {
     module.addSerializer(SparseMerkleTreePath.class, new SparseMerkleTreePathJson.Serializer());
     module.addDeserializer(SparseMerkleTreePath.class, new SparseMerkleTreePathJson.Deserializer());
 
-    module.addSerializer(SparseMerkleTreePathStep.class, new SparseMerkleTreePathStepJson.Serializer());
+    module.addSerializer(SparseMerkleTreePathStep.class,
+        new SparseMerkleTreePathStepJson.Serializer());
     module.addDeserializer(SparseMerkleTreePathStep.class,
         new SparseMerkleTreePathStepJson.Deserializer());
 
@@ -285,7 +298,8 @@ public class UnicityObjectMapper {
     module.addDeserializer(TokenState.class, new TokenStateJson.Deserializer());
 
     module.addSerializer(SerializablePredicate.class, new SerializablePredicateJson.Serializer());
-    module.addDeserializer(SerializablePredicate.class, new SerializablePredicateJson.Deserializer());
+    module.addDeserializer(SerializablePredicate.class,
+        new SerializablePredicateJson.Deserializer());
 
     module.addSerializer(Transaction.class, new TransactionJson.Serializer());
     module.addDeserializer(Transaction.class, new TransactionJson.Deserializer());
@@ -315,8 +329,15 @@ public class UnicityObjectMapper {
     module.addDeserializer(JsonRpcResponse.class, new JsonRpcResponseJson.Deserializer());
     module.addDeserializer(JsonRpcError.class, new JsonRpcErrorJson.Deserializer());
     module.addDeserializer(BlockHeightResponse.class, new BlockHeightResponseJson.Deserializer());
+    module.addDeserializer(InclusionProofResponse.class,
+        new InclusionProofResponseJson.Deserializer());
     module.addDeserializer(SubmitCommitmentResponse.class,
         new SubmitCommitmentResponseJson.Deserializer());
+
+    // BFT
+    module.addDeserializer(RootTrustBase.NodeInfo.class,
+        new RootTrustBaseNodeInfoJson.Deserializer());
+    module.addDeserializer(RootTrustBase.class, new RootTrustBaseJson.Deserializer());
 
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new Jdk8Module());

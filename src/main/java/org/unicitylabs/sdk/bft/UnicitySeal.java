@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.bft;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -15,7 +16,7 @@ public class UnicitySeal {
   private final long timestamp;
   private final byte[] previousHash; // nullable
   private final byte[] hash;
-  private final Map<String, byte[]> signatures;
+  private final LinkedHashMap<String, byte[]> signatures;
 
   public UnicitySeal(
       int version,
@@ -43,7 +44,14 @@ public class UnicitySeal {
                 Arrays.copyOf(entry.getValue(), entry.getValue().length)
             )
         )
-        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (e1, e2) -> e1,
+                LinkedHashMap::new
+            )
+        );
   }
 
   public int getVersion() {
@@ -67,7 +75,8 @@ public class UnicitySeal {
   }
 
   public byte[] getPreviousHash() {
-    return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length) : null;
+    return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length)
+        : null;
   }
 
   public byte[] getHash() {
@@ -81,7 +90,14 @@ public class UnicitySeal {
                 Arrays.copyOf(entry.getValue(), entry.getValue().length)
             )
         )
-        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (e1, e2) -> e1,
+                LinkedHashMap::new
+            )
+        );
   }
 
   @Override

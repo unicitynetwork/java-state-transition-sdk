@@ -1,17 +1,18 @@
 package org.unicitylabs.sdk.transaction.split;
 
-import org.unicitylabs.sdk.bft.InputRecord;
-import org.unicitylabs.sdk.bft.ShardTreeCertificate;
-import org.unicitylabs.sdk.bft.UnicityCertificate;
-import org.unicitylabs.sdk.bft.UnicitySeal;
-import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
-import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
@@ -21,12 +22,6 @@ import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 public class TokenSplitBuilderTest {

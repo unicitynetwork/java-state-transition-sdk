@@ -5,6 +5,8 @@ import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;
+import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationRule;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
@@ -13,6 +15,7 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import org.unicitylabs.sdk.verification.VerificationResult;
 
 /**
  * Represents a proof of inclusion or non-inclusion in a sparse merkle tree.
@@ -75,6 +78,16 @@ public class InclusionProof {
       } catch (CborSerializationException e) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }
+    }
+
+    if (!new UnicityCertificateVerificationRule().verify(
+        new UnicityCertificateVerificationContext(
+            this.merkleTreePath.getRootHash(),
+            this.unicityCertificate,
+            null
+        )
+    ).isSuccessful()) {
+      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
     }
 
     MerkleTreePathVerificationResult result = this.merkleTreePath.verify(

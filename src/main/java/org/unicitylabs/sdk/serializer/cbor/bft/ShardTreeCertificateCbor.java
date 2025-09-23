@@ -53,13 +53,11 @@ public class ShardTreeCertificateCbor {
         siblings.add(p.readValueAs(byte[].class));
       }
 
-      ShardTreeCertificate result = new ShardTreeCertificate(shard, siblings);
-
       if (p.nextToken() != JsonToken.END_ARRAY) {
         throw MismatchedInputException.from(p, ShardTreeCertificate.class, "Expected end of array");
       }
 
-      return result;
+      return  new ShardTreeCertificate(shard, siblings);
     }
   }
 }
