@@ -17,7 +17,7 @@ import org.unicitylabs.sdk.util.HexConverter;
 /**
  * Represents a snapshot of token ownership and associated data.
  */
-public class TokenState {
+public class TokenState{
 
   private final SerializablePredicate predicate;
   private final byte[] data;

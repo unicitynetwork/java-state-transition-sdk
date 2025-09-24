@@ -1,9 +1,5 @@
 package org.unicitylabs.sdk.util;
 
-import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.transaction.Commitment;
-import org.unicitylabs.sdk.transaction.InclusionProof;
-import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -11,6 +7,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.bft.RootTrustBase;
+import org.unicitylabs.sdk.transaction.Commitment;
+import org.unicitylabs.sdk.transaction.InclusionProof;
+import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 
 /**
  * Utility class for working with inclusion proofs
@@ -27,8 +28,10 @@ public class InclusionProofUtils {
    */
   public static CompletableFuture<InclusionProof> waitInclusionProof(
       StateTransitionClient client,
-      Commitment<?> commitment) throws ExecutionException, InterruptedException {
-    return waitInclusionProof(client, commitment, DEFAULT_TIMEOUT, DEFAULT_INTERVAL);
+      RootTrustBase trustBase,
+      Commitment<?> commitment
+  ) {
+    return waitInclusionProof(client, trustBase, commitment, DEFAULT_TIMEOUT, DEFAULT_INTERVAL);
   }
 
   /**
@@ -36,22 +39,25 @@ public class InclusionProofUtils {
    */
   public static CompletableFuture<InclusionProof> waitInclusionProof(
       StateTransitionClient client,
+      RootTrustBase trustBase,
       Commitment<?> commitment,
       Duration timeout,
-      Duration interval) {
+      Duration interval
+  ) {
 
     CompletableFuture<InclusionProof> future = new CompletableFuture<>();
 
     long startTime = System.currentTimeMillis();
     long timeoutMillis = timeout.toMillis();
 
-    checkInclusionProof(client, commitment, future, startTime, timeoutMillis, interval.toMillis());
+    checkInclusionProof(client, trustBase, commitment, future, startTime, timeoutMillis, interval.toMillis());
 
     return future;
   }
 
   private static void checkInclusionProof(
       StateTransitionClient client,
+      RootTrustBase trustBase,
       Commitment<?> commitment,
       CompletableFuture<InclusionProof> future,
       long startTime,
@@ -64,14 +70,14 @@ public class InclusionProofUtils {
 
     client.getInclusionProof(commitment).thenAccept(response -> {
       InclusionProofVerificationStatus status = response.getInclusionProof()
-          .verify(commitment.getRequestId());
+          .verify(commitment.getRequestId(), trustBase);
       if (status == InclusionProofVerificationStatus.OK) {
         future.complete(response.getInclusionProof());
       }
 
       if (status == InclusionProofVerificationStatus.PATH_NOT_INCLUDED) {
         CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
-            .execute(() -> checkInclusionProof(client, commitment, future, startTime, timeoutMillis,
+            .execute(() -> checkInclusionProof(client, trustBase, commitment, future, startTime, timeoutMillis,
                 intervalMillis));
       } else {
         future.completeExceptionally(

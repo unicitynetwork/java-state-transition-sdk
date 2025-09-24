@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RootTrustBase {
+
   private final long version;
   private final int networkId;
   private final long epoch;
@@ -37,8 +38,12 @@ public class RootTrustBase {
     this.rootNodes = Set.copyOf(rootNodes);
     this.quorumThreshold = quorumThreshold;
     this.stateHash = Arrays.copyOf(stateHash, stateHash.length);
-    this.changeRecordHash = Arrays.copyOf(changeRecordHash, changeRecordHash.length);
-    this.previousEntryHash = Arrays.copyOf(previousEntryHash, previousEntryHash.length);
+    this.changeRecordHash = changeRecordHash == null
+        ? null
+        : Arrays.copyOf(changeRecordHash, changeRecordHash.length);
+    this.previousEntryHash = previousEntryHash == null
+        ? null
+        : Arrays.copyOf(previousEntryHash, previousEntryHash.length);
     this.signatures = signatures.entrySet().stream()
         .collect(
             Collectors.toUnmodifiableMap(
@@ -77,11 +82,15 @@ public class RootTrustBase {
   }
 
   public byte[] getChangeRecordHash() {
-    return Arrays.copyOf(this.changeRecordHash, this.changeRecordHash.length);
+    return this.changeRecordHash == null
+        ? null
+        : Arrays.copyOf(this.changeRecordHash, this.changeRecordHash.length);
   }
 
   public byte[] getPreviousEntryHash() {
-    return Arrays.copyOf(this.previousEntryHash, this.previousEntryHash.length);
+    return this.previousEntryHash == null
+        ? null
+        : Arrays.copyOf(this.previousEntryHash, this.previousEntryHash.length);
   }
 
   public Map<String, byte[]> getSignatures() {
@@ -95,6 +104,7 @@ public class RootTrustBase {
   }
 
   public static class NodeInfo {
+
     private final String nodeId;
     private final byte[] signingKey;
     private final long stakedAmount;

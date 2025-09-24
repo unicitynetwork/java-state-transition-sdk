@@ -1,7 +1,15 @@
 package org.unicitylabs.sdk.bft;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityCertificate {
@@ -67,6 +75,42 @@ public class UnicityCertificate {
 
   public UnicitySeal getUnicitySeal() {
     return this.unicitySeal;
+  }
+
+  public static DataHash calculateShardTreeCertificateRootHash(
+      InputRecord inputRecord,
+      byte[] technicalRecordHash,
+      byte[] shardConfigurationHash,
+      ShardTreeCertificate shardTreeCertificate
+  ) {
+    try {
+      DataHash rootHash = new DataHasher(HashAlgorithm.SHA256)
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(inputRecord))
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(technicalRecordHash))
+          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(shardConfigurationHash))
+          .digest();
+
+      byte[] shardId = shardTreeCertificate.getShard();
+      List<byte[]> siblingHashes = shardTreeCertificate.getSiblingHashList();
+      for (int i = 0; i < siblingHashes.size(); i++) {
+        boolean isRight = shardId[(shardId.length - 1) - (i / 8)] == 1;
+        if (isRight) {
+          rootHash = new DataHasher(HashAlgorithm.SHA256)
+              .update(siblingHashes.get(i))
+              .update(rootHash.getData())
+              .digest();
+        } else {
+          rootHash = new DataHasher(HashAlgorithm.SHA256)
+              .update(rootHash.getData())
+              .update(siblingHashes.get(i))
+              .digest();
+        }
+      }
+
+      return rootHash;
+    } catch (IOException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   @Override

@@ -19,8 +19,16 @@ public class VerificationResult {
     return new VerificationResult(VerificationResultCode.OK, "Verification successful", List.of());
   }
 
+  public static VerificationResult success(List<VerificationResult> results) {
+    return new VerificationResult(VerificationResultCode.OK, "Verification successful", results);
+  }
+
   public static VerificationResult fail(String error) {
     return new VerificationResult(VerificationResultCode.FAIL, error, List.of());
+  }
+
+  public static VerificationResult fail(String error, List<VerificationResult> results) {
+    return new VerificationResult(VerificationResultCode.FAIL, error, results);
   }
 
   public static VerificationResult fromChildren(String message,

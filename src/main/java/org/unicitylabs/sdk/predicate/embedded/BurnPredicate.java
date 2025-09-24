@@ -3,6 +3,7 @@ package org.unicitylabs.sdk.predicate.embedded;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.Objects;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -50,7 +51,11 @@ public class BurnPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Token<?> token, Transaction<TransferTransactionData> transaction) {
+  public boolean verify(
+      Token<?> token,
+      Transaction<TransferTransactionData> transaction,
+      RootTrustBase trustBase
+  ) {
     return false;
   }
 

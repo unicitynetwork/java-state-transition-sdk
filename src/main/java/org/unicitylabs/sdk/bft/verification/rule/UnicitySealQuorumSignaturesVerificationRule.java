@@ -1,9 +1,5 @@
 package org.unicitylabs.sdk.bft.verification.rule;
 
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +10,6 @@ import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContex
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.verification.VerificationResult;
 import org.unicitylabs.sdk.verification.VerificationRule;
@@ -40,17 +35,12 @@ public class UnicitySealQuorumSignaturesVerificationRule extends
   @Override
   public VerificationResult verify(UnicityCertificateVerificationContext context) {
     UnicitySeal unicitySeal = context.getUnicityCertificate().getUnicitySeal();
-    byte[] unicitySealBytes = UnicitySealQuorumSignaturesVerificationRule.encodeUnicitySeal(
-        unicitySeal
-    );
-    if (unicitySealBytes == null) {
-      return VerificationResult.fail("Could not encode UnicitySeal.");
-    }
-
     RootTrustBase trustBase = context.getTrustBase();
 
     List<VerificationResult> results = new ArrayList<>();
-    DataHash hash = new DataHasher(HashAlgorithm.SHA256).update(unicitySealBytes).digest();
+    DataHash hash = new DataHasher(HashAlgorithm.SHA256)
+        .update(UnicitySeal.fromUnicitySealWithoutSignatures(unicitySeal).encode())
+        .digest();
     int successful = 0;
     for (Map.Entry<String, byte[]> entry : unicitySeal.getSignatures().entrySet()) {
       String nodeId = entry.getKey();
@@ -77,10 +67,10 @@ public class UnicitySealQuorumSignaturesVerificationRule extends
     }
 
     if (successful >= trustBase.getQuorumThreshold()) {
-      return VerificationResult.success();
+      return VerificationResult.success(results);
     }
 
-    return VerificationResult.fail("Quorum threshold not reached.");
+    return VerificationResult.fail("Quorum threshold not reached.", results);
   }
 
   private static VerificationResult verifySignature(
@@ -103,31 +93,6 @@ public class UnicitySealQuorumSignaturesVerificationRule extends
     }
 
     return VerificationResult.success();
-  }
-
-  private static byte[] encodeUnicitySeal(UnicitySeal seal) {
-    try {
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      CBORFactory factory = (CBORFactory) UnicityObjectMapper.CBOR.getFactory();
-      CBORGenerator gen = factory.createGenerator(out);
-
-      gen.writeTag(1001);
-      gen.writeStartArray(seal, 8);
-      gen.writeObject(seal.getVersion());
-      gen.writeObject(seal.getNetworkId());
-      gen.writeObject(seal.getRootChainRoundNumber());
-      gen.writeObject(seal.getEpoch());
-      gen.writeObject(seal.getTimestamp());
-      gen.writeObject(seal.getPreviousHash());
-      gen.writeObject(seal.getHash());
-      gen.writeObject(null);
-      gen.writeEndArray();
-
-      gen.close();
-      return out.toByteArray();
-    } catch (IOException e) {
-      return null;
-    }
   }
 
 }

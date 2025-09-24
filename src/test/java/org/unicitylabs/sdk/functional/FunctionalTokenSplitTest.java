@@ -4,10 +4,14 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.common.split.BaseTokenSplitTest;
 import org.junit.jupiter.api.BeforeEach;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
 
 public class FunctionalTokenSplitTest extends BaseTokenSplitTest {
   @BeforeEach
   void setUp() {
-    this.client = new StateTransitionClient(new TestAggregatorClient());
+    SigningService signingService = new SigningService(SigningService.generatePrivateKey());
+    this.client = new StateTransitionClient(new TestAggregatorClient(signingService));
+    this.trustBase = RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey());
   }
 }

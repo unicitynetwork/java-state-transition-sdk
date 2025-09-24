@@ -6,7 +6,10 @@ import java.util.Optional;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;
+import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationRule;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
@@ -58,7 +61,7 @@ public class InclusionProof {
     return Optional.ofNullable(this.transactionHash);
   }
 
-  public InclusionProofVerificationStatus verify(RequestId requestId) {
+  public InclusionProofVerificationStatus verify(RequestId requestId, RootTrustBase trustBase) {
     if (this.authenticator != null && this.transactionHash != null) {
       if (!this.authenticator.verify(this.transactionHash)) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
@@ -76,16 +79,15 @@ public class InclusionProof {
       }
     }
 
-//    TODO: Fix Unicity certificate verification
-//    if (!new UnicityCertificateVerificationRule().verify(
-//        new UnicityCertificateVerificationContext(
-//            this.merkleTreePath.getRootHash(),
-//            this.unicityCertificate,
-//            null
-//        )
-//    ).isSuccessful()) {
-//      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
-//    }
+    if (!new UnicityCertificateVerificationRule().verify(
+        new UnicityCertificateVerificationContext(
+            this.merkleTreePath.getRootHash(),
+            this.unicityCertificate,
+            trustBase
+        )
+    ).isSuccessful()) {
+      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
+    }
 
     MerkleTreePathVerificationResult result = this.merkleTreePath.verify(
         requestId.toBitString().toBigInteger());

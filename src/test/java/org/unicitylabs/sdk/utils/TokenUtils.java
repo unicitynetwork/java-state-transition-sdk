@@ -7,6 +7,7 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
@@ -26,9 +27,14 @@ import org.unicitylabs.sdk.util.InclusionProofUtils;
 
 public class TokenUtils {
 
-  public static Token<?> mintToken(StateTransitionClient client, byte[] secret) throws Exception {
+  public static Token<?> mintToken(
+      StateTransitionClient client,
+      RootTrustBase trustBase,
+      byte[] secret
+  ) throws Exception {
     return TokenUtils.mintToken(
         client,
+        trustBase,
         secret,
         new TokenId(randomBytes(32)),
         new TokenType(randomBytes(32)),
@@ -42,6 +48,7 @@ public class TokenUtils {
 
   public static Token<?> mintToken(
       StateTransitionClient client,
+      RootTrustBase trustBase,
       byte[] secret,
       TokenId tokenId,
       TokenType tokenType,
@@ -89,11 +96,13 @@ public class TokenUtils {
     // Wait for inclusion proof
     InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
         client,
+        trustBase,
         commitment
     ).get();
 
     // Create mint transaction
-    return new Token<>(
+    return Token.create(
+        trustBase,
         tokenState,
         commitment.toTransaction(inclusionProof)
     );
@@ -101,12 +110,14 @@ public class TokenUtils {
 
   public static Token<?> mintNametagToken(
       StateTransitionClient client,
+      RootTrustBase trustBase,
       byte[] secret,
       String nametag,
       Address targetAddress
   ) throws Exception {
     return mintNametagToken(
         client,
+        trustBase,
         secret,
         new TokenType(randomBytes(32)),
         nametag,
@@ -118,6 +129,7 @@ public class TokenUtils {
 
   public static Token<?> mintNametagToken(
       StateTransitionClient client,
+      RootTrustBase trustBase,
       byte[] secret,
       TokenType tokenType,
       String nametag,
@@ -155,11 +167,13 @@ public class TokenUtils {
     // Wait for inclusion proof
     InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
         client,
+        trustBase,
         commitment
     ).get();
 
     // Create mint transaction
-    return new Token<>(
+    return Token.create(
+        trustBase,
         new TokenState(
             MaskedPredicate.create(
                 commitment.getTransactionData().getTokenId(),

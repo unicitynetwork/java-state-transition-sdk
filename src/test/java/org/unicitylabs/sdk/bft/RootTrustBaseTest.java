@@ -3,11 +3,7 @@ package org.unicitylabs.sdk.bft;
 import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.unicitylabs.sdk.bft.verification.BftVerificationContext;
-import org.unicitylabs.sdk.bft.verification.rule.UnicitySealHashMatchesWithRootHashRule;
-import org.unicitylabs.sdk.bft.verification.rule.UnicitySealQuorumSignaturesVerificationRule;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public class RootTrustBaseTest {
 

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -115,7 +116,8 @@ public abstract class DefaultPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Token<?> token, Transaction<TransferTransactionData> transaction) {
+  public boolean verify(Token<?> token, Transaction<TransferTransactionData> transaction,
+      RootTrustBase trustBase) {
     if (!this.tokenId.equals(token.getId()) || !this.tokenType.equals(token.getType())) {
       return false;
     }
@@ -139,7 +141,10 @@ public abstract class DefaultPredicate implements Predicate {
         this.publicKey,
         transaction.getData().getSourceState().calculateHash()
     );
-    return transaction.getInclusionProof().verify(requestId) == InclusionProofVerificationStatus.OK;
+    return transaction.getInclusionProof().verify(
+        requestId,
+        trustBase
+    ) == InclusionProofVerificationStatus.OK;
   }
 
   @Override

@@ -1,6 +1,7 @@
 
 package org.unicitylabs.sdk.predicate.embedded;
 
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.signing.Signature;
@@ -45,8 +46,12 @@ public class UnmaskedPredicate extends DefaultPredicate {
   }
 
   @Override
-  public boolean verify(Token<?> token, Transaction<TransferTransactionData> transaction) {
-    return super.verify(token, transaction) && SigningService.verifyWithPublicKey(
+  public boolean verify(
+      Token<?> token,
+      Transaction<TransferTransactionData> transaction,
+      RootTrustBase trustBase
+  ) {
+    return super.verify(token, transaction, trustBase) && SigningService.verifyWithPublicKey(
         new DataHasher(HashAlgorithm.SHA256)
             .update(
                 token.getTransactions().isEmpty()

@@ -35,8 +35,12 @@ public class UnicitySealHashMatchesWithRootHashRule extends
 
   @Override
   public VerificationResult verify(UnicityCertificateVerificationContext context) {
-    DataHash shardTreeCertificateRootHash = UnicitySealHashMatchesWithRootHashRule
-        .calculateShardTreeCertificateRootHash(context.getUnicityCertificate());
+    DataHash shardTreeCertificateRootHash = UnicityCertificate.calculateShardTreeCertificateRootHash(
+        context.getUnicityCertificate().getInputRecord(),
+        context.getUnicityCertificate().getTechnicalRecordHash(),
+        context.getUnicityCertificate().getShardConfigurationHash(),
+        context.getUnicityCertificate().getShardTreeCertificate()
+    );
 
     if (shardTreeCertificateRootHash == null) {
       return VerificationResult.fail("Could not calculate shard tree certificate root hash.");
@@ -101,40 +105,5 @@ public class UnicitySealHashMatchesWithRootHashRule extends
     }
 
     return VerificationResult.success();
-  }
-
-  private static DataHash calculateShardTreeCertificateRootHash(
-      UnicityCertificate unicityCertificate) {
-    try {
-      DataHash rootHash = new DataHasher(HashAlgorithm.SHA256)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(unicityCertificate.getInputRecord()))
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-              unicityCertificate.getTechnicalRecordHash()))
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-              unicityCertificate.getShardConfigurationHash()))
-          .digest();
-
-      byte[] shardId = unicityCertificate.getShardTreeCertificate().getShard();
-      List<byte[]> siblingHashes = unicityCertificate.getShardTreeCertificate()
-          .getSiblingHashList();
-      for (int i = 0; i < siblingHashes.size(); i++) {
-        boolean isRight = shardId[(shardId.length - 1) - (i / 8)] == 1;
-        if (isRight) {
-          rootHash = new DataHasher(HashAlgorithm.SHA256)
-              .update(siblingHashes.get(i))
-              .update(rootHash.getData())
-              .digest();
-        } else {
-          rootHash = new DataHasher(HashAlgorithm.SHA256)
-              .update(rootHash.getData())
-              .update(siblingHashes.get(i))
-              .digest();
-        }
-      }
-
-      return rootHash;
-    } catch (Exception e) {
-      return null;
-    }
   }
 }

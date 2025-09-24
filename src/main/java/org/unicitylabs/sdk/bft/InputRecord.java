@@ -29,6 +29,7 @@ public class InputRecord {
       long sumOfEarnedFees,
       byte[] executedTransactionsHash
   ) {
+    Objects.requireNonNull(hash, "Hash cannot be null");
     Objects.requireNonNull(summaryValue, "Summary value cannot be null");
 
     this.version = version;

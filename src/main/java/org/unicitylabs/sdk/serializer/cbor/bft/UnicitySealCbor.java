@@ -39,12 +39,16 @@ public class UnicitySealCbor {
       gen.writeObject(value.getTimestamp());
       gen.writeObject(value.getPreviousHash());
       gen.writeObject(value.getHash());
-      gen.writeStartObject(value.getSignatures(), value.getSignatures().size());
-      for (Map.Entry<String, byte[]> entry : value.getSignatures().entrySet()) {
-        gen.writeFieldName(entry.getKey());
-        gen.writeObject(entry.getValue());
+      if (value.getSignatures() == null) {
+        gen.writeNull();
+      } else {
+        gen.writeStartObject(value.getSignatures(), value.getSignatures().size());
+        for (Map.Entry<String, byte[]> entry : value.getSignatures().entrySet()) {
+          gen.writeFieldName(entry.getKey());
+          gen.writeObject(entry.getValue());
+        }
+        gen.writeEndObject();
       }
-      gen.writeEndObject();
 
       gen.writeEndArray();
     }

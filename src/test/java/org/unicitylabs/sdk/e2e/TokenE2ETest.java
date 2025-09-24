@@ -16,18 +16,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
-public class TokenE2ETest {
-
+public class TokenE2ETest extends CommonTestFlow {
   private AggregatorClient aggregatorClient;
-  private StateTransitionClient client;
 
   @BeforeEach
   void setUp() {
     String aggregatorUrl = System.getenv("AGGREGATOR_URL");
     assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
-    aggregatorClient = new AggregatorClient(aggregatorUrl);
-    client = new StateTransitionClient(aggregatorClient);
+    this.aggregatorClient = new AggregatorClient(aggregatorUrl);
+    this.client = new StateTransitionClient(this.aggregatorClient);
   }
 
   @Test
@@ -36,20 +34,4 @@ public class TokenE2ETest {
     assertNotNull(blockHeight);
     assertTrue(blockHeight > 0);
   }
-
-  @Test
-  void testTransferFlow() throws Exception {
-    CommonTestFlow.testTransferFlow(client);
-  }
-//
-//    @Test
-//    void testOfflineTransferFlow() throws Exception {
-//        CommonTestFlow.testOfflineTransferFlow(client);
-//    }
-
-  // Token splitting will be added once implemented
-  // @Test
-  // void testSplitFlow() throws Exception {
-  //     CommonTestFlow.testSplitFlow(client);
-  // }
 }

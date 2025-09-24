@@ -1,11 +1,8 @@
 package org.unicitylabs.sdk.token;
 
 import org.unicitylabs.sdk.address.DirectAddress;
-import org.unicitylabs.sdk.bft.InputRecord;
-import org.unicitylabs.sdk.bft.ShardTreeCertificate;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
-import org.unicitylabs.sdk.bft.UnicitySeal;
-import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
@@ -18,7 +15,7 @@ import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
 import org.unicitylabs.sdk.utils.TestUtils;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -28,11 +25,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
+import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenTest {
 
   @Test
-  public void testJsonSerialization() throws IOException {
+  public void testJsonSerialization() throws IOException, VerificationException {
+    SigningService signingService = new SigningService(SigningService.generatePrivateKey());
+    UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
+        signingService, DataHash.fromImprint(new byte[34]));
+
     MintTransactionData<?> genesisData = new MintTransactionData<>(
         new TokenId(TestUtils.randomBytes(32)),
         new TokenType(TestUtils.randomBytes(32)),
@@ -73,9 +75,11 @@ public class TokenTest {
                 ),
                 null,
                 null,
-                UnicityCertificateUtils.generateCertificate()
+                unicityCertificate
             )
-        )
+        ),
+        List.of(),
+        List.of()
     );
 
     Token<?> token = new Token<>(
@@ -100,40 +104,10 @@ public class TokenTest {
                 ),
                 null,
                 null,
-                UnicityCertificateUtils.generateCertificate()
+                unicityCertificate
             )
         ),
-        List.of(
-            new Transaction<>(
-                new TransferTransactionData(
-                    new TokenState(
-                        new MaskedPredicate(
-                            genesisData.getTokenId(),
-                            genesisData.getTokenType(),
-                            new byte[24],
-                            "secp256k1",
-                            HashAlgorithm.SHA256,
-                            new byte[25]
-                        ),
-                        null
-                    ),
-                    DirectAddress.create(new DataHash(HashAlgorithm.SHA256, new byte[32])),
-                    new byte[20],
-                    null,
-                    "Transfer".getBytes(),
-                    List.of(nametagToken)
-                ),
-                new InclusionProof(
-                    new SparseMerkleTreePath(
-                        new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
-                        List.of()
-                    ),
-                    null,
-                    null,
-                    UnicityCertificateUtils.generateCertificate()
-                )
-            )
-        ),
+        List.of(),
         List.of(nametagToken)
     );
 

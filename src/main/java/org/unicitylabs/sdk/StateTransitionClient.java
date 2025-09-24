@@ -8,9 +8,11 @@ import org.unicitylabs.sdk.api.IAggregatorClient;
 import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.transaction.Commitment;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
@@ -56,29 +58,32 @@ public class StateTransitionClient {
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
       Token<T> token,
       TokenState state,
-      Transaction<TransferTransactionData> transaction
-  ) {
-    return this.finalizeTransaction(token, state, transaction, List.of());
+      Transaction<TransferTransactionData> transaction,
+      RootTrustBase trustBase
+  ) throws VerificationException {
+    return this.finalizeTransaction(token, state, transaction, trustBase, List.of());
   }
 
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,
+      RootTrustBase trustBase,
       List<Token<?>> nametags
-  ) {
+  ) throws VerificationException {
     Objects.requireNonNull(token, "Token is null");
 
-    return token.update(state, transaction, nametags);
+    return token.update(trustBase, state, transaction, nametags);
   }
 
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
       Token<? extends MintTransactionData<?>> token,
-      byte[] publicKey
+      byte[] publicKey,
+      RootTrustBase trustBase
   ) {
     RequestId requestId = RequestId.create(publicKey, token.getState().calculateHash());
     return this.client.getInclusionProof(requestId)
-        .thenApply(response -> response.getInclusionProof().verify(requestId));
+        .thenApply(response -> response.getInclusionProof().verify(requestId, trustBase));
   }
 
   public CompletableFuture<InclusionProofResponse> getInclusionProof(Commitment<?> commitment) {

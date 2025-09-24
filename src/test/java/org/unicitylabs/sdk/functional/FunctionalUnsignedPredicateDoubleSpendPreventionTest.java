@@ -5,12 +5,15 @@ import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.address.Address;
+import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
@@ -27,12 +30,13 @@ import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
+import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
+  protected StateTransitionClient client;
+  protected RootTrustBase trustBase;
 
-  protected final StateTransitionClient client = new StateTransitionClient(
-      new TestAggregatorClient());
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
   private String[] transferToken(Token<?> token, byte[] secret, Address address) throws Exception {
@@ -57,7 +61,7 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         UnicityObjectMapper.JSON.writeValueAsString(token),
         UnicityObjectMapper.JSON.writeValueAsString(
             commitment.toTransaction(
-                InclusionProofUtils.waitInclusionProof(client, commitment).get()
+                InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment).get()
             )
         )
     };
@@ -66,6 +70,7 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
   private Token<?> mintToken(byte[] secret) throws Exception {
     return TokenUtils.mintToken(
         this.client,
+        this.trustBase,
         secret,
         new TokenId(randomBytes(32)),
         new TokenType(HexConverter.decode(
@@ -100,8 +105,16 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         token,
         state,
         transaction,
+        this.trustBase,
         List.of()
     );
+  }
+
+  @BeforeEach
+  void setUp() {
+    SigningService signingService = new SigningService(SigningService.generatePrivateKey());
+    this.client = new StateTransitionClient(new TestAggregatorClient(signingService));
+    this.trustBase = RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey());
   }
 
   @Test
@@ -118,13 +131,13 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         receiveToken(
             transferToken(token, BOB_SECRET, reference.toAddress()),
             BOB_SECRET
-        ).verify().isSuccessful());
+        ).verify(trustBase).isSuccessful());
     RuntimeException ex = Assertions.assertThrows(
         RuntimeException.class,
         () -> receiveToken(
             transferToken(token, BOB_SECRET, reference.toAddress()),
             BOB_SECRET
-        ).verify()
+        ).verify(trustBase)
     );
 
     Assertions.assertInstanceOf(BranchExistsException.class, ex.getCause());

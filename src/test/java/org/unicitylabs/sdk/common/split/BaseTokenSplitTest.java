@@ -13,6 +13,7 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
@@ -37,6 +38,7 @@ import org.unicitylabs.sdk.utils.TokenUtils;
 public abstract class BaseTokenSplitTest {
 
   protected StateTransitionClient client;
+  protected RootTrustBase trustBase;
 
   @Test
   void testTokenSplitFullAmounts() throws Exception {
@@ -46,6 +48,7 @@ public abstract class BaseTokenSplitTest {
 
     Token<?> token = TokenUtils.mintToken(
         this.client,
+        this.trustBase,
         secret,
         new TokenId(randomBytes(32)),
         tokenType,
@@ -67,6 +70,7 @@ public abstract class BaseTokenSplitTest {
 
     Token<?> nametagToken = TokenUtils.mintNametagToken(
         this.client,
+        this.trustBase,
         secret,
         nametag,
         UnmaskedPredicateReference.create(
@@ -122,8 +126,13 @@ public abstract class BaseTokenSplitTest {
     }
 
     List<MintCommitment<MintTransactionData<SplitMintReason>>> mintCommitments = split.createSplitMintCommitments(
+        this.trustBase,
         burnCommitment.toTransaction(
-            InclusionProofUtils.waitInclusionProof(this.client, burnCommitment).get()
+            InclusionProofUtils.waitInclusionProof(
+                this.client,
+                this.trustBase,
+                burnCommitment
+            ).get()
         )
     );
 
@@ -148,15 +157,16 @@ public abstract class BaseTokenSplitTest {
           null
       );
 
-      Token<MintTransactionData<SplitMintReason>> splitToken = new Token<>(
+      Token<MintTransactionData<SplitMintReason>> splitToken = Token.create(
+          this.trustBase,
           state,
           commitment.toTransaction(
-              InclusionProofUtils.waitInclusionProof(this.client, commitment).get()
+              InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment).get()
           ),
           List.of(nametagToken)
       );
 
-      Assertions.assertTrue(splitToken.verify().isSuccessful());
+      Assertions.assertTrue(splitToken.verify(this.trustBase).isSuccessful());
     }
 
 

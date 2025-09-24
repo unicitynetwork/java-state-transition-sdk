@@ -1,10 +1,13 @@
 package org.unicitylabs.sdk.bft;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicitySeal {
@@ -29,7 +32,6 @@ public class UnicitySeal {
       Map<String, byte[]> signatures
   ) {
     Objects.requireNonNull(hash, "Hash cannot be null");
-    Objects.requireNonNull(signatures, "Signatures cannot be null");
 
     this.version = version;
     this.networkId = networkId;
@@ -38,20 +40,48 @@ public class UnicitySeal {
     this.timestamp = timestamp;
     this.previousHash = previousHash;
     this.hash = hash;
-    this.signatures = signatures.entrySet().stream()
-        .map(entry -> Map.entry(
-                entry.getKey(),
-                Arrays.copyOf(entry.getValue(), entry.getValue().length)
+    this.signatures = signatures == null
+        ? null
+        : signatures.entrySet().stream()
+            .map(entry -> Map.entry(
+                    entry.getKey(),
+                    Arrays.copyOf(entry.getValue(), entry.getValue().length)
+                )
             )
-        )
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                Map.Entry::getValue,
-                (e1, e2) -> e1,
-                LinkedHashMap::new
-            )
-        );
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (e1, e2) -> e1,
+                    LinkedHashMap::new
+                )
+            );
+  }
+
+  public static UnicitySeal fromUnicitySealWithoutSignatures(UnicitySeal seal) {
+    return new UnicitySeal(
+        seal.version,
+        seal.networkId,
+        seal.rootChainRoundNumber,
+        seal.epoch,
+        seal.timestamp,
+        seal.previousHash,
+        seal.hash,
+        null
+    );
+  }
+
+  public UnicitySeal withSignatures(Map<String, byte[]> signatures) {
+    return new UnicitySeal(
+        this.version,
+        this.networkId,
+        this.rootChainRoundNumber,
+        this.epoch,
+        this.timestamp,
+        this.previousHash,
+        this.hash,
+        signatures
+    );
   }
 
   public int getVersion() {
@@ -84,20 +114,30 @@ public class UnicitySeal {
   }
 
   public Map<String, byte[]> getSignatures() {
-    return this.signatures.entrySet().stream()
-        .map(entry -> Map.entry(
-                entry.getKey(),
-                Arrays.copyOf(entry.getValue(), entry.getValue().length)
+    return this.signatures == null
+        ? null
+        : this.signatures.entrySet().stream()
+            .map(entry -> Map.entry(
+                    entry.getKey(),
+                    Arrays.copyOf(entry.getValue(), entry.getValue().length)
+                )
             )
-        )
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                Map.Entry::getValue,
-                (e1, e2) -> e1,
-                LinkedHashMap::new
-            )
-        );
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (e1, e2) -> e1,
+                    LinkedHashMap::new
+                )
+            );
+  }
+
+  public byte[] encode() {
+    try {
+      return UnicityObjectMapper.CBOR.writeValueAsBytes(this);
+    } catch (IOException e) {
+      throw new CborSerializationException(e);
+    }
   }
 
   @Override
