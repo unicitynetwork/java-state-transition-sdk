@@ -56,19 +56,19 @@ public class StateTransitionClient {
   }
 
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
+      RootTrustBase trustBase,
       Token<T> token,
       TokenState state,
-      Transaction<TransferTransactionData> transaction,
-      RootTrustBase trustBase
+      Transaction<TransferTransactionData> transaction
   ) throws VerificationException {
-    return this.finalizeTransaction(token, state, transaction, trustBase, List.of());
+    return this.finalizeTransaction(trustBase, token, state, transaction, List.of());
   }
 
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
+      RootTrustBase trustBase,
       Token<T> token,
       TokenState state,
       Transaction<TransferTransactionData> transaction,
-      RootTrustBase trustBase,
       List<Token<?>> nametags
   ) throws VerificationException {
     Objects.requireNonNull(token, "Token is null");

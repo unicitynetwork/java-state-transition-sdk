@@ -3,7 +3,7 @@ package org.unicitylabs.sdk.functional;
 import org.junit.jupiter.api.BeforeEach;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
-import org.unicitylabs.sdk.e2e.CommonTestFlow;
+import org.unicitylabs.sdk.common.CommonTestFlow;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
 

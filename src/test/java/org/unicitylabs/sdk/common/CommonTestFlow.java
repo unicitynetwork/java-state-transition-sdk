@@ -1,4 +1,4 @@
-package org.unicitylabs.sdk.e2e;
+package org.unicitylabs.sdk.common;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -128,6 +128,7 @@ public abstract class CommonTestFlow {
 
     // Bob finalizes the token
     Token<?> bobToken = client.finalizeTransaction(
+        this.trustBase,
         aliceToken,
         new TokenState(
             UnmaskedPredicate.create(
@@ -140,7 +141,6 @@ public abstract class CommonTestFlow {
             bobStateData
         ),
         aliceToBobTransferTransaction,
-        this.trustBase,
         List.of(bobNametagToken)
     );
 
@@ -197,11 +197,11 @@ public abstract class CommonTestFlow {
     );
 
     Token<?> carolToken = this.client.finalizeTransaction(
+        this.trustBase,
         bobToken,
         new TokenState(carolPredicate, null),
-        bobToCarolTransaction,
-        this.trustBase
-    );
+        bobToCarolTransaction
+        );
 
     assertTrue(carolToken.verify(this.trustBase).isSuccessful());
     assertEquals(2, carolToken.getTransactions().size());
@@ -235,6 +235,7 @@ public abstract class CommonTestFlow {
     );
 
     Token<?> carolToBobToken = client.finalizeTransaction(
+        this.trustBase,
         carolToken,
         new TokenState(
             UnmaskedPredicate.create(
@@ -247,7 +248,6 @@ public abstract class CommonTestFlow {
             null
         ),
         carolToBobTransaction,
-        this.trustBase,
         List.of(bobNametagToken)
     );
 

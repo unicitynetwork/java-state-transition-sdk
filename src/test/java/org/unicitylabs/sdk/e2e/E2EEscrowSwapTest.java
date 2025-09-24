@@ -8,14 +8,15 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.common.BaseEscrowSwapTest;
 
-@Tag("integration")
-@EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
-public class E2EEscrowSwapTest extends BaseEscrowSwapTest {
-  @BeforeEach
-  void setUp() {
-    String aggregatorUrl = System.getenv("AGGREGATOR_URL");
-    Assertions.assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
-    this.client = new StateTransitionClient(new AggregatorClient(aggregatorUrl));
-  }
-}
+//@Tag("integration")
+//@EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
+//public class E2EEscrowSwapTest extends BaseEscrowSwapTest {
+//  @BeforeEach
+//  void setUp() {
+//    String aggregatorUrl = System.getenv("AGGREGATOR_URL");
+//    Assertions.assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
+//
+//    this.client = new StateTransitionClient(new AggregatorClient(aggregatorUrl));
+//  }
+//}

@@ -101,10 +101,10 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
     );
 
     return this.client.finalizeTransaction(
+        this.trustBase,
         token,
         state,
         transaction,
-        this.trustBase,
         List.of()
     );
   }
