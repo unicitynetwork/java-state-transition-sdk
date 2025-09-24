@@ -8,12 +8,11 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import java.io.IOException;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineType;
-import java.io.IOException;
 import org.unicitylabs.sdk.predicate.SerializablePredicate;
-import org.unicitylabs.sdk.predicate.embedded.EmbeddedPredicateType;
 
 public class SerializablePredicateJson {
   private SerializablePredicateJson() {

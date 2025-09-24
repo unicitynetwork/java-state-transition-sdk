@@ -9,7 +9,6 @@ import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
-import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityCertificate {

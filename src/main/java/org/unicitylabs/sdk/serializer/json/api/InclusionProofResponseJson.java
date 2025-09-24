@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.unicitylabs.sdk.api.InclusionProofResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 
 public class InclusionProofResponseJson {

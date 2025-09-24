@@ -3,14 +3,7 @@ package org.unicitylabs.sdk.bft;
 import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.unicitylabs.sdk.api.InclusionProofResponse;
-import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;
-import org.unicitylabs.sdk.bft.verification.rule.InputRecordCurrentHashVerificationRule;
-import org.unicitylabs.sdk.bft.verification.rule.UnicitySealHashMatchesWithRootHashRule;
-import org.unicitylabs.sdk.bft.verification.rule.UnicitySealQuorumSignaturesVerificationRule;
-import org.unicitylabs.sdk.jsonrpc.JsonRpcResponse;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityCertificateTest {

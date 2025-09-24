@@ -195,7 +195,7 @@ public class Token<T extends MintTransactionData<?>> {
     Address expectedRecipient = predicate.getReference().toAddress();
 
     Transaction<?> previousTransaction = !token.transactions.isEmpty()
-        ? token.transactions.getLast()
+        ? token.transactions.get(token.transactions.size() - 1)
         : token.genesis;
     if (!expectedRecipient.equals(
         ProxyAddress.resolve(previousTransaction.getData().getRecipient(), token.getNametags()))) {

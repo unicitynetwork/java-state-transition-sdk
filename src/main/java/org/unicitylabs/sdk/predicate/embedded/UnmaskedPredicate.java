@@ -1,6 +1,7 @@
 
 package org.unicitylabs.sdk.predicate.embedded;
 
+import java.util.List;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -51,12 +52,14 @@ public class UnmaskedPredicate extends DefaultPredicate {
       Transaction<TransferTransactionData> transaction,
       RootTrustBase trustBase
   ) {
+    List<Transaction<TransferTransactionData>> transactions = token.getTransactions();
+
     return super.verify(token, transaction, trustBase) && SigningService.verifyWithPublicKey(
         new DataHasher(HashAlgorithm.SHA256)
             .update(
-                token.getTransactions().isEmpty()
+                transactions.isEmpty()
                     ? token.getGenesis().getData().getSalt()
-                    : token.getTransactions().getLast().getData().getSalt()
+                    : transactions.get(transactions.size() - 1).getData().getSalt()
             )
             .digest(),
         this.getNonce(),

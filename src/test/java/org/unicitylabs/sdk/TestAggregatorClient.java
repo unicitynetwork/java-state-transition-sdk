@@ -1,6 +1,11 @@
 package org.unicitylabs.sdk;
 
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.IAggregatorClient;
 import org.unicitylabs.sdk.api.InclusionProofResponse;
@@ -8,20 +13,12 @@ import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
-import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTree;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.transaction.InclusionProof;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
-import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 public class TestAggregatorClient implements IAggregatorClient {

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -26,8 +25,6 @@ import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
-import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 import org.unicitylabs.sdk.verification.VerificationException;
 

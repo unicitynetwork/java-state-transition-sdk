@@ -1,18 +1,16 @@
 package org.unicitylabs.sdk.mtree.plain;
 
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.mtree.BranchExistsException;
-import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
-import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.util.HexConverter;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.mtree.BranchExistsException;
+import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
+import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
+import org.unicitylabs.sdk.util.HexConverter;
 
 public class SparseMerkleTreeTest {
 

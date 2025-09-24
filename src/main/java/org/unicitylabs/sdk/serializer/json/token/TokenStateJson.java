@@ -8,12 +8,11 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import org.unicitylabs.sdk.predicate.Predicate;
-import org.unicitylabs.sdk.predicate.SerializablePredicate;
-import org.unicitylabs.sdk.token.TokenState;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import org.unicitylabs.sdk.predicate.SerializablePredicate;
+import org.unicitylabs.sdk.token.TokenState;
 
 public class TokenStateJson {
 

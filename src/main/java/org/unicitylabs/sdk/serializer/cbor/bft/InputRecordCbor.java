@@ -10,9 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import org.unicitylabs.sdk.bft.InputRecord;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public class InputRecordCbor {
 

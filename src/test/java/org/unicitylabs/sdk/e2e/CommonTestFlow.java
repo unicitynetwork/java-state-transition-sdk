@@ -3,7 +3,6 @@ package org.unicitylabs.sdk.e2e;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
-import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;

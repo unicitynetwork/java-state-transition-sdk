@@ -10,9 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import java.io.IOException;
 import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.predicate.SerializablePredicate;
 import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 

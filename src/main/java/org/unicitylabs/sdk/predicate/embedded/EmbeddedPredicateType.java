@@ -2,7 +2,6 @@
 package org.unicitylabs.sdk.predicate.embedded;
 
 import java.util.Arrays;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public enum EmbeddedPredicateType {
     UNMASKED(new byte[] {0x0}),

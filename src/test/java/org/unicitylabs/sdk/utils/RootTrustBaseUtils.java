@@ -3,7 +3,6 @@ package org.unicitylabs.sdk.utils;
 import java.util.Map;
 import java.util.Set;
 import org.unicitylabs.sdk.bft.RootTrustBase;
-import org.unicitylabs.sdk.bft.UnicityCertificate;
 
 public class RootTrustBaseUtils {
   public static RootTrustBase generateRootTrustBase(byte[] publicKey) {

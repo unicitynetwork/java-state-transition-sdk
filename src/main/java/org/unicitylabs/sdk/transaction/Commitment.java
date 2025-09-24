@@ -1,10 +1,9 @@
 
 package org.unicitylabs.sdk.transaction;
 
+import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
-import java.util.Objects;
-import org.unicitylabs.sdk.bft.RootTrustBase;
 
 /**
  * Commitment representing a submitted transaction

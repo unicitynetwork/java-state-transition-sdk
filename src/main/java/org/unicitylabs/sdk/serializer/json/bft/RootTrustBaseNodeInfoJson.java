@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.unicitylabs.sdk.bft.RootTrustBase;
-import org.unicitylabs.sdk.util.HexConverter;
 
 public class RootTrustBaseNodeInfoJson {
   private static final String NODE_ID_FIELD = "nodeId";
