@@ -48,8 +48,16 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers:1.19.8")
     testImplementation("org.testcontainers:junit-jupiter:1.19.8")
     testImplementation("org.testcontainers:mongodb:1.19.8")
+    testImplementation("org.awaitility:awaitility:4.2.0")
     testImplementation("org.slf4j:slf4j-simple:2.0.13")
     testImplementation("com.google.guava:guava:33.0.0-jre")
+
+    // ✅ Cucumber for BDD
+    testImplementation("io.cucumber:cucumber-java:7.27.2")
+    testImplementation("io.cucumber:cucumber-junit-platform-engine:7.27.2")
+
+    // JUnit 5 Suite annotations
+    testImplementation("org.junit.platform:junit-platform-suite:1.13.4")
 
     checkstyle("com.puppycrawl.tools:checkstyle:10.26.1")
 }
@@ -70,9 +78,16 @@ tasks.test {
         excludeTags("integration")
     }
     maxHeapSize = "1024m"
+    systemProperty("cucumber.junit-platform.naming-strategy", "long")
+    systemProperties(System.getProperties().toMap() as Map<String, Any>)
+
+    filter {
+        excludeTestsMatching("*CucumberTestRunner*")
+        excludeTestsMatching("*Cucumber*")
+    }
 }
 
-tasks.withType<Checkstyle>{
+tasks.withType<Checkstyle> {
     reports {
         xml.required.set(false)
         html.required.set(true)
@@ -84,6 +99,69 @@ tasks.register<Test>("integrationTest") {
         includeTags("integration")
     }
     maxHeapSize = "2048m"
+    shouldRunAfter(tasks.test)
+    systemProperty("cucumber.junit-platform.naming-strategy", "long")
+
+    filter {
+        excludeTestsMatching("*CucumberTestRunner*")
+        excludeTestsMatching("*Cucumber*")
+    }
+}
+
+tasks.register<Test>("tokenTests") {
+    useJUnitPlatform()
+    maxHeapSize = "1024m"
+    systemProperty("cucumber.junit-platform.naming-strategy", "long")
+    // Set the system properties first
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    // Then override the specific cucumber filter (this will take precedence)
+    systemProperty("cucumber.filter.tags", "@token-transfer")
+
+    filter {
+        includeTestsMatching("*CucumberTestRunner*")
+    }
+    shouldRunAfter(tasks.test)
+}
+
+tasks.register<Test>("aggregatorTests") {
+    useJUnitPlatform()
+    maxHeapSize = "1024m"
+    systemProperty("cucumber.junit-platform.naming-strategy", "long")
+    // Set the system properties first
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperty("cucumber.filter.tags", "@aggregator-connectivity")
+
+    filter {
+        includeTestsMatching("*CucumberTestRunner*")
+    }
+    shouldRunAfter(tasks.test)
+}
+
+tasks.register<Test>("advancedTokenTests") {
+    useJUnitPlatform()
+    maxHeapSize = "1024m"
+    systemProperty("cucumber.junit-platform.naming-strategy", "long")
+    // Set the system properties first
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperty("cucumber.filter.tags", "@advanced-token")
+
+    filter {
+        includeTestsMatching("*CucumberTestRunner*")
+    }
+    shouldRunAfter(tasks.test)
+}
+
+// ✅ Run all cucumber tests (including integration)
+tasks.register<Test>("allCucumberTests") {
+    useJUnitPlatform()
+    maxHeapSize = "1024m"
+    systemProperty("cucumber.junit-platform.naming-strategy", "long")
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperty("cucumber.filter.tags", "not @ignore")
+
+    filter {
+        includeTestsMatching("*CucumberTestRunner*")
+    }
     shouldRunAfter(tasks.test)
 }
 
@@ -112,40 +190,40 @@ publishing {
             groupId = project.group.toString()
             artifactId = "java-state-transition-sdk"
             version = project.version.toString()
-            
+
             // Use the Java component as base - this includes the standard JAR
             from(components["java"])
-            
+
             // Add Android JAR as additional artifact with classifier
             artifact(tasks["androidJar"]) {
                 classifier = "android"
             }
-            
-            // Add JVM JAR as additional artifact with classifier  
+
+            // Add JVM JAR as additional artifact with classifier
             artifact(tasks["jvmJar"]) {
                 classifier = "jvm"
             }
-            
+
             // Simple POM configuration without XML manipulation
             pom {
                 name.set("Unicity State Transition SDK")
                 description.set("Unicity State Transition SDK for Android and JVM")
                 url.set("https://github.com/unicitynetwork/java-state-transition-sdk")
-                
+
                 licenses {
                     license {
                         name.set("MIT License")
                         url.set("https://opensource.org/licenses/MIT")
                     }
                 }
-                
+
                 developers {
                     developer {
                         id.set("unicitynetwork")
                         name.set("Unicity Network")
                     }
                 }
-                
+
                 scm {
                     connection.set("scm:git:git://github.com/unicitynetwork/java-state-transition-sdk.git")
                     developerConnection.set("scm:git:ssh://github.com/unicitynetwork/java-state-transition-sdk.git")

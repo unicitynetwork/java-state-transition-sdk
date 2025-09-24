@@ -19,30 +19,35 @@ A Java SDK for interacting with the Unicity network, enabling state transitions 
 
 ## Installation
 
-### Gradle (JVM)
+### Using JitPack
 
+Add JitPack repository:
 ```groovy
-dependencies {
-    implementation 'com.unicity.sdk:unicity-sdk:1.0-SNAPSHOT'
+repositories {
+    maven { url 'https://jitpack.io' }
 }
 ```
 
-### Gradle (Android)
-
+#### For Android Projects:
 ```groovy
 dependencies {
-    implementation 'com.unicity.sdk:unicity-sdk-android:1.0-SNAPSHOT'
+    implementation 'com.github.unicitynetwork:java-state-transition-sdk:1.1:android'
 }
 ```
 
-### Maven (JVM)
+#### For JVM Projects:
+```groovy
+dependencies {
+    implementation 'com.github.unicitynetwork:java-state-transition-sdk:1.1:jvm'
+}
+```
 
-```xml
-<dependency>
-    <groupId>com.unicity.sdk</groupId>
-    <artifactId>unicity-sdk</artifactId>
-    <version>1.0-SNAPSHOT</version>
-</dependency>
+### Using Local Maven
+
+```groovy
+dependencies {
+    implementation 'org.unicitylabs:java-state-transition-sdk:1.1-SNAPSHOT'
+}
 ```
 
 ## Quick Start
@@ -50,8 +55,8 @@ dependencies {
 ### Initialize the Client
 
 ```java
-import com.unicity.sdk.StateTransitionClient;
-import com.unicity.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.api.AggregatorClient;
 
 // Connect to the Unicity test network
 String aggregatorUrl = "https://gateway-test.unicity.network";
@@ -62,12 +67,12 @@ StateTransitionClient client = new StateTransitionClient(aggregatorClient);
 ### Mint a Token
 
 ```java
-import com.unicity.sdk.token.*;
-import com.unicity.sdk.token.fungible.*;
-import com.unicity.sdk.transaction.*;
-import com.unicity.sdk.predicate.*;
-import com.unicity.sdk.shared.signing.SigningService;
-import com.unicity.sdk.shared.hash.HashAlgorithm;
+import org.unicitylabs.sdk.token.*;
+import org.unicitylabs.sdk.token.fungible.*;
+import org.unicitylabs.sdk.transaction.*;
+import org.unicitylabs.sdk.predicate.*;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
 
 // Create signing service from secret
 byte[] secret = "your-secret-key".getBytes();
@@ -227,7 +232,7 @@ Token<?> updatedToken = client.finishTransaction(
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/unicity/java-state-transition-sdk.git
+git clone https://github.com/unicitynetwork/java-state-transition-sdk.git
 cd java-state-transition-sdk
 ```
 
@@ -247,7 +252,7 @@ cd java-state-transition-sdk
 ./gradlew integrationTest
 
 # Run E2E tests against deployed aggregator
-AGGREGATOR_URL=https://gateway-test.unicity.network ./gradlew integrationTest --tests "*E2ETest"
+AGGREGATOR_URL=https://gateway-test.unicity.network ./gradlew integrationTest
 ```
 
 ## Platform-Specific Considerations
@@ -268,23 +273,25 @@ The standard JVM version uses:
 
 ## Architecture
 
-The SDK follows a modular architecture:
+The SDK follows a modular architecture under `org.unicitylabs.sdk`:
 
 - **`api`**: Core API interfaces and aggregator client
-- **`api`**: Core API interfaces and aggregator client
-- **`address`**: Address schemes and implementations
-- **`predicate`**: Ownership predicates (Masked, Unmasked, Burn) and authorization
-- **`serializer`**: CBOR and JSON serializers for tokens and transactions
-- **`token`**: Token-related classes (TokenId, TokenType, TokenState) and fungible token support
-- **`transaction`**: Transaction types (Mint, Transfer, Commitment) and builders
-- **`shared`**: Common utilities
-  - `cbor`: CBOR encoding/decoding
-  - `hash`: Cryptographic hashing (SHA256, SHA224, SHA384, SHA512, RIPEMD160)
-  - `jsonrpc`: JSON-RPC transport layer
-  - `signing`: Digital signature support (ECDSA secp256k1)
-  - `smt`/`smst`: Sparse Merkle Tree implementations
-  - `util`: BitString and other utilities
-- **`utils`**: Helper utilities
+- **`address`**: Address schemes and implementations (DirectAddress, ProxyAddress)
+- **`hash`**: Cryptographic hashing (SHA256, SHA224, SHA384, SHA512, RIPEMD160)
+- **`jsonrpc`**: JSON-RPC transport layer with OkHttp
+- **`mtree`**: Merkle tree implementations
+  - `plain`: Sparse Merkle Tree (SMT)
+  - `sum`: Sparse Merkle Sum Tree (SMST)
+- **`predicate`**: Ownership predicates (Masked, Unmasked, Burn, Default)
+- **`serializer`**: CBOR and JSON serializers hierarchy
+  - `cbor/`: CBOR serializers for all domain objects
+  - `json/`: JSON serializers for all domain objects
+- **`signing`**: Digital signature support (ECDSA secp256k1)
+- **`token`**: Token types including fungible tokens and nametags
+  - `fungible`: Fungible token support with CoinId and TokenCoinData
+- **`transaction`**: Transaction types and builders
+  - `split`: Token splitting functionality with TokenSplitBuilder
+- **`util`**: Utilities including BitString and HexConverter
 
 ## Error Handling
 
@@ -326,9 +333,10 @@ The SDK includes comprehensive test suites:
 Located in `src/test/java`, these test individual components in isolation.
 
 ### Integration Tests
-Located in `src/test/java/com/unicity/sdk/integration`:
-- `TokenIntegrationTest`: Tests against Docker-based local aggregator
-- `TokenE2ETest`: Tests against deployed aggregator (requires `AGGREGATOR_URL` env var)
+Located in `src/test/java/org/unicitylabs/sdk/`:
+- `integration/TokenIntegrationTest`: Tests against Docker-based local aggregator
+- `e2e/TokenE2ETest`: E2E tests using CommonTestFlow (requires `AGGREGATOR_URL` env var)
+- `e2e/BasicE2ETest`: Basic connectivity and performance tests
 
 ### Running Tests
 
@@ -340,7 +348,7 @@ Located in `src/test/java/com/unicity/sdk/integration`:
 ./gradlew integrationTest
 
 # Specific test class
-./gradlew test --tests "com.unicity.sdk.api.RequestIdTest"
+./gradlew test --tests "org.unicitylabs.sdk.api.RequestIdTest"
 ```
 
 ## License
