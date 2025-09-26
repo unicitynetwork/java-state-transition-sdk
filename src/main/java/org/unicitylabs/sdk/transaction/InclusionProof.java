@@ -62,6 +62,24 @@ public class InclusionProof {
   }
 
   public InclusionProofVerificationStatus verify(RequestId requestId, RootTrustBase trustBase) {
+    // Check if path is valid and signed by a trusted authority
+    if (!new UnicityCertificateVerificationRule().verify(
+        new UnicityCertificateVerificationContext(
+            this.merkleTreePath.getRootHash(),
+            this.unicityCertificate,
+            trustBase
+        )
+    ).isSuccessful()) {
+      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
+    }
+
+    MerkleTreePathVerificationResult result = this.merkleTreePath.verify(
+        requestId.toBitString().toBigInteger());
+    if (!result.isPathValid()) {
+      return InclusionProofVerificationStatus.PATH_INVALID;
+    }
+
+
     if (this.authenticator != null && this.transactionHash != null) {
       if (!this.authenticator.verify(this.transactionHash)) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
@@ -77,22 +95,6 @@ public class InclusionProof {
       } catch (CborSerializationException e) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }
-    }
-
-    if (!new UnicityCertificateVerificationRule().verify(
-        new UnicityCertificateVerificationContext(
-            this.merkleTreePath.getRootHash(),
-            this.unicityCertificate,
-            trustBase
-        )
-    ).isSuccessful()) {
-      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
-    }
-
-    MerkleTreePathVerificationResult result = this.merkleTreePath.verify(
-        requestId.toBitString().toBigInteger());
-    if (!result.isPathValid()) {
-      return InclusionProofVerificationStatus.PATH_INVALID;
     }
 
     if (!result.isPathIncluded()) {
