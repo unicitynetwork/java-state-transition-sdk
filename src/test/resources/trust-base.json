@@ -5,8 +5,8 @@
   "epochStartRound": 1,
   "rootNodes": [
     {
-      "nodeId": "16Uiu2HAmEbr7f25WfmJeEyhq7uDDQdc9SnedqfyEXZpGNGNBawAn",
-      "sigKey": "0x03d3a3a53f1ebcdd7520a977035310186f889c727c4edb7685523ec5097c4a747f",
+      "nodeId": "16Uiu2HAkyQRiA7pMgzgLj9GgaBJEJa8zmx9dzqUDa6WxQPJ82ghU",
+      "sigKey": "0x039afb2acb65f5fbc272d8907f763d0a5d189aadc9b97afdcc5897ea4dd112e68b",
       "stake": 1
     }
   ],
@@ -15,6 +15,6 @@
   "changeRecordHash": "",
   "previousEntryHash": "",
   "signatures": {
-    "16Uiu2HAmEbr7f25WfmJeEyhq7uDDQdc9SnedqfyEXZpGNGNBawAn": "0x77ac35416564607288c0290f99396070c3e905858299bc09e653d8a305545a6d38f0b832dfae8fb82a902556678603b648103f288534984a343ba1c6850650fa01"
+    "16Uiu2HAkyQRiA7pMgzgLj9GgaBJEJa8zmx9dzqUDa6WxQPJ82ghU": "0xf157c9fdd8a378e3ca70d354ccc4475ab2cd8de360127bc46b0aeab4b453a80f07fd9136a5843b60a8babaff23e20acc8879861f7651440a5e2829f7541b31f100"
   }
 }
