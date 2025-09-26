@@ -3,6 +3,10 @@ package org.unicitylabs.sdk.transaction;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
@@ -10,14 +14,8 @@ import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.token.Token;
-import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
-import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Transaction data for token state transitions
@@ -77,9 +75,9 @@ public class TransferTransactionData implements TransactionData<TokenState> {
     return this.nametags;
   }
 
-  public DataHash calculateHash(TokenId tokenId, TokenType tokenType) {
+  public DataHash calculateHash() {
     ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.addPOJO(this.sourceState.calculateHash(tokenId, tokenType));
+    node.addPOJO(this.sourceState.calculateHash());
     node.addPOJO(this.dataHash);
     node.addPOJO(this.recipient);
     node.add(this.salt);
@@ -120,7 +118,7 @@ public class TransferTransactionData implements TransactionData<TokenState> {
             + "salt=%s, "
             + "dataHash=%s, "
             + "message=%s, "
-            + "nametagTokens=%s"
+            + "nametags=%s"
             + "}",
         this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
         this.message != null ? HexConverter.encode(this.message) : null, this.nametags);

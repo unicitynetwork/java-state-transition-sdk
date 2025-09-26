@@ -41,7 +41,7 @@ public class SplitMintReasonProofJson {
       }
 
       gen.writeStartObject();
-      gen.writeObjectField(COIN_ID_FIELD, value.getCoinId());
+      gen.writeObjectField(COIN_ID_FIELD, value.getCoinId().getBytes());
       gen.writeObjectField(AGGREGATION_PATH_FIELD, value.getAggregationPath());
       gen.writeObjectField(COIN_TREE_PATH_FIELD, value.getCoinTreePath());
       gen.writeEndObject();

@@ -1,10 +1,8 @@
 
 package org.unicitylabs.sdk.api;
 
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.transaction.InclusionProof;
-
 import java.util.concurrent.CompletableFuture;
+import org.unicitylabs.sdk.hash.DataHash;
 
 public interface IAggregatorClient {
 
@@ -13,7 +11,7 @@ public interface IAggregatorClient {
       DataHash transactionHash,
       Authenticator authenticator);
 
-  CompletableFuture<InclusionProof> getInclusionProof(RequestId requestId);
+  CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId);
 
   CompletableFuture<Long> getBlockHeight();
 }

@@ -1,40 +1,20 @@
 package org.unicitylabs.sdk.serializer.cbor.predicate;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.MaskedPredicate;
-import org.unicitylabs.sdk.predicate.PredicateType;
 import java.io.IOException;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.token.TokenType;
+
 
 public class MaskedPredicateCbor {
 
   private MaskedPredicateCbor() {
-  }
-
-  public static class Serializer extends JsonSerializer<MaskedPredicate> {
-
-    @Override
-    public void serialize(MaskedPredicate value, JsonGenerator gen, SerializerProvider serializers)
-        throws IOException {
-      if (value == null) {
-        gen.writeNull();
-        return;
-      }
-
-      gen.writeStartArray(value, 5);
-      gen.writeObject(value.getType());
-      gen.writeObject(value.getPublicKey());
-      gen.writeObject(value.getSigningAlgorithm());
-      gen.writeObject(value.getHashAlgorithm().getValue());
-      gen.writeObject(value.getNonce());
-      gen.writeEndArray();
-    }
   }
 
   public static class Deserializer extends
@@ -46,18 +26,26 @@ public class MaskedPredicateCbor {
       if (!p.isExpectedStartArrayToken()) {
         throw MismatchedInputException.from(p, MaskedPredicate.class, "Expected array value");
       }
+      p.nextToken();
 
-      String type = p.readValueAs(String.class);
-      if (!PredicateType.MASKED.name().equals(type)) {
-        throw MismatchedInputException.from(p, MaskedPredicate.class,
-            "Expected predicate type to be " + PredicateType.MASKED);
+      TokenId tokenId = p.readValueAs(TokenId.class);
+      TokenType tokenType = p.readValueAs(TokenType.class);
+      byte[] publicKey = p.readValueAs(byte[].class);
+      String signingAlgorithm = p.readValueAs(String.class);
+      HashAlgorithm hashAlgorithm = p.readValueAs(HashAlgorithm.class);
+      byte[] nonce = p.readValueAs(byte[].class);
+
+      if (p.nextToken() != JsonToken.END_ARRAY) {
+        throw MismatchedInputException.from(p, MaskedPredicate.class, "Expected end of array");
       }
 
       return new MaskedPredicate(
-          p.readValueAs(byte[].class),
-          p.readValueAs(String.class),
-          p.readValueAs(HashAlgorithm.class),
-          p.readValueAs(byte[].class)
+          tokenId,
+          tokenType,
+          publicKey,
+          signingAlgorithm,
+          hashAlgorithm,
+          nonce
       );
     }
   }

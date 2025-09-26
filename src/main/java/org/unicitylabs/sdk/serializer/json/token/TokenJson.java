@@ -21,6 +21,7 @@ import java.util.Set;
 
 public class TokenJson {
 
+  private static final String VERSION_FIELD = "version";
   private static final String STATE_FIELD = "state";
   private static final String GENESIS_FIELD = "genesis";
   private static final String TRANSACTIONS_FIELD = "transactions";
@@ -40,6 +41,7 @@ public class TokenJson {
       }
 
       gen.writeStartObject();
+      gen.writeObjectField(VERSION_FIELD, value.getVersion());
       gen.writeObjectField(STATE_FIELD, value.getState());
       gen.writeObjectField(GENESIS_FIELD, value.getGenesis());
       gen.writeObjectField(TRANSACTIONS_FIELD, value.getTransactions());
@@ -55,6 +57,7 @@ public class TokenJson {
     public Token<MintTransactionData<?>> deserialize(JsonParser p,
         DeserializationContext ctx)
         throws IOException {
+      String version = null;
       TokenState state = null;
       Transaction<MintTransactionData<?>> genesis = null;
       List<Transaction<TransferTransactionData>> transactions = new ArrayList<>();
@@ -77,6 +80,13 @@ public class TokenJson {
         p.nextToken();
         try {
           switch (fieldName) {
+            case VERSION_FIELD:
+              version = p.readValueAs(String.class);
+              if (!Token.TOKEN_VERSION.equals(version)) {
+                throw MismatchedInputException.from(p, Token.class,
+                    String.format("Unsupported token version: %s", version));
+              }
+              break;
             case STATE_FIELD:
               state = p.readValueAs(TokenState.class);
               break;
@@ -113,7 +123,7 @@ public class TokenJson {
       }
 
       Set<String> missingFields = new HashSet<>(Set.of(
-          STATE_FIELD, GENESIS_FIELD, TRANSACTIONS_FIELD, NAMETAG_FIELD));
+          VERSION_FIELD, STATE_FIELD, GENESIS_FIELD, TRANSACTIONS_FIELD, NAMETAG_FIELD));
       missingFields.removeAll(fields);
       if (!missingFields.isEmpty()) {
         throw MismatchedInputException.from(p, Token.class,

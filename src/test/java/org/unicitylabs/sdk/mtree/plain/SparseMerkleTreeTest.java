@@ -1,17 +1,16 @@
 package org.unicitylabs.sdk.mtree.plain;
 
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.util.HexConverter;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 public class SparseMerkleTreeTest {
 
@@ -75,9 +74,6 @@ public class SparseMerkleTreeTest {
       ).finalize(HashAlgorithm.SHA256),
       HashAlgorithm.SHA256
   );
-
-  public SparseMerkleTreeTest() throws Exception {
-  }
 
   @Test
   public void treeShouldBeHalfCalculated() throws Exception {
@@ -169,8 +165,8 @@ public class SparseMerkleTreeTest {
     Assertions.assertTrue(result.isPathValid());
     Assertions.assertFalse(result.isValid());
 
-    path = root.getPath(BigInteger.valueOf(0b10));
-    result = path.verify(BigInteger.valueOf(0b10));
+    path = root.getPath(BigInteger.valueOf(0b111100101));
+    result = path.verify(BigInteger.valueOf(0b111100101));
     Assertions.assertTrue(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
     Assertions.assertTrue(result.isValid());

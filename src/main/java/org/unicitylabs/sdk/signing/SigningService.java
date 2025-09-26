@@ -138,9 +138,16 @@ public class SigningService {
   }
 
   /**
-   * Verify signature with public key.
+   * Verify signature with public key and hash.
    */
   public static boolean verifyWithPublicKey(DataHash hash, byte[] signature, byte[] publicKey) {
+    return SigningService.verifyWithPublicKey(hash.getData(), signature, publicKey);
+  }
+
+  /**
+   * Verify signature with public key and hash bytes.
+   */
+  public static boolean verifyWithPublicKey(byte[] hash, byte[] signature, byte[] publicKey) {
     ECPoint pubPoint = EC_SPEC.getCurve().decodePoint(publicKey);
     ECPublicKeyParameters pubKey = new ECPublicKeyParameters(pubPoint, EC_DOMAIN_PARAMETERS);
 
@@ -151,7 +158,7 @@ public class SigningService {
     BigInteger r = new BigInteger(1, Arrays.copyOfRange(signature, 0, 32));
     BigInteger s = new BigInteger(1, Arrays.copyOfRange(signature, 32, 64));
 
-    return verifier.verifySignature(hash.getData(), r, s);
+    return verifier.verifySignature(hash, r, s);
   }
 
 

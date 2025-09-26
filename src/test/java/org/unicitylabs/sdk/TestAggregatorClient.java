@@ -1,7 +1,14 @@
 package org.unicitylabs.sdk;
 
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.IAggregatorClient;
+import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
@@ -10,17 +17,20 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTree;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreeRootNode;
+import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.transaction.InclusionProof;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
+import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 
 public class TestAggregatorClient implements IAggregatorClient {
 
   private final SparseMerkleTree tree = new SparseMerkleTree(HashAlgorithm.SHA256);
   private final HashMap<RequestId, Map.Entry<Authenticator, DataHash>> requests = new HashMap<>();
+  private final SigningService signingService;
+
+  public TestAggregatorClient(SigningService signingService) {
+    Objects.requireNonNull(signingService, "Signing service cannot be null");
+    this.signingService = signingService;
+  }
 
 
   @Override
@@ -44,14 +54,18 @@ public class TestAggregatorClient implements IAggregatorClient {
   }
 
   @Override
-  public CompletableFuture<InclusionProof> getInclusionProof(RequestId requestId) {
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
     Entry<Authenticator, DataHash> entry = requests.get(requestId);
     SparseMerkleTreeRootNode root = tree.calculateRoot();
     return CompletableFuture.completedFuture(
-        new InclusionProof(
-            root.getPath(requestId.toBitString().toBigInteger()),
-            entry.getKey(),
-            entry.getValue())
+        new InclusionProofResponse(
+            new InclusionProof(
+                root.getPath(requestId.toBitString().toBigInteger()),
+                entry.getKey(),
+                entry.getValue(),
+                UnicityCertificateUtils.generateCertificate(signingService, root.getRootHash())
+            )
+        )
     );
   }
 

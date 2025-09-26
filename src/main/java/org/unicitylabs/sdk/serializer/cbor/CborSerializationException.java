@@ -8,4 +8,8 @@ public class CborSerializationException extends RuntimeException {
   public CborSerializationException(Throwable cause) {
     super(cause);
   }
+
+  public CborSerializationException(String message) {
+    super(message);
+  }
 }

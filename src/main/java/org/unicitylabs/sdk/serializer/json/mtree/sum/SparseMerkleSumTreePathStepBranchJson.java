@@ -28,8 +28,8 @@ public class SparseMerkleSumTreePathStepBranchJson {
       }
 
       gen.writeStartArray();
-      gen.writeObject(value.getCounter().toString());
       gen.writeObject(value.getValue());
+      gen.writeObject(value.getCounter().toString());
       gen.writeEndArray();
     }
   }
@@ -46,9 +46,9 @@ public class SparseMerkleSumTreePathStepBranchJson {
       p.nextToken();
 
       Branch branch = new Branch(
-          new BigInteger(p.readValueAs(String.class)),
-          p.readValueAs(byte[].class)
-      );
+          p.readValueAs(byte[].class),
+          new BigInteger(p.readValueAs(String.class))
+          );
       if (p.nextToken() != JsonToken.END_ARRAY) {
         throw MismatchedInputException.from(p, Branch.class,
             "Expected end of array");

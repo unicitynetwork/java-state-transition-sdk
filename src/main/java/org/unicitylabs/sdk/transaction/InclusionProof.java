@@ -1,17 +1,20 @@
-
 package org.unicitylabs.sdk.transaction;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.bft.RootTrustBase;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;
+import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationRule;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Represents a proof of inclusion or non-inclusion in a sparse merkle tree.
@@ -21,9 +24,17 @@ public class InclusionProof {
   private final SparseMerkleTreePath merkleTreePath;
   private final Authenticator authenticator;
   private final DataHash transactionHash;
+  private final UnicityCertificate unicityCertificate;
 
-  public InclusionProof(SparseMerkleTreePath merkleTreePath, Authenticator authenticator,
-      DataHash transactionHash) {
+  public InclusionProof(
+      SparseMerkleTreePath merkleTreePath,
+      Authenticator authenticator,
+      DataHash transactionHash,
+      UnicityCertificate unicityCertificate
+  ) {
+    Objects.requireNonNull(merkleTreePath, "Merkle tree path cannot be null.");
+    Objects.requireNonNull(unicityCertificate, "Unicity certificate cannot be null.");
+
     if ((authenticator == null) != (transactionHash == null)) {
       throw new IllegalArgumentException(
           "Authenticator and transaction hash must be both set or both null.");
@@ -31,10 +42,15 @@ public class InclusionProof {
     this.merkleTreePath = merkleTreePath;
     this.authenticator = authenticator;
     this.transactionHash = transactionHash;
+    this.unicityCertificate = unicityCertificate;
   }
 
   public SparseMerkleTreePath getMerkleTreePath() {
     return this.merkleTreePath;
+  }
+
+  public UnicityCertificate getUnicityCertificate() {
+    return this.unicityCertificate;
   }
 
   public Optional<Authenticator> getAuthenticator() {
@@ -45,7 +61,25 @@ public class InclusionProof {
     return Optional.ofNullable(this.transactionHash);
   }
 
-  public InclusionProofVerificationStatus verify(RequestId requestId) {
+  public InclusionProofVerificationStatus verify(RequestId requestId, RootTrustBase trustBase) {
+    // Check if path is valid and signed by a trusted authority
+    if (!new UnicityCertificateVerificationRule().verify(
+        new UnicityCertificateVerificationContext(
+            this.merkleTreePath.getRootHash(),
+            this.unicityCertificate,
+            trustBase
+        )
+    ).isSuccessful()) {
+      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
+    }
+
+    MerkleTreePathVerificationResult result = this.merkleTreePath.verify(
+        requestId.toBitString().toBigInteger());
+    if (!result.isPathValid()) {
+      return InclusionProofVerificationStatus.PATH_INVALID;
+    }
+
+
     if (this.authenticator != null && this.transactionHash != null) {
       if (!this.authenticator.verify(this.transactionHash)) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
@@ -61,12 +95,6 @@ public class InclusionProof {
       } catch (CborSerializationException e) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }
-    }
-
-    MerkleTreePathVerificationResult result = this.merkleTreePath.verify(
-        requestId.toBitString().toBigInteger());
-    if (!result.isPathValid()) {
-      return InclusionProofVerificationStatus.PATH_INVALID;
     }
 
     if (!result.isPathIncluded()) {

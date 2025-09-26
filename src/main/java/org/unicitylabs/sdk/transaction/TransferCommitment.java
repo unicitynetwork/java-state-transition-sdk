@@ -35,32 +35,13 @@ public class TransferCommitment extends Commitment<TransferTransactionData> {
     TransferTransactionData transactionData = new TransferTransactionData(
         token.getState(), recipient, salt, dataHash, message, token.getNametags());
 
-    DataHash sourceStateHash = transactionData.getSourceState()
-        .calculateHash(token.getId(), token.getType());
-    DataHash transactionHash = transactionData.calculateHash(token.getId(), token.getType());
+    DataHash sourceStateHash = transactionData.getSourceState().calculateHash();
+    DataHash transactionHash = transactionData.calculateHash();
 
     RequestId requestId = RequestId.create(signingService.getPublicKey(), sourceStateHash);
     Authenticator authenticator = Authenticator.create(signingService, transactionHash,
         sourceStateHash);
 
     return new TransferCommitment(requestId, transactionData, authenticator);
-  }
-
-  public Transaction<TransferTransactionData> toTransaction(Token<?> token,
-      InclusionProof inclusionProof) {
-    if (inclusionProof.verify(this.getRequestId()) != InclusionProofVerificationStatus.OK) {
-      throw new RuntimeException("Inclusion proof verification failed.");
-    }
-
-    if (inclusionProof.getAuthenticator().isEmpty()) {
-      throw new RuntimeException("Authenticator is missing from inclusion proof.");
-    }
-
-    if (!this.getTransactionData().calculateHash(token.getId(), token.getType())
-        .equals(inclusionProof.getTransactionHash().orElse(null))) {
-      throw new RuntimeException("Payload hash mismatch.");
-    }
-
-    return new Transaction<>(this.getTransactionData(), inclusionProof);
   }
 }

@@ -55,6 +55,12 @@ public class TokenCbor {
         throw MismatchedInputException.from(p, Token.class, "Expected array value");
       }
 
+      String version = p.readValueAs(String.class);
+      if (!Token.TOKEN_VERSION.equals(version)) {
+        throw MismatchedInputException.from(p, Token.class,
+            "Expected version to be " + Token.TOKEN_VERSION);
+      }
+
       return new Token<>(
           p.readValueAs(TokenState.class),
           ctx.readValue(p, ctx.getTypeFactory().constructParametricType(Transaction.class, MintTransactionData.class)),

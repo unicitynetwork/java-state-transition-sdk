@@ -27,7 +27,7 @@ public class TokenStateCbor {
       }
 
       gen.writeStartArray(value, 2);
-      gen.writeObject(value.getUnlockPredicate());
+      gen.writeObject(value.getPredicate());
       gen.writeObject(value.getData());
       gen.writeEndArray();
     }
