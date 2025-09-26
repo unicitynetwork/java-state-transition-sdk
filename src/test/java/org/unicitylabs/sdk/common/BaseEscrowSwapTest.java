@@ -10,9 +10,11 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
@@ -37,6 +39,7 @@ import org.unicitylabs.sdk.utils.TokenUtils;
 public abstract class BaseEscrowSwapTest {
 
   protected StateTransitionClient client;
+  protected RootTrustBase trustBase;
   private final TokenType tokenType = new TokenType(HexConverter.decode(
       "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509"));
 
@@ -49,7 +52,8 @@ public abstract class BaseEscrowSwapTest {
   private final String BOB_NAMETAG = String.format("BOB_%s", System.currentTimeMillis());
   private final String CAROL_NAMETAG = String.format("CAROL_%s", System.currentTimeMillis());
 
-  private String[] transferToken(Token<?> token, SigningService signingService, String nametag) throws Exception {
+  private String[] transferToken(Token<?> token, SigningService signingService, String nametag)
+      throws Exception {
     TransferCommitment commitment = TransferCommitment.create(
         token,
         ProxyAddress.create(nametag),
@@ -59,21 +63,29 @@ public abstract class BaseEscrowSwapTest {
         signingService
     );
 
-    SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
+    SubmitCommitmentResponse response = this.client.submitCommitment(commitment).get();
     if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new RuntimeException("Failed to submit transfer commitment: " + response);
     }
 
     return new String[]{
         UnicityObjectMapper.JSON.writeValueAsString(token),
-        UnicityObjectMapper.JSON.writeValueAsString(commitment.toTransaction(token,
-            InclusionProofUtils.waitInclusionProof(client, commitment).get()))
+        UnicityObjectMapper.JSON.writeValueAsString(
+            commitment.toTransaction(
+                InclusionProofUtils.waitInclusionProof(
+                    this.client,
+                    this.trustBase,
+                    commitment
+                ).get()
+            )
+        )
     };
   }
 
   private Token<?> mintToken(byte[] secret) throws Exception {
     return TokenUtils.mintToken(
         this.client,
+        this.trustBase,
         secret,
         new TokenId(randomBytes(32)),
         this.tokenType,
@@ -95,6 +107,8 @@ public abstract class BaseEscrowSwapTest {
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
+            token.getId(),
+            token.getType(),
             signingService,
             HashAlgorithm.SHA256,
             transaction.getData().getSalt()
@@ -103,6 +117,7 @@ public abstract class BaseEscrowSwapTest {
     );
 
     return this.client.finalizeTransaction(
+        this.trustBase,
         token,
         state,
         transaction,
@@ -114,21 +129,28 @@ public abstract class BaseEscrowSwapTest {
   void testEscrow() throws Exception {
     // Make nametags unique for each test run
     Token<?> bobToken = mintToken(BOB_SECRET);
-    String[] bobSerializedData = transferToken(
+    String[] bobSerializedData = this.transferToken(
         bobToken,
-        SigningService.createFromMaskedSecret(BOB_SECRET, bobToken.getState().getUnlockPredicate().getNonce()),
+        SigningService.createFromMaskedSecret(
+            BOB_SECRET,
+            ((MaskedPredicate) bobToken.getState().getPredicate()).getNonce()
+        ),
         ALICE_NAMETAG
     );
 
     Token<?> carolToken = mintToken(CAROL_SECRET);
-    String[] carolSerializedData = transferToken(
+    String[] carolSerializedData = this.transferToken(
         carolToken,
-        SigningService.createFromMaskedSecret(CAROL_SECRET, carolToken.getState().getUnlockPredicate().getNonce()),
+        SigningService.createFromMaskedSecret(
+            CAROL_SECRET,
+            ((MaskedPredicate) carolToken.getState().getPredicate()).getNonce()
+        ),
         ALICE_NAMETAG
     );
 
     Token<?> aliceNametagToken = TokenUtils.mintNametagToken(
         this.client,
+        this.trustBase,
         ALICE_SECRET,
         this.tokenType,
         ALICE_NAMETAG,
@@ -146,13 +168,13 @@ public abstract class BaseEscrowSwapTest {
         SigningService.createFromSecret(ALICE_SECRET),
         aliceNametagToken
     );
-    Assertions.assertTrue(aliceBobToken.verify().isSuccessful());
+    Assertions.assertTrue(aliceBobToken.verify(this.trustBase).isSuccessful());
     Token<?> aliceCarolToken = receiveToken(
         carolSerializedData,
         SigningService.createFromSecret(ALICE_SECRET),
         aliceNametagToken
     );
-    Assertions.assertTrue(aliceCarolToken.verify().isSuccessful());
+    Assertions.assertTrue(aliceCarolToken.verify(this.trustBase).isSuccessful());
 
     Token<?> aliceToCarolToken = receiveToken(
         transferToken(
@@ -163,6 +185,7 @@ public abstract class BaseEscrowSwapTest {
         SigningService.createFromSecret(CAROL_SECRET),
         TokenUtils.mintNametagToken(
             this.client,
+            this.trustBase,
             CAROL_SECRET,
             this.tokenType,
             CAROL_NAMETAG,
@@ -175,7 +198,7 @@ public abstract class BaseEscrowSwapTest {
             randomBytes(32)
         )
     );
-    Assertions.assertTrue(aliceToCarolToken.verify().isSuccessful());
+    Assertions.assertTrue(aliceToCarolToken.verify(this.trustBase).isSuccessful());
 
     Token<?> aliceToBobToken = receiveToken(
         transferToken(
@@ -186,6 +209,7 @@ public abstract class BaseEscrowSwapTest {
         SigningService.createFromSecret(BOB_SECRET),
         TokenUtils.mintNametagToken(
             this.client,
+            this.trustBase,
             BOB_SECRET,
             this.tokenType,
             BOB_NAMETAG,
@@ -198,6 +222,6 @@ public abstract class BaseEscrowSwapTest {
             randomBytes(32)
         )
     );
-    Assertions.assertTrue(aliceToBobToken.verify().isSuccessful());
+    Assertions.assertTrue(aliceToBobToken.verify(this.trustBase).isSuccessful());
   }
 }

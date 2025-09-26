@@ -19,7 +19,7 @@ public class SparseMerkleSumTreePathStep {
         sibling,
         branch == null
             ? null
-            : new Branch(branch.getValue().getCounter(), branch.getValue().getValue())
+            : new Branch(branch.getValue().getValue(), branch.getValue().getCounter())
     );
   }
 
@@ -29,7 +29,7 @@ public class SparseMerkleSumTreePathStep {
         path,
         sibling,
         branch == null ? null
-            : new Branch(branch.getCounter(), branch.getChildrenHash().getImprint())
+            : new Branch(branch.getChildrenHash().getImprint(), branch.getCounter())
     );
   }
 
@@ -44,7 +44,7 @@ public class SparseMerkleSumTreePathStep {
   SparseMerkleSumTreePathStep(BigInteger path, FinalizedBranch sibling, Branch branch) {
     this(
         path,
-        sibling == null ? null : new Branch(sibling.getCounter(), sibling.getHash().getImprint()),
+        sibling == null ? null : new Branch(sibling.getHash().getImprint(), sibling.getCounter()),
         branch
     );
   }
@@ -95,7 +95,7 @@ public class SparseMerkleSumTreePathStep {
     private final byte[] value;
     private final BigInteger counter;
 
-    public Branch(BigInteger counter, byte[] value) {
+    public Branch(byte[] value, BigInteger counter) {
       Objects.requireNonNull(counter, "counter cannot be null");
 
       this.value = value == null ? null : Arrays.copyOf(value, value.length);

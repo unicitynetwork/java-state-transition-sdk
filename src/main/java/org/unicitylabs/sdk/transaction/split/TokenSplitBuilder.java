@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.transaction.split;
 
 import org.unicitylabs.sdk.address.Address;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
@@ -10,13 +11,14 @@ import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreeRootNode;
-import org.unicitylabs.sdk.predicate.BurnPredicate;
-import org.unicitylabs.sdk.predicate.BurnPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.MintCommitment;
@@ -25,7 +27,6 @@ import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -136,13 +137,21 @@ public class TokenSplitBuilder {
     }
 
     public List<MintCommitment<MintTransactionData<SplitMintReason>>> createSplitMintCommitments(
-        Transaction<TransferTransactionData> burnTransaction) {
+        RootTrustBase trustBase,
+        Transaction<TransferTransactionData> burnTransaction
+    ) throws VerificationException {
       Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
 
-      byte[] nonce = new byte[32];
-      new SecureRandom().nextBytes(nonce);
       Token<?> burnedToken = this.token.update(
-          new TokenState(new BurnPredicate(nonce, this.aggregationRoot.getRootHash()), null),
+          trustBase,
+          new TokenState(
+              new BurnPredicate(
+                  this.token.getId(),
+                  this.token.getType(),
+                  this.aggregationRoot.getRootHash()
+                  ),
+              null
+              ),
           burnTransaction,
           List.of()
       );

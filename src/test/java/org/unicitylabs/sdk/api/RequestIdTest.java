@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 public class RequestIdTest {
 
   @Test
-  public void shouldResolveToBigInteger() throws JsonProcessingException {
+  public void shouldResolveToBigInteger() {
     RequestId requestId = RequestId.create(new byte[5],
         new DataHash(HashAlgorithm.SHA256, new byte[32]));
     Assertions.assertEquals(

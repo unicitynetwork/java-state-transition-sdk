@@ -9,8 +9,11 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.unicitylabs.sdk.api.Authenticator;
+import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 
 import java.io.IOException;
@@ -22,6 +25,7 @@ public class InclusionProofJson {
   private static final String MERKLE_TREE_PATH_FIELD = "merkleTreePath";
   private static final String AUTHENTICATOR_FIELD = "authenticator";
   private static final String TRANSACTION_HASH_FIELD = "transactionHash";
+  private static final String UNICITY_CERTIFICATE_FIELD = "unicityCertificate";
 
   private InclusionProofJson() {
   }
@@ -40,6 +44,10 @@ public class InclusionProofJson {
       gen.writeObjectField(MERKLE_TREE_PATH_FIELD, value.getMerkleTreePath());
       gen.writeObjectField(AUTHENTICATOR_FIELD, value.getAuthenticator());
       gen.writeObjectField(TRANSACTION_HASH_FIELD, value.getTransactionHash());
+      gen.writeObjectField(
+          UNICITY_CERTIFICATE_FIELD,
+          UnicityObjectMapper.CBOR.writeValueAsBytes(value.getUnicityCertificate())
+      );
       gen.writeEndObject();
     }
   }
@@ -51,6 +59,7 @@ public class InclusionProofJson {
       SparseMerkleTreePath merkleTreePath = null;
       Authenticator authenticator = null;
       DataHash transactionHash = null;
+      UnicityCertificate unicityCertificate = null;
 
       Set<String> fields = new HashSet<>();
 
@@ -81,6 +90,13 @@ public class InclusionProofJson {
               transactionHash =
                   p.currentToken() != JsonToken.VALUE_NULL ? p.readValueAs(DataHash.class) : null;
               break;
+            case UNICITY_CERTIFICATE_FIELD:
+              byte[] bytes = p.readValueAs(byte[].class);
+              unicityCertificate = UnicityObjectMapper.CBOR.readValue(
+                  bytes,
+                  UnicityCertificate.class
+              );
+              break;
             default:
               p.skipChildren();
           }
@@ -89,12 +105,16 @@ public class InclusionProofJson {
         }
       }
 
-      if (merkleTreePath == null) {
-        throw MismatchedInputException.from(p, InclusionProof.class,
-            String.format("Missing required fields: %s", MERKLE_TREE_PATH_FIELD));
+      Set<String> missingFields = new HashSet<>(
+          Set.of(MERKLE_TREE_PATH_FIELD, UNICITY_CERTIFICATE_FIELD)
+      );
+      missingFields.removeAll(fields);
+      if (!missingFields.isEmpty()) {
+        throw MismatchedInputException.from(p, Token.class,
+            String.format("Missing required fields: %s", missingFields));
       }
 
-      return new InclusionProof(merkleTreePath, authenticator, transactionHash);
+      return new InclusionProof(merkleTreePath, authenticator, transactionHash, unicityCertificate);
     }
   }
 }

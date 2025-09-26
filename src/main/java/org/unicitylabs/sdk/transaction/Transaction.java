@@ -32,7 +32,7 @@ public class Transaction<T extends TransactionData<?>> {
       return false;
     }
 
-    if (!this.data.getDataHash().isPresent()) {
+    if (this.data.getDataHash().isEmpty()) {
       return true;
     }
 

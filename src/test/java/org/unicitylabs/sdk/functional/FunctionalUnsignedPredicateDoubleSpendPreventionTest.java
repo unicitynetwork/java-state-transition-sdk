@@ -5,16 +5,19 @@ import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicate;
-import org.unicitylabs.sdk.predicate.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
@@ -26,10 +29,13 @@ import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
+import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
-  protected final StateTransitionClient client = new StateTransitionClient(new TestAggregatorClient());
+  protected StateTransitionClient client;
+  protected RootTrustBase trustBase;
+
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
   private String[] transferToken(Token<?> token, byte[] secret, Address address) throws Exception {
@@ -39,24 +45,31 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         randomBytes(32),
         null,
         null,
-        SigningService.createFromMaskedSecret(secret, token.getState().getUnlockPredicate().getNonce())
+        SigningService.createFromMaskedSecret(
+            secret,
+            ((MaskedPredicate) token.getState().getPredicate()).getNonce()
+        )
     );
 
-    SubmitCommitmentResponse response = this.client.submitCommitment(token, commitment).get();
+    SubmitCommitmentResponse response = this.client.submitCommitment(commitment).get();
     if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
       throw new RuntimeException("Failed to submit transfer commitment: " + response);
     }
 
     return new String[]{
         UnicityObjectMapper.JSON.writeValueAsString(token),
-        UnicityObjectMapper.JSON.writeValueAsString(commitment.toTransaction(token,
-            InclusionProofUtils.waitInclusionProof(client, commitment).get()))
+        UnicityObjectMapper.JSON.writeValueAsString(
+            commitment.toTransaction(
+                InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment).get()
+            )
+        )
     };
   }
 
   private Token<?> mintToken(byte[] secret) throws Exception {
     return TokenUtils.mintToken(
         this.client,
+        this.trustBase,
         secret,
         new TokenId(randomBytes(32)),
         new TokenType(HexConverter.decode(
@@ -78,6 +91,8 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
+            token.getId(),
+            token.getType(),
             SigningService.createFromSecret(secret),
             HashAlgorithm.SHA256,
             transaction.getData().getSalt()
@@ -86,11 +101,19 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
     );
 
     return this.client.finalizeTransaction(
+        this.trustBase,
         token,
         state,
         transaction,
         List.of()
     );
+  }
+
+  @BeforeEach
+  void setUp() {
+    SigningService signingService = new SigningService(SigningService.generatePrivateKey());
+    this.client = new StateTransitionClient(new TestAggregatorClient(signingService));
+    this.trustBase = RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey());
   }
 
   @Test
@@ -107,13 +130,13 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         receiveToken(
             transferToken(token, BOB_SECRET, reference.toAddress()),
             BOB_SECRET
-        ).verify().isSuccessful());
+        ).verify(trustBase).isSuccessful());
     RuntimeException ex = Assertions.assertThrows(
         RuntimeException.class,
         () -> receiveToken(
             transferToken(token, BOB_SECRET, reference.toAddress()),
             BOB_SECRET
-        ).verify()
+        ).verify(trustBase)
     );
 
     Assertions.assertInstanceOf(BranchExistsException.class, ex.getCause());

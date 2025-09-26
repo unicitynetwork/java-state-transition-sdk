@@ -28,8 +28,8 @@ public class SparseMerkleSumTreePathStepBranchCbor {
       }
 
       gen.writeStartArray(value, 2);
-      gen.writeObject(BigIntegerConverter.encode(value.getCounter()));
       gen.writeObject(value.getValue());
+      gen.writeObject(BigIntegerConverter.encode(value.getCounter()));
       gen.writeEndArray();
     }
   }
@@ -46,8 +46,8 @@ public class SparseMerkleSumTreePathStepBranchCbor {
       p.nextToken();
 
       Branch branch = new Branch(
-          BigIntegerConverter.decode(p.readValueAs(byte[].class)),
-          p.readValueAs(byte[].class)
+          p.readValueAs(byte[].class),
+          BigIntegerConverter.decode(p.readValueAs(byte[].class))
       );
       if (p.nextToken() != JsonToken.END_ARRAY) {
         throw MismatchedInputException.from(p, Branch.class,

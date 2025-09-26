@@ -8,11 +8,11 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import org.unicitylabs.sdk.predicate.Predicate;
-import org.unicitylabs.sdk.token.TokenState;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import org.unicitylabs.sdk.predicate.SerializablePredicate;
+import org.unicitylabs.sdk.token.TokenState;
 
 public class TokenStateJson {
 
@@ -33,7 +33,7 @@ public class TokenStateJson {
       }
 
       gen.writeStartObject();
-      gen.writeObjectField(UNLOCK_PREDICATE_FIELD, value.getUnlockPredicate());
+      gen.writeObjectField(UNLOCK_PREDICATE_FIELD, value.getPredicate());
       gen.writeObjectField(DATA_FIELD, value.getData());
       gen.writeEndObject();
     }
@@ -45,7 +45,7 @@ public class TokenStateJson {
     @Override
     public TokenState deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
-      Predicate predicate = null;
+      SerializablePredicate predicate = null;
       byte[] data = null;
 
       Set<String> fields = new HashSet<>();
@@ -66,7 +66,7 @@ public class TokenStateJson {
         try {
           switch (fieldName) {
             case UNLOCK_PREDICATE_FIELD:
-              predicate = p.readValueAs(Predicate.class);
+              predicate = p.readValueAs(SerializablePredicate.class);
               break;
             case DATA_FIELD:
               data =

@@ -1,9 +1,9 @@
 
 package org.unicitylabs.sdk.transaction;
 
+import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
-import java.util.Objects;
 
 /**
  * Commitment representing a submitted transaction
@@ -46,6 +46,10 @@ public abstract class Commitment<T extends TransactionData<?>> {
    */
   public Authenticator getAuthenticator() {
     return authenticator;
+  }
+
+  public Transaction<T> toTransaction(InclusionProof inclusionProof) {
+    return new Transaction<>(this.getTransactionData(), inclusionProof);
   }
 
   @Override

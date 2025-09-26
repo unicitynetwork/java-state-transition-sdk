@@ -1,12 +1,12 @@
 
 package org.unicitylabs.sdk.transaction;
 
+import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.util.Objects;
 
 /**
  * Commitment representing a submitted transaction
@@ -14,7 +14,6 @@ import java.util.Objects;
  * @param <T> the type of transaction data
  */
 public class MintCommitment<T extends MintTransactionData<?>> extends Commitment<T> {
-
   public static final byte[] MINTER_SECRET = HexConverter.decode(
       "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 
@@ -41,21 +40,5 @@ public class MintCommitment<T extends MintTransactionData<?>> extends Commitment
 
   public static SigningService createSigningService(MintTransactionData<?> transactionData) {
     return SigningService.createFromMaskedSecret(MINTER_SECRET, transactionData.getTokenId().getBytes());
-  }
-
-  public Transaction<T> toTransaction(InclusionProof inclusionProof) {
-    if (inclusionProof.verify(this.getRequestId()) != InclusionProofVerificationStatus.OK) {
-      throw new RuntimeException("Inclusion proof verification failed.");
-    }
-
-    if (inclusionProof.getAuthenticator().isEmpty()) {
-      throw new RuntimeException("Authenticator is missing from inclusion proof.");
-    }
-
-    if (!this.getTransactionData().calculateHash().equals(inclusionProof.getTransactionHash().orElse(null))) {
-      throw new RuntimeException("Payload hash mismatch.");
-    }
-
-    return new Transaction<>(this.getTransactionData(), inclusionProof);
   }
 }
