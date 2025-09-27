@@ -8,9 +8,15 @@ import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
 public class AggregatorClient implements IAggregatorClient {
 
   private final JsonRpcHttpTransport transport;
+  private final String apiKey;
 
   public AggregatorClient(String url) {
+    this(url, null);
+  }
+
+  public AggregatorClient(String url, String apiKey) {
     this.transport = new JsonRpcHttpTransport(url);
+    this.apiKey = apiKey;
   }
 
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
@@ -20,7 +26,7 @@ public class AggregatorClient implements IAggregatorClient {
 
     SubmitCommitmentRequest request = new SubmitCommitmentRequest(requestId, transactionHash,
         authenticator, false);
-    return this.transport.request("submit_commitment", request, SubmitCommitmentResponse.class);
+    return this.transport.request("submit_commitment", request, SubmitCommitmentResponse.class, this.apiKey);
   }
 
   public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
