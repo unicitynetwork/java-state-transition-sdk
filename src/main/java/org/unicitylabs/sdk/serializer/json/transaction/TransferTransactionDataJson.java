@@ -41,7 +41,7 @@ public class TransferTransactionDataJson {
       }
 
       gen.writeStartObject();
-      gen.writeObjectField(DATA_HASH_FIELD, value.getDataHash());
+      gen.writeObjectField(DATA_HASH_FIELD, value.getRecipientDataHash());
       gen.writeObjectField(MESSAGE_FIELD, value.getMessage());
       gen.writeObjectField(RECIPIENT_FIELD, value.getRecipient());
       gen.writeObjectField(SALT_FIELD, value.getSalt());

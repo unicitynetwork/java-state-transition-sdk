@@ -33,7 +33,7 @@ public class TransferTransactionDataCbor {
       gen.writeObject(value.getSourceState());
       gen.writeObject(value.getRecipient());
       gen.writeObject(value.getSalt());
-      gen.writeObject(value.getDataHash());
+      gen.writeObject(value.getRecipientDataHash());
       gen.writeObject(value.getMessage());
       gen.writeObject(value.getNametags());
       gen.writeEndArray();

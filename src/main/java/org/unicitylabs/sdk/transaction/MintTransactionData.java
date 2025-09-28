@@ -26,7 +26,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
   private final MintTransactionState sourceState;
   private final Address recipient;
   private final byte[] salt;
-  private final DataHash dataHash;
+  private final DataHash recipientDataHash;
   private final R reason;
 
   public MintTransactionData(
@@ -51,7 +51,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     this.sourceState = MintTransactionState.create(tokenId);
     this.recipient = recipient;
     this.salt = Arrays.copyOf(salt, salt.length);
-    this.dataHash = dataHash;
+    this.recipientDataHash = dataHash;
     this.reason = reason;
   }
 
@@ -72,8 +72,8 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     return Optional.ofNullable(this.coinData);
   }
 
-  public Optional<DataHash> getDataHash() {
-    return Optional.ofNullable(this.dataHash);
+  public Optional<DataHash> getRecipientDataHash() {
+    return Optional.ofNullable(this.recipientDataHash);
   }
 
   public byte[] getSalt() {
@@ -100,7 +100,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
     node.addPOJO(this.coinData);
     node.add(this.recipient.getAddress());
     node.add(this.salt);
-    node.addPOJO(this.dataHash);
+    node.addPOJO(this.recipientDataHash);
     node.addPOJO(this.reason);
 
     try {
@@ -123,15 +123,15 @@ public class MintTransactionData<R extends MintTransactionReason> implements
         that.tokenType) && Objects.deepEquals(this.tokenData, that.tokenData)
         && Objects.equals(this.coinData, that.coinData) && Objects.equals(this.sourceState,
         that.sourceState) && Objects.equals(this.recipient, that.recipient)
-        && Objects.deepEquals(this.salt, that.salt) && Objects.equals(this.dataHash,
-        that.dataHash) && Objects.equals(this.reason, that.reason);
+        && Objects.deepEquals(this.salt, that.salt) && Objects.equals(this.recipientDataHash,
+        that.recipientDataHash) && Objects.equals(this.reason, that.reason);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(this.tokenId, this.tokenType, Arrays.hashCode(tokenData), this.coinData,
         this.sourceState,
-        this.recipient, Arrays.hashCode(this.salt), this.dataHash, this.reason);
+        this.recipient, Arrays.hashCode(this.salt), this.recipientDataHash, this.reason);
   }
 
   @Override
@@ -149,7 +149,7 @@ public class MintTransactionData<R extends MintTransactionReason> implements
             + "reason=%s"
             + "}",
         this.tokenId, this.tokenType, HexConverter.encode(this.tokenData), this.coinData,
-        this.sourceState, this.recipient, HexConverter.encode(this.salt), this.dataHash,
+        this.sourceState, this.recipient, HexConverter.encode(this.salt), this.recipientDataHash,
         this.reason);
   }
 }

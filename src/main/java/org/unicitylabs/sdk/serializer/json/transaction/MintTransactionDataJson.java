@@ -50,7 +50,7 @@ public class MintTransactionDataJson {
       gen.writeObjectField(COIN_DATA_FIELD, value.getCoinData());
       gen.writeObjectField(RECIPIENT_FIELD, value.getRecipient());
       gen.writeObjectField(SALT_FIELD, value.getSalt());
-      gen.writeObjectField(DATA_HASH_FIELD, value.getDataHash());
+      gen.writeObjectField(DATA_HASH_FIELD, value.getRecipientDataHash());
       gen.writeObjectField(REASON_FIELD, value.getReason());
       gen.writeEndObject();
     }

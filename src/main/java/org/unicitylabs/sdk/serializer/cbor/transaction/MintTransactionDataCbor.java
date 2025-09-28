@@ -38,7 +38,7 @@ public class MintTransactionDataCbor {
       gen.writeObject(value.getCoinData());
       gen.writeObject(value.getRecipient());
       gen.writeObject(value.getSalt());
-      gen.writeObject(value.getDataHash());
+      gen.writeObject(value.getRecipientDataHash());
       gen.writeObject(value.getReason());
       gen.writeEndArray();
     }

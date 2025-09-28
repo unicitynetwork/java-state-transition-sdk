@@ -1,7 +1,22 @@
 
 package org.unicitylabs.sdk.address;
 
+/**
+ * Address interface
+ */
 public interface Address {
-    AddressScheme getScheme();
-    String getAddress();
+
+  /**
+   * Get the address scheme
+   *
+   * @return the address scheme
+   */
+  AddressScheme getScheme();
+
+  /**
+   * Get the address as a string
+   *
+   * @return the address string
+   */
+  String getAddress();
 }

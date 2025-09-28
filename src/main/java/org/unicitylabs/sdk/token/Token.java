@@ -203,7 +203,7 @@ public class Token<T extends MintTransactionData<?>> {
     }
 
     if (!Token.transactionContainsData(
-        previousTransaction.getData().getDataHash().orElse(null),
+        previousTransaction.getData().getRecipientDataHash().orElse(null),
         token.getState().getData().orElse(null))) {
       return VerificationResult.fail("data mismatch");
     }
@@ -256,8 +256,10 @@ public class Token<T extends MintTransactionData<?>> {
       return reasonResult;
     }
 
-    RequestId requestId = RequestId.create(signingService.getPublicKey(),
-        transaction.getData().getSourceState().getHash());
+    RequestId requestId = RequestId.create(
+        signingService.getPublicKey(),
+        transaction.getData().getSourceState()
+    );
     if (transaction.getInclusionProof().verify(requestId, trustBase)
         != InclusionProofVerificationStatus.OK) {
       return VerificationResult.fail("Inclusion proof verification failed.");

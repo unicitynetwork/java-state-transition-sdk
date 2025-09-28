@@ -68,7 +68,6 @@ import org.unicitylabs.sdk.serializer.json.api.AuthenticatorJson;
 import org.unicitylabs.sdk.serializer.json.api.BlockHeightResponseJson;
 import org.unicitylabs.sdk.serializer.json.api.InclusionProofRequestJson;
 import org.unicitylabs.sdk.serializer.json.api.InclusionProofResponseJson;
-import org.unicitylabs.sdk.serializer.json.api.RequestIdJson;
 import org.unicitylabs.sdk.serializer.json.api.SubmitCommitmentRequestJson;
 import org.unicitylabs.sdk.serializer.json.api.SubmitCommitmentResponseJson;
 import org.unicitylabs.sdk.serializer.json.bft.RootTrustBaseJson;

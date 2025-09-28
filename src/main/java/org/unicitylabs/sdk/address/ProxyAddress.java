@@ -26,10 +26,20 @@ public class ProxyAddress implements Address {
     this.checksum = Arrays.copyOf(checksum, checksum.length);
   }
 
+  /**
+   * Create a proxy address from a nametag string
+   * @param name the nametag
+   * @return the proxy address
+   */
   public static ProxyAddress create(String name) {
     return ProxyAddress.create(TokenId.fromNameTag(name));
   }
 
+  /**
+   * Create a proxy address from a token ID
+   * @param tokenId the token ID
+   * @return the proxy address
+   */
   public static ProxyAddress create(TokenId tokenId) {
     DataHash checksum = new DataHasher(HashAlgorithm.SHA256).update(tokenId.getBytes())
         .digest();

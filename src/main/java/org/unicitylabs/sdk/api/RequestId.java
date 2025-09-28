@@ -1,17 +1,15 @@
 package org.unicitylabs.sdk.api;
 
-import org.unicitylabs.sdk.Hashable;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.util.BitString;
+import org.unicitylabs.sdk.util.HexConverter;
 
 /**
  * Represents a unique request identifier derived from a public key and state hash.
  */
-public class RequestId implements Hashable {
-
-  private final DataHash hash;
+public class RequestId extends DataHash {
 
   /**
    * Constructs a RequestId instance.
@@ -19,7 +17,7 @@ public class RequestId implements Hashable {
    * @param hash The DataHash representing the request ID.
    */
   public RequestId(DataHash hash) {
-    this.hash = hash;
+    super(hash.getAlgorithm(), hash.getData());
   }
 
   /**
@@ -54,34 +52,7 @@ public class RequestId implements Hashable {
    * @return The BitString representation of the RequestId.
    */
   public BitString toBitString() {
-    return BitString.fromDataHash(this.hash);
-  }
-
-  /**
-   * Gets the underlying DataHash.
-   *
-   * @return The DataHash.
-   */
-  public DataHash getHash() {
-    return this.hash;
-  }
-
-  /**
-   * Checks if this RequestId is equal to another.
-   *
-   * @param obj The object to compare.
-   * @return True if equal, false otherwise.
-   */
-  @Override
-  public boolean equals(Object obj) {
-      if (this == obj) {
-          return true;
-      }
-      if (obj == null || getClass() != obj.getClass()) {
-          return false;
-      }
-    RequestId requestId = (RequestId) obj;
-    return this.hash.equals(requestId.hash);
+    return BitString.fromDataHash(this);
   }
 
   /**
@@ -91,6 +62,6 @@ public class RequestId implements Hashable {
    */
   @Override
   public String toString() {
-    return String.format("RequestId[%s]", this.hash.toString());
+    return String.format("RequestId[%s]", HexConverter.encode(this.getImprint()));
   }
 }

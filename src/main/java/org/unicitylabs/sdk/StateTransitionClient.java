@@ -21,14 +21,33 @@ import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransactionData;
 
+/**
+ * Client for handling state transitions of tokens, including submitting commitments and finalizing
+ * transactions.
+ */
 public class StateTransitionClient {
 
+  /**
+   * The aggregator client used for submitting commitments and retrieving inclusion proofs.
+   */
   protected final IAggregatorClient client;
 
+  /**
+   * Creates a new StateTransitionClient with the specified aggregator client.
+   *
+   * @param client The aggregator client to use for communication.
+   */
   public StateTransitionClient(IAggregatorClient client) {
     this.client = client;
   }
 
+  /**
+   * Submits a mint commitment to the aggregator.
+   *
+   * @param commitment The mint commitment to submit.
+   * @param <T>        The type of mint transaction data.
+   * @return A CompletableFuture that resolves to the response from the aggregator.
+   */
   public <T extends MintTransactionData<?>> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
       MintCommitment<T> commitment
   ) {
@@ -39,6 +58,13 @@ public class StateTransitionClient {
     );
   }
 
+  /**
+   * Submits a transfer commitment to the aggregator after verifying ownership.
+   *
+   * @param commitment The transfer commitment to submit.
+   * @return A CompletableFuture that resolves to the response from the aggregator.
+   * @throws IllegalArgumentException if ownership verification fails.
+   */
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
       TransferCommitment commitment
   ) {
@@ -55,6 +81,18 @@ public class StateTransitionClient {
         .calculateHash(), commitment.getAuthenticator());
   }
 
+  /**
+   * Finalizes a transaction by updating the token state based on the provided transaction data
+   * without nametags.
+   *
+   * @param trustBase   The root trust base for inclusion proof verification.
+   * @param token       The token to be updated.
+   * @param state       The current state of the token.
+   * @param transaction The transaction containing transfer data.
+   * @param <T>         The type of mint transaction data.
+   * @return The updated token after applying the transaction.
+   * @throws VerificationException if verification fails during the update process.
+   */
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
       RootTrustBase trustBase,
       Token<T> token,
@@ -64,6 +102,19 @@ public class StateTransitionClient {
     return this.finalizeTransaction(trustBase, token, state, transaction, List.of());
   }
 
+  /**
+   * Finalizes a transaction by updating the token state based on the provided transaction data and
+   * nametags.
+   *
+   * @param trustBase   The root trust base for inclusion proof verification.
+   * @param token       The token to be updated.
+   * @param state       The current state of the token.
+   * @param transaction The transaction containing transfer data.
+   * @param nametags    A list of tokens used as nametags in the transaction.
+   * @param <T>         The type of mint transaction data of token.
+   * @return The updated token after applying the transaction.
+   * @throws VerificationException if verification fails during the update process.
+   */
   public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
       RootTrustBase trustBase,
       Token<T> token,
@@ -76,6 +127,15 @@ public class StateTransitionClient {
     return token.update(trustBase, state, transaction, nametags);
   }
 
+  /**
+   * Retrieves the inclusion proof for a token and verifies its status against the provided public
+   * key and trust base.
+   *
+   * @param token     The token for which to retrieve the inclusion proof.
+   * @param publicKey The public key associated with the token.
+   * @param trustBase The root trust base for verification.
+   * @return A CompletableFuture that resolves to the inclusion proof verification status.
+   */
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
       Token<? extends MintTransactionData<?>> token,
       byte[] publicKey,
@@ -86,6 +146,12 @@ public class StateTransitionClient {
         .thenApply(response -> response.getInclusionProof().verify(requestId, trustBase));
   }
 
+  /**
+   * Retrieves the inclusion proof for a given commitment.
+   *
+   * @param commitment The commitment for which to retrieve the inclusion proof.
+   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
+   */
   public CompletableFuture<InclusionProofResponse> getInclusionProof(Commitment<?> commitment) {
     return this.client.getInclusionProof(commitment.getRequestId());
   }

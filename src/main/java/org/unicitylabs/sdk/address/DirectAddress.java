@@ -21,6 +21,12 @@ public class DirectAddress implements Address {
     this.checksum = Arrays.copyOf(checksum, checksum.length);
   }
 
+  /**
+   * Create a direct address from a predicate reference
+   *
+   * @param reference the data hash to create the address from
+   * @return the direct address
+   */
   public static DirectAddress create(DataHash reference) {
     DataHash checksum = new DataHasher(HashAlgorithm.SHA256).update(reference.getImprint())
         .digest();
