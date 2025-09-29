@@ -1,5 +1,8 @@
 package org.unicitylabs.sdk.jsonrpc;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -10,29 +13,35 @@ public class JsonRpcResponse<T> {
   private final JsonRpcError error;
   private final UUID id;
 
-  public JsonRpcResponse(
-      String version,
-      T result,
-      JsonRpcError error,
-      UUID id) {
+  @JsonCreator
+  JsonRpcResponse(
+      @JsonProperty("jsonrpc") String version,
+      @JsonProperty("result") T result,
+      @JsonProperty("error") JsonRpcError error,
+      @JsonProperty("id") UUID id
+  ) {
     this.version = version;
     this.result = result;
     this.error = error;
     this.id = id;
   }
 
+  @JsonGetter("jsonrpc")
   public String getVersion() {
     return this.version;
   }
 
+  @JsonGetter("result")
   public T getResult() {
     return this.result;
   }
 
+  @JsonGetter("error")
   public JsonRpcError getError() {
     return this.error;
   }
 
+  @JsonGetter("id")
   public UUID getId() {
     return this.id;
   }

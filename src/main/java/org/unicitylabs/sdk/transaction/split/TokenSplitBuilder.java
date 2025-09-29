@@ -18,14 +18,14 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -136,9 +136,9 @@ public class TokenSplitBuilder {
       );
     }
 
-    public List<MintCommitment<MintTransactionData<SplitMintReason>>> createSplitMintCommitments(
+    public List<MintCommitment<SplitMintReason>> createSplitMintCommitments(
         RootTrustBase trustBase,
-        Transaction<TransferTransactionData> burnTransaction
+        TransferTransaction burnTransaction
     ) throws VerificationException {
       Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
 
@@ -149,9 +149,9 @@ public class TokenSplitBuilder {
                   this.token.getId(),
                   this.token.getType(),
                   this.aggregationRoot.getRootHash()
-                  ),
-              null
               ),
+              null
+          ),
           burnTransaction,
           List.of()
       );
@@ -159,7 +159,7 @@ public class TokenSplitBuilder {
       return List.copyOf(
           this.tokens.values().stream()
               .map(request -> MintCommitment.create(
-                      new MintTransactionData<>(
+                      new MintTransaction.Data<>(
                           request.id,
                           request.type,
                           request.data,
@@ -167,19 +167,19 @@ public class TokenSplitBuilder {
                           request.recipient,
                           request.salt,
                           request.recipientDataHash,
-                          new SplitMintReason(burnedToken,
+                          new SplitMintReason(
+                              burnedToken,
                               List.copyOf(
                                   request.coinData.getCoins().keySet().stream()
                                       .map(coinId -> new SplitMintReasonProof(
                                               coinId,
-                                              this.aggregationRoot.getPath(
-                                                  coinId.toBitString().toBigInteger()),
+                                              this.aggregationRoot
+                                                  .getPath(coinId.toBitString().toBigInteger()),
                                               this.coinRoots.get(coinId)
                                                   .getPath(request.id.toBitString().toBigInteger())
                                           )
                                       )
-                                      .collect(
-                                          Collectors.toList())
+                                      .collect(Collectors.toList())
                               )
                           )
                       )

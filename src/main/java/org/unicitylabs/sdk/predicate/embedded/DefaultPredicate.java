@@ -1,7 +1,5 @@
 package org.unicitylabs.sdk.predicate.embedded;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.Arrays;
 import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
@@ -13,14 +11,12 @@ import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineType;
 import org.unicitylabs.sdk.predicate.PredicateReference;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
-import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
@@ -91,18 +87,15 @@ public abstract class DefaultPredicate implements Predicate {
 
   @Override
   public DataHash calculateHash() {
-    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.addPOJO(this.getReference().getHash());
-    node.addPOJO(this.tokenId);
-    node.add(this.getNonce());
-
-    try {
-      return new DataHasher(HashAlgorithm.SHA256)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-          .digest();
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    return new DataHasher(HashAlgorithm.SHA256)
+        .update(
+            CborSerializer.encodeArray(
+                this.getReference().getHash().toCbor(),
+                this.tokenId.toCbor(),
+                CborSerializer.encodeByteString(this.getNonce())
+            )
+        )
+        .digest();
   }
 
   public abstract PredicateReference getReference();
@@ -113,8 +106,7 @@ public abstract class DefaultPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Token<?> token, Transaction<TransferTransactionData> transaction,
-      RootTrustBase trustBase) {
+  public boolean verify(Token<?> token, TransferTransaction transaction, RootTrustBase trustBase) {
     if (!this.tokenId.equals(token.getId()) || !this.tokenType.equals(token.getType())) {
       return false;
     }
@@ -156,11 +148,14 @@ public abstract class DefaultPredicate implements Predicate {
 
   @Override
   public byte[] encodeParameters() {
-    try {
-      return UnicityObjectMapper.CBOR.writeValueAsBytes(this);
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+    return CborSerializer.encodeArray(
+      this.tokenId.toCbor(),
+      this.tokenType.toCbor(),
+      CborSerializer.encodeByteString(this.publicKey),
+      CborSerializer.encodeTextString(this.signingAlgorithm),
+      CborSerializer.encodeUnsignedInteger(this.hashAlgorithm.getValue()),
+      CborSerializer.encodeByteString(this.nonce)
+    );
   }
 
   @Override

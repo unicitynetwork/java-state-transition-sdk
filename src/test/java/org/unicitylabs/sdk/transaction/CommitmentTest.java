@@ -1,22 +1,21 @@
 package org.unicitylabs.sdk.transaction;
 
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.RequestId;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Map;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 public class CommitmentTest {
 
@@ -29,7 +28,7 @@ public class CommitmentTest {
 
     MaskedPredicateReference predicateReference = MaskedPredicateReference.create(tokenType,
         signingService.getAlgorithm(), signingService.getPublicKey(), HashAlgorithm.SHA256, nonce);
-    MintTransactionData<MintTransactionReason> transactionData = new MintTransactionData<>(
+    MintTransaction.Data<MintTransactionReason> transactionData = new MintTransaction.Data<>(
         new TokenId(new byte[32]),
         tokenType,
         new byte[5],
@@ -42,20 +41,14 @@ public class CommitmentTest {
         new DataHash(HashAlgorithm.SHA256, new byte[32]),
         null
     );
-    Commitment<MintTransactionData<MintTransactionReason>> commitment = new MintCommitment<>(
-        new RequestId(
-            new DataHash(HashAlgorithm.SHA256, new byte[32])
-        ),
-        transactionData,
-        Authenticator.create(
-            signingService,
-            transactionData.calculateHash(),
-            transactionData.getSourceState().getHash())
-    );
+    MintCommitment<?> commitment = MintCommitment.create(transactionData);
+
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new Jdk8Module());
 
     Assertions.assertEquals(commitment,
-        UnicityObjectMapper.JSON.readValue(
-            UnicityObjectMapper.JSON.writeValueAsString(commitment),
+        mapper.readValue(
+            mapper.writeValueAsString(commitment),
             MintCommitment.class
         )
     );

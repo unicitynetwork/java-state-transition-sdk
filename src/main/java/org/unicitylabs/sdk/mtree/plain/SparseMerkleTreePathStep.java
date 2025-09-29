@@ -1,19 +1,26 @@
 package org.unicitylabs.sdk.mtree.plain;
 
-import org.unicitylabs.sdk.util.HexConverter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
+import org.unicitylabs.sdk.util.HexConverter;
 
+@JsonSerialize(using = SparseMerkleTreePathStepJson.Serializer.class)
+@JsonDeserialize(using = SparseMerkleTreePathStepJson.Deserializer.class)
 public class SparseMerkleTreePathStep {
 
   private final BigInteger path;
   private final Branch sibling;
   private final Branch branch;
 
-  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling,
-      FinalizedLeafBranch branch) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
     this(
         path,
         sibling,
@@ -61,6 +68,24 @@ public class SparseMerkleTreePathStep {
     return Optional.ofNullable(this.branch);
   }
 
+  public static SparseMerkleTreePathStep fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SparseMerkleTreePathStep(
+        BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(0))),
+        Branch.fromCbor(data.get(1)),
+        Branch.fromCbor(data.get(2))
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeByteString(BigIntegerConverter.encode(this.path)),
+        CborSerializer.encodeOptional(this.sibling, Branch::toCbor),
+        CborSerializer.encodeOptional(this.branch, Branch::toCbor)
+    );
+  }
+
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof SparseMerkleTreePathStep)) {
@@ -92,6 +117,20 @@ public class SparseMerkleTreePathStep {
 
     public byte[] getValue() {
       return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
+    }
+
+    public static Branch fromCbor(byte[] bytes) {
+      List<byte[]> data = CborDeserializer.readArray(bytes);
+
+      return new Branch(
+          CborDeserializer.readByteString(data.get(0))
+      );
+    }
+
+    public byte[] toCbor() {
+      return CborSerializer.encodeArray(
+          CborSerializer.encodeByteString(this.value)
+      );
     }
 
     @Override

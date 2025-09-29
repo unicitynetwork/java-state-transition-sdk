@@ -52,7 +52,7 @@ public class CborSerializer {
     return CborSerializer.encodeRawArray(bytes, bytes.length, CborMajorType.TEXT_STRING);
   }
 
-  public static byte[] encodeArray(List<byte[]> input) {
+  public static byte[] encodeArray(byte[]... input) {
     if (input == null) {
       throw new CborSerializationException("Input byte array list cannot be null.");
     }
@@ -69,7 +69,7 @@ public class CborSerializer {
       length += bytes.length;
     }
 
-    return CborSerializer.encodeRawArray(data, input.size(), CborMajorType.ARRAY);
+    return CborSerializer.encodeRawArray(data, input.length, CborMajorType.ARRAY);
   }
 
   /**

@@ -1,22 +1,26 @@
 package org.unicitylabs.sdk.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.util.BitString;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
  * Represents a unique request identifier derived from a public key and state hash.
  */
+@JsonDeserialize(using = RequestIdJsonDeserializer.class)
 public class RequestId extends DataHash {
-
   /**
    * Constructs a RequestId instance.
    *
    * @param hash The DataHash representing the request ID.
    */
-  public RequestId(DataHash hash) {
+  protected RequestId(DataHash hash) {
     super(hash.getAlgorithm(), hash.getData());
   }
 
@@ -44,6 +48,22 @@ public class RequestId extends DataHash {
     hasher.update(hashImprint);
 
     return new RequestId(hasher.digest());
+  }
+
+  public static RequestId fromJson(String input) {
+    try {
+      return UnicityObjectMapper.JSON.readValue(input, RequestId.class);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(RequestId.class, e);
+    }
+  }
+
+  public String toJson() {
+    try {
+      return UnicityObjectMapper.JSON.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(RequestId.class, e);
+    }
   }
 
   /**

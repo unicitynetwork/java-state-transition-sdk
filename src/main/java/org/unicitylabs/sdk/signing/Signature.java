@@ -1,16 +1,20 @@
 
 package org.unicitylabs.sdk.signing;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.unicitylabs.sdk.util.HexConverter;
 import java.util.Arrays;
 import java.util.Objects;
 
+@JsonSerialize(using = SignatureJson.Serializer.class)
+@JsonDeserialize(using = SignatureJson.Deserializer.class)
 public class Signature {
 
   private final byte[] bytes;
   private final int recovery;
 
-  public Signature(byte[] bytes, int recovery) {
+  Signature(byte[] bytes, int recovery) {
     this.bytes = Arrays.copyOf(bytes, bytes.length);
     this.recovery = recovery;
   }

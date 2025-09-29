@@ -6,7 +6,7 @@ import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 
 public class NametagMintTransactionData<R extends MintTransactionReason> extends
-    MintTransactionData<R> {
+    MintTransaction.Data<R> {
 
   public NametagMintTransactionData(
       String name,

@@ -4,5 +4,7 @@ import org.unicitylabs.sdk.verification.VerificationResult;
 
 public interface MintTransactionReason {
   String getType();
-  VerificationResult verify(Transaction<? extends MintTransactionData<?>> genesis);
+  VerificationResult verify(MintTransaction<?> genesis);
+
+  byte[] toCbor();
 }

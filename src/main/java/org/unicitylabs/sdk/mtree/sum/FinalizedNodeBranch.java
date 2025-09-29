@@ -4,11 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 import java.math.BigInteger;
 import java.util.Objects;
+import org.unicitylabs.sdk.util.HexConverter;
 
 class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
 
@@ -31,38 +32,35 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
 
   public static FinalizedNodeBranch create(BigInteger path, FinalizedBranch left,
       FinalizedBranch right, HashAlgorithm hashAlgorithm) {
-    try {
-      DataHash childrenHash = new DataHasher(hashAlgorithm)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-                  UnicityObjectMapper.CBOR.createArrayNode()
-                      .add(
-                          UnicityObjectMapper.CBOR.createArrayNode()
-                              .add(left.getHash().getImprint())
-                              .add(BigIntegerConverter.encode(left.getCounter()))
-                      )
-                      .add(
-                          UnicityObjectMapper.CBOR.createArrayNode()
-                              .add(right.getHash().getImprint())
-                              .add(BigIntegerConverter.encode(right.getCounter()))
-                      )
-              )
-          )
-          .digest();
 
-      BigInteger counter = left.getCounter().add(right.getCounter());
-      DataHash hash = new DataHasher(hashAlgorithm)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-              UnicityObjectMapper.CBOR.createArrayNode()
-                  .add(BigIntegerConverter.encode(path))
-                  .add(childrenHash.getImprint())
-                  .add(BigIntegerConverter.encode(counter))
-          ))
-          .digest();
+    DataHash childrenHash = new DataHasher(hashAlgorithm)
+        .update(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeArray(
+                    CborSerializer.encodeByteString(left.getHash().getImprint()),
+                    CborSerializer.encodeByteString(BigIntegerConverter.encode(left.getCounter()))
+                ),
+                CborSerializer.encodeArray(
+                    CborSerializer.encodeByteString(right.getHash().getImprint()),
+                    CborSerializer.encodeByteString(
+                        BigIntegerConverter.encode(right.getCounter()))
+                )
+            )
+        )
+        .digest();
 
-      return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+    BigInteger counter = left.getCounter().add(right.getCounter());
+    DataHash hash = new DataHasher(hashAlgorithm)
+        .update(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(path)),
+                CborSerializer.encodeByteString(childrenHash.getImprint()),
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(counter))
+            )
+        )
+        .digest();
+
+    return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
   }
 
   public BigInteger getPath() {

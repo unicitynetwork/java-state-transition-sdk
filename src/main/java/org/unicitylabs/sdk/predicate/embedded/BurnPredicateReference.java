@@ -2,13 +2,14 @@ package org.unicitylabs.sdk.predicate.embedded;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.Objects;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.PredicateReference;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.token.TokenType;
 
 public class BurnPredicateReference implements PredicateReference {
@@ -24,20 +25,20 @@ public class BurnPredicateReference implements PredicateReference {
   }
 
   public static BurnPredicateReference create(TokenType tokenType, DataHash burnReason) {
-    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.add(EmbeddedPredicateType.BURN.name());
-    node.addPOJO(tokenType);
-    node.addPOJO(burnReason);
+    Objects.requireNonNull(tokenType, "Token type cannot be null");
+    Objects.requireNonNull(burnReason, "Burn reason cannot be null");
 
-    try {
-      DataHash hash = new DataHasher(HashAlgorithm.SHA256)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-          .digest();
-
-      return new BurnPredicateReference(hash);
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+    return new BurnPredicateReference(
+        new DataHasher(HashAlgorithm.SHA256)
+            .update(
+                CborSerializer.encodeArray(
+                    CborSerializer.encodeByteString(EmbeddedPredicateType.BURN.getBytes()),
+                    CborSerializer.encodeByteString(tokenType.toCbor()),
+                    CborSerializer.encodeByteString(burnReason.getImprint())
+                )
+            )
+            .digest()
+    );
   }
 
   public DirectAddress toAddress() {

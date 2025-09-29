@@ -10,7 +10,7 @@ import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContex
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.verification.VerificationResult;
 import org.unicitylabs.sdk.verification.VerificationRule;
 
@@ -52,55 +52,48 @@ public class UnicitySealHashMatchesWithRootHashRule extends
         .putInt(unicityTreeCertificate.getPartitionIdentifier())
         .array();
 
-    try {
-      DataHash result = new DataHasher(HashAlgorithm.SHA256)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(new byte[]{(byte) 0x01})) // LEAF
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(key))
-          .update(
-              UnicityObjectMapper.CBOR.writeValueAsBytes(
-                  new DataHasher(HashAlgorithm.SHA256)
-                      .update(
-                          UnicityObjectMapper.CBOR.writeValueAsBytes(
-                              shardTreeCertificateRootHash.getData()
-                          )
-                      )
-                      .digest()
-                      .getData()
-              )
-          )
-          .digest();
+    DataHash result = new DataHasher(HashAlgorithm.SHA256)
+        .update(CborSerializer.encodeByteString(new byte[]{(byte) 0x01})) // LEAF
+        .update(CborSerializer.encodeByteString(key))
+        .update(
+            CborSerializer.encodeByteString(
+                new DataHasher(HashAlgorithm.SHA256)
+                    .update(
+                        CborSerializer.encodeByteString(shardTreeCertificateRootHash.getData())
+                    )
+                    .digest()
+                    .getData()
+            )
+        )
+        .digest();
 
-      for (UnicityTreeCertificate.HashStep step : unicityTreeCertificate.getSteps()) {
-        byte[] stepKey = ByteBuffer.allocate(4)
-            .order(ByteOrder.BIG_ENDIAN)
-            .putInt(step.getKey())
-            .array();
+    for (UnicityTreeCertificate.HashStep step : unicityTreeCertificate.getSteps()) {
+      byte[] stepKey = ByteBuffer.allocate(4)
+          .order(ByteOrder.BIG_ENDIAN)
+          .putInt(step.getKey())
+          .array();
 
-        DataHasher hasher = new DataHasher(HashAlgorithm.SHA256)
-            .update(UnicityObjectMapper.CBOR.writeValueAsBytes(new byte[]{(byte) 0x00})) // NODE
-            .update(UnicityObjectMapper.CBOR.writeValueAsBytes(stepKey));
+      DataHasher hasher = new DataHasher(HashAlgorithm.SHA256)
+          .update(CborSerializer.encodeByteString(new byte[]{(byte) 0x00})) // NODE
+          .update(CborSerializer.encodeByteString(stepKey));
 
-        if (Arrays.compare(key, stepKey) > 0) {
-          hasher
-              .update(UnicityObjectMapper.CBOR.writeValueAsBytes(step.getHash()))
-              .update(UnicityObjectMapper.CBOR.writeValueAsBytes(result.getData()));
-        } else {
-          hasher
-              .update(UnicityObjectMapper.CBOR.writeValueAsBytes(result.getData()))
-              .update(UnicityObjectMapper.CBOR.writeValueAsBytes(step.getHash()));
-        }
-
-        result = hasher.digest();
+      if (Arrays.compare(key, stepKey) > 0) {
+        hasher
+            .update(CborSerializer.encodeByteString(step.getHash()))
+            .update(CborSerializer.encodeByteString(result.getData()));
+      } else {
+        hasher
+            .update(CborSerializer.encodeByteString(result.getData()))
+            .update(CborSerializer.encodeByteString(step.getHash()));
       }
 
-      byte[] unicitySealHash = context.getUnicityCertificate().getUnicitySeal().getHash();
+      result = hasher.digest();
+    }
 
-      if (Arrays.compare(unicitySealHash, result.getData()) != 0) {
-        return VerificationResult.fail("Unicity seal hash does not match tree root.");
-      }
-    } catch (IOException e) {
-      // TODO: Fix message
-      return VerificationResult.fail(e.getMessage());
+    byte[] unicitySealHash = context.getUnicityCertificate().getUnicitySeal().getHash();
+
+    if (Arrays.compare(unicitySealHash, result.getData()) != 0) {
+      return VerificationResult.fail("Unicity seal hash does not match tree root.");
     }
 
     return VerificationResult.success();

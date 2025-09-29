@@ -39,7 +39,7 @@ public class UnicitySealQuorumSignaturesVerificationRule extends
 
     List<VerificationResult> results = new ArrayList<>();
     DataHash hash = new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicitySeal.fromUnicitySealWithoutSignatures(unicitySeal).encode())
+        .update(unicitySeal.toCborWithoutSignatures())
         .digest();
     int successful = 0;
     for (Map.Entry<String, byte[]> entry : unicitySeal.getSignatures().entrySet()) {

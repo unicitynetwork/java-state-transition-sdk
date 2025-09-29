@@ -16,32 +16,32 @@ public class CborDeserializerTest {
   void testReadUnsignedInteger() {
     Assertions.assertEquals(
         5,
-        CborDeserializer.readUnsignedInteger(HexConverter.decode("05"))
+        CborDeserializer.readUnsignedInteger(HexConverter.decode("05")).asLong()
     );
 
     Assertions.assertEquals(
         100,
-        CborDeserializer.readUnsignedInteger(HexConverter.decode("1864"))
+        CborDeserializer.readUnsignedInteger(HexConverter.decode("1864")).asLong()
     );
 
     Assertions.assertEquals(
         10000,
-        CborDeserializer.readUnsignedInteger(HexConverter.decode("192710"))
+        CborDeserializer.readUnsignedInteger(HexConverter.decode("192710")).asLong()
     );
 
     Assertions.assertEquals(
         66000,
-        CborDeserializer.readUnsignedInteger(HexConverter.decode("1a000101d0"))
+        CborDeserializer.readUnsignedInteger(HexConverter.decode("1a000101d0")).asLong()
     );
 
     Assertions.assertEquals(
         8147483647L,
-        CborDeserializer.readUnsignedInteger(HexConverter.decode("1b00000001e5a0bbff"))
+        CborDeserializer.readUnsignedInteger(HexConverter.decode("1b00000001e5a0bbff")).asLong()
     );
 
     Assertions.assertEquals(
         -5,
-        CborDeserializer.readUnsignedInteger(HexConverter.decode("1bfffffffffffffffb"))
+        CborDeserializer.readUnsignedInteger(HexConverter.decode("1bfffffffffffffffb")).asLong()
     );
   }
 

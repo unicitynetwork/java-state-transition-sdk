@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.util;
 
+import java.util.Arrays;
 import org.unicitylabs.sdk.hash.DataHash;
 import java.math.BigInteger;
 
@@ -17,9 +18,10 @@ public class BitString {
    * @param data The input data to convert into a BitString.
    */
   public BitString(byte[] data) {
-    // Create hex string with "01" prefix
-    String hexString = "01" + HexConverter.encode(data);
-    this.value = new BigInteger(hexString, 16);
+    byte[] dataWithPrefix = new byte[data.length + 1];
+    dataWithPrefix[0] = 1;
+    System.arraycopy(data, 0, dataWithPrefix, 1, data.length);
+    this.value = new BigInteger(1, dataWithPrefix);
   }
 
   /**

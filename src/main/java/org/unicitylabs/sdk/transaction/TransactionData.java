@@ -38,4 +38,6 @@ public interface TransactionData<T> {
    * @return the calculated DataHash
    */
   DataHash calculateHash();
+
+  byte[] toCbor();
 }

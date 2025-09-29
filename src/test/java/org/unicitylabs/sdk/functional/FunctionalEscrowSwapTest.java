@@ -5,7 +5,7 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.common.BaseEscrowSwapTest;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
+import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 
 public class FunctionalEscrowSwapTest extends BaseEscrowSwapTest {
   @BeforeEach

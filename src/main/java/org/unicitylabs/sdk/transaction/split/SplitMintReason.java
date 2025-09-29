@@ -1,25 +1,27 @@
 
 package org.unicitylabs.sdk.transaction.split;
 
-import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
-import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep.Branch;
-import org.unicitylabs.sdk.predicate.PredicateEngineService;
-import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
-import org.unicitylabs.sdk.predicate.Predicate;
-import org.unicitylabs.sdk.token.Token;
-import org.unicitylabs.sdk.token.fungible.CoinId;
-import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.MintReasonType;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
-import org.unicitylabs.sdk.transaction.MintTransactionReason;
-import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.verification.VerificationResult;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
+import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep.Branch;
+import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.fungible.CoinId;
+import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.MintReasonType;
+import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.MintTransactionReason;
+import org.unicitylabs.sdk.verification.VerificationResult;
 
 public class SplitMintReason implements MintTransactionReason {
 
@@ -46,7 +48,7 @@ public class SplitMintReason implements MintTransactionReason {
     return List.copyOf(this.proofs);
   }
 
-  public VerificationResult verify(Transaction<? extends MintTransactionData<?>> transaction) {
+  public VerificationResult verify(MintTransaction<?> transaction) {
     if (transaction.getData().getCoinData().isEmpty()) {
       return VerificationResult.fail("Coin data is missing.");
     }
@@ -100,6 +102,29 @@ public class SplitMintReason implements MintTransactionReason {
     }
 
     return VerificationResult.success();
+  }
+
+  public static SplitMintReason fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SplitMintReason(
+        Token.fromCbor(data.get(1)),
+        CborDeserializer.readArray(data.get(2)).stream()
+            .map(SplitMintReasonProof::fromCbor)
+            .collect(Collectors.toList())
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeTextString(this.getType()),
+        this.token.toCbor(),
+        CborSerializer.encodeArray(
+            this.proofs.stream()
+                .map(SplitMintReasonProof::toCbor)
+                .toArray(byte[][]::new)
+        )
+    );
   }
 
   @Override

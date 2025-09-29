@@ -13,11 +13,10 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTree;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
-import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
-import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
+import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
+import org.unicitylabs.sdk.bft.UnicityCertificateUtils;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
@@ -58,8 +57,7 @@ public class InclusionProofTest {
         transactionHash,
         unicityCertificate
     );
-    Assertions.assertEquals(inclusionProof, UnicityObjectMapper.JSON.readValue(
-        UnicityObjectMapper.JSON.writeValueAsString(inclusionProof), InclusionProof.class));
+    Assertions.assertEquals(inclusionProof, InclusionProof.fromJson(inclusionProof.toJson()));
   }
 
   @Test

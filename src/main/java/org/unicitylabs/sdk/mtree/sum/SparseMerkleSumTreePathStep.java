@@ -1,5 +1,11 @@
 package org.unicitylabs.sdk.mtree.sum;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
 import org.unicitylabs.sdk.util.HexConverter;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -69,6 +75,24 @@ public class SparseMerkleSumTreePathStep {
     return Optional.ofNullable(this.branch);
   }
 
+  public static SparseMerkleSumTreePathStep fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SparseMerkleSumTreePathStep(
+        BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(0))),
+        Branch.fromCbor(data.get(1)),
+        Branch.fromCbor(data.get(2))
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeByteString(BigIntegerConverter.encode(this.path)),
+        CborSerializer.encodeOptional(this.sibling, Branch::toCbor),
+        CborSerializer.encodeOptional(this.branch, Branch::toCbor)
+    );
+  }
+
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof SparseMerkleSumTreePathStep)) {
@@ -108,6 +132,22 @@ public class SparseMerkleSumTreePathStep {
 
     public BigInteger getCounter() {
       return this.counter;
+    }
+
+    public static Branch fromCbor(byte[] bytes) {
+      List<byte[]> data = CborDeserializer.readArray(bytes);
+
+      return new Branch(
+          CborDeserializer.readByteString(data.get(0)),
+          BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(1)))
+      );
+    }
+
+    public byte[] toCbor() {
+      return CborSerializer.encodeArray(
+          CborSerializer.encodeOptional(this.value, CborSerializer::encodeByteString),
+          CborSerializer.encodeByteString(BigIntegerConverter.encode(this.counter))
+      );
     }
 
     @Override

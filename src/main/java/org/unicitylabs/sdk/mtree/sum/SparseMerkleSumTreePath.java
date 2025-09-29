@@ -1,17 +1,17 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Objects;
+import org.unicitylabs.sdk.util.HexConverter;
 
 public class SparseMerkleSumTreePath {
 
@@ -45,7 +45,6 @@ public class SparseMerkleSumTreePath {
             .map(SparseMerkleSumTreePathStep.Branch::getCounter)
             .orElse(BigInteger.ZERO);
 
-
     for (int i = 0; i < this.steps.size(); i++) {
       SparseMerkleSumTreePathStep step = this.steps.get(i);
       DataHash hash = null;
@@ -54,50 +53,46 @@ public class SparseMerkleSumTreePath {
         byte[] bytes = i == 0
             ? step.getBranch().get().getValue()
             : (currentHash != null ? currentHash.getImprint() : null);
-        try {
-          hash = new DataHasher(HashAlgorithm.SHA256)
-              .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-                  UnicityObjectMapper.CBOR.createArrayNode()
-                      .add(BigIntegerConverter.encode(step.getPath()))
-                      .add(bytes)
-                      .add(BigIntegerConverter.encode(currentCounter))
-              ))
-              .digest();
-        } catch (JsonProcessingException e) {
-          throw new CborSerializationException(e);
-        }
+        hash = new DataHasher(HashAlgorithm.SHA256)
+            .update(
+                CborSerializer.encodeArray(
+                    CborSerializer.encodeByteString(
+                        BigIntegerConverter.encode(step.getPath())
+                    ),
+                    CborSerializer.encodeByteString(bytes),
+                    CborSerializer.encodeByteString(BigIntegerConverter.encode(currentCounter))
+                )
+            )
+            .digest();
 
         int length = step.getPath().bitLength() - 1;
         currentPath = currentPath.shiftLeft(length)
             .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
-
       }
 
       boolean isRight = step.getPath().testBit(0);
-      ArrayNode sibling = step.getSibling()
-          .map(data -> UnicityObjectMapper.CBOR.createArrayNode()
-              .add(data.getValue())
-              .add(BigIntegerConverter.encode(data.getCounter())))
-          .orElse(null);
-      ArrayNode branch = hash == null
-          ? null
-          : UnicityObjectMapper.CBOR.createArrayNode()
-              .add(hash.getImprint())
-              .add(BigIntegerConverter.encode(currentCounter));
+      byte[] sibling = step.getSibling()
+          .map(
+              data -> CborSerializer.encodeArray(
+                  CborSerializer.encodeByteString(data.getValue()),
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(data.getCounter()))
+              )
+          ).orElse(CborSerializer.encodeNull());
+      byte[] branch = hash == null
+          ? CborSerializer.encodeNull()
+          : CborSerializer.encodeArray(
+              CborSerializer.encodeByteString(hash.getImprint()),
+              CborSerializer.encodeByteString(BigIntegerConverter.encode(currentCounter))
+          );
 
-      try {
-        currentHash = new DataHasher(HashAlgorithm.SHA256)
-            .update(
-                UnicityObjectMapper.CBOR.writeValueAsBytes(
-                    UnicityObjectMapper.CBOR.createArrayNode()
-                        .add(isRight ? sibling : branch)
-                        .add(isRight ? branch : sibling)
-                )
-            )
-            .digest();
-      } catch (JsonProcessingException e) {
-        throw new CborSerializationException(e);
-      }
+      currentHash = new DataHasher(HashAlgorithm.SHA256)
+          .update(
+              CborSerializer.encodeArray(
+                  isRight ? sibling : branch,
+                  isRight ? branch : sibling
+              )
+          )
+          .digest();
       currentCounter = currentCounter.add(
           step.getSibling()
               .map(SparseMerkleSumTreePathStep.Branch::getCounter)
@@ -108,6 +103,28 @@ public class SparseMerkleSumTreePath {
     return new MerkleTreePathVerificationResult(
         this.root.hash.equals(currentHash) && this.root.counter.equals(currentCounter),
         currentPath.equals(requestId));
+  }
+
+  public static SparseMerkleSumTreePath fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SparseMerkleSumTreePath(
+        SparseMerkleSumTreePath.Root.fromCbor(data.get(0)),
+        CborDeserializer.readArray(data.get(1)).stream()
+            .map(SparseMerkleSumTreePathStep::fromCbor)
+            .collect(Collectors.toList())
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        this.root.toCbor(),
+        CborSerializer.encodeArray(
+            this.steps.stream()
+                .map(SparseMerkleSumTreePathStep::toCbor)
+                .toArray(byte[][]::new)
+        )
+    );
   }
 
   @Override
@@ -145,6 +162,22 @@ public class SparseMerkleSumTreePath {
 
     public BigInteger getCounter() {
       return this.counter;
+    }
+
+    public static Root fromCbor(byte[] bytes) {
+      List<byte[]> data = CborDeserializer.readArray(bytes);
+
+      return new Root(
+          DataHash.fromCbor(data.get(0)),
+          BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(1)))
+      );
+    }
+
+    public byte[] toCbor() {
+      return CborSerializer.encodeArray(
+          this.hash.toCbor(),
+          CborSerializer.encodeByteString(BigIntegerConverter.encode(this.counter))
+      );
     }
 
     @Override

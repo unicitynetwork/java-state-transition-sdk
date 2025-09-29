@@ -1,6 +1,8 @@
 
 package org.unicitylabs.sdk.transaction;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
@@ -8,15 +10,28 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import java.util.Objects;
+import org.unicitylabs.sdk.transaction.TransferTransaction.Data;
 
 /**
  * Commitment representing a transfer transaction
  */
-public class TransferCommitment extends Commitment<TransferTransactionData> {
+public class TransferCommitment extends Commitment<TransferTransaction.Data> {
 
-  public TransferCommitment(RequestId requestId, TransferTransactionData transactionData,
-      Authenticator authenticator) {
+  @JsonCreator
+  private TransferCommitment(
+      @JsonProperty("requestId")
+      RequestId requestId,
+      @JsonProperty("transactionData")
+      TransferTransaction.Data transactionData,
+      @JsonProperty("authenticator")
+      Authenticator authenticator
+  ) {
     super(requestId, transactionData, authenticator);
+  }
+
+  @Override
+  public TransferTransaction toTransaction(InclusionProof inclusionProof)  {
+    return new TransferTransaction(this.getTransactionData(), inclusionProof);
   }
 
   public static TransferCommitment create(
@@ -32,7 +47,7 @@ public class TransferCommitment extends Commitment<TransferTransactionData> {
     Objects.requireNonNull(salt, "Salt cannot be null");
     Objects.requireNonNull(signingService, "SigningService cannot be null");
 
-    TransferTransactionData transactionData = new TransferTransactionData(
+    TransferTransaction.Data transactionData = new TransferTransaction.Data(
         token.getState(), recipient, salt, dataHash, message, token.getNametags());
 
     DataHash sourceStateHash = transactionData.getSourceState().calculateHash();

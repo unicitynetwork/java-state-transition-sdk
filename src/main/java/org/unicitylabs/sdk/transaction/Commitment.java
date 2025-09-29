@@ -1,6 +1,7 @@
 
 package org.unicitylabs.sdk.transaction;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
@@ -26,6 +27,7 @@ public abstract class Commitment<T extends TransactionData<?>> {
    *
    * @return request ID
    */
+  @JsonGetter("requestId")
   public RequestId getRequestId() {
     return requestId;
   }
@@ -35,6 +37,7 @@ public abstract class Commitment<T extends TransactionData<?>> {
    *
    * @return transaction data
    */
+  @JsonGetter("transactionData")
   public T getTransactionData() {
     return transactionData;
   }
@@ -44,13 +47,12 @@ public abstract class Commitment<T extends TransactionData<?>> {
    *
    * @return authenticator
    */
+  @JsonGetter("authenticator")
   public Authenticator getAuthenticator() {
     return authenticator;
   }
 
-  public Transaction<T> toTransaction(InclusionProof inclusionProof) {
-    return new Transaction<>(this.getTransactionData(), inclusionProof);
-  }
+  public abstract Transaction<T> toTransaction(InclusionProof inclusionProof);
 
   @Override
   public boolean equals(Object o) {
@@ -58,9 +60,9 @@ public abstract class Commitment<T extends TransactionData<?>> {
       return false;
     }
     Commitment<?> that = (Commitment<?>) o;
-    return Objects.equals(this.requestId, that.requestId) && Objects.equals(
-        this.transactionData, that.transactionData) && Objects.equals(this.authenticator,
-        that.authenticator);
+    return Objects.equals(this.requestId, that.requestId)
+        && Objects.equals(this.transactionData, that.transactionData)
+        && Objects.equals(this.authenticator, that.authenticator);
   }
 
   @Override

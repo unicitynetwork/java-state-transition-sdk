@@ -18,21 +18,20 @@ import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
-import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
+import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
+
   protected StateTransitionClient client;
   protected RootTrustBase trustBase;
 
@@ -57,12 +56,11 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
     }
 
     return new String[]{
-        UnicityObjectMapper.JSON.writeValueAsString(token),
-        UnicityObjectMapper.JSON.writeValueAsString(
-            commitment.toTransaction(
-                InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment).get()
-            )
-        )
+        token.toJson(),
+        commitment.toTransaction(
+            InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment)
+                .get()
+        ).toJson()
     };
   }
 
@@ -83,11 +81,8 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
   }
 
   private Token<?> receiveToken(String[] tokenInfo, byte[] secret) throws Exception {
-    Token<?> token = UnicityObjectMapper.JSON.readValue(tokenInfo[0], Token.class);
-    Transaction<TransferTransactionData> transaction = UnicityObjectMapper.JSON.readValue(
-        tokenInfo[1],
-        UnicityObjectMapper.JSON.getTypeFactory()
-            .constructParametricType(Transaction.class, TransferTransactionData.class));
+    Token<?> token = Token.fromJson(tokenInfo[0]);
+    TransferTransaction transaction = TransferTransaction.fromJson(tokenInfo[1]);
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(

@@ -12,14 +12,14 @@ import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.transaction.MintTransactionReason;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.transaction.Commitment;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
 
 /**
  * Client for handling state transitions of tokens, including submitting commitments and finalizing
@@ -48,8 +48,8 @@ public class StateTransitionClient {
    * @param <T>        The type of mint transaction data.
    * @return A CompletableFuture that resolves to the response from the aggregator.
    */
-  public <T extends MintTransactionData<?>> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      MintCommitment<T> commitment
+  public <R extends MintTransactionReason> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
+      MintCommitment<R> commitment
   ) {
     return this.client.submitCommitment(
         commitment.getRequestId(),
@@ -93,11 +93,11 @@ public class StateTransitionClient {
    * @return The updated token after applying the transaction.
    * @throws VerificationException if verification fails during the update process.
    */
-  public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
+  public <R extends MintTransactionReason> Token<R> finalizeTransaction(
       RootTrustBase trustBase,
-      Token<T> token,
+      Token<R> token,
       TokenState state,
-      Transaction<TransferTransactionData> transaction
+      TransferTransaction transaction
   ) throws VerificationException {
     return this.finalizeTransaction(trustBase, token, state, transaction, List.of());
   }
@@ -115,11 +115,11 @@ public class StateTransitionClient {
    * @return The updated token after applying the transaction.
    * @throws VerificationException if verification fails during the update process.
    */
-  public <T extends MintTransactionData<?>> Token<T> finalizeTransaction(
+  public <R extends MintTransactionReason> Token<R> finalizeTransaction(
       RootTrustBase trustBase,
-      Token<T> token,
+      Token<R> token,
       TokenState state,
-      Transaction<TransferTransactionData> transaction,
+      TransferTransaction transaction,
       List<Token<?>> nametags
   ) throws VerificationException {
     Objects.requireNonNull(token, "Token is null");
@@ -137,7 +137,7 @@ public class StateTransitionClient {
    * @return A CompletableFuture that resolves to the inclusion proof verification status.
    */
   public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
-      Token<? extends MintTransactionData<?>> token,
+      Token<?> token,
       byte[] publicKey,
       RootTrustBase trustBase
   ) {

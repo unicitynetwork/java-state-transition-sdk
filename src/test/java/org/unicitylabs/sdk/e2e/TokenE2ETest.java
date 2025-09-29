@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.common.CommonTestFlow;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
 public class TokenE2ETest extends CommonTestFlow {
+
   private AggregatorClient aggregatorClient;
 
   @BeforeEach
@@ -31,9 +31,8 @@ public class TokenE2ETest extends CommonTestFlow {
 
     this.aggregatorClient = new AggregatorClient(aggregatorUrl);
     this.client = new StateTransitionClient(this.aggregatorClient);
-    this.trustBase = UnicityObjectMapper.JSON.readValue(
-        getClass().getResourceAsStream("/trust-base.json"),
-        RootTrustBase.class
+    this.trustBase = RootTrustBase.fromJson(
+        new String(getClass().getResourceAsStream("/trust-base.json").readAllBytes())
     );
   }
 

@@ -1,10 +1,13 @@
 
 package org.unicitylabs.sdk.transaction.split;
 
+import java.util.List;
+import java.util.Objects;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePath;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.token.fungible.CoinId;
-import java.util.Objects;
 
 public class SplitMintReasonProof {
 
@@ -34,5 +37,23 @@ public class SplitMintReasonProof {
 
   public SparseMerkleSumTreePath getCoinTreePath() {
     return this.coinTreePath;
+  }
+
+  public static SplitMintReasonProof fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SplitMintReasonProof(
+        new CoinId(CborDeserializer.readByteString(data.get(0))),
+        SparseMerkleTreePath.fromCbor(data.get(1)),
+        SparseMerkleSumTreePath.fromCbor(data.get(2))
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeByteString(this.coinId.getBytes()),
+        this.aggregationPath.toCbor(),
+        this.coinTreePath.toCbor()
+    );
   }
 }

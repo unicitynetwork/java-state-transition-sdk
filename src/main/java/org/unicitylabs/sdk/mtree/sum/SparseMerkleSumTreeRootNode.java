@@ -1,19 +1,17 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.mtree.CommonPath;
-import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePath.Root;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
-import org.unicitylabs.sdk.util.BigIntegerConverter;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.mtree.CommonPath;
+import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePath.Root;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
 
 public class SparseMerkleSumTreeRootNode {
 
@@ -30,38 +28,39 @@ public class SparseMerkleSumTreeRootNode {
   }
 
   static SparseMerkleSumTreeRootNode create(
-      FinalizedBranch left, FinalizedBranch right,
-      HashAlgorithm hashAlgorithm) {
-    try {
-      DataHash rootHash = new DataHasher(hashAlgorithm)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-              UnicityObjectMapper.CBOR.createArrayNode()
-                  .add(
-                      left == null
-                          ? null
-                          : UnicityObjectMapper.CBOR.createArrayNode()
-                              .add(left.getHash().getImprint())
-                              .add(BigIntegerConverter.encode(left.getCounter()))
-                  )
-                  .add(
-                      right == null
-                          ? null
-                          : UnicityObjectMapper.CBOR.createArrayNode()
-                              .add(right.getHash().getImprint())
-                              .add(BigIntegerConverter.encode(right.getCounter()))
-                  )
-          ))
-          .digest();
+      FinalizedBranch left,
+      FinalizedBranch right,
+      HashAlgorithm hashAlgorithm
+  ) {
+    DataHash rootHash = new DataHasher(hashAlgorithm)
+        .update(
+            CborSerializer.encodeArray(
+                left == null
+                    ? CborSerializer.encodeNull()
+                    : CborSerializer.encodeArray(
+                        CborSerializer.encodeByteString(left.getHash().getImprint()),
+                        CborSerializer.encodeByteString(
+                            BigIntegerConverter.encode(left.getCounter())
+                        )
+                    ),
+                right == null
+                    ? CborSerializer.encodeNull()
+                    : CborSerializer.encodeArray(
+                        CborSerializer.encodeByteString(right.getHash().getImprint()),
+                        CborSerializer.encodeByteString(
+                            BigIntegerConverter.encode(right.getCounter())
+                        )
+                    )
+            )
+        )
+        .digest();
 
-      BigInteger counter = BigInteger.ZERO
-          .add(left == null ? BigInteger.ZERO : left.getCounter())
-          .add(right == null ? BigInteger.ZERO : right.getCounter());
-      Root root = new Root(rootHash, counter);
+    BigInteger counter = BigInteger.ZERO
+        .add(left == null ? BigInteger.ZERO : left.getCounter())
+        .add(right == null ? BigInteger.ZERO : right.getCounter());
+    Root root = new Root(rootHash, counter);
 
-      return new SparseMerkleSumTreeRootNode(left, right, root);
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+    return new SparseMerkleSumTreeRootNode(left, right, root);
   }
 
   public Root getRoot() {

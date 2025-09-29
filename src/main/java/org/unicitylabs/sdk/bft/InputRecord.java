@@ -1,11 +1,17 @@
 package org.unicitylabs.sdk.bft;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class InputRecord {
-
   private final int version;
   private final long roundNumber;
   private final long epoch;
@@ -17,17 +23,18 @@ public class InputRecord {
   private final long sumOfEarnedFees;
   private final byte[] executedTransactionsHash;
 
-  public InputRecord(
-      int version,
-      long roundNumber,
-      long epoch,
-      byte[] previousHash,
-      byte[] hash,
-      byte[] summaryValue,
-      long timestamp,
-      byte[] blockHash,
-      long sumOfEarnedFees,
-      byte[] executedTransactionsHash
+  @JsonCreator
+  InputRecord(
+      @JsonProperty("version") int version,
+      @JsonProperty("roundNumber") long roundNumber,
+      @JsonProperty("epoch") long epoch,
+      @JsonProperty("previousHash") byte[] previousHash,
+      @JsonProperty("hash") byte[] hash,
+      @JsonProperty("summaryValue") byte[] summaryValue,
+      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty("blockHash") byte[] blockHash,
+      @JsonProperty("sumOfEarnedFees") long sumOfEarnedFees,
+      @JsonProperty("executedTransactionsHash") byte[] executedTransactionsHash
   ) {
     Objects.requireNonNull(hash, "Hash cannot be null");
     Objects.requireNonNull(summaryValue, "Summary value cannot be null");
@@ -44,44 +51,89 @@ public class InputRecord {
     this.executedTransactionsHash = executedTransactionsHash;
   }
 
+  @JsonGetter("version")
   public int getVersion() {
     return this.version;
   }
 
+  @JsonGetter("roundNumber")
   public long getRoundNumber() {
     return this.roundNumber;
   }
 
+  @JsonGetter("epoch")
   public long getEpoch() {
     return this.epoch;
   }
 
+  @JsonGetter("previousHash")
   public byte[] getPreviousHash() {
     return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length) : null;
   }
 
+  @JsonGetter("hash")
   public byte[] getHash() {
-    return this.hash != null ? Arrays.copyOf(this.hash, this.hash.length) : null;
+    return Arrays.copyOf(this.hash, this.hash.length);
   }
 
+  @JsonGetter("summaryValue")
   public byte[] getSummaryValue() {
     return Arrays.copyOf(this.summaryValue, this.summaryValue.length);
   }
 
+  @JsonGetter("timestamp")
   public long getTimestamp() {
     return this.timestamp;
   }
 
+  @JsonGetter("blockHash")
   public byte[] getBlockHash() {
     return this.blockHash != null ? Arrays.copyOf(this.blockHash, this.blockHash.length) : null;
   }
 
+  @JsonGetter("sumOfEarnedFees")
   public long getSumOfEarnedFees() {
     return this.sumOfEarnedFees;
   }
 
+  @JsonGetter("executedTransactionsHash")
   public byte[] getExecutedTransactionsHash() {
     return this.executedTransactionsHash != null ? Arrays.copyOf(this.executedTransactionsHash, this.executedTransactionsHash.length) : null;
+  }
+
+  public static InputRecord fromCbor(byte[] bytes) {
+    CborTag tag = CborDeserializer.readTag(bytes);
+    List<byte[]> data = CborDeserializer.readArray(tag.getData());
+
+    return new InputRecord(
+        CborDeserializer.readUnsignedInteger(data.get(0)).asInt(),
+        CborDeserializer.readUnsignedInteger(data.get(1)).asLong(),
+        CborDeserializer.readUnsignedInteger(data.get(2)).asLong(),
+        CborDeserializer.readOptional(data.get(3), CborDeserializer::readByteString),
+        CborDeserializer.readByteString(data.get(4)),
+        CborDeserializer.readByteString(data.get(5)),
+        CborDeserializer.readUnsignedInteger(data.get(6)).asLong(),
+        CborDeserializer.readOptional(data.get(7), CborDeserializer::readByteString),
+        CborDeserializer.readUnsignedInteger(data.get(8)).asLong(),
+        CborDeserializer.readOptional(data.get(9), CborDeserializer::readByteString)
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeTag(
+        1008,
+        CborSerializer.encodeArray(
+            CborSerializer.encodeUnsignedInteger(this.version),
+            CborSerializer.encodeUnsignedInteger(this.roundNumber),
+            CborSerializer.encodeUnsignedInteger(this.epoch),
+            CborSerializer.encodeOptional(this.previousHash, CborSerializer::encodeByteString),
+            CborSerializer.encodeByteString(this.hash),
+            CborSerializer.encodeByteString(this.summaryValue),
+            CborSerializer.encodeUnsignedInteger(this.timestamp),
+            CborSerializer.encodeOptional(this.blockHash, CborSerializer::encodeByteString),
+            CborSerializer.encodeUnsignedInteger(this.sumOfEarnedFees),
+            CborSerializer.encodeOptional(this.executedTransactionsHash, CborSerializer::encodeByteString)
+        ));
   }
 
   @Override

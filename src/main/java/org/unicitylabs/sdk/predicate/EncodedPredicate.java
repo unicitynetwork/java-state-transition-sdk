@@ -1,15 +1,23 @@
 package org.unicitylabs.sdk.predicate;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
+@JsonSerialize(using = SerializablePredicateJson.Serializer.class)
+@JsonDeserialize(using = SerializablePredicateJson.Deserializer.class)
 public class EncodedPredicate implements SerializablePredicate {
   private final PredicateEngineType engine;
   private final byte[] code;
   private final byte[] parameters;
 
-  public EncodedPredicate(PredicateEngineType engine, byte[] code, byte[] parameters) {
+
+  EncodedPredicate(PredicateEngineType engine, byte[] code, byte[] parameters) {
     Objects.requireNonNull(code, "Code must not be null");
     Objects.requireNonNull(parameters, "Parameters must not be null");
 
@@ -30,6 +38,16 @@ public class EncodedPredicate implements SerializablePredicate {
   @Override
   public byte[] encodeParameters() {
     return Arrays.copyOf(this.parameters, this.parameters.length);
+  }
+
+  public static EncodedPredicate fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new EncodedPredicate(
+        PredicateEngineType.values()[CborDeserializer.readUnsignedInteger(data.get(0)).asInt()],
+        CborDeserializer.readByteString(data.get(1)),
+        CborDeserializer.readByteString(data.get(2))
+    );
   }
 
   @Override

@@ -1,44 +1,59 @@
 package org.unicitylabs.sdk.token;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
+import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.verification.VerificationResult;
 
-public class Token<T extends MintTransactionData<?>> {
+@JsonIgnoreProperties()
+public class Token<R extends MintTransactionReason> {
 
   public static final String TOKEN_VERSION = "2.0";
 
   private final TokenState state;
-  private final Transaction<T> genesis;
-  private final List<Transaction<TransferTransactionData>> transactions;
+  private final MintTransaction<R> genesis;
+  private final List<TransferTransaction> transactions;
   private final List<Token<?>> nametags;
 
-  public Token(
+  @JsonCreator
+  Token(
+      @JsonProperty("state")
       TokenState state,
-      Transaction<T> genesis,
-      List<Transaction<TransferTransactionData>> transactions,
+      @JsonProperty("genesis")
+      MintTransaction<R> genesis,
+      @JsonProperty("transactions")
+      List<TransferTransaction> transactions,
+      @JsonProperty("nametags")
       List<Token<?>> nametags
   ) {
     Objects.requireNonNull(state, "State cannot be null");
@@ -52,22 +67,27 @@ public class Token<T extends MintTransactionData<?>> {
     this.nametags = List.copyOf(nametags);
   }
 
+  @JsonIgnore
   public TokenId getId() {
     return this.genesis.getData().getTokenId();
   }
 
+  @JsonIgnore
   public TokenType getType() {
     return this.genesis.getData().getTokenType();
   }
 
+  @JsonIgnore
   public Optional<byte[]> getData() {
     return this.genesis.getData().getTokenData();
   }
 
+  @JsonIgnore
   public Optional<TokenCoinData> getCoins() {
     return this.genesis.getData().getCoinData();
   }
 
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   public String getVersion() {
     return TOKEN_VERSION;
   }
@@ -76,11 +96,11 @@ public class Token<T extends MintTransactionData<?>> {
     return this.state;
   }
 
-  public Transaction<T> getGenesis() {
+  public MintTransaction<R> getGenesis() {
     return this.genesis;
   }
 
-  public List<Transaction<TransferTransactionData>> getTransactions() {
+  public List<TransferTransaction> getTransactions() {
     return this.transactions;
   }
 
@@ -88,18 +108,18 @@ public class Token<T extends MintTransactionData<?>> {
     return this.nametags;
   }
 
-  public static <T extends MintTransactionData<?>> Token<T> create(
+  public static <R extends MintTransactionReason> Token<R> create(
       RootTrustBase trustBase,
       TokenState state,
-      Transaction<T> transaction
+      MintTransaction<R> transaction
   ) throws VerificationException {
     return Token.create(trustBase, state, transaction, List.of());
   }
 
-  public static <T extends MintTransactionData<?>> Token<T> create(
+  public static <R extends MintTransactionReason> Token<R> create(
       RootTrustBase trustBase,
       TokenState state,
-      Transaction<T> transaction,
+      MintTransaction<R> transaction,
       List<Token<?>> nametags
   ) throws VerificationException {
     Objects.requireNonNull(state, "State cannot be null");
@@ -107,7 +127,7 @@ public class Token<T extends MintTransactionData<?>> {
     Objects.requireNonNull(trustBase, "Trust base cannot be null");
     Objects.requireNonNull(nametags, "Nametag tokens cannot be null");
 
-    Token<T> token = new Token<>(state, transaction, List.of(), nametags);
+    Token<R> token = new Token<>(state, transaction, List.of(), nametags);
     VerificationResult result = token.verify(trustBase);
     if (!result.isSuccessful()) {
       throw new VerificationException("Token verification failed", result);
@@ -116,10 +136,10 @@ public class Token<T extends MintTransactionData<?>> {
     return token;
   }
 
-  public Token<T> update(
+  public Token<R> update(
       RootTrustBase trustBase,
       TokenState state,
-      Transaction<TransferTransactionData> transaction,
+      TransferTransaction transaction,
       List<Token<?>> nametags
   ) throws VerificationException {
     Objects.requireNonNull(state, "State cannot be null");
@@ -133,12 +153,10 @@ public class Token<T extends MintTransactionData<?>> {
       throw new VerificationException("Transaction verification failed", result);
     }
 
-    LinkedList<Transaction<TransferTransactionData>> transactions = new LinkedList<>(
-        this.transactions
-    );
+    LinkedList<TransferTransaction> transactions = new LinkedList<>(this.transactions);
     transactions.add(transaction);
 
-    return new Token<>(state, this.getGenesis(), transactions, nametags);
+    return new Token<>(state, this.genesis, transactions, nametags);
   }
 
   public VerificationResult verify(RootTrustBase trustBase) {
@@ -150,7 +168,7 @@ public class Token<T extends MintTransactionData<?>> {
     );
 
     for (int i = 0; i < this.transactions.size(); i++) {
-      Transaction<TransferTransactionData> transaction = this.transactions.get(i);
+      TransferTransaction transaction = this.transactions.get(i);
 
       results.add(
           VerificationResult.fromChildren(
@@ -181,7 +199,7 @@ public class Token<T extends MintTransactionData<?>> {
 
   private static VerificationResult verifyTransaction(
       Token<?> token,
-      Transaction<TransferTransactionData> transaction,
+      TransferTransaction transaction,
       RootTrustBase trustBase
   ) {
     for (Token<?> nametag : token.getNametags()) {
@@ -202,9 +220,9 @@ public class Token<T extends MintTransactionData<?>> {
       return VerificationResult.fail("recipient mismatch");
     }
 
-    if (!Token.transactionContainsData(
-        previousTransaction.getData().getRecipientDataHash().orElse(null),
-        token.getState().getData().orElse(null))) {
+    if (!previousTransaction.containsRecipientDataHash(
+        token.getState().getData().orElse(null))
+    ) {
       return VerificationResult.fail("data mismatch");
     }
 
@@ -215,8 +233,8 @@ public class Token<T extends MintTransactionData<?>> {
     return VerificationResult.success();
   }
 
-  private static <T extends MintTransactionData<?>> VerificationResult verifyGenesis(
-      Transaction<T> transaction,
+  private static VerificationResult verifyGenesis(
+      MintTransaction<?> transaction,
       RootTrustBase trustBase
   ) {
     if (transaction.getInclusionProof().getAuthenticator().isEmpty()) {
@@ -268,18 +286,57 @@ public class Token<T extends MintTransactionData<?>> {
     return VerificationResult.success();
   }
 
-  private static boolean transactionContainsData(DataHash hash, byte[] stateData) {
-    if ((hash == null) != (stateData == null)) {
-      return false;
+  public static Token<?> fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+    String version = CborDeserializer.readTextString(data.get(0));
+    if (!Token.TOKEN_VERSION.equals(version)) {
+      throw new CborSerializationException("Invalid version: " + version);
     }
 
-    if (hash == null) {
-      return true;
-    }
+    return new Token<>(
+        TokenState.fromCbor(data.get(1)),
+        MintTransaction.fromCbor(data.get(2)),
+        CborDeserializer.readArray(data.get(3)).stream()
+            .map(TransferTransaction::fromCbor)
+            .collect(Collectors.toList()),
+        CborDeserializer.readArray(data.get(4)).stream()
+            .map(Token::fromCbor)
+            .collect(Collectors.toList())
+    );
+  }
 
-    DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
-    hasher.update(stateData);
-    return hasher.digest().equals(hash);
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeTextString(TOKEN_VERSION),
+        this.state.toCbor(),
+        this.genesis.toCbor(),
+        CborSerializer.encodeArray(
+            this.transactions.stream()
+                .map(TransferTransaction::toCbor)
+                .toArray(byte[][]::new)
+        ),
+        CborSerializer.encodeArray(
+            this.nametags.stream()
+                .map(Token::toCbor)
+                .toArray(byte[][]::new)
+        )
+    );
+  }
+
+  public static Token<?> fromJson(String input) {
+    try {
+      return UnicityObjectMapper.JSON.readValue(input, Token.class);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(Token.class, e);
+    }
+  }
+
+  public String toJson() {
+    try {
+      return UnicityObjectMapper.JSON.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(Token.class, e);
+    }
   }
 
   @Override

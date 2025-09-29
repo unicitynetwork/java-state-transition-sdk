@@ -23,10 +23,11 @@ public class CborDeserializer {
     return reader.apply(data);
   }
 
-  public static long readUnsignedInteger(byte[] data) {
+  public static CborNumber readUnsignedInteger(byte[] data) {
     CborReader reader = new CborReader(data);
-    return reader.readLength(CborMajorType.UNSIGNED_INTEGER);
+    return new CborNumber(reader.readLength(CborMajorType.UNSIGNED_INTEGER));
   }
+
 
   public static byte[] readByteString(byte[] data) {
     CborReader reader = new CborReader(data);
@@ -196,6 +197,41 @@ public class CborDeserializer {
 
     public byte[] getData() {
       return Arrays.copyOf(this.data, this.data.length);
+    }
+  }
+
+  public static class CborNumber {
+    private final long value;
+
+    public CborNumber(long value) {
+      this.value = value;
+    }
+
+    public long asLong() {
+      return this.value;
+    }
+
+    public int asInt() {
+      if (Long.compareUnsigned(this.value, 0xFFFFFFFFL) > 0) {
+        throw new ArithmeticException("Value too large");
+      }
+      return (int) this.value;
+    }
+
+    public byte asByte() {
+      if (Long.compareUnsigned(this.value, 0xFFL) > 0) {
+        throw new ArithmeticException("Value too large");
+      }
+
+      return (byte) this.value;
+    }
+
+    public short asShort() {
+      if (Long.compareUnsigned(this.value, 0xFFFFL) > 0) {
+        throw new ArithmeticException("Value too large");
+      }
+
+      return (short) this.value;
     }
   }
 }

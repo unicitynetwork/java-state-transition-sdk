@@ -5,7 +5,7 @@ import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.common.split.BaseTokenSplitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.utils.RootTrustBaseUtils;
+import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 
 public class FunctionalTokenSplitTest extends BaseTokenSplitTest {
   @BeforeEach

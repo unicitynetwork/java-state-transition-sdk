@@ -1,8 +1,15 @@
 package org.unicitylabs.sdk.bft;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
 public class UnicityTreeCertificate {
@@ -11,10 +18,11 @@ public class UnicityTreeCertificate {
   private final int partitionIdentifier;
   private final List<HashStep> steps;
 
-  public UnicityTreeCertificate(
-      int version,
-      int partitionIdentifier,
-      List<HashStep> steps
+  @JsonCreator
+  UnicityTreeCertificate(
+      @JsonProperty("version") int version,
+      @JsonProperty("partitionIdentifier") int partitionIdentifier,
+      @JsonProperty("steps") List<HashStep> steps
   ) {
     Objects.requireNonNull(steps, "Steps cannot be null");
 
@@ -23,16 +31,44 @@ public class UnicityTreeCertificate {
     this.steps = List.copyOf(steps);
   }
 
+  @JsonGetter("version")
   public int getVersion() {
     return this.version;
   }
 
+  @JsonGetter("partitionIdentifier")
   public int getPartitionIdentifier() {
     return this.partitionIdentifier;
   }
 
+  @JsonGetter("steps")
   public List<HashStep> getSteps() {
     return this.steps;
+  }
+
+  public static UnicityTreeCertificate fromCbor(byte[] bytes) {
+    CborTag tag = CborDeserializer.readTag(bytes);
+    List<byte[]> data = CborDeserializer.readArray(tag.getData());
+
+    return new UnicityTreeCertificate(
+        CborDeserializer.readUnsignedInteger(data.get(0)).asInt(),
+        CborDeserializer.readUnsignedInteger(data.get(1)).asInt(),
+        CborDeserializer.readArray(data.get(2)).stream()
+            .map(HashStep::fromCbor)
+            .collect(Collectors.toList())
+    );
+  }
+
+  public byte[] toCbor() {
+    return CborSerializer.encodeTag(
+        1014,
+        CborSerializer.encodeArray(
+            CborSerializer.encodeUnsignedInteger(this.version),
+            CborSerializer.encodeUnsignedInteger(this.partitionIdentifier),
+            CborSerializer.encodeArray(this.steps.stream()
+                .map(HashStep::toCbor)
+                .toArray(byte[][]::new))
+        ));
   }
 
   @Override
@@ -58,6 +94,7 @@ public class UnicityTreeCertificate {
   }
 
   public static class HashStep {
+
     private final int key;
     private final byte[] hash;
 
@@ -76,6 +113,21 @@ public class UnicityTreeCertificate {
       return Arrays.copyOf(this.hash, this.hash.length);
     }
 
+    public static HashStep fromCbor(byte[] bytes) {
+      List<byte[]> data = CborDeserializer.readArray(bytes);
+
+      return new HashStep(
+          CborDeserializer.readUnsignedInteger(data.get(0)).asInt(),
+          CborDeserializer.readByteString(data.get(1))
+      );
+    }
+
+    public byte[] toCbor() {
+      return CborSerializer.encodeArray(
+          CborSerializer.encodeUnsignedInteger(this.key),
+          CborSerializer.encodeByteString(this.hash)
+      );
+    }
 
     @Override
     public boolean equals(Object o) {

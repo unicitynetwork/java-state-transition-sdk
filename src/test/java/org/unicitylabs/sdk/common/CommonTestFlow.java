@@ -35,10 +35,10 @@ import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
+import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
@@ -106,7 +106,7 @@ public abstract class CommonTestFlow {
     ).get();
 
     // Create transfer transaction
-    Transaction<TransferTransactionData> aliceToBobTransferTransaction = aliceToBobTransferCommitment.toTransaction(
+    TransferTransaction aliceToBobTransferTransaction = aliceToBobTransferCommitment.toTransaction(
         aliceToBobTransferInclusionProof
     );
 
@@ -183,7 +183,7 @@ public abstract class CommonTestFlow {
         this.trustBase,
         bobToCarolTransferCommitment
     ).get();
-    Transaction<TransferTransactionData> bobToCarolTransaction = bobToCarolTransferCommitment.toTransaction(
+    TransferTransaction bobToCarolTransaction = bobToCarolTransferCommitment.toTransaction(
         bobToCarolInclusionProof
     );
 
@@ -230,7 +230,7 @@ public abstract class CommonTestFlow {
         carolToBobTransferCommitment
     ).get();
 
-    Transaction<TransferTransactionData> carolToBobTransaction = carolToBobTransferCommitment.toTransaction(
+    TransferTransaction carolToBobTransaction = carolToBobTransferCommitment.toTransaction(
         carolToBobInclusionProof
     );
 
@@ -302,7 +302,7 @@ public abstract class CommonTestFlow {
       throw new Exception("Failed to submit burn commitment");
     }
 
-    List<MintCommitment<MintTransactionData<SplitMintReason>>> splitCommitments = split.createSplitMintCommitments(
+    List<MintCommitment<SplitMintReason>> splitCommitments = split.createSplitMintCommitments(
         this.trustBase,
         burnCommitment.toTransaction(
             InclusionProofUtils.waitInclusionProof(
@@ -313,8 +313,8 @@ public abstract class CommonTestFlow {
         )
     );
 
-    List<Transaction<MintTransactionData<SplitMintReason>>> splitTransactions = new ArrayList<>();
-    for (MintCommitment<MintTransactionData<SplitMintReason>> commitment : splitCommitments) {
+    List<MintTransaction<SplitMintReason>> splitTransactions = new ArrayList<>();
+    for (MintCommitment<SplitMintReason> commitment : splitCommitments) {
       if (client.submitCommitment(commitment).get().getStatus() != SubmitCommitmentStatus.SUCCESS) {
         throw new Exception("Failed to submit split mint commitment");
       }

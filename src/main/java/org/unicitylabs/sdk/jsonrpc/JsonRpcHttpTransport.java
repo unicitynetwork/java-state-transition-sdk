@@ -1,6 +1,7 @@
 
 package org.unicitylabs.sdk.jsonrpc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import okhttp3.Call;
@@ -17,7 +18,6 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
  * JSON-RPC HTTP service.
  */
 public class JsonRpcHttpTransport {
-
   private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
 
   private final String url;
@@ -42,8 +42,11 @@ public class JsonRpcHttpTransport {
           .url(this.url)
           .post(
               RequestBody.create(
-                  UnicityObjectMapper.JSON.writeValueAsString(new JsonRpcRequest(method, params)),
-                  JsonRpcHttpTransport.MEDIA_TYPE_JSON)
+                  UnicityObjectMapper.JSON.writeValueAsString(
+                      new JsonRpcRequest(method, params)
+                  ),
+                  JsonRpcHttpTransport.MEDIA_TYPE_JSON
+              )
           )
           .build();
 
@@ -65,7 +68,8 @@ public class JsonRpcHttpTransport {
             JsonRpcResponse<T> data = UnicityObjectMapper.JSON.readValue(
                 body != null ? body.string() : "",
                 UnicityObjectMapper.JSON.getTypeFactory()
-                    .constructParametricType(JsonRpcResponse.class, resultType));
+                    .constructParametricType(JsonRpcResponse.class, resultType)
+            );
 
             if (data.getError() != null) {
 

@@ -9,7 +9,6 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.common.BaseEscrowSwapTest;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
 
 @Tag("integration")
@@ -21,9 +20,8 @@ public class E2EEscrowSwapTest extends BaseEscrowSwapTest {
     Assertions.assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
     this.client = new StateTransitionClient(new AggregatorClient(aggregatorUrl));
-    this.trustBase = UnicityObjectMapper.JSON.readValue(
-        getClass().getResourceAsStream("/trust-base.json"),
-        RootTrustBase.class
+    this.trustBase = RootTrustBase.fromJson(
+        new String(getClass().getResourceAsStream("/trust-base.json").readAllBytes())
     );
   }
 }
