@@ -1,17 +1,18 @@
 package org.unicitylabs.sdk.mtree.sum;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
+import java.util.Objects;
+import java.util.Optional;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
 
+/**
+ * Step in a sparse merkle sum tree path.
+ */
 public class SparseMerkleSumTreePathStep {
 
   private final BigInteger path;
@@ -55,7 +56,7 @@ public class SparseMerkleSumTreePathStep {
     );
   }
 
-  public SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -63,18 +64,39 @@ public class SparseMerkleSumTreePathStep {
     this.branch = branch;
   }
 
+  /**
+   * Get path of the step.
+   *
+   * @return path
+   */
   public BigInteger getPath() {
     return this.path;
   }
 
+  /**
+   * Get sibling branch.
+   *
+   * @return sibling branch
+   */
   public Optional<Branch> getSibling() {
     return Optional.ofNullable(this.sibling);
   }
 
+  /**
+   * Get branch at this step (can be null for non-leaf steps).
+   *
+   * @return branch
+   */
   public Optional<Branch> getBranch() {
     return Optional.ofNullable(this.branch);
   }
 
+  /**
+   * Create a step from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return step
+   */
   public static SparseMerkleSumTreePathStep fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -85,6 +107,11 @@ public class SparseMerkleSumTreePathStep {
     );
   }
 
+  /**
+   * Convert step to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeByteString(BigIntegerConverter.encode(this.path)),
@@ -114,26 +141,45 @@ public class SparseMerkleSumTreePathStep {
         this.path.toString(2), this.sibling, this.branch);
   }
 
+  /**
+   * A branch in the sparse merkle sum tree.
+   */
   public static class Branch {
 
     private final byte[] value;
     private final BigInteger counter;
 
-    public Branch(byte[] value, BigInteger counter) {
+    Branch(byte[] value, BigInteger counter) {
       Objects.requireNonNull(counter, "counter cannot be null");
 
       this.value = value == null ? null : Arrays.copyOf(value, value.length);
       this.counter = counter;
     }
 
+    /**
+     * Get branch value.
+     *
+     * @return value
+     */
     public byte[] getValue() {
       return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
     }
 
+    /**
+     * Get the counter.
+     *
+     * @return counter
+     */
     public BigInteger getCounter() {
       return this.counter;
     }
 
+    /**
+     * Create branch from CBOR bytes.
+     *
+     * @param bytes CBOR bytes
+     * @return branch
+     */
     public static Branch fromCbor(byte[] bytes) {
       List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -143,6 +189,11 @@ public class SparseMerkleSumTreePathStep {
       );
     }
 
+    /**
+     * Convert branch to CBOR bytes.
+     *
+     * @return CBOR bytes
+     */
     public byte[] toCbor() {
       return CborSerializer.encodeArray(
           CborSerializer.encodeOptional(this.value, CborSerializer::encodeByteString),

@@ -18,6 +18,9 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
+/**
+ * Sparse merkle tree path for selected path.
+ */
 public class SparseMerkleTreePath {
 
   private final DataHash rootHash;
@@ -37,16 +40,31 @@ public class SparseMerkleTreePath {
     this.steps = List.copyOf(steps);
   }
 
+  /**
+   * Get root hash.
+   *
+   * @return root hash
+   */
   @JsonGetter("root")
   public DataHash getRootHash() {
     return this.rootHash;
   }
 
-  @JsonGetter("steps")
+  /**
+   * Get steps to root.
+   *
+   * @return steps
+   */
   public List<SparseMerkleTreePathStep> getSteps() {
     return this.steps;
   }
 
+  /**
+   * Verify merkle tree path against given path.
+   *
+   * @param requestId path
+   * @return true if successful
+   */
   public MerkleTreePathVerificationResult verify(BigInteger requestId) {
     BigInteger currentPath = BigInteger.ONE; // Root path is always 1
     DataHash currentHash = null;
@@ -72,7 +90,8 @@ public class SparseMerkleTreePath {
             .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
       }
 
-      byte[] siblingHash = step.getSibling().map(SparseMerkleTreePathStep.Branch::getValue).orElse(new byte[]{0});
+      byte[] siblingHash = step.getSibling().map(SparseMerkleTreePathStep.Branch::getValue)
+          .orElse(new byte[]{0});
       boolean isRight = step.getPath().testBit(0);
       currentHash = new DataHasher(HashAlgorithm.SHA256).update(isRight ? siblingHash : hash)
           .update(isRight ? hash : siblingHash).digest();
@@ -82,6 +101,12 @@ public class SparseMerkleTreePath {
         currentPath.equals(requestId));
   }
 
+  /**
+   * Create sparse merkle tree path from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return path
+   */
   public static SparseMerkleTreePath fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -93,6 +118,11 @@ public class SparseMerkleTreePath {
     );
   }
 
+  /**
+   * Convert sparse merkle tree path to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         this.rootHash.toCbor(),
@@ -104,6 +134,12 @@ public class SparseMerkleTreePath {
     );
   }
 
+  /**
+   * Create sparse merkle tree path from JSON string.
+   *
+   * @param input JSON string
+   * @return path
+   */
   public static SparseMerkleTreePath fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, SparseMerkleTreePath.class);
@@ -112,6 +148,11 @@ public class SparseMerkleTreePath {
     }
   }
 
+  /**
+   * Convert sparse merkle tree path to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);

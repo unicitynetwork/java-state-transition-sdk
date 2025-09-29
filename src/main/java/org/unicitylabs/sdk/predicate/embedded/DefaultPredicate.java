@@ -20,7 +20,7 @@ import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
- * Base class for unmasked and masked predicates
+ * Base class for unmasked and masked predicates.
  */
 public abstract class DefaultPredicate implements Predicate {
 
@@ -32,6 +32,17 @@ public abstract class DefaultPredicate implements Predicate {
   private final HashAlgorithm hashAlgorithm;
   private final byte[] nonce;
 
+  /**
+   * Create default functionality for masked and unmasked predicate.
+   *
+   * @param type             predicate type
+   * @param tokenId          token id
+   * @param tokenType        token type
+   * @param publicKey        public key
+   * @param signingAlgorithm signing algorithm
+   * @param hashAlgorithm    hash algorithm
+   * @param nonce            predicate nonce
+   */
   protected DefaultPredicate(
       EmbeddedPredicateType type,
       TokenId tokenId,
@@ -57,30 +68,65 @@ public abstract class DefaultPredicate implements Predicate {
     this.nonce = Arrays.copyOf(nonce, nonce.length);
   }
 
+  /**
+   * Get predicate type.
+   *
+   * @return predicate type
+   */
   public EmbeddedPredicateType getType() {
     return this.type;
   }
 
+  /**
+   * Get token id.
+   *
+   * @return token id
+   */
   public TokenId getTokenId() {
     return this.tokenId;
   }
 
+  /**
+   * Get token type.
+   *
+   * @return token type
+   */
   public TokenType getTokenType() {
     return this.tokenType;
   }
 
+  /**
+   * Get public key associated with predicate.
+   *
+   * @return public key
+   */
   public byte[] getPublicKey() {
     return Arrays.copyOf(this.publicKey, this.publicKey.length);
   }
 
+  /**
+   * Get signing algorithm used with predicate.
+   *
+   * @return signing algorithm
+   */
   public String getSigningAlgorithm() {
     return this.signingAlgorithm;
   }
 
+  /**
+   * Get hash algorithm used with predicate.
+   *
+   * @return hash algorithm
+   */
   public HashAlgorithm getHashAlgorithm() {
     return this.hashAlgorithm;
   }
 
+  /**
+   * Get predicate nonce.
+   *
+   * @return predicate nonce
+   */
   public byte[] getNonce() {
     return Arrays.copyOf(this.nonce, this.nonce.length);
   }
@@ -98,6 +144,11 @@ public abstract class DefaultPredicate implements Predicate {
         .digest();
   }
 
+  /**
+   * Get predicate reference.
+   *
+   * @return predicate reference
+   */
   public abstract PredicateReference getReference();
 
   @Override
@@ -149,12 +200,12 @@ public abstract class DefaultPredicate implements Predicate {
   @Override
   public byte[] encodeParameters() {
     return CborSerializer.encodeArray(
-      this.tokenId.toCbor(),
-      this.tokenType.toCbor(),
-      CborSerializer.encodeByteString(this.publicKey),
-      CborSerializer.encodeTextString(this.signingAlgorithm),
-      CborSerializer.encodeUnsignedInteger(this.hashAlgorithm.getValue()),
-      CborSerializer.encodeByteString(this.nonce)
+        this.tokenId.toCbor(),
+        this.tokenType.toCbor(),
+        CborSerializer.encodeByteString(this.publicKey),
+        CborSerializer.encodeTextString(this.signingAlgorithm),
+        CborSerializer.encodeUnsignedInteger(this.hashAlgorithm.getValue()),
+        CborSerializer.encodeByteString(this.nonce)
     );
   }
 
@@ -181,7 +232,14 @@ public abstract class DefaultPredicate implements Predicate {
   @Override
   public String toString() {
     return String.format(
-        "DefaultPredicate{type=%s, tokenId=%s, tokenType=%s, publicKey=%s, algorithm=%s, hashAlgorithm=%s, nonce=%s}",
+        "DefaultPredicate{"
+            + "type=%s, "
+            + "tokenId=%s, "
+            + "tokenType=%s, "
+            + "publicKey=%s, "
+            + "algorithm=%s, "
+            + "hashAlgorithm=%s, "
+            + "nonce=%s}",
         this.type,
         this.tokenId,
         this.tokenType,

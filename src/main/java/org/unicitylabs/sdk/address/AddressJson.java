@@ -10,39 +10,64 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
-import org.unicitylabs.sdk.predicate.SerializablePredicate;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 
+/**
+ * Address serializer and deserializer implementation.
+ */
 public class AddressJson {
 
   private AddressJson() {
   }
 
+  /**
+   * Address serializer.
+   */
   public static class Serializer extends StdSerializer<Address> {
 
+    /**
+     * Create serializer.
+     */
     public Serializer() {
       super(Address.class);
     }
 
+    /**
+     * Serialize address.
+     *
+     * @param value       addess
+     * @param gen         json generator
+     * @param serializers serializer provider
+     * @throws IOException on serialization failure
+     */
     @Override
     public void serialize(Address value, JsonGenerator gen,
         SerializerProvider serializers)
         throws IOException {
-      if (value == null) {
-        gen.writeNull();
-        return;
-      }
-
       gen.writeObject(value.toString());
     }
   }
 
+  /**
+   * Address deserializer.
+   */
   public static class Deserializer extends StdDeserializer<Address> {
 
+    /**
+     * Create deserializer.
+     */
     public Deserializer() {
       super(Address.class);
     }
 
+    /**
+     * Deserialize address.
+     *
+     * @param p   Parser used for reading JSON content
+     * @param ctx Context that can be used to access information about this deserialization
+     *            activity.
+     * @return address
+     * @throws IOException on deserialization failure
+     */
     @Override
     public Address deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {

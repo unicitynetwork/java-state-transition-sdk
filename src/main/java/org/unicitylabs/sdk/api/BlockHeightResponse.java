@@ -1,13 +1,15 @@
 package org.unicitylabs.sdk.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Objects;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 
+/**
+ * Block height response.
+ */
 public class BlockHeightResponse {
 
   private final long blockNumber;
@@ -19,11 +21,21 @@ public class BlockHeightResponse {
     this.blockNumber = blockNumber;
   }
 
-  @JsonGetter("blockNumber")
+  /**
+   * Get block height.
+   *
+   * @return block height
+   */
   public long getBlockNumber() {
     return this.blockNumber;
   }
 
+  /**
+   * Create response from JSON string.
+   *
+   * @param input JSON string
+   * @return block height response
+   */
   public static BlockHeightResponse fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, BlockHeightResponse.class);
@@ -32,6 +44,11 @@ public class BlockHeightResponse {
     }
   }
 
+  /**
+   * Convert response to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);

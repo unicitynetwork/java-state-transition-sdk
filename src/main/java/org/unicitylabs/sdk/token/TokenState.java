@@ -26,6 +26,12 @@ public class TokenState {
   private final SerializablePredicate predicate;
   private final byte[] data;
 
+  /**
+   * Create token state.
+   *
+   * @param predicate current state predicate
+   * @param data      current state data
+   */
   @JsonCreator
   public TokenState(
       @JsonSerialize(using = SerializablePredicateJson.Serializer.class)
@@ -39,22 +45,43 @@ public class TokenState {
     this.data = data != null ? Arrays.copyOf(data, data.length) : null;
   }
 
+  /**
+   * Get current state predicate.
+   *
+   * @return state predicate
+   */
   public SerializablePredicate getPredicate() {
     return this.predicate;
   }
 
+  /**
+   * Get current state data.
+   *
+   * @return state data
+   */
   public Optional<byte[]> getData() {
     return this.data != null
         ? Optional.of(Arrays.copyOf(this.data, this.data.length))
         : Optional.empty();
   }
 
+  /**
+   * Calculate current state hash.
+   *
+   * @return state hash
+   */
   public DataHash calculateHash() {
     return new DataHasher(HashAlgorithm.SHA256)
         .update(this.toCbor())
         .digest();
   }
 
+  /**
+   * Create current state from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return current state
+   */
   public static TokenState fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -64,6 +91,11 @@ public class TokenState {
     );
   }
 
+  /**
+   * Convert current state to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeArray(

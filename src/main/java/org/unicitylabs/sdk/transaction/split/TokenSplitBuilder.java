@@ -1,5 +1,14 @@
 package org.unicitylabs.sdk.transaction.split;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
@@ -18,28 +27,33 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.transaction.MintTransaction;
-import org.unicitylabs.sdk.transaction.TransferTransaction;
-import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
+import org.unicitylabs.sdk.verification.VerificationException;
 
+/**
+ * Token splitting builder.
+ */
 public class TokenSplitBuilder {
 
   private final Map<TokenId, TokenRequest> tokens = new HashMap<>();
 
+  /**
+   * Create new token which will be created from selected token.
+   *
+   * @param id                new token id
+   * @param type              new token type
+   * @param data              new token data
+   * @param coinData          new token coin data
+   * @param recipient         new token recipient address
+   * @param salt              new token salt
+   * @param recipientDataHash new token recipient data hash
+   * @return current builder
+   */
   public TokenSplitBuilder createToken(
       TokenId id,
       TokenType type,
@@ -55,6 +69,14 @@ public class TokenSplitBuilder {
     return this;
   }
 
+  /**
+   * Split old token to new tokens.
+   *
+   * @param token token to be used for split
+   * @return token split object for submitting info
+   * @throws LeafOutOfBoundsException if building aggregation tree and coin tree fail
+   * @throws BranchExistsException    if building aggregation tree and coin tree fail
+   */
   public TokenSplit build(Token<?> token) throws LeafOutOfBoundsException, BranchExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
 
@@ -103,6 +125,9 @@ public class TokenSplitBuilder {
     );
   }
 
+  /**
+   * Token split request object.
+   */
   public static class TokenSplit {
 
     private final Token<?> token;
@@ -122,6 +147,13 @@ public class TokenSplitBuilder {
       this.tokens = tokens;
     }
 
+    /**
+     * Create burn commitment to burn token going through split.
+     *
+     * @param salt           burn commitment salt
+     * @param signingService signing service used to unlock token
+     * @return transfer commitment for sending to unicity service
+     */
     public TransferCommitment createBurnCommitment(byte[] salt, SigningService signingService) {
       return TransferCommitment.create(
           token,
@@ -136,6 +168,14 @@ public class TokenSplitBuilder {
       );
     }
 
+    /**
+     * Create split mint commitments after burn transaction is received.
+     *
+     * @param trustBase       trust base for burn transaction verification
+     * @param burnTransaction burn transaction
+     * @return list of mint commitments for sending to unicity service
+     * @throws VerificationException if token verification fails
+     */
     public List<MintCommitment<SplitMintReason>> createSplitMintCommitments(
         RootTrustBase trustBase,
         TransferTransaction burnTransaction
@@ -190,6 +230,9 @@ public class TokenSplitBuilder {
     }
   }
 
+  /**
+   * New token request for generating it out of burnt token.
+   */
   public static class TokenRequest {
 
     private final TokenId id;
@@ -200,7 +243,7 @@ public class TokenSplitBuilder {
     private final byte[] salt;
     private final DataHash recipientDataHash;
 
-    public TokenRequest(
+    TokenRequest(
         TokenId id,
         TokenType type,
         byte[] data,

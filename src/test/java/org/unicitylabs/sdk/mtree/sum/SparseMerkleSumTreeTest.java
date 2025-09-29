@@ -33,7 +33,7 @@ class SparseMerkleSumTreeTest {
       var verificationResult = path.verify(entry.getKey());
       Assertions.assertTrue(verificationResult.isPathIncluded());
       Assertions.assertTrue(verificationResult.isPathValid());
-      Assertions.assertTrue(verificationResult.isValid());
+      Assertions.assertTrue(verificationResult.isSuccessful());
 
       Assertions.assertEquals(root.getRoot().getCounter(), path.getRoot().getCounter());
       Assertions.assertEquals(root.getRoot(), path.getRoot());

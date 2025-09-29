@@ -4,26 +4,29 @@ package org.unicitylabs.sdk.transaction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.List;
-import java.util.function.Function;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import java.util.Objects;
-import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
-import org.unicitylabs.sdk.token.TokenState;
 
 
+/**
+ * Token transaction.
+ *
+ * @param <T> transaction data
+ */
 public abstract class Transaction<T extends TransactionData<?>> {
 
   private final T data;
   private final InclusionProof inclusionProof;
 
   @JsonCreator
-  public Transaction(@JsonProperty("data") T data, @JsonProperty("inclusionProof") InclusionProof inclusionProof) {
+  Transaction(
+      @JsonProperty("data") T data,
+      @JsonProperty("inclusionProof") InclusionProof inclusionProof
+  ) {
     Objects.requireNonNull(data, "Transaction data cannot be null");
     Objects.requireNonNull(inclusionProof, "Inclusion proof cannot be null");
 
@@ -31,14 +34,30 @@ public abstract class Transaction<T extends TransactionData<?>> {
     this.inclusionProof = inclusionProof;
   }
 
+  /**
+   * Get transaction data.
+   *
+   * @return transaction data
+   */
   public T getData() {
     return data;
   }
 
+  /**
+   * Get transaction inclusion proof.
+   *
+   * @return inclusion proof
+   */
   public InclusionProof getInclusionProof() {
     return inclusionProof;
   }
 
+  /**
+   * Verify if recipient data is added to transaction.
+   *
+   * @param stateData recipient data
+   * @return true if contains given data hash
+   */
   public boolean containsRecipientDataHash(byte[] stateData) {
     if (this.data.getRecipientDataHash().isPresent() == (stateData == null)) {
       return false;
@@ -53,6 +72,11 @@ public abstract class Transaction<T extends TransactionData<?>> {
     return hasher.digest().equals(this.data.getRecipientDataHash().orElse(null));
   }
 
+  /**
+   * Convert transaction to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);
@@ -61,6 +85,11 @@ public abstract class Transaction<T extends TransactionData<?>> {
     }
   }
 
+  /**
+   * Convert transaction to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         this.data.toCbor(),

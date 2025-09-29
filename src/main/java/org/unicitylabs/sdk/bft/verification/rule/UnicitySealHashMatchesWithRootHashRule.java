@@ -1,6 +1,5 @@
 package org.unicitylabs.sdk.bft.verification.rule;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -14,13 +13,25 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.verification.VerificationResult;
 import org.unicitylabs.sdk.verification.VerificationRule;
 
+/**
+ * Rule to verify that the UnicitySeal hash matches the root hash of the UnicityTreeCertificate.
+ */
 public class UnicitySealHashMatchesWithRootHashRule extends
     VerificationRule<UnicityCertificateVerificationContext> {
 
+  /**
+   * Create the rule without any subsequent rules.
+   */
   public UnicitySealHashMatchesWithRootHashRule() {
     this(null, null);
   }
 
+  /**
+   * Create the rule with subsequent rules for success and failure.
+   *
+   * @param onSuccessRule rule to execute on success
+   * @param onFailureRule rule to execute on failure
+   */
   public UnicitySealHashMatchesWithRootHashRule(
       VerificationRule<UnicityCertificateVerificationContext> onSuccessRule,
       VerificationRule<UnicityCertificateVerificationContext> onFailureRule
@@ -34,12 +45,13 @@ public class UnicitySealHashMatchesWithRootHashRule extends
 
   @Override
   public VerificationResult verify(UnicityCertificateVerificationContext context) {
-    DataHash shardTreeCertificateRootHash = UnicityCertificate.calculateShardTreeCertificateRootHash(
-        context.getUnicityCertificate().getInputRecord(),
-        context.getUnicityCertificate().getTechnicalRecordHash(),
-        context.getUnicityCertificate().getShardConfigurationHash(),
-        context.getUnicityCertificate().getShardTreeCertificate()
-    );
+    DataHash shardTreeCertificateRootHash = UnicityCertificate
+        .calculateShardTreeCertificateRootHash(
+            context.getUnicityCertificate().getInputRecord(),
+            context.getUnicityCertificate().getTechnicalRecordHash(),
+            context.getUnicityCertificate().getShardConfigurationHash(),
+            context.getUnicityCertificate().getShardTreeCertificate()
+        );
 
     if (shardTreeCertificateRootHash == null) {
       return VerificationResult.fail("Could not calculate shard tree certificate root hash.");

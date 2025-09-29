@@ -1,16 +1,16 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import java.math.BigInteger;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
-import java.math.BigInteger;
-import java.util.Objects;
-import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Finalized node branch in a sparse merkle sum tree.
+ */
 class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
 
   private final BigInteger path;
@@ -30,9 +30,21 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
     this.hash = hash;
   }
 
-  public static FinalizedNodeBranch create(BigInteger path, FinalizedBranch left,
-      FinalizedBranch right, HashAlgorithm hashAlgorithm) {
-
+  /**
+   * Create a finalized node branch.
+   *
+   * @param path          path of the branch
+   * @param left          left branch
+   * @param right         right branch
+   * @param hashAlgorithm hash algorithm to use
+   * @return finalized node branch
+   */
+  public static FinalizedNodeBranch create(
+      BigInteger path,
+      FinalizedBranch left,
+      FinalizedBranch right,
+      HashAlgorithm hashAlgorithm
+  ) {
     DataHash childrenHash = new DataHasher(hashAlgorithm)
         .update(
             CborSerializer.encodeArray(
@@ -63,30 +75,41 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
     return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
   }
 
+  @Override
   public BigInteger getPath() {
     return this.path;
   }
 
+  @Override
   public FinalizedBranch getLeft() {
     return this.left;
   }
 
+  @Override
   public FinalizedBranch getRight() {
     return this.right;
   }
 
+  @Override
   public BigInteger getCounter() {
     return this.counter;
   }
 
+  /**
+   * Get hash of the children (left and right).
+   *
+   * @return children hash
+   */
   public DataHash getChildrenHash() {
     return this.childrenHash;
   }
 
+  @Override
   public DataHash getHash() {
     return this.hash;
   }
 
+  @Override
   public FinalizedNodeBranch finalize(HashAlgorithm hashAlgorithm) {
     return this; // Already finalized
   }

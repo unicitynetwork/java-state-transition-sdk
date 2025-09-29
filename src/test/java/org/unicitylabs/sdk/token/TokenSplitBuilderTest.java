@@ -8,24 +8,21 @@ import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.UnicityCertificateUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
-import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathFixture;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.InclusionProofFixture;
 import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.MintTransactionFixture;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
-import org.unicitylabs.sdk.bft.UnicityCertificateUtils;
-import org.unicitylabs.sdk.util.HexConverter;
-import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenSplitBuilderTest {
@@ -49,7 +46,7 @@ public class TokenSplitBuilderTest {
 
     return new Token<>(
         new TokenState(predicate, null),
-        new MintTransaction<>(
+        MintTransactionFixture.create(
             new MintTransaction.Data<>(
                 tokenId,
                 tokenType,
@@ -121,9 +118,10 @@ public class TokenSplitBuilderTest {
         null
     );
 
-    Exception exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
-      builder.build(token);
-    });
+    Exception exception = Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> builder.build(token)
+    );
 
     Assertions.assertEquals("Token contained 100 CoinId{bytes=636f696e31} coins, but tree has 50",
         exception.getMessage());

@@ -4,8 +4,17 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngine;
 import org.unicitylabs.sdk.predicate.SerializablePredicate;
 
+/**
+ * Embedded predicate engine implementation.
+ */
 public class EmbeddedPredicateEngine implements PredicateEngine {
 
+  /**
+   * Create predicate from embedded predicate engine.
+   *
+   * @param predicate serializable predicate.
+   * @return predicate
+   */
   public Predicate create(SerializablePredicate predicate) {
     EmbeddedPredicateType type = EmbeddedPredicateType.fromBytes(predicate.encode());
     switch (type) {

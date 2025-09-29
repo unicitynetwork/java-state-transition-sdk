@@ -1,11 +1,15 @@
 package org.unicitylabs.sdk.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * JSON RPC response structure.
+ *
+ * @param <T> response type
+ */
 public class JsonRpcResponse<T> {
 
   private final String version;
@@ -20,28 +24,48 @@ public class JsonRpcResponse<T> {
       @JsonProperty("error") JsonRpcError error,
       @JsonProperty("id") UUID id
   ) {
+    if (!"2.0".equals(version)) {
+      throw new IllegalArgumentException("Invalid JSON-RPC version: " + version);
+    }
+
     this.version = version;
     this.result = result;
     this.error = error;
     this.id = id;
   }
 
-  @JsonGetter("jsonrpc")
+  /**
+   * Get JSON RPC version.
+   *
+   * @return version
+   */
   public String getVersion() {
     return this.version;
   }
 
-  @JsonGetter("result")
+  /**
+   * Get result if exists.
+   *
+   * @return result
+   */
   public T getResult() {
     return this.result;
   }
 
-  @JsonGetter("error")
+  /**
+   * Get error if exists.
+   *
+   * @return error
+   */
   public JsonRpcError getError() {
     return this.error;
   }
 
-  @JsonGetter("id")
+  /**
+   * Get id.
+   *
+   * @return id
+   */
   public UUID getId() {
     return this.id;
   }

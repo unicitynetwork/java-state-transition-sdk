@@ -13,6 +13,9 @@ import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePath.Root;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
+/**
+ * Sparse Merkle Sum Tree root node.
+ */
 public class SparseMerkleSumTreeRootNode {
 
   private final BigInteger path = BigInteger.ONE; // Root path is always 0
@@ -63,10 +66,21 @@ public class SparseMerkleSumTreeRootNode {
     return new SparseMerkleSumTreeRootNode(left, right, root);
   }
 
+  /**
+   * Get root of the tree.
+   *
+   * @return root
+   */
   public Root getRoot() {
     return this.root;
   }
 
+  /**
+   * Get path from the leaf to root.
+   *
+   * @param path path to the leaf
+   * @return path to the root
+   */
   public SparseMerkleSumTreePath getPath(BigInteger path) {
     return new SparseMerkleSumTreePath(
         this.root,

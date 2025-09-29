@@ -10,8 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
-import org.unicitylabs.sdk.token.Token;
 
+/**
+ * Root trust base information.
+ */
 public class RootTrustBase {
 
   private final long version;
@@ -60,56 +62,96 @@ public class RootTrustBase {
         );
   }
 
-  @JsonProperty("version")
+  /**
+   * Get version.
+   *
+   * @return version
+   */
   public long getVersion() {
     return this.version;
   }
 
-  @JsonProperty("networkId")
+  /**
+   * Get network id.
+   *
+   * @return network id
+   */
   public int getNetworkId() {
     return this.networkId;
   }
 
-  @JsonProperty("epoch")
+  /**
+   * Get current epoch.
+   *
+   * @return epoch
+   */
   public long getEpoch() {
     return this.epoch;
   }
 
-  @JsonProperty("epochStartRound")
+  /**
+   * Get epoch start round.
+   *
+   * @return epoch start round
+   */
   public long getEpochStartRound() {
     return this.epochStartRound;
   }
 
-  @JsonProperty("rootNodes")
+  /**
+   * Get root nodes.
+   *
+   * @return root nodes
+   */
   public Set<NodeInfo> getRootNodes() {
     return this.rootNodes;
   }
 
-  @JsonProperty("quorumThreshold")
+  /**
+   * Get quorum threshold.
+   *
+   * @return quorum threshold
+   */
   public long getQuorumThreshold() {
     return this.quorumThreshold;
   }
 
-  @JsonProperty("stateHash")
+  /**
+   * Get state hash.
+   *
+   * @return state hash
+   */
   public byte[] getStateHash() {
     return Arrays.copyOf(this.stateHash, this.stateHash.length);
   }
 
-  @JsonProperty("changeRecordHash")
+  /**
+   * Get change record hash.
+   *
+   * @return change record hash
+   */
   public byte[] getChangeRecordHash() {
     return this.changeRecordHash == null
         ? null
         : Arrays.copyOf(this.changeRecordHash, this.changeRecordHash.length);
   }
 
-  @JsonProperty("previousEntryHash")
+  /**
+   * Get previous entry hash.
+   *
+   * @return previous entry hash
+   */
   public byte[] getPreviousEntryHash() {
     return this.previousEntryHash == null
         ? null
         : Arrays.copyOf(this.previousEntryHash, this.previousEntryHash.length);
   }
 
-  @JsonProperty("signatures")
+  /**
+   * Get signatures.
+   *
+   * @return signatures
+   */
   public Map<String, byte[]> getSignatures() {
     return this.signatures.entrySet().stream()
         .collect(
@@ -120,7 +162,12 @@ public class RootTrustBase {
         );
   }
 
-
+  /**
+   * Create a root trust base from JSON string.
+   *
+   * @param input JSON string
+   * @return root trust base
+   */
   public static RootTrustBase fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, RootTrustBase.class);
@@ -129,6 +176,11 @@ public class RootTrustBase {
     }
   }
 
+  /**
+   * Convert root trust base to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);
@@ -137,8 +189,11 @@ public class RootTrustBase {
     }
   }
 
-
+  /**
+   * Node information.
+   */
   public static class NodeInfo {
+
     private final String nodeId;
     private final byte[] signingKey;
     private final long stakedAmount;
@@ -154,16 +209,30 @@ public class RootTrustBase {
       this.stakedAmount = stakedAmount;
     }
 
-    @JsonProperty("nodeId")
+    /**
+     * Get node ID.
+     *
+     * @return node ID
+     */
     public String getNodeId() {
       return this.nodeId;
     }
 
+    /**
+     * Get signing key.
+     *
+     * @return signing key
+     */
     @JsonProperty("sigKey")
     public byte[] getSigningKey() {
       return Arrays.copyOf(this.signingKey, this.signingKey.length);
     }
 
+    /**
+     * Get staked amount.
+     *
+     * @return staked amount
+     */
     @JsonProperty("stake")
     public long getStakedAmount() {
       return this.stakedAmount;

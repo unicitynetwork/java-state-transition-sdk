@@ -2,7 +2,6 @@
 package org.unicitylabs.sdk.transaction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
@@ -23,11 +22,13 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.util.HexConverter;
 
-
+/**
+ * Token transfer transaction.
+ */
 public class TransferTransaction extends Transaction<TransferTransaction.Data> {
 
   @JsonCreator
-  public TransferTransaction(
+  TransferTransaction(
       @JsonProperty("data")
       Data data,
       @JsonProperty("inclusionProof")
@@ -35,6 +36,12 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
     super(data, inclusionProof);
   }
 
+  /**
+   * Create transfer transaction from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return transfer transaction
+   */
   public static TransferTransaction fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -44,6 +51,12 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
     );
   }
 
+  /**
+   * Create transfer transaction from JSON string.
+   *
+   * @param input JSON string
+   * @return transfer transaction
+   */
   public static TransferTransaction fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, TransferTransaction.class);
@@ -53,9 +66,10 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
   }
 
   /**
-   * Transaction data for token state transitions
+   * Transaction data for token state transitions.
    */
   public static class Data implements TransactionData<TokenState> {
+
     private final TokenState sourceState;
     private final Address recipient;
     private final byte[] salt;
@@ -64,7 +78,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
     private final List<Token<?>> nametags;
 
     @JsonCreator
-    public Data(
+    Data(
         @JsonProperty("sourceState") TokenState sourceState,
         @JsonProperty("recipient") Address recipient,
         @JsonProperty("salt") byte[] salt,
@@ -85,44 +99,79 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
       this.nametags = List.copyOf(nametags);
     }
 
-    @JsonGetter("sourceState")
+    /**
+     * Get transaction source state.
+     *
+     * @return source state
+     */
     public TokenState getSourceState() {
       return this.sourceState;
     }
 
-    @JsonGetter("recipient")
+    /**
+     * Get transaction recipient address.
+     *
+     * @return recipient address
+     */
     public Address getRecipient() {
       return this.recipient;
     }
 
-    @JsonGetter("salt")
+    /**
+     * Get transaction salt.
+     *
+     * @return transaction salt
+     */
     public byte[] getSalt() {
       return Arrays.copyOf(this.salt, this.salt.length);
     }
 
-    @JsonGetter("recipientDataHash")
+    /**
+     * Get transaction recipient data hash.
+     *
+     * @return recipient data hash
+     */
     public Optional<DataHash> getRecipientDataHash() {
       return Optional.ofNullable(this.recipientDataHash);
     }
 
-    @JsonGetter("message")
+    /**
+     * Get transaction message.
+     *
+     * @return transaction message
+     */
     public Optional<byte[]> getMessage() {
       return this.message != null
           ? Optional.of(Arrays.copyOf(this.message, this.message.length))
           : Optional.empty();
     }
 
-    @JsonGetter("nametags")
+    /**
+     * Get transaction nametags.
+     *
+     * @return nametags
+     */
     public List<Token<?>> getNametags() {
       return this.nametags;
     }
 
+    /**
+     * Calculate transfer transaction data hash.
+     *
+     * @return transaction data hash
+     */
     public DataHash calculateHash() {
       return new DataHasher(HashAlgorithm.SHA256)
           .update(this.toCbor())
           .digest();
     }
 
+    /**
+     * Create transfer transaction data from CBOR bytes.
+     *
+     * @param bytes CBOR bytes
+     * @return transfer transaction
+     */
     public static Data fromCbor(byte[] bytes) {
       List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -138,6 +187,11 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
       );
     }
 
+    /**
+     * Convert transfer transaction data to CBOR bytes.
+     *
+     * @return CBOR bytes
+     */
     public byte[] toCbor() {
       return CborSerializer.encodeArray(
           this.sourceState.toCbor(),
@@ -153,6 +207,12 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
       );
     }
 
+    /**
+     * Create transfer transaction data from JSON string.
+     *
+     * @param input JSON string
+     * @return transfer transaction data
+     */
     public static Data fromJson(String input) {
       try {
         return UnicityObjectMapper.JSON.readValue(input, Data.class);
@@ -161,6 +221,11 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
       }
     }
 
+    /**
+     * Convert transfer transaction data to JSON string.
+     *
+     * @return JSON string
+     */
     public String toJson() {
       try {
         return UnicityObjectMapper.JSON.writeValueAsString(this);

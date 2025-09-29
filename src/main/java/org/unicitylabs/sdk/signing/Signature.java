@@ -1,12 +1,14 @@
-
 package org.unicitylabs.sdk.signing;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.unicitylabs.sdk.util.HexConverter;
 import java.util.Arrays;
 import java.util.Objects;
+import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Signature implementation for signing service, this contains public key recovery byte as well.
+ */
 @JsonSerialize(using = SignatureJson.Serializer.class)
 @JsonDeserialize(using = SignatureJson.Deserializer.class)
 public class Signature {
@@ -19,10 +21,20 @@ public class Signature {
     this.recovery = recovery;
   }
 
+  /**
+   * Get signature bytes.
+   *
+   * @return bytes
+   */
   public byte[] getBytes() {
     return Arrays.copyOf(this.bytes, this.bytes.length);
   }
 
+  /**
+   * Get recovery byte for recovering public key.
+   *
+   * @return byte
+   */
   public int getRecovery() {
     return this.recovery;
   }
@@ -57,9 +69,9 @@ public class Signature {
 
   @Override
   public boolean equals(Object o) {
-      if (!(o instanceof Signature)) {
-          return false;
-      }
+    if (!(o instanceof Signature)) {
+      return false;
+    }
     Signature signature = (Signature) o;
     return this.recovery == signature.recovery && Objects.deepEquals(this.bytes, signature.bytes);
   }

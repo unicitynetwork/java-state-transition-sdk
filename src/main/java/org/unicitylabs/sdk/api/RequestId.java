@@ -13,8 +13,9 @@ import org.unicitylabs.sdk.util.HexConverter;
 /**
  * Represents a unique request identifier derived from a public key and state hash.
  */
-@JsonDeserialize(using = RequestIdJsonDeserializer.class)
+@JsonDeserialize(using = RequestIdJson.Deserializer.class)
 public class RequestId extends DataHash {
+
   /**
    * Constructs a RequestId instance.
    *
@@ -50,6 +51,12 @@ public class RequestId extends DataHash {
     return new RequestId(hasher.digest());
   }
 
+  /**
+   * Create a request id from JSON string.
+   *
+   * @param input JSON string
+   * @return request id
+   */
   public static RequestId fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, RequestId.class);
@@ -58,6 +65,11 @@ public class RequestId extends DataHash {
     }
   }
 
+  /**
+   * Converts the request id to a JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);

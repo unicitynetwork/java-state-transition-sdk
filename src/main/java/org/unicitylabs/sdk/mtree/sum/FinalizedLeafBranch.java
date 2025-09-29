@@ -9,6 +9,9 @@ import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
+/**
+ * Finalized leaf branch in a sparse merkle sum tree.
+ */
 class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
 
   private final BigInteger path;
@@ -21,6 +24,14 @@ class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
     this.hash = hash;
   }
 
+  /**
+   * Create a finalized leaf branch.
+   *
+   * @param path          path of the branch
+   * @param value         value stored in the leaf
+   * @param hashAlgorithm hash algorithm to use
+   * @return finalized leaf branch
+   */
   public static FinalizedLeafBranch create(
       BigInteger path,
       LeafValue value,
@@ -38,22 +49,27 @@ class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
     return new FinalizedLeafBranch(path, value, hash);
   }
 
+  @Override
   public BigInteger getPath() {
     return this.path;
   }
 
+  @Override
   public LeafValue getValue() {
     return this.value;
   }
 
+  @Override
   public BigInteger getCounter() {
     return this.value.getCounter();
   }
 
+  @Override
   public DataHash getHash() {
     return this.hash;
   }
 
+  @Override
   public FinalizedLeafBranch finalize(HashAlgorithm hashAlgorithm) {
     return this; // Already finalized
   }

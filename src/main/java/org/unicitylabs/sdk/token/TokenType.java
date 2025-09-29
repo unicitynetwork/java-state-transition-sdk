@@ -3,10 +3,10 @@ package org.unicitylabs.sdk.token;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.util.Arrays;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.util.Arrays;
 
 /**
  * Unique identifier describing the type/category of a token.
@@ -17,18 +17,39 @@ public class TokenType {
 
   private final byte[] bytes;
 
+  /**
+   * Token type constructor.
+   *
+   * @param bytes type bytes
+   */
   public TokenType(byte[] bytes) {
     this.bytes = Arrays.copyOf(bytes, bytes.length);
   }
 
+  /**
+   * Get token type as bytes.
+   *
+   * @return type bytes
+   */
   public byte[] getBytes() {
     return Arrays.copyOf(this.bytes, this.bytes.length);
   }
 
+  /**
+   * Create token type from CBOR.
+   *
+   * @param bytes CBOR bytes
+   * @return token type
+   */
   public static TokenType fromCbor(byte[] bytes) {
     return new TokenType(CborDeserializer.readByteString(bytes));
   }
 
+  /**
+   * Convert token type to CBOR.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeByteString(this.bytes);
   }

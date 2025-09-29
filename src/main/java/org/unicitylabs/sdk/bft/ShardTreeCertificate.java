@@ -1,17 +1,18 @@
 package org.unicitylabs.sdk.bft;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
-import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Shard tree certificate.
+ */
 public class ShardTreeCertificate {
 
   private final byte[] shard;
@@ -31,18 +32,32 @@ public class ShardTreeCertificate {
         .collect(Collectors.toList());
   }
 
-  @JsonGetter("shard")
+  /**
+   * Get shard.
+   *
+   * @return shard
+   */
   public byte[] getShard() {
     return Arrays.copyOf(this.shard, this.shard.length);
   }
 
-  @JsonGetter("siblingHashList")
+  /**
+   * Get sibling hash list.
+   *
+   * @return sibling hash list
+   */
   public List<byte[]> getSiblingHashList() {
     return this.siblingHashList.stream()
         .map(hash -> Arrays.copyOf(hash, hash.length))
         .collect(Collectors.toList());
   }
 
+  /**
+   * Create shard tree certificate from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return shard tree certificate
+   */
   public static ShardTreeCertificate fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -54,6 +69,11 @@ public class ShardTreeCertificate {
     );
   }
 
+  /**
+   * Convert shard tree certificate to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeByteString(this.shard),

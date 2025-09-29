@@ -14,13 +14,25 @@ import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.verification.VerificationResult;
 import org.unicitylabs.sdk.verification.VerificationRule;
 
+/**
+ * Rule to verify that the UnicitySeal contains valid quorum signatures.
+ */
 public class UnicitySealQuorumSignaturesVerificationRule extends
     VerificationRule<UnicityCertificateVerificationContext> {
 
+  /**
+   * Create the rule without any subsequent rules.
+   */
   public UnicitySealQuorumSignaturesVerificationRule() {
     this(null, null);
   }
 
+  /**
+   * Create the rule with subsequent rules for success and failure.
+   *
+   * @param onSuccessRule rule to execute on success
+   * @param onFailureRule rule to execute on failure
+   */
   public UnicitySealQuorumSignaturesVerificationRule(
       VerificationRule<UnicityCertificateVerificationContext> onSuccessRule,
       VerificationRule<UnicityCertificateVerificationContext> onFailureRule

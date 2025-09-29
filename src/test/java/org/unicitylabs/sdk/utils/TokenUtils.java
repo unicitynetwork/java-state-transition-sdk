@@ -21,8 +21,6 @@ import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransaction;
-import org.unicitylabs.sdk.transaction.MintTransactionReason;
-import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 
 public class TokenUtils {
@@ -146,7 +144,7 @@ public class TokenUtils {
         nonce).toAddress();
 
     MintCommitment<?> commitment = MintCommitment.create(
-        new NametagMintTransactionData<>(
+        new MintTransaction.NametagData(
             nametag,
             tokenType,
             address,

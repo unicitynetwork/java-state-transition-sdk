@@ -3,17 +3,16 @@ package org.unicitylabs.sdk.transaction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
-import java.util.Objects;
-import org.unicitylabs.sdk.transaction.TransferTransaction.Data;
 
 /**
- * Commitment representing a transfer transaction
+ * Commitment representing a transfer transaction.
  */
 public class TransferCommitment extends Commitment<TransferTransaction.Data> {
 
@@ -29,16 +28,33 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
     super(requestId, transactionData, authenticator);
   }
 
+  /**
+   * Create transfer transaction from transfer commitment.
+   *
+   * @param inclusionProof Commitment inclusion proof
+   * @return transfer transaction
+   */
   @Override
-  public TransferTransaction toTransaction(InclusionProof inclusionProof)  {
+  public TransferTransaction toTransaction(InclusionProof inclusionProof) {
     return new TransferTransaction(this.getTransactionData(), inclusionProof);
   }
 
+  /**
+   * Create transfer commitment.
+   *
+   * @param token             current token
+   * @param recipient         recipient of token
+   * @param salt              transaction salt
+   * @param recipientDataHash recipient data hash
+   * @param message           transaction message
+   * @param signingService    signing service to unlock token
+   * @return transfer commitment
+   */
   public static TransferCommitment create(
       Token<?> token,
       Address recipient,
       byte[] salt,
-      DataHash dataHash,
+      DataHash recipientDataHash,
       byte[] message,
       SigningService signingService
   ) {
@@ -48,7 +64,7 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
     Objects.requireNonNull(signingService, "SigningService cannot be null");
 
     TransferTransaction.Data transactionData = new TransferTransaction.Data(
-        token.getState(), recipient, salt, dataHash, message, token.getNametags());
+        token.getState(), recipient, salt, recipientDataHash, message, token.getNametags());
 
     DataHash sourceStateHash = transactionData.getSourceState().calculateHash();
     DataHash transactionHash = transactionData.calculateHash();

@@ -3,20 +3,33 @@ package org.unicitylabs.sdk.mtree;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * Common path for two nodes in a merkle tree.
+ */
 public class CommonPath {
 
   private final BigInteger path;
   private final int length;
 
-  public CommonPath(BigInteger path, int length) {
+  CommonPath(BigInteger path, int length) {
     this.path = path;
     this.length = length;
   }
 
+  /**
+   * Get common path.
+   *
+   * @return common path
+   */
   public BigInteger getPath() {
     return this.path;
   }
 
+  /**
+   * Get length of the common path.
+   *
+   * @return length of the common path
+   */
   public int getLength() {
     return this.length;
   }
@@ -35,6 +48,13 @@ public class CommonPath {
     return Objects.hash(path, length);
   }
 
+  /**
+   * Create common path for two paths.
+   *
+   * @param path1 first path
+   * @param path2 second path
+   * @return common path
+   */
   public static CommonPath create(BigInteger path1, BigInteger path2) {
     BigInteger path = BigInteger.ONE;
     BigInteger mask = BigInteger.ONE;

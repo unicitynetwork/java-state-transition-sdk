@@ -5,16 +5,32 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
+/**
+ * JSON RPC request.
+ */
 public class JsonRpcRequest {
 
   private final UUID id;
   private final String method;
   private final Object params;
 
+  /**
+   * Create JSON RPC request.
+   *
+   * @param method request method
+   * @param params request parameters
+   */
   public JsonRpcRequest(String method, Object params) {
     this(UUID.randomUUID(), method, params);
   }
 
+  /**
+   * Create JSON RPC request.
+   *
+   * @param id     request id
+   * @param method request method
+   * @param params request error
+   */
   @JsonCreator
   public JsonRpcRequest(
       @JsonProperty("id") UUID id,
@@ -26,22 +42,39 @@ public class JsonRpcRequest {
     this.params = params;
   }
 
-  @JsonGetter("id")
+  /**
+   * Get request ID.
+   *
+   * @return id
+   */
   public UUID getId() {
     return this.id;
   }
 
+  /**
+   * Get request version.
+   *
+   * @return version
+   */
   @JsonGetter("jsonrpc")
   public String getVersion() {
     return "2.0";
   }
 
-  @JsonGetter("method")
+  /**
+   * Get request method.
+   *
+   * @return method
+   */
   public String getMethod() {
     return this.method;
   }
 
-  @JsonGetter("params")
+  /**
+   * Get request parameters.
+   *
+   * @return parameters
+   */
   public Object getParams() {
     return this.params;
   }

@@ -12,6 +12,9 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Sparse Merkle tree path step.
+ */
 @JsonSerialize(using = SparseMerkleTreePathStepJson.Serializer.class)
 @JsonDeserialize(using = SparseMerkleTreePathStepJson.Deserializer.class)
 public class SparseMerkleTreePathStep {
@@ -48,7 +51,7 @@ public class SparseMerkleTreePathStep {
     );
   }
 
-  public SparseMerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  SparseMerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -56,18 +59,39 @@ public class SparseMerkleTreePathStep {
     this.branch = branch;
   }
 
+  /**
+   * Get path.
+   *
+   * @return path
+   */
   public BigInteger getPath() {
     return this.path;
   }
 
+  /**
+   * Get sibling branch.
+   *
+   * @return sibling branch
+   */
   public Optional<Branch> getSibling() {
     return Optional.ofNullable(this.sibling);
   }
 
+  /**
+   * Get branch.
+   *
+   * @return branch
+   */
   public Optional<Branch> getBranch() {
     return Optional.ofNullable(this.branch);
   }
 
+  /**
+   * Create sparse Merkle tree path step from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return sparse Merkle tree path step
+   */
   public static SparseMerkleTreePathStep fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -78,6 +102,11 @@ public class SparseMerkleTreePathStep {
     );
   }
 
+  /**
+   * Convert sparse Merkle tree path step to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeByteString(BigIntegerConverter.encode(this.path)),
@@ -107,18 +136,32 @@ public class SparseMerkleTreePathStep {
         this.path.toString(2), this.sibling, this.branch);
   }
 
+  /**
+   * Sparse Merkle tree branch.
+   */
   public static class Branch {
 
     private final byte[] value;
-
-    public Branch(byte[] value) {
+    
+    Branch(byte[] value) {
       this.value = value == null ? null : Arrays.copyOf(value, value.length);
     }
 
+    /**
+     * Get branch value.
+     *
+     * @return value
+     */
     public byte[] getValue() {
       return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
     }
 
+    /**
+     * Create branch from CBOR bytes.
+     *
+     * @param bytes CBOR bytes
+     * @return branch
+     */
     public static Branch fromCbor(byte[] bytes) {
       List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -127,6 +170,11 @@ public class SparseMerkleTreePathStep {
       );
     }
 
+    /**
+     * Convert branch to CBOR bytes.
+     *
+     * @return CBOR bytes
+     */
     public byte[] toCbor() {
       return CborSerializer.encodeArray(
           CborSerializer.encodeByteString(this.value)

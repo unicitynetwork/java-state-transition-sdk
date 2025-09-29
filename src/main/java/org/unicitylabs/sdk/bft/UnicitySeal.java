@@ -1,7 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +12,9 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer.CborMap;
 import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * UnicitySeal represents a seal in the Unicity BFT system, containing metadata and signatures.
+ */
 public class UnicitySeal {
 
   private final int version;
@@ -25,16 +26,15 @@ public class UnicitySeal {
   private final byte[] hash;
   private final LinkedHashMap<String, byte[]> signatures;
 
-  @JsonCreator
   UnicitySeal(
-      @JsonProperty("version") int version,
-      @JsonProperty("networkId") short networkId,
-      @JsonProperty("rootChainRoundNumber") long rootChainRoundNumber,
-      @JsonProperty("epoch") long epoch,
-      @JsonProperty("timestamp") long timestamp,
-      @JsonProperty("previousHash") byte[] previousHash,
-      @JsonProperty("hash") byte[] hash,
-      @JsonProperty("signatures") Map<String, byte[]> signatures
+      int version,
+      short networkId,
+      long rootChainRoundNumber,
+      long epoch,
+      long timestamp,
+      byte[] previousHash,
+      byte[] hash,
+      Map<String, byte[]> signatures
   ) {
     Objects.requireNonNull(hash, "Hash cannot be null");
 
@@ -63,6 +63,12 @@ public class UnicitySeal {
             );
   }
 
+  /**
+   * Create a new UnicitySeal instance with the provided signatures.
+   *
+   * @param signatures the signatures to include in the new UnicitySeal
+   * @return a new UnicitySeal instance with the specified signatures
+   */
   public UnicitySeal withSignatures(Map<String, byte[]> signatures) {
     return new UnicitySeal(
         this.version,
@@ -76,43 +82,75 @@ public class UnicitySeal {
     );
   }
 
-  @JsonProperty("version")
+  /**
+   * Get the version.
+   *
+   * @return version
+   */
   public int getVersion() {
     return this.version;
   }
 
-  @JsonProperty("networkId")
+  /**
+   * Get the network ID.
+   *
+   * @return network ID
+   */
   public short getNetworkId() {
     return this.networkId;
   }
 
-  @JsonProperty("rootChainRoundNumber")
+  /**
+   * Get the root chain round number.
+   *
+   * @return root chain round number
+   */
   public long getRootChainRoundNumber() {
     return this.rootChainRoundNumber;
   }
 
-  @JsonProperty("epoch")
+  /**
+   * Get the epoch.
+   *
+   * @return epoch
+   */
   public long getEpoch() {
     return this.epoch;
   }
 
-  @JsonProperty("timestamp")
+  /**
+   * Get the timestamp.
+   *
+   * @return timestamp
+   */
   public long getTimestamp() {
     return this.timestamp;
   }
 
-  @JsonProperty("previousHash")
+  /**
+   * Get the previous hash.
+   *
+   * @return previous hash or null if not set
+   */
   public byte[] getPreviousHash() {
     return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length)
         : null;
   }
 
-  @JsonProperty("hash")
+  /**
+   * Get the hash.
+   *
+   * @return hash
+   */
   public byte[] getHash() {
     return Arrays.copyOf(this.hash, this.hash.length);
   }
 
-  @JsonProperty("signatures")
+  /**
+   * Get the signatures.
+   *
+   * @return signatures
+   */
   public Map<String, byte[]> getSignatures() {
     return this.signatures == null
         ? null
@@ -132,6 +170,12 @@ public class UnicitySeal {
             );
   }
 
+  /**
+   * Create unicity seal from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return unicity seal
+   */
   public static UnicitySeal fromCbor(byte[] bytes) {
     CborTag tag = CborDeserializer.readTag(bytes);
     List<byte[]> data = CborDeserializer.readArray(tag.getData());
@@ -155,6 +199,11 @@ public class UnicitySeal {
     );
   }
 
+  /**
+   * Convert unicity seal to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeTag(
         1001,
@@ -184,6 +233,11 @@ public class UnicitySeal {
     );
   }
 
+  /**
+   * Convert unicity seal to CBOR bytes without signatures.
+   *
+   * @return CBOR bytes without signatures
+   */
   public byte[] toCborWithoutSignatures() {
     return new UnicitySeal(
         this.version,

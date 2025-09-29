@@ -1,17 +1,16 @@
 package org.unicitylabs.sdk.predicate;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
-@JsonSerialize(using = SerializablePredicateJson.Serializer.class)
-@JsonDeserialize(using = SerializablePredicateJson.Deserializer.class)
+/**
+ * Predicate structure before passing it to predicate engine.
+ */
 public class EncodedPredicate implements SerializablePredicate {
+
   private final PredicateEngineType engine;
   private final byte[] code;
   private final byte[] parameters;
@@ -26,20 +25,41 @@ public class EncodedPredicate implements SerializablePredicate {
     this.parameters = Arrays.copyOf(parameters, parameters.length);
   }
 
+  /**
+   * Get predicate engine.
+   *
+   * @return predicate engine
+   */
   public PredicateEngineType getEngine() {
     return this.engine;
   }
 
+  /**
+   * Encode predicate code.
+   *
+   * @return encoded code
+   */
   @Override
   public byte[] encode() {
     return Arrays.copyOf(this.code, this.code.length);
   }
 
+  /**
+   * Encode predicate parameters.
+   *
+   * @return encoded parameters
+   */
   @Override
   public byte[] encodeParameters() {
     return Arrays.copyOf(this.parameters, this.parameters.length);
   }
 
+  /**
+   * Create encoded predicate from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return encoded predicate
+   */
   public static EncodedPredicate fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 

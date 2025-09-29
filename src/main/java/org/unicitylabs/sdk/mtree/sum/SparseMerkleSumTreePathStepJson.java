@@ -1,4 +1,4 @@
-package org.unicitylabs.sdk.mtree.plain;
+package org.unicitylabs.sdk.mtree.sum;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -10,51 +10,57 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.math.BigInteger;
+import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
 
 /**
- * Sparse merkle tree path step serializer and deserializer implementation.
+ * Sparse merkle sum tree path step serializer and deserializer implementation.
  */
-public class SparseMerkleTreePathStepJson {
+public class SparseMerkleSumTreePathStepJson {
 
-  private SparseMerkleTreePathStepJson() {
+  private SparseMerkleSumTreePathStepJson() {
   }
 
   /**
-   * Sparse merkle tree path step serializer.
+   * Sparse merkle sum tree path step serializer.
    */
-  public static class Serializer extends StdSerializer<SparseMerkleTreePathStep> {
+  public static class Serializer extends StdSerializer<SparseMerkleSumTreePathStep> {
 
     /**
      * Create serializer.
      */
     public Serializer() {
-      super(SparseMerkleTreePathStep.class);
+      super(SparseMerkleSumTreePathStep.class);
     }
 
     /**
-     * Serialize sparse merkle tree path step.
+     * Serialize sparse merkle sum tree path step.
      *
-     * @param value       sparse merkle tree path step
+     * @param value       path step
      * @param gen         json generator
      * @param serializers serializer provider
      * @throws IOException on serialization failure
      */
     @Override
-    public void serialize(SparseMerkleTreePathStep value, JsonGenerator gen,
+    public void serialize(SparseMerkleSumTreePathStep value, JsonGenerator gen,
         SerializerProvider serializers)
         throws IOException {
       gen.writeStartArray();
       gen.writeObject(value.getPath().toString());
-      if (value.getSibling().isPresent()) {
+      SparseMerkleSumTreePathStep.Branch sibling = value.getSibling().orElse(null);
+      if (sibling != null) {
         gen.writeStartArray();
-        gen.writeObject(value.getSibling().get().getValue());
+        gen.writeObject(sibling.getValue());
+        gen.writeObject(sibling.getCounter().toString());
         gen.writeEndArray();
       } else {
         gen.writeNull();
       }
-      if (value.getBranch().isPresent()) {
+
+      SparseMerkleSumTreePathStep.Branch branch = value.getBranch().orElse(null);
+      if (branch != null) {
         gen.writeStartArray();
-        gen.writeObject(value.getBranch().get().getValue());
+        gen.writeObject(branch.getValue());
+        gen.writeObject(branch.getCounter().toString());
         gen.writeEndArray();
       } else {
         gen.writeNull();
@@ -64,18 +70,25 @@ public class SparseMerkleTreePathStepJson {
   }
 
   /**
-   * Sparse merkle tree path step deserializer.
+   * Sparse merkle sum tree path step deserializer.
    */
-  public static class Deserializer extends StdDeserializer<SparseMerkleTreePathStep> {
+  public static class Deserializer extends StdDeserializer<SparseMerkleSumTreePathStep> {
 
     /**
      * Create deserializer.
      */
     public Deserializer() {
-      super(SparseMerkleTreePathStep.class);
+      super(SparseMerkleSumTreePathStep.class);
     }
 
-    private static SparseMerkleTreePathStep.Branch parseBranch(JsonParser p) throws IOException {
+    /**
+     * Deserialize sparse merkle sum tree path step branch.
+     *
+     * @param p Parser used for reading JSON content
+     * @return branch
+     * @throws IOException on deserialization failure
+     */
+    public static SparseMerkleSumTreePathStep.Branch parseBranch(JsonParser p) throws IOException {
       p.nextToken();
 
       if (p.currentToken() == JsonToken.VALUE_NULL) {
@@ -85,19 +98,20 @@ public class SparseMerkleTreePathStepJson {
       if (p.currentToken() != JsonToken.START_ARRAY) {
         throw MismatchedInputException.from(
             p,
-            SparseMerkleTreePathStep.Branch.class,
+            SparseMerkleSumTreePathStep.Branch.class,
             "Expected start of array"
         );
       }
       p.nextToken();
-      SparseMerkleTreePathStep.Branch branch = new SparseMerkleTreePathStep.Branch(
-          p.readValueAs(byte[].class)
+      SparseMerkleSumTreePathStep.Branch branch = new SparseMerkleSumTreePathStep.Branch(
+          p.readValueAs(byte[].class),
+          new BigInteger(p.readValueAs(String.class))
       );
 
       if (p.nextToken() != JsonToken.END_ARRAY) {
         throw MismatchedInputException.from(
             p,
-            SparseMerkleTreePathStep.Branch.class,
+            SparseMerkleSumTreePathStep.Branch.class,
             "Expected end of array"
         );
       }
@@ -106,16 +120,16 @@ public class SparseMerkleTreePathStepJson {
     }
 
     /**
-     * Deserialize sparse merkle tree path step.
+     * Deserialize sparse merkle sum tree path step.
      *
      * @param p   Parser used for reading JSON content
      * @param ctx Context that can be used to access information about this deserialization
      *            activity.
-     * @return sparse merkle tree path step
+     * @return path step
      * @throws IOException on deserialization failure
      */
     @Override
-    public SparseMerkleTreePathStep deserialize(JsonParser p, DeserializationContext ctx)
+    public SparseMerkleSumTreePathStep deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
       if (p.getCurrentToken() != JsonToken.START_ARRAY) {
         throw MismatchedInputException.from(
@@ -126,11 +140,11 @@ public class SparseMerkleTreePathStepJson {
       }
       p.nextToken();
 
-      SparseMerkleTreePathStep step = new SparseMerkleTreePathStep(
+      SparseMerkleSumTreePathStep step = new SparseMerkleSumTreePathStep(
           new BigInteger(p.readValueAs(String.class)),
-          SparseMerkleTreePathStepJson
+          SparseMerkleSumTreePathStepJson
               .Deserializer.parseBranch(p),
-          SparseMerkleTreePathStepJson
+          SparseMerkleSumTreePathStepJson
               .Deserializer.parseBranch(p));
 
       if (p.nextToken() != JsonToken.END_ARRAY) {

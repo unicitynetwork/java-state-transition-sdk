@@ -1,6 +1,8 @@
 
 package org.unicitylabs.sdk.transaction.split;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -23,12 +25,19 @@ import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.verification.VerificationResult;
 
+/**
+ * Mint reason for splitting a token.
+ */
 public class SplitMintReason implements MintTransactionReason {
 
   private final Token<?> token;
   private final List<SplitMintReasonProof> proofs;
 
-  public SplitMintReason(Token<?> token, List<SplitMintReasonProof> proofs) {
+  @JsonCreator
+  SplitMintReason(
+      @JsonProperty("token") Token<?> token,
+      @JsonProperty("proofs") List<SplitMintReasonProof> proofs
+  ) {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(proofs, "Proofs cannot be null");
 
@@ -36,18 +45,39 @@ public class SplitMintReason implements MintTransactionReason {
     this.proofs = List.copyOf(proofs);
   }
 
+  /**
+   * Get mint reason type.
+   *
+   * @return token split reason
+   */
   public String getType() {
     return MintReasonType.TOKEN_SPLIT.name();
   }
 
+  /**
+   * Get token which was burnt for split.
+   *
+   * @return burnt token
+   */
   public Token<?> getToken() {
     return this.token;
   }
 
+  /**
+   * Get proofs for currently minted token coins.
+   *
+   * @return split proofs
+   */
   public List<SplitMintReasonProof> getProofs() {
     return List.copyOf(this.proofs);
   }
 
+  /**
+   * Verify mint transaction against mint reason.
+   *
+   * @param transaction Genesis to verify against
+   * @return verification result
+   */
   public VerificationResult verify(MintTransaction<?> transaction) {
     if (transaction.getData().getCoinData().isEmpty()) {
       return VerificationResult.fail("Coin data is missing.");
@@ -67,13 +97,13 @@ public class SplitMintReason implements MintTransactionReason {
 
     for (SplitMintReasonProof proof : this.proofs) {
       if (!proof.getAggregationPath().verify(proof.getCoinId().toBitString().toBigInteger())
-          .isValid()) {
+          .isSuccessful()) {
         return VerificationResult.fail(
             "Aggregation path verification failed for coin: " + proof.getCoinId());
       }
 
       if (!proof.getCoinTreePath()
-          .verify(transaction.getData().getTokenId().toBitString().toBigInteger()).isValid()) {
+          .verify(transaction.getData().getTokenId().toBitString().toBigInteger()).isSuccessful()) {
         return VerificationResult.fail(
             "Coin tree path verification failed for token");
       }
@@ -104,6 +134,12 @@ public class SplitMintReason implements MintTransactionReason {
     return VerificationResult.success();
   }
 
+  /**
+   * Create split mint reason from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return mint reason
+   */
   public static SplitMintReason fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -115,6 +151,11 @@ public class SplitMintReason implements MintTransactionReason {
     );
   }
 
+  /**
+   * Convert split mint reason to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeTextString(this.getType()),

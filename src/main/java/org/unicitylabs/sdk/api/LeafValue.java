@@ -8,7 +8,7 @@ import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
- * Leaf value for merkle tree
+ * Leaf value for merkle tree.
  */
 public class LeafValue {
 
@@ -18,6 +18,13 @@ public class LeafValue {
     this.bytes = Arrays.copyOf(bytes, bytes.length);
   }
 
+  /**
+   * Create leaf value from authenticator and transaction hash.
+   *
+   * @param authenticator   authenticator
+   * @param transactionHash transaction hash
+   * @return leaf value
+   */
   public static LeafValue create(Authenticator authenticator, DataHash transactionHash) {
     DataHash hash = new DataHasher(HashAlgorithm.SHA256)
         .update(authenticator.toCbor())
@@ -27,6 +34,11 @@ public class LeafValue {
     return new LeafValue(hash.getImprint());
   }
 
+  /**
+   * Get leaf value as bytes.
+   *
+   * @return bytes
+   */
   public byte[] getBytes() {
     return Arrays.copyOf(this.bytes, this.bytes.length);
   }

@@ -1,7 +1,6 @@
 
 package org.unicitylabs.sdk.jsonrpc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import okhttp3.Call;
@@ -18,6 +17,7 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
  * JSON-RPC HTTP service.
  */
 public class JsonRpcHttpTransport {
+
   private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
 
   private final String url;
@@ -61,7 +61,7 @@ public class JsonRpcHttpTransport {
           try (ResponseBody body = response.body()) {
             if (!response.isSuccessful()) {
               String error = body != null ? body.string() : "";
-              future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
+              future.completeExceptionally(new JsonRpcNetworkException(response.code(), error));
               return;
             }
 
@@ -72,8 +72,12 @@ public class JsonRpcHttpTransport {
             );
 
             if (data.getError() != null) {
-
-              future.completeExceptionally(new JsonRpcDataError(data.getError()));
+              future.completeExceptionally(
+                  new JsonRpcNetworkException(
+                      data.getError().getCode(),
+                      data.getError().getMessage()
+                  )
+              );
               return;
             }
 

@@ -1,7 +1,6 @@
 package org.unicitylabs.sdk.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
@@ -14,11 +13,10 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.signing.Signature;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.transaction.TransferTransaction.Data;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
- * Authenticator for transaction submission
+ * Authenticator for transaction submission.
  */
 public class Authenticator {
 
@@ -35,11 +33,19 @@ public class Authenticator {
       @JsonProperty("stateHash") DataHash stateHash
   ) {
     this.algorithm = algorithm;
-    this.publicKey = publicKey;
+    this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
     this.signature = signature;
     this.stateHash = stateHash;
   }
 
+  /**
+   * Create authenticator from signing service.
+   *
+   * @param signingService  signing service
+   * @param transactionHash transaction hash
+   * @param stateHash       state hash
+   * @return authenticator
+   */
   public static Authenticator create(
       SigningService signingService,
       DataHash transactionHash,
@@ -49,30 +55,58 @@ public class Authenticator {
         signingService.sign(transactionHash), stateHash);
   }
 
-  @JsonGetter("signature")
+  /**
+   * Get signature.
+   *
+   * @return signature
+   */
   public Signature getSignature() {
     return this.signature;
   }
 
-  @JsonGetter("algorithm")
+  /**
+   * Get algorithm.
+   *
+   * @return algorithm
+   */
   public String getAlgorithm() {
     return this.algorithm;
   }
 
-  @JsonGetter("stateHash")
+  /**
+   * Get state hash.
+   *
+   * @return state hash
+   */
   public DataHash getStateHash() {
     return this.stateHash;
   }
 
-  @JsonGetter("publicKey")
+  /**
+   * Get public key.
+   *
+   * @return public key
+   */
   public byte[] getPublicKey() {
-    return this.publicKey;
+    return Arrays.copyOf(this.publicKey, this.publicKey.length);
   }
 
+  /**
+   * Verify if signature and data are correct.
+   *
+   * @param hash data hash
+   * @return true if successful
+   */
   public boolean verify(DataHash hash) {
     return SigningService.verifyWithPublicKey(hash, this.signature.getBytes(), this.publicKey);
   }
 
+  /**
+   * Create authenticator from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return authenticator
+   */
   public static Authenticator fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -84,6 +118,11 @@ public class Authenticator {
     );
   }
 
+  /**
+   * Convert authenticator to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeTextString(this.algorithm),
@@ -93,6 +132,12 @@ public class Authenticator {
     );
   }
 
+  /**
+   * Create authenticator from JSON string.
+   *
+   * @param input JSON string
+   * @return authenticator
+   */
   public static Authenticator fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, Authenticator.class);
@@ -101,6 +146,11 @@ public class Authenticator {
     }
   }
 
+  /**
+   * Convert authenticator to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);

@@ -2,7 +2,6 @@ package org.unicitylabs.sdk.token;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
@@ -35,9 +34,16 @@ import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.verification.VerificationResult;
 
-@JsonIgnoreProperties()
+/**
+ * Token representation.
+ *
+ * @param <R> mint transaction reason for current token.
+ */
 public class Token<R extends MintTransactionReason> {
 
+  /**
+   * Current token representation version.
+   */
   public static final String TOKEN_VERSION = "2.0";
 
   private final TokenState state;
@@ -67,47 +73,102 @@ public class Token<R extends MintTransactionReason> {
     this.nametags = List.copyOf(nametags);
   }
 
+  /**
+   * Get token id from genesis.
+   *
+   * @return token id
+   */
   @JsonIgnore
   public TokenId getId() {
     return this.genesis.getData().getTokenId();
   }
 
+  /**
+   * Get token type from genesis.
+   *
+   * @return token type
+   */
   @JsonIgnore
   public TokenType getType() {
     return this.genesis.getData().getTokenType();
   }
 
+  /**
+   * Get token immutable data from genesis.
+   *
+   * @return token immutable data
+   */
   @JsonIgnore
   public Optional<byte[]> getData() {
     return this.genesis.getData().getTokenData();
   }
 
+  /**
+   * Get token coins data from genesis.
+   *
+   * @return token coins data
+   */
   @JsonIgnore
   public Optional<TokenCoinData> getCoins() {
     return this.genesis.getData().getCoinData();
   }
 
+  /**
+   * Get token version.
+   *
+   * @return token version
+   */
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   public String getVersion() {
     return TOKEN_VERSION;
   }
 
+  /**
+   * Get token current state.
+   *
+   * @return token state
+   */
   public TokenState getState() {
     return this.state;
   }
 
+  /**
+   * Get token genesis.
+   *
+   * @return token genesis
+   */
   public MintTransaction<R> getGenesis() {
     return this.genesis;
   }
 
+  /**
+   * Get token transactions.
+   *
+   * @return token transactions
+   */
   public List<TransferTransaction> getTransactions() {
     return this.transactions;
   }
 
+  /**
+   * Get token current state nametags.
+   *
+   * @return nametags
+   */
   public List<Token<?>> getNametags() {
     return this.nametags;
   }
 
+  /**
+   * Create token from mint transaction and initial state. Also verify if state is correct.
+   *
+   * @param trustBase   trust base for mint transaction verification
+   * @param state       initial state
+   * @param transaction mint transaction
+   * @param <R>         mint transaction reason
+   * @return token
+   * @throws VerificationException if token state is invalid
+   */
   public static <R extends MintTransactionReason> Token<R> create(
       RootTrustBase trustBase,
       TokenState state,
@@ -116,6 +177,18 @@ public class Token<R extends MintTransactionReason> {
     return Token.create(trustBase, state, transaction, List.of());
   }
 
+  /**
+   * Create token state from mint transaction, initial state and nametags. Also verify if state is
+   * correct.
+   *
+   * @param trustBase   trust base for mint transaction verification
+   * @param state       initial state
+   * @param transaction mint transaction
+   * @param nametags    nametags associated with transaction
+   * @param <R>         mint transaction reason
+   * @return token
+   * @throws VerificationException if token state is invalid
+   */
   public static <R extends MintTransactionReason> Token<R> create(
       RootTrustBase trustBase,
       TokenState state,
@@ -136,6 +209,16 @@ public class Token<R extends MintTransactionReason> {
     return token;
   }
 
+  /**
+   * Update token to next state with given transfer transaction.
+   *
+   * @param trustBase   trust base to verify latest state
+   * @param state       current state
+   * @param transaction latest transaction
+   * @param nametags    nametags associated with transaction
+   * @return tokest with latest state
+   * @throws VerificationException if token state is invalid
+   */
   public Token<R> update(
       RootTrustBase trustBase,
       TokenState state,
@@ -159,6 +242,12 @@ public class Token<R extends MintTransactionReason> {
     return new Token<>(state, this.genesis, transactions, nametags);
   }
 
+  /**
+   * Verify current token state against trustbase.
+   *
+   * @param trustBase trust base to verify state against
+   * @return verification result
+   */
   public VerificationResult verify(RootTrustBase trustBase) {
     List<VerificationResult> results = new ArrayList<>();
     results.add(
@@ -286,6 +375,12 @@ public class Token<R extends MintTransactionReason> {
     return VerificationResult.success();
   }
 
+  /**
+   * Create token from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return token
+   */
   public static Token<?> fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
     String version = CborDeserializer.readTextString(data.get(0));
@@ -305,6 +400,11 @@ public class Token<R extends MintTransactionReason> {
     );
   }
 
+  /**
+   * Convert token to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         CborSerializer.encodeTextString(TOKEN_VERSION),
@@ -323,6 +423,12 @@ public class Token<R extends MintTransactionReason> {
     );
   }
 
+  /**
+   * Create token from JSON string.
+   *
+   * @param input JSON string
+   * @return token
+   */
   public static Token<?> fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, Token.class);
@@ -331,6 +437,11 @@ public class Token<R extends MintTransactionReason> {
     }
   }
 
+  /**
+   * Convert token to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);

@@ -8,7 +8,7 @@ public class HexConverter {
   private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
   /**
-   * Convert byte array to hex
+   * Convert byte array to hex.
    *
    * @param data byte array
    * @return hex string
@@ -24,7 +24,7 @@ public class HexConverter {
   }
 
   /**
-   * Convert hex string to bytes
+   * Convert hex string to bytes.
    *
    * @param value hex string
    * @return byte array

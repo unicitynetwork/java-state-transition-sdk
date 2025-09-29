@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.Objects;
-import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
@@ -92,6 +91,12 @@ public class DataHash {
     return imprint;
   }
 
+  /**
+   * Create data hash from JSON string.
+   *
+   * @param input json string
+   * @return data hash
+   */
   public static DataHash fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, DataHash.class);
@@ -100,6 +105,11 @@ public class DataHash {
     }
   }
 
+  /**
+   * Convert data hash to JSON string.
+   *
+   * @return JSON string
+   */
   public String toJson() {
     try {
       return UnicityObjectMapper.JSON.writeValueAsString(this);
@@ -108,10 +118,21 @@ public class DataHash {
     }
   }
 
+  /**
+   * Create data hash from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return data hash
+   */
   public static DataHash fromCbor(byte[] bytes) {
     return DataHash.fromImprint(CborDeserializer.readByteString(bytes));
   }
 
+  /**
+   * Convert data hash to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeByteString(this.getImprint());
   }

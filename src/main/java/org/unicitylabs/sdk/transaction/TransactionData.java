@@ -1,8 +1,8 @@
 package org.unicitylabs.sdk.transaction;
 
+import java.util.Optional;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.hash.DataHash;
-import java.util.Optional;
 
 /**
  * Interface representing the data of a transaction.
@@ -26,7 +26,7 @@ public interface TransactionData<T> {
   Address getRecipient();
 
   /**
-   * Gets the optional recipient data hash
+   * Gets the optional recipient data hash.
    *
    * @return an Optional containing the data hash if present, otherwise empty
    */
@@ -39,5 +39,10 @@ public interface TransactionData<T> {
    */
   DataHash calculateHash();
 
+  /**
+   * Convert transaction data to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   byte[] toCbor();
 }

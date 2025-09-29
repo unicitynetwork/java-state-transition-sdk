@@ -20,7 +20,7 @@ import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProofFixture;
 import org.unicitylabs.sdk.transaction.MintTransaction;
-import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
+import org.unicitylabs.sdk.transaction.MintTransactionFixture;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.verification.VerificationException;
 
@@ -49,7 +49,7 @@ public class TokenTest {
     );
 
     byte[] nametagNonce = TestUtils.randomBytes(32);
-    MintTransaction.Data<?> nametagGenesisData = new NametagMintTransactionData<>(
+    MintTransaction.NametagData nametagGenesisData = new MintTransaction.NametagData(
         UUID.randomUUID().toString(),
         new TokenType(TestUtils.randomBytes(32)),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32))),
@@ -66,7 +66,7 @@ public class TokenTest {
                 HashAlgorithm.SHA256,
                 nametagNonce),
             null),
-        new MintTransaction<>(
+        MintTransactionFixture.create(
             nametagGenesisData,
             InclusionProofFixture.create(
                 SparseMerkleTreePathFixture.create(List.of()),
@@ -92,7 +92,7 @@ public class TokenTest {
                 TestUtils.randomBytes(24)),
             null
         ),
-        new MintTransaction<>(
+        MintTransactionFixture.create(
             genesisData,
             InclusionProofFixture.create(
                 SparseMerkleTreePathFixture.create(List.of()),

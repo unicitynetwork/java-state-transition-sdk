@@ -1,22 +1,40 @@
 
 package org.unicitylabs.sdk.token.fungible;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Arrays;
 import org.unicitylabs.sdk.util.BitString;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.util.Arrays;
 
+/**
+ * Coin ID representation.
+ */
 public class CoinId {
+
   private final byte[] bytes;
 
+  /**
+   * Create coin ID from bytes.
+   *
+   * @param bytes coin identifier bytes.
+   */
   public CoinId(byte[] bytes) {
     this.bytes = Arrays.copyOf(bytes, bytes.length);
   }
 
+  /**
+   * Get coin ID bytes.
+   *
+   * @return coin id bytes
+   */
   public byte[] getBytes() {
     return Arrays.copyOf(this.bytes, this.bytes.length);
   }
 
+  /**
+   * Convert coin ID to bit string.
+   *
+   * @return coin id bitstring
+   */
   public BitString toBitString() {
     return new BitString(this.bytes);
   }

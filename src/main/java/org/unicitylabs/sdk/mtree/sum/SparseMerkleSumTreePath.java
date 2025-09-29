@@ -1,5 +1,7 @@
 package org.unicitylabs.sdk.mtree.sum;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
@@ -11,14 +13,20 @@ import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
-import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Path in a sparse merkle sum tree.
+ */
 public class SparseMerkleSumTreePath {
 
   private final Root root;
   private final List<SparseMerkleSumTreePathStep> steps;
 
-  public SparseMerkleSumTreePath(Root root, List<SparseMerkleSumTreePathStep> steps) {
+  @JsonCreator
+  SparseMerkleSumTreePath(
+      @JsonProperty("root") Root root,
+      @JsonProperty("steps") List<SparseMerkleSumTreePathStep> steps
+  ) {
     Objects.requireNonNull(root, "root cannot be null");
     Objects.requireNonNull(steps, "steps cannot be null");
 
@@ -26,16 +34,31 @@ public class SparseMerkleSumTreePath {
     this.steps = List.copyOf(steps);
   }
 
+  /**
+   * Get root of the path.
+   *
+   * @return root
+   */
   public Root getRoot() {
     return this.root;
   }
 
+  /**
+   * Get steps of the path from leaf to the root.
+   *
+   * @return steps
+   */
   public List<SparseMerkleSumTreePathStep> getSteps() {
     return this.steps;
   }
 
-  // TODO: Make it possible to use other hash algorithms
-  public MerkleTreePathVerificationResult verify(BigInteger requestId) {
+  /**
+   * Verify the path against the given state ID.
+   *
+   * @param stateId state ID to verify against
+   * @return result of the verification
+   */
+  public MerkleTreePathVerificationResult verify(BigInteger stateId) {
     BigInteger currentPath = BigInteger.ONE;
     DataHash currentHash = null;
     BigInteger currentCounter = this.steps.isEmpty()
@@ -102,9 +125,15 @@ public class SparseMerkleSumTreePath {
 
     return new MerkleTreePathVerificationResult(
         this.root.hash.equals(currentHash) && this.root.counter.equals(currentCounter),
-        currentPath.equals(requestId));
+        currentPath.equals(stateId));
   }
 
+  /**
+   * Create path from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return path
+   */
   public static SparseMerkleSumTreePath fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -116,6 +145,11 @@ public class SparseMerkleSumTreePath {
     );
   }
 
+  /**
+   * Convert path to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         this.root.toCbor(),
@@ -146,24 +180,47 @@ public class SparseMerkleSumTreePath {
     return String.format("MerkleTreePath{root=%s, steps=%s}", this.root, this.steps);
   }
 
+  /**
+   * Root of the sparse merkle sum tree path.
+   */
   public static class Root {
 
     private final DataHash hash;
     private final BigInteger counter;
 
-    public Root(DataHash hash, BigInteger counter) {
+    @JsonCreator
+    Root(
+        @JsonProperty("hash") DataHash hash,
+        @JsonProperty("counter") BigInteger counter
+    ) {
       this.hash = Objects.requireNonNull(hash, "hash cannot be null");
       this.counter = Objects.requireNonNull(counter, "counter cannot be null");
     }
 
+    /**
+     * Get hash of the root.
+     *
+     * @return hash
+     */
     public DataHash getHash() {
       return this.hash;
     }
 
+    /**
+     * Get the counter of the root.
+     *
+     * @return counter
+     */
     public BigInteger getCounter() {
       return this.counter;
     }
 
+    /**
+     * Create root from CBOR bytes.
+     *
+     * @param bytes CBOR bytes
+     * @return root
+     */
     public static Root fromCbor(byte[] bytes) {
       List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -173,6 +230,11 @@ public class SparseMerkleSumTreePath {
       );
     }
 
+    /**
+     * Convert root to CBOR bytes.
+     *
+     * @return CBOR bytes
+     */
     public byte[] toCbor() {
       return CborSerializer.encodeArray(
           this.hash.toCbor(),

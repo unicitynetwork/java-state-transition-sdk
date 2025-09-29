@@ -4,7 +4,7 @@ package org.unicitylabs.sdk;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import org.unicitylabs.sdk.api.IAggregatorClient;
+import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
@@ -12,14 +12,13 @@ import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
-import org.unicitylabs.sdk.transaction.MintTransactionReason;
-import org.unicitylabs.sdk.transaction.TransferTransaction;
-import org.unicitylabs.sdk.verification.VerificationException;
 import org.unicitylabs.sdk.transaction.Commitment;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
+import org.unicitylabs.sdk.verification.VerificationException;
 
 /**
  * Client for handling state transitions of tokens, including submitting commitments and finalizing
@@ -30,14 +29,14 @@ public class StateTransitionClient {
   /**
    * The aggregator client used for submitting commitments and retrieving inclusion proofs.
    */
-  protected final IAggregatorClient client;
+  protected final AggregatorClient client;
 
   /**
    * Creates a new StateTransitionClient with the specified aggregator client.
    *
    * @param client The aggregator client to use for communication.
    */
-  public StateTransitionClient(IAggregatorClient client) {
+  public StateTransitionClient(AggregatorClient client) {
     this.client = client;
   }
 
@@ -45,12 +44,11 @@ public class StateTransitionClient {
    * Submits a mint commitment to the aggregator.
    *
    * @param commitment The mint commitment to submit.
-   * @param <T>        The type of mint transaction data.
+   * @param <R>        The type of mint transaction data.
    * @return A CompletableFuture that resolves to the response from the aggregator.
    */
-  public <R extends MintTransactionReason> CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      MintCommitment<R> commitment
-  ) {
+  public <R extends MintTransactionReason>
+        CompletableFuture<SubmitCommitmentResponse> submitCommitment(MintCommitment<R> commitment) {
     return this.client.submitCommitment(
         commitment.getRequestId(),
         commitment.getTransactionData().calculateHash(),
@@ -89,7 +87,7 @@ public class StateTransitionClient {
    * @param token       The token to be updated.
    * @param state       The current state of the token.
    * @param transaction The transaction containing transfer data.
-   * @param <T>         The type of mint transaction data.
+   * @param <R>         The type of mint transaction data.
    * @return The updated token after applying the transaction.
    * @throws VerificationException if verification fails during the update process.
    */
@@ -111,7 +109,7 @@ public class StateTransitionClient {
    * @param state       The current state of the token.
    * @param transaction The transaction containing transfer data.
    * @param nametags    A list of tokens used as nametags in the transaction.
-   * @param <T>         The type of mint transaction data of token.
+   * @param <R>         The type of mint transaction data of token.
    * @return The updated token after applying the transaction.
    * @throws VerificationException if verification fails during the update process.
    */

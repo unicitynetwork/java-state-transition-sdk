@@ -9,25 +9,44 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.unicitylabs.sdk.hash.TokenCoinDataJson;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
+/**
+ * Token coin data representation.
+ */
 @JsonSerialize(using = TokenCoinDataJson.Serializer.class)
 @JsonDeserialize(using = TokenCoinDataJson.Deserializer.class)
 public class TokenCoinData {
+
   private final Map<CoinId, BigInteger> coins;
 
+  /**
+   * Create token coin data from coins map.
+   *
+   * @param coins map of token coins
+   */
   public TokenCoinData(Map<CoinId, BigInteger> coins) {
     this.coins = Collections.unmodifiableMap(coins);
   }
 
+  /**
+   * Get token coins map.
+   *
+   * @return token coins map
+   */
   public Map<CoinId, BigInteger> getCoins() {
     return this.coins;
   }
 
+  /**
+   * Create token coins data from CBOR.
+   *
+   * @param bytes CBOR bytes.
+   * @return token coin data
+   */
   public static TokenCoinData fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
@@ -51,6 +70,11 @@ public class TokenCoinData {
     return new TokenCoinData(coins);
   }
 
+  /**
+   * Convert token coins data to CBOR.
+   *
+   * @return token coins data as cbor
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         this.coins.entrySet().stream()

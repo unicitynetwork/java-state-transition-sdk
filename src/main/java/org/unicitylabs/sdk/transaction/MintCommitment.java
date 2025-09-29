@@ -8,11 +8,10 @@ import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.transaction.MintTransaction.Data;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
- * Commitment representing a submitted transaction
+ * Commitment representing a submitted transaction.
  *
  * @param <R> the type of transaction data
  */
@@ -34,11 +33,24 @@ public class MintCommitment<R extends MintTransactionReason> extends
     super(requestId, transactionData, authenticator);
   }
 
+  /**
+   * Create mint transaction from commitment.
+   *
+   * @param inclusionProof Commitment inclusion proof
+   * @return mint transaction
+   */
   @Override
-  public MintTransaction<R> toTransaction(InclusionProof inclusionProof)  {
+  public MintTransaction<R> toTransaction(InclusionProof inclusionProof) {
     return new MintTransaction<>(this.getTransactionData(), inclusionProof);
   }
 
+  /**
+   * Create mint commitment from transaction data.
+   *
+   * @param transactionData mint transaction data
+   * @param <R>             mint reason
+   * @return mint commitment
+   */
   public static <R extends MintTransactionReason> MintCommitment<R> create(
       MintTransaction.Data<R> transactionData
   ) {
@@ -61,6 +73,13 @@ public class MintCommitment<R extends MintTransactionReason> extends
     return new MintCommitment<>(requestId, transactionData, authenticator);
   }
 
+
+  /**
+   * Create signing service for initial mint.
+   *
+   * @param transactionData mint transaction data
+   * @return signing service
+   */
   public static SigningService createSigningService(MintTransaction.Data<?> transactionData) {
     return SigningService.createFromMaskedSecret(MINTER_SECRET,
         transactionData.getTokenId().getBytes());

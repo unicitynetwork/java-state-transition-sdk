@@ -1,18 +1,27 @@
 package org.unicitylabs.sdk.predicate.embedded;
 
 import java.util.List;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
-import org.unicitylabs.sdk.signing.Signature;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 
+/**
+ * Masked predicate.
+ */
 public class MaskedPredicate extends DefaultPredicate {
 
+  /**
+   * Create masked predicate.
+   *
+   * @param tokenId          token id
+   * @param tokenType        token type
+   * @param publicKey        predicate public key
+   * @param signingAlgorithm signing algorithm
+   * @param hashAlgorithm    hash algorithm
+   * @param nonce            predicate nonce
+   */
   public MaskedPredicate(
       TokenId tokenId,
       TokenType tokenType,
@@ -31,6 +40,16 @@ public class MaskedPredicate extends DefaultPredicate {
     );
   }
 
+  /**
+   * Create masked predicate from signing service.
+   *
+   * @param tokenId        token id
+   * @param tokenType      token type
+   * @param signingService signing service
+   * @param hashAlgorithm  hash algorithm
+   * @param nonce          predicate nonce
+   * @return predicate
+   */
   public static MaskedPredicate create(
       TokenId tokenId,
       TokenType tokenType,
@@ -41,6 +60,12 @@ public class MaskedPredicate extends DefaultPredicate {
         signingService.getAlgorithm(), hashAlgorithm, nonce);
   }
 
+  /**
+   * Create masked predicate from CBOR bytes.
+   *
+   * @param bytes CBOR bytes.
+   * @return predicate
+   */
   public static MaskedPredicate fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 

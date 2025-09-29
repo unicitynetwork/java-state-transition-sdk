@@ -1,22 +1,29 @@
 
 package org.unicitylabs.sdk.transaction;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
 
 /**
- * Commitment representing a submitted transaction
+ * Commitment representing a submitted transaction.
  *
  * @param <T> the type of transaction data
  */
 public abstract class Commitment<T extends TransactionData<?>> {
+
   private final RequestId requestId;
   private final T transactionData;
   private final Authenticator authenticator;
 
-  public Commitment(RequestId requestId, T transactionData, Authenticator authenticator) {
+  /**
+   * Create commitment.
+   *
+   * @param requestId       request id
+   * @param transactionData transaction data
+   * @param authenticator   authenticator
+   */
+  protected Commitment(RequestId requestId, T transactionData, Authenticator authenticator) {
     this.requestId = requestId;
     this.transactionData = transactionData;
     this.authenticator = authenticator;
@@ -27,7 +34,6 @@ public abstract class Commitment<T extends TransactionData<?>> {
    *
    * @return request ID
    */
-  @JsonGetter("requestId")
   public RequestId getRequestId() {
     return requestId;
   }
@@ -37,7 +43,6 @@ public abstract class Commitment<T extends TransactionData<?>> {
    *
    * @return transaction data
    */
-  @JsonGetter("transactionData")
   public T getTransactionData() {
     return transactionData;
   }
@@ -47,11 +52,16 @@ public abstract class Commitment<T extends TransactionData<?>> {
    *
    * @return authenticator
    */
-  @JsonGetter("authenticator")
   public Authenticator getAuthenticator() {
     return authenticator;
   }
 
+  /**
+   * Convert commitment to transaction.
+   *
+   * @param inclusionProof Commitment inclusion proof
+   * @return transaction
+   */
   public abstract Transaction<T> toTransaction(InclusionProof inclusionProof);
 
   @Override

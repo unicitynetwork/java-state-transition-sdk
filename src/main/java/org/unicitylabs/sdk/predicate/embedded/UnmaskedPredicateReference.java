@@ -1,18 +1,18 @@
 package org.unicitylabs.sdk.predicate.embedded;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.Objects;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.PredicateReference;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenType;
 
+/**
+ * Unmasked predicate reference.
+ */
 public class UnmaskedPredicateReference implements PredicateReference {
 
   private final DataHash hash;
@@ -21,10 +21,24 @@ public class UnmaskedPredicateReference implements PredicateReference {
     this.hash = hash;
   }
 
+  /**
+   * Get predicate hash.
+   *
+   * @return predicate hash
+   */
   public DataHash getHash() {
     return this.hash;
   }
 
+  /**
+   * Create predicate reference.
+   *
+   * @param tokenType        token type
+   * @param signingAlgorithm signing algorithm
+   * @param publicKey        predicate public key
+   * @param hashAlgorithm    hash algorithm
+   * @return predicate reference
+   */
   public static UnmaskedPredicateReference create(
       TokenType tokenType,
       String signingAlgorithm,
@@ -51,6 +65,14 @@ public class UnmaskedPredicateReference implements PredicateReference {
     );
   }
 
+  /**
+   * Create predicate reference from signing service.
+   *
+   * @param tokenType      token type
+   * @param signingService signing service
+   * @param hashAlgorithm  hash algorithm
+   * @return predicate reference
+   */
   public static UnmaskedPredicateReference create(
       TokenType tokenType,
       SigningService signingService,
@@ -64,6 +86,11 @@ public class UnmaskedPredicateReference implements PredicateReference {
     );
   }
 
+  /**
+   * Convert predicate reference to address.
+   *
+   * @return predicate address
+   */
   public DirectAddress toAddress() {
     return DirectAddress.create(this.hash);
   }

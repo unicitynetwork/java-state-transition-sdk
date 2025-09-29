@@ -136,23 +136,18 @@ public class CborDeserializerTest {
 
   @Test
   void testReadBoolean() {
-    Assertions.assertEquals(
-        true,
-        CborDeserializer.readBoolean(HexConverter.decode("f5"))
-    );
+    Assertions.assertTrue(CborDeserializer.readBoolean(HexConverter.decode("f5")));
 
-    Assertions.assertEquals(
-        false,
-        CborDeserializer.readBoolean(HexConverter.decode("f4"))
-    );
+    Assertions.assertFalse(CborDeserializer.readBoolean(HexConverter.decode("f4")));
   }
 
   @Test
   void testReadOptional() {
-    Assertions.assertEquals(
-        null,
-        CborDeserializer.readOptional(HexConverter.decode("f6"),
-            CborDeserializer::readUnsignedInteger)
+    Assertions.assertNull(
+        CborDeserializer.readOptional(
+            HexConverter.decode("f6"),
+            CborDeserializer::readUnsignedInteger
+        )
     );
   }
 

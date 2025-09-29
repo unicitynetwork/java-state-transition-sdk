@@ -1,7 +1,5 @@
-
 package org.unicitylabs.sdk.token;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.nio.charset.StandardCharsets;
@@ -23,18 +21,39 @@ public class TokenId {
 
   private final byte[] bytes;
 
+  /**
+   * Create token id from bytes.
+   *
+   * @param bytes token id bytes
+   */
   public TokenId(byte[] bytes) {
     this.bytes = Arrays.copyOf(bytes, bytes.length);
   }
 
+  /**
+   * Get token id bytes.
+   *
+   * @return token id bytes
+   */
   public byte[] getBytes() {
     return Arrays.copyOf(this.bytes, this.bytes.length);
   }
 
+  /**
+   * Get token id as bit string.
+   *
+   * @return token id bit string
+   */
   public BitString toBitString() {
     return new BitString(this.bytes);
   }
 
+  /**
+   * Create token id from nametag.
+   *
+   * @param name nametag
+   * @return token id
+   */
   public static TokenId fromNameTag(String name) {
     Objects.requireNonNull(name, "Name cannot be null");
 
@@ -46,10 +65,21 @@ public class TokenId {
     );
   }
 
+  /**
+   * Create token id from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return token id
+   */
   public static TokenId fromCbor(byte[] bytes) {
     return new TokenId(CborDeserializer.readByteString(bytes));
   }
 
+  /**
+   * Convert token id to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeByteString(this.bytes);
   }

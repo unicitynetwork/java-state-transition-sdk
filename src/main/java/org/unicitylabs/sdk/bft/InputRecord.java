@@ -1,7 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
@@ -11,7 +9,11 @@ import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Input record for UnicityCertificate.
+ */
 public class InputRecord {
+
   private final int version;
   private final long roundNumber;
   private final long epoch;
@@ -23,17 +25,16 @@ public class InputRecord {
   private final long sumOfEarnedFees;
   private final byte[] executedTransactionsHash;
 
-  @JsonCreator
   InputRecord(
-      @JsonProperty("version") int version,
-      @JsonProperty("roundNumber") long roundNumber,
-      @JsonProperty("epoch") long epoch,
-      @JsonProperty("previousHash") byte[] previousHash,
-      @JsonProperty("hash") byte[] hash,
-      @JsonProperty("summaryValue") byte[] summaryValue,
-      @JsonProperty("timestamp") long timestamp,
-      @JsonProperty("blockHash") byte[] blockHash,
-      @JsonProperty("sumOfEarnedFees") long sumOfEarnedFees,
+      int version,
+      long roundNumber,
+      long epoch,
+      byte[] previousHash,
+      byte[] hash,
+      byte[] summaryValue,
+      long timestamp,
+      byte[] blockHash,
+      long sumOfEarnedFees,
       @JsonProperty("executedTransactionsHash") byte[] executedTransactionsHash
   ) {
     Objects.requireNonNull(hash, "Hash cannot be null");
@@ -51,56 +52,104 @@ public class InputRecord {
     this.executedTransactionsHash = executedTransactionsHash;
   }
 
-  @JsonGetter("version")
+  /**
+   * Get version.
+   *
+   * @return version
+   */
   public int getVersion() {
     return this.version;
   }
 
-  @JsonGetter("roundNumber")
+  /**
+   * Get round number.
+   *
+   * @return round number
+   */
   public long getRoundNumber() {
     return this.roundNumber;
   }
 
-  @JsonGetter("epoch")
+  /**
+   * Get epoch.
+   *
+   * @return epoch
+   */
   public long getEpoch() {
     return this.epoch;
   }
 
-  @JsonGetter("previousHash")
+  /**
+   * Get previous hash.
+   *
+   * @return previous hash or null if not set
+   */
   public byte[] getPreviousHash() {
-    return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length) : null;
+    return this.previousHash != null ? Arrays.copyOf(this.previousHash, this.previousHash.length)
+        : null;
   }
 
-  @JsonGetter("hash")
+  /**
+   * Get hash.
+   *
+   * @return hash
+   */
   public byte[] getHash() {
     return Arrays.copyOf(this.hash, this.hash.length);
   }
 
-  @JsonGetter("summaryValue")
+  /**
+   * Get summary value.
+   *
+   * @return summary value
+   */
   public byte[] getSummaryValue() {
     return Arrays.copyOf(this.summaryValue, this.summaryValue.length);
   }
 
-  @JsonGetter("timestamp")
+  /**
+   * Get timestamp.
+   *
+   * @return timestamp
+   */
   public long getTimestamp() {
     return this.timestamp;
   }
 
-  @JsonGetter("blockHash")
+  /**
+   * Get block hash.
+   *
+   * @return block hash or null if not set
+   */
   public byte[] getBlockHash() {
     return this.blockHash != null ? Arrays.copyOf(this.blockHash, this.blockHash.length) : null;
   }
 
-  @JsonGetter("sumOfEarnedFees")
+  /**
+   * Get sum of earned fees.
+   *
+   * @return sum of earned fees
+   */
   public long getSumOfEarnedFees() {
     return this.sumOfEarnedFees;
   }
 
-  @JsonGetter("executedTransactionsHash")
+  /**
+   * Get executed transactions hash.
+   *
+   * @return executed transactions hash or null if not set
+   */
   public byte[] getExecutedTransactionsHash() {
-    return this.executedTransactionsHash != null ? Arrays.copyOf(this.executedTransactionsHash, this.executedTransactionsHash.length) : null;
+    return this.executedTransactionsHash != null ? Arrays.copyOf(this.executedTransactionsHash,
+        this.executedTransactionsHash.length) : null;
   }
 
+  /**
+   * Create InputRecord from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return input record
+   */
   public static InputRecord fromCbor(byte[] bytes) {
     CborTag tag = CborDeserializer.readTag(bytes);
     List<byte[]> data = CborDeserializer.readArray(tag.getData());
@@ -119,6 +168,11 @@ public class InputRecord {
     );
   }
 
+  /**
+   * Convert InputRecord to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
   public byte[] toCbor() {
     return CborSerializer.encodeTag(
         1008,
@@ -132,7 +186,8 @@ public class InputRecord {
             CborSerializer.encodeUnsignedInteger(this.timestamp),
             CborSerializer.encodeOptional(this.blockHash, CborSerializer::encodeByteString),
             CborSerializer.encodeUnsignedInteger(this.sumOfEarnedFees),
-            CborSerializer.encodeOptional(this.executedTransactionsHash, CborSerializer::encodeByteString)
+            CborSerializer.encodeOptional(this.executedTransactionsHash,
+                CborSerializer::encodeByteString)
         ));
   }
 
@@ -164,18 +219,19 @@ public class InputRecord {
   @Override
   public String toString() {
     return String.format("InputRecord{version=%s, roundNumber=%s, epoch=%s, previousHash=%s, "
-        + "hash=%s, summaryValue=%s, timestamp=%s, blockHash=%s, sumOfEarnedFees=%s, "
-        + "executedTransactionsHash=%s}",
+            + "hash=%s, summaryValue=%s, timestamp=%s, blockHash=%s, sumOfEarnedFees=%s, "
+            + "executedTransactionsHash=%s}",
         this.version,
         this.roundNumber,
         this.epoch,
         this.previousHash != null ? HexConverter.encode(this.previousHash) : null,
-        this.hash != null ? HexConverter.encode(this.hash) : null,
+        HexConverter.encode(this.hash),
         HexConverter.encode(this.summaryValue),
         this.timestamp,
         this.blockHash != null ? HexConverter.encode(this.blockHash) : null,
         this.sumOfEarnedFees,
-        this.executedTransactionsHash != null ? HexConverter.encode(this.executedTransactionsHash) : null
+        this.executedTransactionsHash != null ? HexConverter.encode(this.executedTransactionsHash)
+            : null
     );
   }
 }

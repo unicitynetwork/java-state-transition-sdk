@@ -1,18 +1,18 @@
 package org.unicitylabs.sdk.predicate.embedded;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.Objects;
 import org.unicitylabs.sdk.address.DirectAddress;
-import org.unicitylabs.sdk.predicate.PredicateReference;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.predicate.PredicateReference;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenType;
 
+/**
+ * Masked predicate reference.
+ */
 public class MaskedPredicateReference implements PredicateReference {
 
   private final DataHash hash;
@@ -21,10 +21,25 @@ public class MaskedPredicateReference implements PredicateReference {
     this.hash = hash;
   }
 
+  /**
+   * Get predicate hash.
+   *
+   * @return predicate hash
+   */
   public DataHash getHash() {
     return this.hash;
   }
 
+  /**
+   * Create masked predicate reference.
+   *
+   * @param tokenType        token type
+   * @param signingAlgorithm signing algorithm
+   * @param publicKey        predicate public key
+   * @param hashAlgorithm    hash algorithm
+   * @param nonce            predicate nonce
+   * @return predicate reference
+   */
   public static MaskedPredicateReference create(
       TokenType tokenType,
       String signingAlgorithm,
@@ -54,6 +69,15 @@ public class MaskedPredicateReference implements PredicateReference {
     );
   }
 
+  /**
+   * Create predicate reference from signing service.
+   *
+   * @param tokenType      token type
+   * @param signingService signing service
+   * @param hashAlgorithm  hash algorithm
+   * @param nonce          predicate nonce
+   * @return predicate reference
+   */
   public static MaskedPredicateReference create(TokenType tokenType, SigningService signingService,
       HashAlgorithm hashAlgorithm, byte[] nonce) {
     return MaskedPredicateReference.create(
@@ -65,6 +89,11 @@ public class MaskedPredicateReference implements PredicateReference {
     );
   }
 
+  /**
+   * Convert predicate reference to address.
+   *
+   * @return predicate address
+   */
   public DirectAddress toAddress() {
     return DirectAddress.create(this.hash);
   }

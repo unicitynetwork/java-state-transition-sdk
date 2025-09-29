@@ -1,4 +1,4 @@
-package org.unicitylabs.sdk.mtree;
+package org.unicitylabs.sdk.mtree.plain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
 import java.math.BigInteger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,7 @@ public class MerkleTreePathStepTest {
   @Test
   public void testConstructorThrowsOnNullArguments() {
     Exception exception = assertThrows(NullPointerException.class,
-        () -> new SparseMerkleTreePathStep(null, null, null));
+        () -> new SparseMerkleTreePathStep(null, (SparseMerkleTreePathStep.Branch) null, null));
     assertEquals("path cannot be null", exception.getMessage());
   }
 

@@ -1,13 +1,16 @@
 package org.unicitylabs.sdk.mtree.plain;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Objects;
 
+/**
+ * Finalized leaf branch in a sparse merkle tree.
+ */
 class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
 
   private final BigInteger path;
@@ -20,6 +23,14 @@ class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
     this.hash = hash;
   }
 
+  /**
+   * Create a finalized leaf branch.
+   *
+   * @param path          path of the branch
+   * @param value         value stored in the leaf
+   * @param hashAlgorithm hash algorithm to use
+   * @return finalized leaf branch
+   */
   public static FinalizedLeafBranch create(BigInteger path, byte[] value,
       HashAlgorithm hashAlgorithm) {
     DataHash hash = new DataHasher(hashAlgorithm)
@@ -29,18 +40,22 @@ class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
     return new FinalizedLeafBranch(path, value, hash);
   }
 
+  @Override
   public BigInteger getPath() {
     return this.path;
   }
 
+  @Override
   public byte[] getValue() {
     return Arrays.copyOf(this.value, this.value.length);
   }
 
+  @Override
   public DataHash getHash() {
     return this.hash;
   }
 
+  @Override
   public FinalizedLeafBranch finalize(HashAlgorithm hashAlgorithm) {
     return this; // Already finalized
   }
