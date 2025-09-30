@@ -20,7 +20,7 @@ public class MockAggregatorServer {
     private final ObjectMapper objectMapper;
     private final Set<String> protectedMethods;
     private volatile boolean simulateRateLimit = false;
-    private volatile int rateLimitRetryAfter = 60;
+    private volatile int rateLimitRetryAfter = 0;
     private volatile String expectedApiKey = null;
     
     public MockAggregatorServer() {
@@ -65,11 +65,16 @@ public class MockAggregatorServer {
     private MockResponse handleRequest(RecordedRequest request) {
         try {
             if (simulateRateLimit) {
-                simulateRateLimit = false; // Reset for next request
-                return new MockResponse()
-                    .setResponseCode(429)
-                    .setHeader("Retry-After", String.valueOf(rateLimitRetryAfter))
-                    .setBody("Too Many Requests");
+                try {
+                    return new MockResponse()
+                            .setResponseCode(429)
+                            .setHeader("Retry-After", String.valueOf(rateLimitRetryAfter))
+                            .setBody("Too Many Requests");
+                } finally {
+                    // Reset for next request
+                    simulateRateLimit = false;
+                    rateLimitRetryAfter = 0;
+                }
             }
 
             String method = extractJsonRpcMethod(request);
