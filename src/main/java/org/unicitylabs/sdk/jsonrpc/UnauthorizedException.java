@@ -5,12 +5,14 @@ package org.unicitylabs.sdk.jsonrpc;
  * This typically occurs when an API key is missing or invalid.
  */
 public class UnauthorizedException extends RuntimeException {
-    
-    public UnauthorizedException(String message) {
-        super(message);
+
+    public static final String MESSAGE = "Unauthorized: Invalid or missing API key";
+
+    public UnauthorizedException() {
+        super(MESSAGE);
     }
     
-    public UnauthorizedException(String message, Throwable cause) {
-        super(message, cause);
+    public UnauthorizedException(Throwable cause) {
+        super(MESSAGE, cause);
     }
 }

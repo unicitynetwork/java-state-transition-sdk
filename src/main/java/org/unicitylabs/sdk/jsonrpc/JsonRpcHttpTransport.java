@@ -76,14 +76,11 @@ public class JsonRpcHttpTransport {
               String error = body != null ? body.string() : "";
               
               if (response.code() == HTTP_UNAUTHORIZED) {
-                future.completeExceptionally(new UnauthorizedException(
-                    "Unauthorized: Invalid or missing API key"));
+                future.completeExceptionally(new UnauthorizedException());
                 return;
               } else if (response.code() == HTTP_TOO_MANY_REQUESTS) {
                 int retryAfterSeconds = extractRetryAfterSeconds(response);
-                future.completeExceptionally(new RateLimitExceededException(
-                    "Rate limit exceeded. Please retry after " + retryAfterSeconds + " seconds",
-                    retryAfterSeconds));
+                future.completeExceptionally(new RateLimitExceededException( retryAfterSeconds));
                 return;
               } else {
                   future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
