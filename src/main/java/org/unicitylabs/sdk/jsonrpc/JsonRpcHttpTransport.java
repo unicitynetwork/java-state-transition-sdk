@@ -76,18 +76,8 @@ public class JsonRpcHttpTransport {
           try (ResponseBody body = response.body()) {
             if (!response.isSuccessful()) {
               String error = body != null ? body.string() : "";
-              
-              if (response.code() == HTTP_UNAUTHORIZED) {
-                future.completeExceptionally(new UnauthorizedException());
-                return;
-              } else if (response.code() == HTTP_TOO_MANY_REQUESTS) {
-                int retryAfterSeconds = extractRetryAfterSeconds(response);
-                future.completeExceptionally(new RateLimitExceededException( retryAfterSeconds));
-                return;
-              } else {
-                  future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
-                  return;
-              }
+              future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
+              return;
             }
 
             JsonRpcResponse<T> data = UnicityObjectMapper.JSON.readValue(

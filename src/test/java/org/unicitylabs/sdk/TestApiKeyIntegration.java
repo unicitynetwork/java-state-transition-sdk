@@ -11,12 +11,12 @@ import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.jsonrpc.RateLimitExceededException;
-import org.unicitylabs.sdk.jsonrpc.UnauthorizedException;
+import org.unicitylabs.sdk.jsonrpc.JsonRpcNetworkError;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,10 +28,8 @@ public class TestApiKeyIntegration {
     private MockAggregatorServer mockServer;
     private AggregatorClient clientWithApiKey;
     private AggregatorClient clientWithoutApiKey;
-    private SigningService signingService;
-    
+
     private DataHash transactionHash;
-    private DataHash stateHash;
     private RequestId requestId;
     private Authenticator authenticator;
     
@@ -43,11 +41,11 @@ public class TestApiKeyIntegration {
 
         clientWithApiKey = new AggregatorClient(mockServer.getUrl(), TEST_API_KEY);
         clientWithoutApiKey = new AggregatorClient(mockServer.getUrl());
-        
-        signingService = new SigningService(
-            HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
 
-        stateHash = new DataHash(HashAlgorithm.SHA256, HexConverter.decode("fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"));
+        SigningService signingService = new SigningService(
+                HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
+
+        DataHash stateHash = new DataHash(HashAlgorithm.SHA256, HexConverter.decode("fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"));
         requestId = RequestId.create(signingService.getPublicKey(), stateHash);
         transactionHash = new DataHash(HashAlgorithm.SHA256, HexConverter.decode("abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"));
 
@@ -80,9 +78,9 @@ public class TestApiKeyIntegration {
             future.get(5, TimeUnit.SECONDS);
             fail("Expected UnauthorizedException to be thrown");
         } catch (Exception e) {
-            assertTrue(e instanceof java.util.concurrent.ExecutionException);
-            assertTrue(e.getCause() instanceof UnauthorizedException);
-            assertEquals("Unauthorized: Invalid or missing API key", e.getCause().getMessage());
+            assertInstanceOf(ExecutionException.class, e);
+            assertInstanceOf(JsonRpcNetworkError.class, e.getCause());
+            assertEquals("Network error [401] occurred: Unauthorized", e.getCause().getMessage());
         }
         
         RecordedRequest request = mockServer.takeRequest();
@@ -100,8 +98,9 @@ public class TestApiKeyIntegration {
             future.get(5, TimeUnit.SECONDS);
             fail("Expected UnauthorizedException to be thrown");
         } catch (Exception e) {
-            assertTrue(e instanceof java.util.concurrent.ExecutionException);
-            assertTrue(e.getCause() instanceof UnauthorizedException);
+            assertInstanceOf(ExecutionException.class, e);
+            assertInstanceOf(JsonRpcNetworkError.class, e.getCause());
+            assertEquals("Network error [401] occurred: Unauthorized",  e.getCause().getMessage());
         }
         
         RecordedRequest request = mockServer.takeRequest();
@@ -119,11 +118,9 @@ public class TestApiKeyIntegration {
             future.get(5, TimeUnit.SECONDS);
             fail("Expected RateLimitExceededException to be thrown");
         } catch (Exception e) {
-            assertTrue(e instanceof java.util.concurrent.ExecutionException);
-            assertTrue(e.getCause() instanceof RateLimitExceededException);
-            RateLimitExceededException rateLimitEx = (RateLimitExceededException) e.getCause();
-            assertEquals(30, rateLimitEx.getRetryAfterSeconds());
-            assertTrue(rateLimitEx.getMessage().contains("30 seconds"));
+            assertInstanceOf(ExecutionException.class, e);
+            assertInstanceOf(JsonRpcNetworkError.class, e.getCause());
+            assertTrue(e.getCause().getMessage().contains("Network error [429] occurred: Too Many Requests"), e.getCause().getMessage());
         }
     }
     
