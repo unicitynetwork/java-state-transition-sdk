@@ -15,16 +15,12 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
-
 /**
  * JSON-RPC HTTP service.
  */
 public class JsonRpcHttpTransport {
 
     private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
-    private static final int HTTP_TOO_MANY_REQUESTS = 429;
-    private static final String HTTP_RETRY_AFTER = "Retry-After";
 
     private final String url;
   private final OkHttpClient httpClient;
@@ -103,17 +99,5 @@ public class JsonRpcHttpTransport {
     }
 
     return future;
-  }
-
-  private int extractRetryAfterSeconds(Response response) {
-    String retryAfterHeader = response.header(HTTP_RETRY_AFTER);
-    if (retryAfterHeader != null) {
-      try {
-        return Integer.parseInt(retryAfterHeader);
-      } catch (NumberFormatException ignored) {
-      }
-    }
-    // Default to 60 seconds if the HTTP header is missing, e.g. if the response is coming from a different component that is not using this header.
-    return 60;
   }
 }
