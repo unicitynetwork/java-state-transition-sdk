@@ -1,19 +1,29 @@
 package org.unicitylabs.sdk.mtree.plain;
 
-import org.unicitylabs.sdk.util.HexConverter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
+import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Sparse Merkle tree path step.
+ */
+@JsonSerialize(using = SparseMerkleTreePathStepJson.Serializer.class)
+@JsonDeserialize(using = SparseMerkleTreePathStepJson.Deserializer.class)
 public class SparseMerkleTreePathStep {
 
   private final BigInteger path;
   private final Branch sibling;
   private final Branch branch;
 
-  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling,
-      FinalizedLeafBranch branch) {
+  SparseMerkleTreePathStep(BigInteger path, FinalizedBranch sibling, FinalizedLeafBranch branch) {
     this(
         path,
         sibling,
@@ -41,7 +51,7 @@ public class SparseMerkleTreePathStep {
     );
   }
 
-  public SparseMerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  SparseMerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -49,16 +59,60 @@ public class SparseMerkleTreePathStep {
     this.branch = branch;
   }
 
+  /**
+   * Get path.
+   *
+   * @return path
+   */
   public BigInteger getPath() {
     return this.path;
   }
 
+  /**
+   * Get sibling branch.
+   *
+   * @return sibling branch
+   */
   public Optional<Branch> getSibling() {
     return Optional.ofNullable(this.sibling);
   }
 
+  /**
+   * Get branch.
+   *
+   * @return branch
+   */
   public Optional<Branch> getBranch() {
     return Optional.ofNullable(this.branch);
+  }
+
+  /**
+   * Create sparse Merkle tree path step from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return sparse Merkle tree path step
+   */
+  public static SparseMerkleTreePathStep fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SparseMerkleTreePathStep(
+        BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(0))),
+        Branch.fromCbor(data.get(1)),
+        Branch.fromCbor(data.get(2))
+    );
+  }
+
+  /**
+   * Convert sparse Merkle tree path step to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeByteString(BigIntegerConverter.encode(this.path)),
+        CborSerializer.encodeOptional(this.sibling, Branch::toCbor),
+        CborSerializer.encodeOptional(this.branch, Branch::toCbor)
+    );
   }
 
   @Override
@@ -82,16 +136,49 @@ public class SparseMerkleTreePathStep {
         this.path.toString(2), this.sibling, this.branch);
   }
 
+  /**
+   * Sparse Merkle tree branch.
+   */
   public static class Branch {
 
     private final byte[] value;
-
-    public Branch(byte[] value) {
+    
+    Branch(byte[] value) {
       this.value = value == null ? null : Arrays.copyOf(value, value.length);
     }
 
+    /**
+     * Get branch value.
+     *
+     * @return value
+     */
     public byte[] getValue() {
       return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
+    }
+
+    /**
+     * Create branch from CBOR bytes.
+     *
+     * @param bytes CBOR bytes
+     * @return branch
+     */
+    public static Branch fromCbor(byte[] bytes) {
+      List<byte[]> data = CborDeserializer.readArray(bytes);
+
+      return new Branch(
+          CborDeserializer.readByteString(data.get(0))
+      );
+    }
+
+    /**
+     * Convert branch to CBOR bytes.
+     *
+     * @return CBOR bytes
+     */
+    public byte[] toCbor() {
+      return CborSerializer.encodeArray(
+          CborSerializer.encodeByteString(this.value)
+      );
     }
 
     @Override

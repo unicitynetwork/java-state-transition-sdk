@@ -1,7 +1,6 @@
 package org.unicitylabs.sdk.predicate.embedded;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.util.List;
 import java.util.Objects;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
@@ -9,20 +8,29 @@ import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineType;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 
+/**
+ * Burn predicate implementation.
+ */
 public class BurnPredicate implements Predicate {
 
   private final TokenId tokenId;
   private final TokenType tokenType;
   private final DataHash burnReason;
 
+  /**
+   * Create burn predicate.
+   *
+   * @param tokenId   token id
+   * @param tokenType token type
+   * @param reason    burn reason as coin aggregation tree hash
+   */
   public BurnPredicate(TokenId tokenId, TokenType tokenType, DataHash reason) {
     Objects.requireNonNull(tokenId, "Token id cannot be null");
     Objects.requireNonNull(tokenType, "Token type cannot be null");
@@ -33,14 +41,29 @@ public class BurnPredicate implements Predicate {
     this.burnReason = reason;
   }
 
+  /**
+   * Get token id.
+   *
+   * @return token id
+   */
   public TokenId getTokenId() {
     return this.tokenId;
   }
 
+  /**
+   * Get token type.
+   *
+   * @return token type
+   */
   public TokenType getTokenType() {
     return this.tokenType;
   }
 
+  /**
+   * Get burn reason.
+   *
+   * @return burn reason
+   */
   public DataHash getReason() {
     return this.burnReason;
   }
@@ -51,27 +74,36 @@ public class BurnPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(
-      Token<?> token,
-      Transaction<TransferTransactionData> transaction,
-      RootTrustBase trustBase
-  ) {
+  public boolean verify(Token<?> token, TransferTransaction transaction, RootTrustBase trustBase) {
     return false;
   }
 
   @Override
   public DataHash calculateHash() {
-    ArrayNode node = UnicityObjectMapper.CBOR.createArrayNode();
-    node.addPOJO(this.getReference().getHash());
-    node.addPOJO(this.tokenId);
+    return new DataHasher(HashAlgorithm.SHA256)
+        .update(
+            CborSerializer.encodeArray(
+                this.getReference().getHash().toCbor(),
+                this.tokenId.toCbor()
+            )
+        )
+        .digest();
+  }
 
-    try {
-      return new DataHasher(HashAlgorithm.SHA256)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(node))
-          .digest();
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+  /**
+   * Create burn predicate from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return burn predicate
+   */
+  public static BurnPredicate fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new BurnPredicate(
+        TokenId.fromCbor(data.get(0)),
+        TokenType.fromCbor(data.get(1)),
+        DataHash.fromCbor(data.get(2))
+    );
   }
 
   @Override
@@ -91,11 +123,11 @@ public class BurnPredicate implements Predicate {
 
   @Override
   public byte[] encodeParameters() {
-    try {
-      return UnicityObjectMapper.CBOR.writeValueAsBytes(this);
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+    return CborSerializer.encodeArray(
+        this.tokenId.toCbor(),
+        this.tokenType.toCbor(),
+        this.burnReason.toCbor()
+    );
   }
 
   @Override

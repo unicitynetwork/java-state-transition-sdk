@@ -11,7 +11,7 @@ class MaskedPredicateReferenceTest {
   @Test
   void testReferenceAddress() {
     Assertions.assertEquals(
-        "DIRECT://000095ca469ab7a37f8be976b7da1a6023369182ba3cdd1293c07a4b2bf40aa5118d60f5bf36",
+        "DIRECT://000056787e7ec9ef8e70cc715f061bd83981d552c6f813f9a319153e24321ccf5195f0f78200",
         MaskedPredicateReference.create(
                 new TokenType(new byte[32]),
                 "my_algorithm",

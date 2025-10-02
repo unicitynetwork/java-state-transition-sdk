@@ -92,10 +92,8 @@ public class CborSerializerTest {
         HexConverter.decode(
             "826d48656c6c6f2c20776f726c6421581900000000000000000000000000000000000000000000000000"),
         CborSerializer.encodeArray(
-            List.of(
-                CborSerializer.encodeTextString("Hello, world!"),
-                CborSerializer.encodeByteString(new byte[25])
-            )
+            CborSerializer.encodeTextString("Hello, world!"),
+            CborSerializer.encodeByteString(new byte[25])
         )
     );
 
@@ -107,7 +105,7 @@ public class CborSerializerTest {
     Assertions.assertArrayEquals(
         HexConverter.decode(
             "98196d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c64216d48656c6c6f2c20776f726c6421"),
-        CborSerializer.encodeArray(list)
+        CborSerializer.encodeArray(list.toArray(byte[][]::new))
     );
   }
 

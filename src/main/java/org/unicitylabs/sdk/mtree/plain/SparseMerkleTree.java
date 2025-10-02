@@ -1,12 +1,15 @@
 package org.unicitylabs.sdk.mtree.plain;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.mtree.CommonPath;
 import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
-import java.math.BigInteger;
-import java.util.Arrays;
 
+/**
+ * Sparse Merkle tree implementation.
+ */
 public class SparseMerkleTree {
 
   private Branch left = null;
@@ -14,10 +17,24 @@ public class SparseMerkleTree {
 
   private final HashAlgorithm hashAlgorithm;
 
+  /**
+   * Create sparse Merkle tree with given hash algorithm.
+   *
+   * @param hashAlgorithm hash algorithm
+   */
   public SparseMerkleTree(HashAlgorithm hashAlgorithm) {
     this.hashAlgorithm = hashAlgorithm;
   }
 
+  /**
+   * Add leaf to the tree at given path.
+   *
+   * @param path path of the leaf
+   * @param data data of the leaf
+   * @throws BranchExistsException     if branch already exists at the path
+   * @throws LeafOutOfBoundsException  if leaf is out of bounds
+   * @throws IllegalArgumentException  if path is less than 1
+   */
   public synchronized void addLeaf(BigInteger path, byte[] data)
       throws BranchExistsException, LeafOutOfBoundsException {
     if (path.compareTo(BigInteger.ONE) < 0) {
@@ -37,6 +54,11 @@ public class SparseMerkleTree {
     }
   }
 
+  /**
+   * Calculate root of the tree.
+   *
+   * @return root node and its state
+   */
   public synchronized SparseMerkleTreeRootNode calculateRoot() {
     FinalizedBranch left = this.left != null ? this.left.finalize(this.hashAlgorithm) : null;
     FinalizedBranch right = this.right != null ? this.right.finalize(this.hashAlgorithm) : null;

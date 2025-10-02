@@ -3,7 +3,6 @@ package org.unicitylabs.sdk.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import java.math.BigInteger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,14 +22,14 @@ public class RequestIdTest {
 
   @Test
   public void testJsonSerialization() throws JsonProcessingException {
-    RequestId requestId = RequestId.create(new byte[5],
-        new DataHash(HashAlgorithm.SHA256, new byte[32]));
+    RequestId requestId = RequestId.create(
+        new byte[5],
+        new DataHash(HashAlgorithm.SHA256, new byte[32])
+    );
 
-    Assertions.assertEquals(requestId,
-        UnicityObjectMapper.JSON.readValue(
-            UnicityObjectMapper.JSON.writeValueAsString(requestId),
-            RequestId.class
-        )
+    Assertions.assertEquals(
+        requestId,
+        RequestId.fromJson(requestId.toJson())
     );
   }
 }

@@ -1,15 +1,18 @@
 package org.unicitylabs.sdk.mtree.plain;
 
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.mtree.CommonPath;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.mtree.CommonPath;
 
+/**
+ * Sparse merkle tree state for given root.
+ */
 public class SparseMerkleTreeRootNode {
 
   private final BigInteger path = BigInteger.ONE; // Root path is always 0
@@ -34,10 +37,21 @@ public class SparseMerkleTreeRootNode {
     return new SparseMerkleTreeRootNode(left, right, rootHash);
   }
 
+  /**
+   * Get root hash.
+   *
+   * @return root hash
+   */
   public DataHash getRootHash() {
     return this.rootHash;
   }
 
+  /**
+   * Get merkle tree path for requested path.
+   *
+   * @param path path
+   * @return merkle tree path
+   */
   public SparseMerkleTreePath getPath(BigInteger path) {
     return new SparseMerkleTreePath(this.rootHash,
         SparseMerkleTreeRootNode.generatePath(path, this.left, this.right));

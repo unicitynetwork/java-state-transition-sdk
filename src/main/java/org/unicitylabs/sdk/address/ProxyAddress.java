@@ -1,20 +1,20 @@
 package org.unicitylabs.sdk.address;
 
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.token.Token;
-import org.unicitylabs.sdk.token.TokenId;
-import org.unicitylabs.sdk.util.HexConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.util.HexConverter;
 
 /**
- * Proxy address implementation
+ * Proxy address implementation.
  */
 public class ProxyAddress implements Address {
 
@@ -26,10 +26,22 @@ public class ProxyAddress implements Address {
     this.checksum = Arrays.copyOf(checksum, checksum.length);
   }
 
+  /**
+   * Create a proxy address from a nametag string.
+   *
+   * @param name the nametag
+   * @return the proxy address
+   */
   public static ProxyAddress create(String name) {
     return ProxyAddress.create(TokenId.fromNameTag(name));
   }
 
+  /**
+   * Create a proxy address from a token ID.
+   *
+   * @param tokenId the token ID
+   * @return the proxy address
+   */
   public static ProxyAddress create(TokenId tokenId) {
     DataHash checksum = new DataHasher(HashAlgorithm.SHA256).update(tokenId.getBytes())
         .digest();
@@ -46,6 +58,15 @@ public class ProxyAddress implements Address {
     return this.toString();
   }
 
+  /**
+   * Resolve a proxy address to a direct address using a list of nametag tokens.
+   *
+   * @param inputAddress the input address to resolve
+   * @param nametags     the list of nametag tokens
+   * @return the resolved direct address, or null if resolution fails
+   * @throws IllegalArgumentException if the nametags list contains null elements or duplicate
+   *                                  addresses
+   */
   public static Address resolve(Address inputAddress, List<Token<?>> nametags) {
     Map<Address, Token<?>> nametagMap = new HashMap<>();
     for (Token<?> token : nametags) {

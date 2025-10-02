@@ -1,6 +1,7 @@
 # Unicity Java State Transition SDK
 
-A Java SDK for interacting with the Unicity network, enabling state transitions and token operations with cross-platform support for JVM and Android 12+.
+A Java SDK for interacting with the Unicity network, enabling state transitions and token operations
+with cross-platform support for JVM and Android 12+.
 
 ## Features
 
@@ -22,6 +23,7 @@ A Java SDK for interacting with the Unicity network, enabling state transitions 
 ### Using JitPack
 
 Add JitPack repository:
+
 ```groovy
 repositories {
     maven { url 'https://jitpack.io' }
@@ -29,6 +31,7 @@ repositories {
 ```
 
 #### For Android Projects:
+
 ```groovy
 dependencies {
     implementation 'com.github.unicitynetwork:java-state-transition-sdk:1.1:android'
@@ -36,6 +39,7 @@ dependencies {
 ```
 
 #### For JVM Projects:
+
 ```groovy
 dependencies {
     implementation 'com.github.unicitynetwork:java-state-transition-sdk:1.1:jvm'
@@ -52,179 +56,245 @@ dependencies {
 
 ## Quick Start
 
+### Util methods
+
+```java
+private static final SecureRandom RANDOM = new SecureRandom();
+
+/**
+ * Generate random bytes of specified length.
+ */
+public static byte[] randomBytes(int length) {
+  byte[] bytes = new byte[length];
+  RANDOM.nextBytes(bytes);
+  return bytes;
+}
+```
+
 ### Initialize the Client
 
 ```java
-import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.api.AggregatorClient;
-
 // Connect to the Unicity test network
 String aggregatorUrl = "https://gateway-test.unicity.network";
-AggregatorClient aggregatorClient = new AggregatorClient(aggregatorUrl);
+DefaultAggregatorClient aggregatorClient = new DefaultAggregatorClient(aggregatorUrl);
 StateTransitionClient client = new StateTransitionClient(aggregatorClient);
+
+// Create root trust base from classpath
+RootTrustBase trustbase = RootTrustBase.fromJson(
+    new String(getClass().getResourceAsStream("/trust-base.json").readAllBytes())
+);
 ```
 
 ### Mint a Token
 
 ```java
-import org.unicitylabs.sdk.token.*;
-import org.unicitylabs.sdk.token.fungible.*;
-import org.unicitylabs.sdk.transaction.*;
-import org.unicitylabs.sdk.predicate.*;
-import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
+byte[] secret = "minter_secret".getBytes(StandardCharsets.UTF_8);
+// Generate data for token
+TokenId tokenId = new TokenId(randomBytes(32));
+TokenType tokenType = new TokenType(randomBytes(32));
+byte[] tokenData = "token immutable data".getBytes(StandardCharsets.UTF_8);
+TokenCoinData coinData = new TokenCoinData(
+    Map.of(
+        new CoinId("coin".getBytes()), BigInteger.valueOf(100),
+        new CoinId("second coin".getBytes()), BigInteger.valueOf(5)
+    )
+);
 
-// Create signing service from secret
-byte[] secret = "your-secret-key".getBytes();
-byte[] nonce = new byte[32]; // Generate random nonce
-SigningService signingService = SigningService.createFromSecret(secret, nonce).get();
-
-// Create token parameters
-TokenId tokenId = TokenId.create(randomBytes(32));
-TokenType tokenType = TokenType.create(randomBytes(32));
-
-// Create predicate for ownership
+// Create predicate for initial state and use its reference as address
+byte[] nonce = randomBytes(32);
+// Create key pair from nonce and secret
+SigningService signingService = SigningService.createFromMaskedSecret(secret, nonce);
 MaskedPredicate predicate = MaskedPredicate.create(
     tokenId,
     tokenType,
     signingService,
     HashAlgorithm.SHA256,
     nonce
-).get();
-
-// Create token data
-TestTokenData tokenData = new TestTokenData(randomBytes(32));
-
-// Create coins
-Map<CoinId, BigInteger> coins = new HashMap<>();
-coins.put(new CoinId(randomBytes(32)), BigInteger.valueOf(100));
-coins.put(new CoinId(randomBytes(32)), BigInteger.valueOf(50));
-TokenCoinData coinData = new TokenCoinData(coins);
-
-// Create mint transaction
-MintTransactionData<TestTokenData> mintData = new MintTransactionData<>(
-    tokenId,
-    tokenType,
-    predicate,
-    tokenData,
-    coinData,
-    null,  // dataHash (optional)
-    randomBytes(32)  // salt
 );
 
-// Submit transaction
-Commitment<MintTransactionData<TestTokenData>> commitment = 
-    client.submitMintTransaction(mintData).get();
+byte[] salt = randomBytes(32);
+MintCommitment<?> commitment = MintCommitment.create(
+    new MintTransaction.Data<>(
+        tokenId,
+        tokenType,
+        tokenData,
+        coinData,
+        predicate.getReference().toAddress(),
+        salt,
+        null,
+        null
+    )
+);
+
+// Submit mint transaction using StateTransitionClient
+SubmitCommitmentResponse response = client
+    .submitCommitment(commitment)
+    .get();
+
+if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    throw new Exception(
+        String.format(
+            "Failed to submit mint commitment: %s", 
+            response.getStatus()
+        )
+    );
+}
 
 // Wait for inclusion proof
 InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
-    client, 
-    commitment,
-    Duration.ofSeconds(30),
-    Duration.ofSeconds(1)
+    client,
+    trustBase,
+    commitment
 ).get();
 
-// Create transaction with proof
-Transaction<MintTransactionData<TestTokenData>> mintTransaction =
-    client.createTransaction(commitment, inclusionProof).get();
-
-// Create token
-TokenState tokenState = TokenState.create(predicate, tokenData.getData());
-Token<Transaction<MintTransactionData<?>>> token = 
-    new Token<>(tokenState, (Transaction) mintTransaction);
-
-System.out.println("Token minted with ID: " + token.getId().toJSON());
+// Create mint transaction
+Token<?> token = Token.create(
+    trustBase,
+    // Create initial state with transaction data
+    new TokenState(predicate, null),
+    commitment.toTransaction(inclusionProof)
+);
 ```
 
 ### Get Block Height
 
 ```java
 Long blockHeight = client.getAggregatorClient().getBlockHeight().get();
-System.out.println("Current block height: " + blockHeight);
+System.out.println("Current block height: "+blockHeight);
 ```
 
 ### Transfer a Token
 
 ```java
-// Create transfer transaction data
-TransactionData transferData = TransactionData.create(
-    token.getState(),
-    recipientAddress.toString(),
-    randomBytes(32),  // salt
-    dataHash,         // optional data hash
-    messageBytes      // optional message
-).get();
+byte[] senderSecret = secret;
+byte[] senderNonce = nonce;
 
-// Submit transfer
-Commitment<TransactionData> transferCommitment =
-    client.submitTransaction(transferData, signingService).get();
+String recipientNametag = "RECIPIENT";
+byte[] recipientData = "Custom data".getBytes(StandardCharsets.UTF_8);
+DataHash recipientDataHash = new DataHasher(HashAlgorithm.SHA256)
+    .update(recipientData)
+    .digest();
 
-// Wait for inclusion proof and create transaction
-InclusionProof transferProof = InclusionProofUtils.waitInclusionProof(
-    client, transferCommitment
-).get();
+byte[] salt = randomBytes(32);
 
-Transaction<TransactionData> transferTransaction =
-    client.createTransaction(transferCommitment, transferProof).get();
-```
-
-### Offline Token Transfer
-
-The SDK supports offline token transfers, where the transaction is prepared by the sender and can be transferred offline (e.g., via NFC, QR code, or file) to the recipient.
-
-```java
-// Step 1: Sender creates offline commitment
-TransactionData transactionData = TransactionData.create(
-    token.getState(),
-    recipientAddress.toString(),
-    randomBytes(32),  // salt
-    dataHash,         // optional data hash
-    messageBytes      // optional message
-).get();
-
-// Create authenticator (signed by sender)
-Authenticator authenticator = Authenticator.create(
-    senderSigningService,
-    transactionData.getHash(),
-    transactionData.getSourceState().getHash()
-).get();
-
-// Create request ID
-RequestId requestId = RequestId.create(
-    senderSigningService.getPublicKey(), 
-    transactionData.getSourceState().getHash()
-).get();
-
-// Create commitment
-Commitment<TransactionData> commitment = new Commitment<>(
-    requestId, 
-    transactionData, 
-    authenticator
+// Submit transfer transaction
+TransferCommitment transferCommitment = TransferCommitment.create(
+    token,
+    ProxyAddress.create(recipientNametag),
+    salt,
+    recipientDataHash,
+    null,
+    SigningService.createFromMaskedSecret(senderSecret, senderNonce)
 );
 
-// Step 2: Transfer commitment data offline (NFC, QR code, file, etc.)
-// In a real scenario, serialize commitment and token data for transfer
+SubmitCommitmentResponse transferResponse = this.client.submitCommitment(transferCommitment).get();
+if (transferResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    throw new Exception(
+      String.format(
+        "Failed to submit transfer commitment: %s",
+        transferResponse.getStatus()
+      )
+    );
+}
 
-// Step 3: Recipient submits the commitment online
-SubmitCommitmentResponse response = client.submitCommitment(commitment).get();
+// Create transfer transaction
+TransferTransaction transferTransaction = transferCommitment.toTransaction(
+    InclusionProofUtils.waitInclusionProof(
+        client,
+        trustBase,
+        transferCommitment
+    ).get()
+);
+
+// Prepare info for sending to recipient
+String transferTransactionJson = transferTransaction.toJson();
+String tokenJson = token.toJson();
+```
+
+### Receive the token
+
+```java
+String recipientNametag = "RECIPIENT";
+byte[] receiverSecret = "RECEIVER_SECRET".getBytes();
+
+Token<?> token = Token.fromJson("TOKEN JSON");
+TransferTransaction transaction = TransferTransaction.fromJson("TRANSFER TRANSACTION JSON");
+
+// Create nametag token
+TokenType nametagType = new TokenType(randomBytes(32));
+byte[] nametagNonce = randomBytes(32);
+byte[] nametagSalt = randomBytes(32);
+
+MintCommitment<?> nametagMintCommitment = MintCommitment.create(
+    new MintTransaction.NametagData(
+        recipientNametag,
+        nametagType,
+        MaskedPredicateReference.create(
+            nametagType,
+            SigningService.createFromMaskedSecret(receiverSecret, nametagNonce),
+            HashAlgorithm.SHA256,
+            nametagNonce
+        ).toAddress(),
+        nametagSalt,
+        UnmaskedPredicateReference.create(
+            token.getType(),
+            SigningService.createFromSecret(receiverSecret),
+            HashAlgorithm.SHA256
+        ).toAddress()
+    )
+);
+
+// Submit nametag mint transaction using StateTransitionClient
+SubmitCommitmentResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment).get();
+if (nametagMintResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    throw new Exception(
+        String.format(
+            "Failed to submit nametag mint commitment: %s",
+            nametagMintResponse.getStatus()
+        )
+    );
+}
 
 // Wait for inclusion proof
 InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
-    client, 
-    commitment
+    client,
+    trustBase,
+    nametagMintCommitment
 ).get();
 
-// Create transaction with proof
-Transaction<TransactionData> confirmedTransaction = 
-    client.createTransaction(commitment, inclusionProof).get();
+Token<?> nametagToken = Token.create(
+    trustBase,
+    new TokenState(
+        MaskedPredicate.create(
+            nametagMintCommitment.getTransactionData().getTokenId(),
+            nametagMintCommitment.getTransactionData().getTokenType(),
+            SigningService.createFromMaskedSecret(receiverSecret, nametagNonce),
+            HashAlgorithm.SHA256,
+            nametagNonce
+        ),
+        null
+    ),
+    nametagMintCommitment.toTransaction(inclusionProof)
+);
 
-// Finish transaction with recipient's state
-TokenState recipientTokenState = TokenState.create(recipientPredicate, recipientData);
-Token<?> updatedToken = client.finishTransaction(
+// Receiver finalizes the token
+Token<?> finalizedToken = client.finalizeTransaction(
+    trustBase,
     token,
-    recipientTokenState,
-    confirmedTransaction
-).get();
+    new TokenState(
+        UnmaskedPredicate.create(
+            token.getId(),
+            token.getType(),
+            SigningService.createFromSecret(receiverSecret),
+            HashAlgorithm.SHA256,
+            transaction.getData().getSalt()
+        ),
+        null
+    ),
+    transaction,
+    List.of(nametagToken)
+);
+
 ```
 
 ## Building from Source
@@ -260,6 +330,7 @@ AGGREGATOR_URL=https://gateway-test.unicity.network ./gradlew integrationTest
 ### Android Compatibility
 
 The SDK is compatible with Android 12+ (API level 31+). It uses:
+
 - OkHttp for HTTP operations instead of Java 11's HttpClient
 - Android-compatible Guava version
 - Animal Sniffer plugin to ensure API compatibility
@@ -267,6 +338,7 @@ The SDK is compatible with Android 12+ (API level 31+). It uses:
 ### JVM Compatibility
 
 The standard JVM version uses:
+
 - Java 11 APIs
 - Full Guava JRE version
 - All Java 11 features
@@ -275,39 +347,26 @@ The standard JVM version uses:
 
 The SDK follows a modular architecture under `org.unicitylabs.sdk`:
 
-- **`api`**: Core API interfaces and aggregator client
-- **`address`**: Address schemes and implementations (DirectAddress, ProxyAddress)
-- **`hash`**: Cryptographic hashing (SHA256, SHA224, SHA384, SHA512, RIPEMD160)
-- **`jsonrpc`**: JSON-RPC transport layer with OkHttp
+- **api**: Core API interfaces and aggregator client
+- **address**: Address schemes and implementations (DirectAddress, ProxyAddress)
+- **bft**: BFT layer data, trustbase, certificates, seals
+- **hash**: Cryptographic hashing (SHA256, SHA224, SHA384, SHA512, RIPEMD160)
+- **jsonrpc**: JSON-RPC transport layer
 - **`mtree`**: Merkle tree implementations
-  - `plain`: Sparse Merkle Tree (SMT)
-  - `sum`: Sparse Merkle Sum Tree (SMST)
-- **`predicate`**: Ownership predicates (Masked, Unmasked, Burn, Default)
-- **`serializer`**: CBOR and JSON serializers hierarchy
-  - `cbor/`: CBOR serializers for all domain objects
-  - `json/`: JSON serializers for all domain objects
-- **`signing`**: Digital signature support (ECDSA secp256k1)
-- **`token`**: Token types including fungible tokens and nametags
-  - `fungible`: Fungible token support with CoinId and TokenCoinData
-- **`transaction`**: Transaction types and builders
-  - `split`: Token splitting functionality with TokenSplitBuilder
-- **`util`**: Utilities including BitString and HexConverter
+    - `plain`: Sparse Merkle Tree (SMT)
+    - `sum`: Sparse Merkle Sum Tree (SMST)
+- **predicate**: Ownership predicates
+- **serializer**: CBOR/JSON serializer utilities
+- **signing**: Digital signature support (ECDSA secp256k1)
+- **token**: Token types
+    - `fungible`: Fungible token support with CoinId and TokenCoinData
+      **`transaction`**: Transaction types and builders
+    - `split`: Token splitting functionality with TokenSplitBuilder
+- **util**: Utilities
+- **verification**: Verification rules
 
-## Error Handling
-
-All async operations return `CompletableFuture` which can be handled with standard Java patterns:
-
-```java
-client.submitMintTransaction(mintData)
-    .thenApply(commitment -> {
-        System.out.println("Transaction submitted: " + commitment.getRequestId());
-        return commitment;
-    })
-    .exceptionally(error -> {
-        System.err.println("Transaction failed: " + error.getMessage());
-        return null;
-    });
-```
+All certificate and transaction verification is handled internally by the SDK, requiring only the
+trustbase as input from the user.
 
 ## Contributing
 
@@ -330,10 +389,13 @@ client.submitMintTransaction(mintData)
 The SDK includes comprehensive test suites:
 
 ### Unit Tests
+
 Located in `src/test/java`, these test individual components in isolation.
 
 ### Integration Tests
+
 Located in `src/test/java/org/unicitylabs/sdk/`:
+
 - `integration/TokenIntegrationTest`: Tests against Docker-based local aggregator
 - `e2e/TokenE2ETest`: E2E tests using CommonTestFlow (requires `AGGREGATOR_URL` env var)
 - `e2e/BasicE2ETest`: Basic connectivity and performance tests
@@ -357,7 +419,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For issues and feature requests, please use the [GitHub issue tracker](https://github.com/unicitynetwork/java-state-transition-sdk/issues).
+For issues and feature requests, please use
+the [GitHub issue tracker](https://github.com/unicitynetwork/java-state-transition-sdk/issues).
 
 For questions about the Unicity Labs, visit [unicity-labs.com](https://unicity-labs.com).
 

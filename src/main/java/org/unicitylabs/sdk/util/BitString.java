@@ -1,7 +1,7 @@
 package org.unicitylabs.sdk.util;
 
-import org.unicitylabs.sdk.hash.DataHash;
 import java.math.BigInteger;
+import org.unicitylabs.sdk.hash.DataHash;
 
 /**
  * Represents a bit string as a BigInteger. This class is used to ensure that leading zero bits are
@@ -17,9 +17,10 @@ public class BitString {
    * @param data The input data to convert into a BitString.
    */
   public BitString(byte[] data) {
-    // Create hex string with "01" prefix
-    String hexString = "01" + HexConverter.encode(data);
-    this.value = new BigInteger(hexString, 16);
+    byte[] dataWithPrefix = new byte[data.length + 1];
+    dataWithPrefix[0] = 1;
+    System.arraycopy(data, 0, dataWithPrefix, 1, data.length);
+    this.value = new BigInteger(1, dataWithPrefix);
   }
 
   /**
@@ -40,21 +41,6 @@ public class BitString {
    */
   public BigInteger toBigInteger() {
     return value;
-  }
-
-  /**
-   * Converts bit string to byte array.
-   *
-   * @return The byte array representation of the bit string
-   */
-  public byte[] toBytes() {
-    // Convert to hex string, remove the "01" prefix we added, then convert back to bytes
-    String hex = value.toString(16);
-    if (hex.startsWith("1") && hex.length() > 2) {
-      // Remove the leading "1" from "10000..."
-      hex = hex.substring(1);
-    }
-    return HexConverter.decode(hex);
   }
 
   /**

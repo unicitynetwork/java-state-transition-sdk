@@ -1,7 +1,7 @@
 package org.unicitylabs.sdk.integration;
 
 import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.api.DefaultAggregatorClient;
 import org.junit.jupiter.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -29,7 +29,7 @@ public class TokenIntegrationTest {
     private GenericContainer<?> mongoSetup;
     private GenericContainer<?> aggregator;
     
-    private AggregatorClient aggregatorClient;
+    private DefaultAggregatorClient aggregatorClient;
     private StateTransitionClient client;
     
     @BeforeAll
@@ -88,7 +88,7 @@ public class TokenIntegrationTest {
     
     private void initializeClient() {
         String aggregatorUrl = String.format("http://localhost:%d", aggregator.getMappedPort(3000));
-        aggregatorClient = new AggregatorClient(aggregatorUrl);
+        aggregatorClient = new DefaultAggregatorClient(aggregatorUrl);
         client = new StateTransitionClient(aggregatorClient);
     }
     

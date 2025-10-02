@@ -10,8 +10,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+/**
+ * CBOR serialization utilities.
+ */
 public class CborSerializer {
 
+  /**
+   * Encode value to CBOR, if null encode null bytes.
+   *
+   * @param data    value to be encoded
+   * @param encoder encode method
+   * @param <T>     value type
+   * @return bytes
+   */
   public static <T> byte[] encodeOptional(T data, Function<T, byte[]> encoder) {
     if (data == null) {
       return new byte[]{(byte) 0xf6};
@@ -19,6 +30,12 @@ public class CborSerializer {
     return encoder.apply(data);
   }
 
+  /**
+   * Encode unsigned integer to CBOR bytes.
+   *
+   * @param input unsigned integer
+   * @return bytes
+   */
   public static byte[] encodeUnsignedInteger(long input) {
     if (Long.compareUnsigned(input, 24) < 0) {
       return new byte[]{(byte) (CborMajorType.UNSIGNED_INTEGER.getType() | input)};
@@ -27,14 +44,18 @@ public class CborSerializer {
     byte[] bytes = CborSerializer.getUnsignedLongAsPaddedBytes(input);
     byte[] result = new byte[1 + bytes.length];
     System.arraycopy(bytes, 0, result, 1, bytes.length);
-    result[0] = (byte) (
-        CborMajorType.UNSIGNED_INTEGER.getType()
-            | CborSerializer.getAdditionalInformationBits(bytes.length)
-    );
+    result[0] = (byte) (CborMajorType.UNSIGNED_INTEGER.getType()
+        | CborSerializer.getAdditionalInformationBits(bytes.length));
 
     return result;
   }
 
+  /**
+   * Encode byte string to CBOR bytes.
+   *
+   * @param input bytes
+   * @return bytes
+   */
   public static byte[] encodeByteString(byte[] input) {
     if (input == null) {
       throw new CborSerializationException("Input byte array cannot be null.");
@@ -43,6 +64,12 @@ public class CborSerializer {
     return CborSerializer.encodeRawArray(input, input.length, CborMajorType.BYTE_STRING);
   }
 
+  /**
+   * Encode text string as CBOR bytes.
+   *
+   * @param input text
+   * @return bytes
+   */
   public static byte[] encodeTextString(String input) {
     if (input == null) {
       throw new CborSerializationException("Input string cannot be null.");
@@ -52,7 +79,13 @@ public class CborSerializer {
     return CborSerializer.encodeRawArray(bytes, bytes.length, CborMajorType.TEXT_STRING);
   }
 
-  public static byte[] encodeArray(List<byte[]> input) {
+  /**
+   * Encode array of CBOR elements to single CBOR byte array.
+   *
+   * @param input elements
+   * @return bytes
+   */
+  public static byte[] encodeArray(byte[]... input) {
     if (input == null) {
       throw new CborSerializationException("Input byte array list cannot be null.");
     }
@@ -69,13 +102,14 @@ public class CborSerializer {
       length += bytes.length;
     }
 
-    return CborSerializer.encodeRawArray(data, input.size(), CborMajorType.ARRAY);
+    return CborSerializer.encodeRawArray(data, input.length, CborMajorType.ARRAY);
   }
 
   /**
+   * Encode map of CBOR elements to single CBOR byte array.
    *
    * @param input map with hex converted keys
-   * @return cbor representation of the map
+   * @return CBOR representation of the map
    */
   public static byte[] encodeMap(CborMap input) {
     if (input == null) {
@@ -99,6 +133,13 @@ public class CborSerializer {
     return CborSerializer.encodeRawArray(data, input.entries.size(), CborMajorType.MAP);
   }
 
+  /**
+   * Encode CBOR tag with CBOR encoded element to single CBOR byte array.
+   *
+   * @param tag   CBOR tag
+   * @param input element
+   * @return bytes
+   */
   public static byte[] encodeTag(long tag, byte[] input) {
     if (Long.compareUnsigned(tag, 24) < 0) {
       byte[] result = new byte[1 + input.length];
@@ -110,20 +151,29 @@ public class CborSerializer {
 
     byte[] bytes = CborSerializer.getUnsignedLongAsPaddedBytes(tag);
     byte[] result = new byte[1 + bytes.length + input.length];
-    result[0] = (byte) (
-        CborMajorType.TAG.getType()
-            | CborSerializer.getAdditionalInformationBits(bytes.length)
-    );
+    result[0] = (byte) (CborMajorType.TAG.getType()
+        | CborSerializer.getAdditionalInformationBits(bytes.length));
     System.arraycopy(bytes, 0, result, 1, bytes.length);
     System.arraycopy(input, 0, result, 1 + bytes.length, input.length);
 
     return result;
   }
 
+  /**
+   * Encode boolean to CBOR bytes.
+   *
+   * @param input boolean
+   * @return bytes
+   */
   public static byte[] encodeBoolean(boolean input) {
     return new byte[]{(byte) (input ? 0xf5 : 0xf4)};
   }
 
+  /**
+   * Encode null to CBOR bytes.
+   *
+   * @return bytes
+   */
   public static byte[] encodeNull() {
     return new byte[]{(byte) 0xf6};
   }
@@ -139,9 +189,8 @@ public class CborSerializer {
 
     byte[] lengthBytes = CborSerializer.getUnsignedLongAsPaddedBytes(length);
     byte[] result = new byte[1 + lengthBytes.length + input.length];
-    result[0] = (byte) (
-        type.getType() | CborSerializer.getAdditionalInformationBits(lengthBytes.length)
-    );
+    result[0] = (byte) (type.getType()
+        | CborSerializer.getAdditionalInformationBits(lengthBytes.length));
     System.arraycopy(lengthBytes, 0, result, 1, lengthBytes.length);
     System.arraycopy(input, 0, result, 1 + lengthBytes.length, input.length);
 
@@ -174,10 +223,18 @@ public class CborSerializer {
     return buffer.array();
   }
 
+  /**
+   * CBOR map to order elements for canonicalization.
+   */
   public static final class CborMap {
 
     private final ArrayList<Entry> entries;
 
+    /**
+     * Create map from set of CBOR elements.
+     *
+     * @param entries elements
+     */
     public CborMap(Set<Entry> entries) {
       this.entries = new ArrayList<>(entries);
       this.entries.sort((a, b) -> {
@@ -195,15 +252,29 @@ public class CborSerializer {
       });
     }
 
+    /**
+     * Get CBOR element list.
+     *
+     * @return element list
+     */
     public List<Entry> getEntries() {
       return List.copyOf(this.entries);
     }
 
+    /**
+     * CBOR entry for map.
+     */
     public static final class Entry {
 
       private final byte[] key;
       private final byte[] value;
 
+      /**
+       * Create new CBOR element map entry.
+       *
+       * @param key   CBOR bytes
+       * @param value CBOR bytes
+       */
       public Entry(byte[] key, byte[] value) {
         Objects.requireNonNull(key, "Key cannot be null.");
         Objects.requireNonNull(value, "Value cannot be null.");
@@ -212,10 +283,20 @@ public class CborSerializer {
         this.value = Arrays.copyOf(value, value.length);
       }
 
+      /**
+       * Get entry key CBOR bytes element.
+       *
+       * @return bytes
+       */
       public byte[] getKey() {
         return Arrays.copyOf(this.key, this.key.length);
       }
 
+      /**
+       * Get entry value CBOR bytes element.
+       *
+       * @return bytes
+       */
       public byte[] getValue() {
         return Arrays.copyOf(this.value, this.value.length);
       }

@@ -2,14 +2,32 @@ package org.unicitylabs.sdk.util;
 
 import java.math.BigInteger;
 
+/**
+ * BigInteger converter to bytes and back.
+ */
 public class BigIntegerConverter {
 
-  private BigIntegerConverter() {}
+  private BigIntegerConverter() {
+  }
 
+  /**
+   * Decode bytes to BigInteger.
+   *
+   * @param data bytes
+   * @return BigInteger
+   */
   public static BigInteger decode(byte[] data) {
     return BigIntegerConverter.decode(data, 0, data.length);
   }
 
+  /**
+   * Decode bytes to BigInteger for byte range.
+   *
+   * @param data   bytes
+   * @param offset offset position
+   * @param length length
+   * @return BigInteger
+   */
   public static BigInteger decode(byte[] data, int offset, int length) {
     if (offset < 0 || length < 0 || offset + length > data.length) {
       throw new Error("Index out of bounds");
@@ -22,6 +40,12 @@ public class BigIntegerConverter {
     return t;
   }
 
+  /**
+   * Encode BigInteger to bytes.
+   *
+   * @param value BigInteger
+   * @return bytes
+   */
   public static byte[] encode(BigInteger value) {
     int length = 0;
     BigInteger t = value;

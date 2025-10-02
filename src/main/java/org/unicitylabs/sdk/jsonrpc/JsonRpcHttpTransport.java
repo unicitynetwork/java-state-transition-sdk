@@ -42,8 +42,11 @@ public class JsonRpcHttpTransport {
           .url(this.url)
           .post(
               RequestBody.create(
-                  UnicityObjectMapper.JSON.writeValueAsString(new JsonRpcRequest(method, params)),
-                  JsonRpcHttpTransport.MEDIA_TYPE_JSON)
+                  UnicityObjectMapper.JSON.writeValueAsString(
+                      new JsonRpcRequest(method, params)
+                  ),
+                  JsonRpcHttpTransport.MEDIA_TYPE_JSON
+              )
           )
           .build();
 
@@ -58,18 +61,23 @@ public class JsonRpcHttpTransport {
           try (ResponseBody body = response.body()) {
             if (!response.isSuccessful()) {
               String error = body != null ? body.string() : "";
-              future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
+              future.completeExceptionally(new JsonRpcNetworkException(response.code(), error));
               return;
             }
 
             JsonRpcResponse<T> data = UnicityObjectMapper.JSON.readValue(
                 body != null ? body.string() : "",
                 UnicityObjectMapper.JSON.getTypeFactory()
-                    .constructParametricType(JsonRpcResponse.class, resultType));
+                    .constructParametricType(JsonRpcResponse.class, resultType)
+            );
 
             if (data.getError() != null) {
-
-              future.completeExceptionally(new JsonRpcDataError(data.getError()));
+              future.completeExceptionally(
+                  new JsonRpcNetworkException(
+                      data.getError().getCode(),
+                      data.getError().getMessage()
+                  )
+              );
               return;
             }
 

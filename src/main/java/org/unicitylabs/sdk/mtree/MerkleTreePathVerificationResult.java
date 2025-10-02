@@ -2,26 +2,50 @@ package org.unicitylabs.sdk.mtree;
 
 import java.util.Objects;
 
+/**
+ * Merkle tree path verification result.
+ */
 public class MerkleTreePathVerificationResult {
 
   private final boolean pathValid;
   private final boolean pathIncluded;
 
+  /**
+   * Create merkle tree path verification result.
+   *
+   * @param pathValid    is path valid
+   * @param pathIncluded is path included for given state id
+   */
   public MerkleTreePathVerificationResult(boolean pathValid, boolean pathIncluded) {
     this.pathValid = pathValid;
     this.pathIncluded = pathIncluded;
   }
 
+  /**
+   * Is path valid.
+   *
+   * @return true if path is valid
+   */
   public boolean isPathValid() {
-    return pathValid;
+    return this.pathValid;
   }
 
+  /**
+   * Is path included for given state id.
+   *
+   * @return true if is included
+   */
   public boolean isPathIncluded() {
-    return pathIncluded;
+    return this.pathIncluded;
   }
 
-  public boolean isValid() {
-    return pathValid && pathIncluded;
+  /**
+   * Is verification successful.
+   *
+   * @return true if successful
+   */
+  public boolean isSuccessful() {
+    return this.pathValid && this.pathIncluded;
   }
 
   @Override

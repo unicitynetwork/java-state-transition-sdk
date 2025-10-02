@@ -1,13 +1,25 @@
 package org.unicitylabs.sdk.address;
 
+import java.util.Arrays;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.util.HexConverter;
-import java.util.Arrays;
-import java.util.Objects;
 
+/**
+ * Factory for creating Address instances from string representations.
+ */
 public class AddressFactory {
 
+  /**
+   * Create an Address from its string representation.
+   *
+   * @param address The address string.
+   * @return The corresponding Address instance.
+   * @throws IllegalArgumentException if the address format is invalid or does not match the
+   *                                  expected format.
+   * @throws NullPointerException     if the address is null.
+   */
   public static Address createAddress(String address) {
     Objects.requireNonNull(address, "Address cannot be null");
 

@@ -1,13 +1,16 @@
 package org.unicitylabs.sdk.mtree.sum;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
 import org.unicitylabs.sdk.mtree.CommonPath;
 import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Objects;
 
+/**
+ * Sparse Merkle Sum Tree implementation.
+ */
 public class SparseMerkleSumTree {
 
   private Branch left = null;
@@ -15,10 +18,26 @@ public class SparseMerkleSumTree {
 
   private final HashAlgorithm hashAlgorithm;
 
+  /**
+   * Create a sparse merkle sum tree.
+   *
+   * @param hashAlgorithm hash algorithm to use
+   */
   public SparseMerkleSumTree(HashAlgorithm hashAlgorithm) {
     this.hashAlgorithm = hashAlgorithm;
   }
 
+  /**
+   * Add a leaf to the tree.
+   *
+   * @param path  path of the leaf (must be greater than 0)
+   * @param value value stored in the leaf
+   * @throws BranchExistsException    if a branch already exists at the given path
+   * @throws LeafOutOfBoundsException if a leaf already exists at the given path
+   * @throws IllegalArgumentException if the path is less than or equal to 0 or if the counter is
+   *                                  negative
+   * @throws NullPointerException     if the path or value is null
+   */
   public synchronized void addLeaf(BigInteger path, LeafValue value)
       throws BranchExistsException, LeafOutOfBoundsException {
     Objects.requireNonNull(path, "Path cannot be null");
@@ -45,6 +64,11 @@ public class SparseMerkleSumTree {
     }
   }
 
+  /**
+   * Calculate the root of the tree and its state.
+   *
+   * @return root node of the tree
+   */
   public synchronized SparseMerkleSumTreeRootNode calculateRoot() {
     FinalizedBranch left = this.left != null ? this.left.finalize(this.hashAlgorithm) : null;
     FinalizedBranch right = this.right != null ? this.right.finalize(this.hashAlgorithm) : null;
@@ -102,11 +126,21 @@ public class SparseMerkleSumTree {
             remainingPath.shiftRight(commonPath.getLength()), value), nodeBranch.getRight());
   }
 
+  /**
+   * Value stored in a leaf of the sparse merkle sum tree.
+   */
   public static class LeafValue {
 
     private final byte[] value;
     private final BigInteger counter;
 
+    /**
+     * Create a leaf value.
+     *
+     * @param value   byte array value
+     * @param counter unsigned counter
+     * @throws NullPointerException if the value or counter is null
+     */
     public LeafValue(byte[] value, BigInteger counter) {
       Objects.requireNonNull(value, "Value cannot be null");
       Objects.requireNonNull(counter, "Counter cannot be null");
@@ -115,10 +149,20 @@ public class SparseMerkleSumTree {
       this.counter = counter;
     }
 
+    /**
+     * Get a copy of leaf byte value.
+     *
+     * @return bytes
+     */
     public byte[] getValue() {
       return Arrays.copyOf(this.value, this.value.length);
     }
 
+    /**
+     * Get the counter.
+     *
+     * @return counter
+     */
     public BigInteger getCounter() {
       return this.counter;
     }

@@ -1,9 +1,24 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import org.unicitylabs.sdk.hash.DataHash;
 import java.math.BigInteger;
+import org.unicitylabs.sdk.hash.DataHash;
 
+/**
+ * Finalized branch in sparse merkle sum tree.
+ */
 interface FinalizedBranch extends Branch {
-    DataHash getHash();
-    BigInteger getCounter();
+
+  /**
+   * Get hash of the branch.
+   *
+   * @return hash
+   */
+  DataHash getHash();
+
+  /**
+   * Get counter of the branch.
+   *
+   * @return counter
+   */
+  BigInteger getCounter();
 }

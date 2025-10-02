@@ -1,25 +1,28 @@
 package org.unicitylabs.sdk.api;
 
-import org.unicitylabs.sdk.Hashable;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.util.BitString;
+import org.unicitylabs.sdk.util.HexConverter;
 
 /**
  * Represents a unique request identifier derived from a public key and state hash.
  */
-public class RequestId implements Hashable {
-
-  private final DataHash hash;
+@JsonDeserialize(using = RequestIdJson.Deserializer.class)
+public class RequestId extends DataHash {
 
   /**
    * Constructs a RequestId instance.
    *
    * @param hash The DataHash representing the request ID.
    */
-  public RequestId(DataHash hash) {
-    this.hash = hash;
+  protected RequestId(DataHash hash) {
+    super(hash.getAlgorithm(), hash.getData());
   }
 
   /**
@@ -49,39 +52,39 @@ public class RequestId implements Hashable {
   }
 
   /**
+   * Create a request id from JSON string.
+   *
+   * @param input JSON string
+   * @return request id
+   */
+  public static RequestId fromJson(String input) {
+    try {
+      return UnicityObjectMapper.JSON.readValue(input, RequestId.class);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(RequestId.class, e);
+    }
+  }
+
+  /**
+   * Converts the request id to a JSON string.
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    try {
+      return UnicityObjectMapper.JSON.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(RequestId.class, e);
+    }
+  }
+
+  /**
    * Converts the RequestId to a BitString.
    *
    * @return The BitString representation of the RequestId.
    */
   public BitString toBitString() {
-    return BitString.fromDataHash(this.hash);
-  }
-
-  /**
-   * Gets the underlying DataHash.
-   *
-   * @return The DataHash.
-   */
-  public DataHash getHash() {
-    return this.hash;
-  }
-
-  /**
-   * Checks if this RequestId is equal to another.
-   *
-   * @param obj The object to compare.
-   * @return True if equal, false otherwise.
-   */
-  @Override
-  public boolean equals(Object obj) {
-      if (this == obj) {
-          return true;
-      }
-      if (obj == null || getClass() != obj.getClass()) {
-          return false;
-      }
-    RequestId requestId = (RequestId) obj;
-    return this.hash.equals(requestId.hash);
+    return BitString.fromDataHash(this);
   }
 
   /**
@@ -91,6 +94,6 @@ public class RequestId implements Hashable {
    */
   @Override
   public String toString() {
-    return String.format("RequestId[%s]", this.hash.toString());
+    return String.format("RequestId[%s]", HexConverter.encode(this.getImprint()));
   }
 }
