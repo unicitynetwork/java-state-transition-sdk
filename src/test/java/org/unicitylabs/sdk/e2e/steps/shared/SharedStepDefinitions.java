@@ -60,7 +60,7 @@ public class SharedStepDefinitions {
 
 
         assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
-        context.setAggregatorClient(new AggregatorClient(aggregatorUrl));
+        context.setAggregatorClient(new JsonRpcAggregatorClient(aggregatorUrl));
     }
 
     @And("the aggregator client is initialized")
@@ -337,7 +337,7 @@ public class SharedStepDefinitions {
 
         List<AggregatorClient> clients = new ArrayList<>();
         for (String url : aggregatorUrls) {
-            clients.add(new AggregatorClient(url.trim()));
+            clients.add(new JsonRpcAggregatorClient(url.trim()));
         }
 
         context.setAggregatorClients(clients);

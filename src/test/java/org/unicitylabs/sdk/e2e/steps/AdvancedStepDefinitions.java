@@ -1,42 +1,34 @@
 package org.unicitylabs.sdk.e2e.steps;
 
-import io.cucumber.java.PendingException;
-import org.unicitylabs.sdk.StateTransitionClient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.unicitylabs.sdk.address.ProxyAddress;
-import org.unicitylabs.sdk.api.AggregatorClient;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
-import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
-import org.unicitylabs.sdk.token.TokenState;
-import org.unicitylabs.sdk.transaction.InclusionProof;
-import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferCommitment;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
-import org.unicitylabs.sdk.util.InclusionProofUtils;
-import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
+import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.When;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.And;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Advanced step definitions for complex scenarios and edge cases.
@@ -265,7 +257,7 @@ public class AdvancedStepDefinitions {
 
         for (PendingTransfer pending : pendingTransfers) {
             Token <?> token = pending.getSourceToken();
-            Transaction<TransferTransactionData> tx = pending.getTransaction();
+            TransferTransaction tx = pending.getTransaction();
             helper.finalizeTransfer(
                     username,
                     token,

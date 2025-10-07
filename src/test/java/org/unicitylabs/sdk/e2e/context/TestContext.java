@@ -11,7 +11,7 @@ import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.transaction.Transaction;
-import org.unicitylabs.sdk.transaction.TransferTransactionData;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
@@ -191,7 +191,7 @@ public class TestContext {
     public int getConfiguredTokensPerUser() { return configuredTokensPerUser; }
     public void setConfiguredTokensPerUser(int configuredTokensPerUser) { this.configuredTokensPerUser = configuredTokensPerUser; }
 
-    public void savePendingTransfer(String user, Token<?> token, Transaction<TransferTransactionData> tx) {
+    public void savePendingTransfer(String user, Token<?> token, TransferTransaction tx) {
         pendingTransfers.computeIfAbsent(user, k -> new ArrayList<>())
                 .add(new PendingTransfer(token, tx));
     }

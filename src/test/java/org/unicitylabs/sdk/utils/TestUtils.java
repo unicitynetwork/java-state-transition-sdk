@@ -86,7 +86,7 @@ public class TestUtils {
         TokenState tokenState = new TokenState(predicate, null);
 
         MintCommitment<?> mintCommitment = MintCommitment.create(
-                new MintTransactionData(
+                new MintTransaction.Data<>(
                         tokenId,
                         tokenType,
                         new TestTokenData(randomBytes(32)).getData(),
@@ -154,7 +154,7 @@ public class TestUtils {
 
         // Wait for inclusion proof
         InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(client, trustBase, transferCommitment).get();
-        Transaction<TransferTransactionData> transferTransaction = transferCommitment.toTransaction(inclusionProof);
+        TransferTransaction transferTransaction = transferCommitment.toTransaction(inclusionProof);
 
         // Create predicate for recipient
         MaskedPredicate toPredicate = MaskedPredicate

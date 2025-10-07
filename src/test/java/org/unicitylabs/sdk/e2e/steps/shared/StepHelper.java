@@ -62,7 +62,7 @@ public class StepHelper {
         ).toAddress();
 
         var nametagMintCommitment = MintCommitment.create(
-                new NametagMintTransactionData<>(
+                new MintTransaction.NametagData(
                         nameTagIdentifier,
                         nametagTokenType,
                         nametagAddress,
@@ -81,7 +81,7 @@ public class StepHelper {
                 context.getTrustBase(),
                 nametagMintCommitment
         ).get();
-        Transaction<? extends MintTransactionData<?>> nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
+        MintTransaction<?> nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
 
         return Token.create(
                 context.getTrustBase(),
@@ -122,14 +122,14 @@ public class StepHelper {
                 context.getTrustBase(),
                 transferCommitment
         ).get();
-        Transaction<TransferTransactionData> transferTransaction = transferCommitment.toTransaction(
+      TransferTransaction transferTransaction = transferCommitment.toTransaction(
                 inclusionProof
         );
 
         context.savePendingTransfer(toUser, token, transferTransaction);
     }
 
-    public void finalizeTransfer(String username, Token<?> token, Transaction<TransferTransactionData> tx) throws Exception {
+    public void finalizeTransfer(String username, Token<?> token, TransferTransaction tx) throws Exception {
 
         byte[] secret = context.getUserSecret().get(username);
 
