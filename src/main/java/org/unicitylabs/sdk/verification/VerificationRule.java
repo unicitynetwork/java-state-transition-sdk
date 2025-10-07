@@ -5,13 +5,13 @@ import java.util.Objects;
 /**
  * Verification rule base class.
  *
- * @param <ContextT> verification context
+ * @param <C> verification context
  */
-public abstract class VerificationRule<ContextT> {
+public abstract class VerificationRule<C> {
 
   private final String message;
-  private final VerificationRule<ContextT> onSuccessRule;
-  private final VerificationRule<ContextT> onFailureRule;
+  private final VerificationRule<C> onSuccessRule;
+  private final VerificationRule<C> onFailureRule;
 
   /**
    * Create the rule without any subsequent rules.
@@ -31,8 +31,8 @@ public abstract class VerificationRule<ContextT> {
    */
   protected VerificationRule(
       String message,
-      VerificationRule<ContextT> onSuccessRule,
-      VerificationRule<ContextT> onFailureRule
+      VerificationRule<C> onSuccessRule,
+      VerificationRule<C> onFailureRule
   ) {
     Objects.requireNonNull(message, "Message cannot be null");
 
@@ -56,7 +56,7 @@ public abstract class VerificationRule<ContextT> {
    * @param resultCode result of current verification rule
    * @return next rule or null if no rule exists for given result
    */
-  public VerificationRule<ContextT> getNextRule(VerificationResultCode resultCode) {
+  public VerificationRule<C> getNextRule(VerificationResultCode resultCode) {
     switch (resultCode) {
       case OK:
         return this.onSuccessRule;
@@ -73,5 +73,5 @@ public abstract class VerificationRule<ContextT> {
    * @param context verification context
    * @return verification result
    */
-  public abstract VerificationResult verify(ContextT context);
+  public abstract VerificationResult verify(C context);
 }
