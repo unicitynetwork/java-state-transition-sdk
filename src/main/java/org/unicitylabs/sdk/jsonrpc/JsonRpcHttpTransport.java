@@ -2,6 +2,8 @@
 package org.unicitylabs.sdk.jsonrpc;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -18,9 +20,9 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
  */
 public class JsonRpcHttpTransport {
 
-  private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
+    private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
 
-  private final String url;
+    private final String url;
   private final OkHttpClient httpClient;
 
   /**
@@ -35,17 +37,29 @@ public class JsonRpcHttpTransport {
    * Send a JSON-RPC request.
    */
   public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType) {
+    return request(method, params, resultType, Map.of());
+  }
+
+  /**
+   * Send a JSON-RPC request with optional API key.
+   */
+  public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType, Map<String, List<String>> headers) {
     CompletableFuture<T> future = new CompletableFuture<>();
 
     try {
-      Request request = new Request.Builder()
+      Request.Builder requestBuilder = new Request.Builder()
           .url(this.url)
           .post(
               RequestBody.create(
                   UnicityObjectMapper.JSON.writeValueAsString(new JsonRpcRequest(method, params)),
                   JsonRpcHttpTransport.MEDIA_TYPE_JSON)
-          )
-          .build();
+          );
+      
+      headers.forEach((header, values) ->
+        values.forEach(value ->
+          requestBuilder.addHeader(header, value)));
+
+      Request request = requestBuilder.build();
 
       this.httpClient.newCall(request).enqueue(new Callback() {
         @Override
