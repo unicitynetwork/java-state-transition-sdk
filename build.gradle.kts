@@ -27,9 +27,9 @@ configurations {
 
 dependencies {
     // Core dependencies that work on both platforms
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.19.2")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.19.2")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.2")
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.20.0"))
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("org.bouncycastle:bcprov-jdk18on:1.81")
     implementation("org.slf4j:slf4j-api:2.0.13")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

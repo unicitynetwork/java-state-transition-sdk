@@ -1,14 +1,22 @@
 
 package org.unicitylabs.sdk.hash;
 
-import org.unicitylabs.sdk.util.HexConverter;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.Objects;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
+import org.unicitylabs.sdk.util.HexConverter;
 
 /**
  * DataHash represents a hash of data using a specific hash algorithm.
  */
+@JsonSerialize(using = DataHashJson.Serializer.class)
+@JsonDeserialize(using = DataHashJson.Deserializer.class)
 public class DataHash {
 
   private final byte[] data;
@@ -83,23 +91,64 @@ public class DataHash {
     return imprint;
   }
 
+  /**
+   * Create data hash from JSON string.
+   *
+   * @param input json string
+   * @return data hash
+   */
+  public static DataHash fromJson(String input) {
+    try {
+      return UnicityObjectMapper.JSON.readValue(input, DataHash.class);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(DataHash.class, e);
+    }
+  }
+
+  /**
+   * Convert data hash to JSON string.
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    try {
+      return UnicityObjectMapper.JSON.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(DataHash.class, e);
+    }
+  }
+
+  /**
+   * Create data hash from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return data hash
+   */
+  public static DataHash fromCbor(byte[] bytes) {
+    return DataHash.fromImprint(CborDeserializer.readByteString(bytes));
+  }
+
+  /**
+   * Convert data hash to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
+  public byte[] toCbor() {
+    return CborSerializer.encodeByteString(this.getImprint());
+  }
+
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof DataHash)) {
       return false;
     }
-    DataHash dataHash = (DataHash) o;
-    return Arrays.equals(this.data, dataHash.data) && this.algorithm == dataHash.algorithm;
+    DataHash that = (DataHash) o;
+    return Arrays.equals(this.data, that.data) && this.algorithm == that.algorithm;
   }
 
   @Override
   public int hashCode() {
-    int result = Arrays.hashCode(this.data);
-    result = 31 * result + (this.algorithm != null ? this.algorithm.hashCode() : 0);
-    return result;
+    return Objects.hash(this.algorithm, Arrays.hashCode(this.data));
   }
 
   @Override

@@ -20,9 +20,9 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
  */
 public class JsonRpcHttpTransport {
 
-    private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
+  private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
 
-    private final String url;
+  private final String url;
   private final OkHttpClient httpClient;
 
   /**
@@ -43,7 +43,12 @@ public class JsonRpcHttpTransport {
   /**
    * Send a JSON-RPC request with optional API key.
    */
-  public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType, Map<String, List<String>> headers) {
+  public <T> CompletableFuture<T> request(
+      String method,
+      Object params,
+      Class<T> resultType,
+      Map<String, List<String>> headers
+  ) {
     CompletableFuture<T> future = new CompletableFuture<>();
 
     try {
@@ -51,13 +56,15 @@ public class JsonRpcHttpTransport {
           .url(this.url)
           .post(
               RequestBody.create(
-                  UnicityObjectMapper.JSON.writeValueAsString(new JsonRpcRequest(method, params)),
+                  UnicityObjectMapper.JSON.writeValueAsString(
+                      new JsonRpcRequest(method, params)
+                  ),
                   JsonRpcHttpTransport.MEDIA_TYPE_JSON)
           );
-      
+
       headers.forEach((header, values) ->
-        values.forEach(value ->
-          requestBuilder.addHeader(header, value)));
+          values.forEach(value ->
+              requestBuilder.addHeader(header, value)));
 
       Request request = requestBuilder.build();
 
@@ -72,18 +79,23 @@ public class JsonRpcHttpTransport {
           try (ResponseBody body = response.body()) {
             if (!response.isSuccessful()) {
               String error = body != null ? body.string() : "";
-              future.completeExceptionally(new JsonRpcNetworkError(response.code(), error));
+              future.completeExceptionally(new JsonRpcNetworkException(response.code(), error));
               return;
             }
 
             JsonRpcResponse<T> data = UnicityObjectMapper.JSON.readValue(
                 body != null ? body.string() : "",
                 UnicityObjectMapper.JSON.getTypeFactory()
-                    .constructParametricType(JsonRpcResponse.class, resultType));
+                    .constructParametricType(JsonRpcResponse.class, resultType)
+            );
 
             if (data.getError() != null) {
-
-              future.completeExceptionally(new JsonRpcDataError(data.getError()));
+              future.completeExceptionally(
+                  new JsonRpcNetworkException(
+                      data.getError().getCode(),
+                      data.getError().getMessage()
+                  )
+              );
               return;
             }
 

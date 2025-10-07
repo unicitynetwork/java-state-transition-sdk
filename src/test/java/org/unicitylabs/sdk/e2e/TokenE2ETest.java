@@ -2,14 +2,13 @@ package org.unicitylabs.sdk.e2e;
 
 import java.io.IOException;
 import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.common.CommonTestFlow;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,18 +21,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("integration")
 @EnabledIfEnvironmentVariable(named = "AGGREGATOR_URL", matches = ".+")
 public class TokenE2ETest extends CommonTestFlow {
-  private AggregatorClient aggregatorClient;
+
+  private JsonRpcAggregatorClient aggregatorClient;
 
   @BeforeEach
   void setUp() throws IOException {
     String aggregatorUrl = System.getenv("AGGREGATOR_URL");
     assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
-    this.aggregatorClient = new AggregatorClient(aggregatorUrl);
+    this.aggregatorClient = new JsonRpcAggregatorClient(aggregatorUrl);
     this.client = new StateTransitionClient(this.aggregatorClient);
-    this.trustBase = UnicityObjectMapper.JSON.readValue(
-        getClass().getResourceAsStream("/trust-base.json"),
-        RootTrustBase.class
+    this.trustBase = RootTrustBase.fromJson(
+        new String(getClass().getResourceAsStream("/trust-base.json").readAllBytes())
     );
   }
 

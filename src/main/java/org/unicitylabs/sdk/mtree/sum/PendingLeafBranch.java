@@ -1,28 +1,40 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 import java.math.BigInteger;
 import java.util.Objects;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTree.LeafValue;
 
+/**
+ * Pending leaf branch in a sparse merkle sum tree.
+ */
 class PendingLeafBranch implements LeafBranch {
 
   private final BigInteger path;
   private final LeafValue value;
 
+  /**
+   * Create a pending leaf branch.
+   *
+   * @param path  path of the branch
+   * @param value value stored in the leaf
+   */
   public PendingLeafBranch(BigInteger path, LeafValue value) {
     this.path = path;
     this.value = value;
   }
 
+  @Override
   public BigInteger getPath() {
     return this.path;
   }
 
+  @Override
   public LeafValue getValue() {
     return this.value;
   }
 
+  @Override
   public FinalizedLeafBranch finalize(HashAlgorithm hashAlgorithm) {
     return FinalizedLeafBranch.create(this.path, this.value, hashAlgorithm);
   }

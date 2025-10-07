@@ -1,15 +1,22 @@
 package org.unicitylabs.sdk.predicate;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Predicate structure before passing it to predicate engine.
+ */
 public class EncodedPredicate implements SerializablePredicate {
+
   private final PredicateEngineType engine;
   private final byte[] code;
   private final byte[] parameters;
 
-  public EncodedPredicate(PredicateEngineType engine, byte[] code, byte[] parameters) {
+
+  EncodedPredicate(PredicateEngineType engine, byte[] code, byte[] parameters) {
     Objects.requireNonNull(code, "Code must not be null");
     Objects.requireNonNull(parameters, "Parameters must not be null");
 
@@ -18,18 +25,49 @@ public class EncodedPredicate implements SerializablePredicate {
     this.parameters = Arrays.copyOf(parameters, parameters.length);
   }
 
+  /**
+   * Get predicate engine.
+   *
+   * @return predicate engine
+   */
   public PredicateEngineType getEngine() {
     return this.engine;
   }
 
+  /**
+   * Encode predicate code.
+   *
+   * @return encoded code
+   */
   @Override
   public byte[] encode() {
     return Arrays.copyOf(this.code, this.code.length);
   }
 
+  /**
+   * Encode predicate parameters.
+   *
+   * @return encoded parameters
+   */
   @Override
   public byte[] encodeParameters() {
     return Arrays.copyOf(this.parameters, this.parameters.length);
+  }
+
+  /**
+   * Create encoded predicate from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return encoded predicate
+   */
+  public static EncodedPredicate fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new EncodedPredicate(
+        PredicateEngineType.values()[CborDeserializer.readUnsignedInteger(data.get(0)).asInt()],
+        CborDeserializer.readByteString(data.get(1)),
+        CborDeserializer.readByteString(data.get(2))
+    );
   }
 
   @Override

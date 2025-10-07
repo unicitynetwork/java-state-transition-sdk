@@ -9,20 +9,19 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.UnicityCertificateUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
+import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathFixture;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.InclusionProof;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
-import org.unicitylabs.sdk.transaction.NametagMintTransactionData;
-import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.InclusionProofFixture;
+import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.MintTransactionFixture;
 import org.unicitylabs.sdk.utils.TestUtils;
-import org.unicitylabs.sdk.utils.UnicityCertificateUtils;
 import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenTest {
@@ -33,13 +32,16 @@ public class TokenTest {
     UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
         signingService, DataHash.fromImprint(new byte[34]));
 
-    MintTransactionData<?> genesisData = new MintTransactionData<>(
+    MintTransaction.Data<?> genesisData = new MintTransaction.Data<>(
         new TokenId(TestUtils.randomBytes(32)),
         new TokenType(TestUtils.randomBytes(32)),
         TestUtils.randomBytes(10),
-        new TokenCoinData(Map.of(
-            new CoinId(TestUtils.randomBytes(10)), BigInteger.valueOf(100),
-            new CoinId(TestUtils.randomBytes(4)), BigInteger.valueOf(3))),
+        new TokenCoinData(
+            Map.of(
+                new CoinId(TestUtils.randomBytes(10)), BigInteger.valueOf(100),
+                new CoinId(TestUtils.randomBytes(4)), BigInteger.valueOf(3)
+            )
+        ),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32))),
         TestUtils.randomBytes(32),
         null,
@@ -47,7 +49,7 @@ public class TokenTest {
     );
 
     byte[] nametagNonce = TestUtils.randomBytes(32);
-    MintTransactionData<?> nametagGenesisData = new NametagMintTransactionData<>(
+    MintTransaction.NametagData nametagGenesisData = new MintTransaction.NametagData(
         UUID.randomUUID().toString(),
         new TokenType(TestUtils.randomBytes(32)),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32))),
@@ -64,13 +66,10 @@ public class TokenTest {
                 HashAlgorithm.SHA256,
                 nametagNonce),
             null),
-        new Transaction<>(
+        MintTransactionFixture.create(
             nametagGenesisData,
-            new InclusionProof(
-                new SparseMerkleTreePath(
-                    new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
-                    List.of()
-                ),
+            InclusionProofFixture.create(
+                SparseMerkleTreePathFixture.create(List.of()),
                 null,
                 null,
                 unicityCertificate
@@ -93,13 +92,10 @@ public class TokenTest {
                 TestUtils.randomBytes(24)),
             null
         ),
-        new Transaction<>(
+        MintTransactionFixture.create(
             genesisData,
-            new InclusionProof(
-                new SparseMerkleTreePath(
-                    new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)),
-                    List.of()
-                ),
+            InclusionProofFixture.create(
+                SparseMerkleTreePathFixture.create(List.of()),
                 null,
                 null,
                 unicityCertificate

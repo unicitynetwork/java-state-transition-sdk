@@ -1,9 +1,25 @@
 package org.unicitylabs.sdk.mtree.plain;
 
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import java.math.BigInteger;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
 
+/**
+ * Sparse merkle tree branch structure.
+ */
 interface Branch {
-    BigInteger getPath();
-    FinalizedBranch finalize(HashAlgorithm hashAlgorithm);
+
+  /**
+   * Get branch path from leaf to root.
+   *
+   * @return path
+   */
+  BigInteger getPath();
+
+  /**
+   * Finalize current branch.
+   *
+   * @param hashAlgorithm hash algorithm
+   * @return finalized branch
+   */
+  FinalizedBranch finalize(HashAlgorithm hashAlgorithm);
 }

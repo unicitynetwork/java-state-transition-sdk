@@ -14,13 +14,25 @@ import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.verification.VerificationResult;
 import org.unicitylabs.sdk.verification.VerificationRule;
 
+/**
+ * Rule to verify that the UnicitySeal contains valid quorum signatures.
+ */
 public class UnicitySealQuorumSignaturesVerificationRule extends
     VerificationRule<UnicityCertificateVerificationContext> {
 
+  /**
+   * Create the rule without any subsequent rules.
+   */
   public UnicitySealQuorumSignaturesVerificationRule() {
     this(null, null);
   }
 
+  /**
+   * Create the rule with subsequent rules for success and failure.
+   *
+   * @param onSuccessRule rule to execute on success
+   * @param onFailureRule rule to execute on failure
+   */
   public UnicitySealQuorumSignaturesVerificationRule(
       VerificationRule<UnicityCertificateVerificationContext> onSuccessRule,
       VerificationRule<UnicityCertificateVerificationContext> onFailureRule
@@ -39,7 +51,7 @@ public class UnicitySealQuorumSignaturesVerificationRule extends
 
     List<VerificationResult> results = new ArrayList<>();
     DataHash hash = new DataHasher(HashAlgorithm.SHA256)
-        .update(UnicitySeal.fromUnicitySealWithoutSignatures(unicitySeal).encode())
+        .update(unicitySeal.toCborWithoutSignatures())
         .digest();
     int successful = 0;
     for (Map.Entry<String, byte[]> entry : unicitySeal.getSignatures().entrySet()) {

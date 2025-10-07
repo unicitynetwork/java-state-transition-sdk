@@ -1,15 +1,16 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import java.math.BigInteger;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
-import java.math.BigInteger;
-import java.util.Objects;
 
+/**
+ * Finalized node branch in a sparse merkle sum tree.
+ */
 class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
 
   private final BigInteger path;
@@ -29,66 +30,86 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
     this.hash = hash;
   }
 
-  public static FinalizedNodeBranch create(BigInteger path, FinalizedBranch left,
-      FinalizedBranch right, HashAlgorithm hashAlgorithm) {
-    try {
-      DataHash childrenHash = new DataHasher(hashAlgorithm)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-                  UnicityObjectMapper.CBOR.createArrayNode()
-                      .add(
-                          UnicityObjectMapper.CBOR.createArrayNode()
-                              .add(left.getHash().getImprint())
-                              .add(BigIntegerConverter.encode(left.getCounter()))
-                      )
-                      .add(
-                          UnicityObjectMapper.CBOR.createArrayNode()
-                              .add(right.getHash().getImprint())
-                              .add(BigIntegerConverter.encode(right.getCounter()))
-                      )
-              )
-          )
-          .digest();
+  /**
+   * Create a finalized node branch.
+   *
+   * @param path          path of the branch
+   * @param left          left branch
+   * @param right         right branch
+   * @param hashAlgorithm hash algorithm to use
+   * @return finalized node branch
+   */
+  public static FinalizedNodeBranch create(
+      BigInteger path,
+      FinalizedBranch left,
+      FinalizedBranch right,
+      HashAlgorithm hashAlgorithm
+  ) {
+    DataHash childrenHash = new DataHasher(hashAlgorithm)
+        .update(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeArray(
+                    CborSerializer.encodeByteString(left.getHash().getImprint()),
+                    CborSerializer.encodeByteString(BigIntegerConverter.encode(left.getCounter()))
+                ),
+                CborSerializer.encodeArray(
+                    CborSerializer.encodeByteString(right.getHash().getImprint()),
+                    CborSerializer.encodeByteString(
+                        BigIntegerConverter.encode(right.getCounter()))
+                )
+            )
+        )
+        .digest();
 
-      BigInteger counter = left.getCounter().add(right.getCounter());
-      DataHash hash = new DataHasher(hashAlgorithm)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(
-              UnicityObjectMapper.CBOR.createArrayNode()
-                  .add(BigIntegerConverter.encode(path))
-                  .add(childrenHash.getImprint())
-                  .add(BigIntegerConverter.encode(counter))
-          ))
-          .digest();
+    BigInteger counter = left.getCounter().add(right.getCounter());
+    DataHash hash = new DataHasher(hashAlgorithm)
+        .update(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(path)),
+                CborSerializer.encodeByteString(childrenHash.getImprint()),
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(counter))
+            )
+        )
+        .digest();
 
-      return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
-    } catch (JsonProcessingException e) {
-      throw new CborSerializationException(e);
-    }
+    return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
   }
 
+  @Override
   public BigInteger getPath() {
     return this.path;
   }
 
+  @Override
   public FinalizedBranch getLeft() {
     return this.left;
   }
 
+  @Override
   public FinalizedBranch getRight() {
     return this.right;
   }
 
+  @Override
   public BigInteger getCounter() {
     return this.counter;
   }
 
+  /**
+   * Get hash of the children (left and right).
+   *
+   * @return children hash
+   */
   public DataHash getChildrenHash() {
     return this.childrenHash;
   }
 
+  @Override
   public DataHash getHash() {
     return this.hash;
   }
 
+  @Override
   public FinalizedNodeBranch finalize(HashAlgorithm hashAlgorithm) {
     return this; // Already finalized
   }

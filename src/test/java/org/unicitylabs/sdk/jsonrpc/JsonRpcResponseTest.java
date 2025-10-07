@@ -1,11 +1,10 @@
 package org.unicitylabs.sdk.jsonrpc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.unicitylabs.sdk.api.BlockHeightResponse;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.unicitylabs.sdk.api.BlockHeightResponse;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
 public class JsonRpcResponseTest {
 
@@ -16,7 +15,11 @@ public class JsonRpcResponseTest {
         UnicityObjectMapper.JSON.getTypeFactory()
             .constructParametricType(JsonRpcResponse.class, BlockHeightResponse.class));
 
-    Assertions.assertEquals(new JsonRpcResponse<BlockHeightResponse>("2.0", new BlockHeightResponse(846973L), null, UUID.fromString("60ce8f4d-4c78-4690-a330-a92d3cf497a9")), data);
+    Assertions.assertEquals("60ce8f4d-4c78-4690-a330-a92d3cf497a9", data.getId().toString());
+    Assertions.assertEquals("2.0", data.getVersion());
+    Assertions.assertInstanceOf(BlockHeightResponse.class, data.getResult());
+    Assertions.assertEquals(846973L, data.getResult().getBlockNumber());
+    Assertions.assertNull(data.getError());
   }
 
 }

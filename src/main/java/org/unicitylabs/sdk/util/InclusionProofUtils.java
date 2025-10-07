@@ -13,7 +13,7 @@ import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 
 /**
- * Utility class for working with inclusion proofs
+ * Utility class for working with inclusion proofs.
  */
 public class InclusionProofUtils {
 
@@ -23,7 +23,7 @@ public class InclusionProofUtils {
   private static final Duration DEFAULT_INTERVAL = Duration.ofMillis(1000);
 
   /**
-   * Wait for an inclusion proof to be available and verified
+   * Wait for an inclusion proof to be available and verified.
    */
   public static CompletableFuture<InclusionProof> waitInclusionProof(
       StateTransitionClient client,
@@ -34,7 +34,7 @@ public class InclusionProofUtils {
   }
 
   /**
-   * Wait for an inclusion proof to be available and verified with custom timeout
+   * Wait for an inclusion proof to be available and verified with custom timeout.
    */
   public static CompletableFuture<InclusionProof> waitInclusionProof(
       StateTransitionClient client,
@@ -49,7 +49,8 @@ public class InclusionProofUtils {
     long startTime = System.currentTimeMillis();
     long timeoutMillis = timeout.toMillis();
 
-    checkInclusionProof(client, trustBase, commitment, future, startTime, timeoutMillis, interval.toMillis());
+    checkInclusionProof(client, trustBase, commitment, future, startTime, timeoutMillis,
+        interval.toMillis());
 
     return future;
   }
@@ -76,7 +77,8 @@ public class InclusionProofUtils {
 
       if (status == InclusionProofVerificationStatus.PATH_NOT_INCLUDED) {
         CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
-            .execute(() -> checkInclusionProof(client, trustBase, commitment, future, startTime, timeoutMillis,
+            .execute(() -> checkInclusionProof(client, trustBase, commitment, future, startTime,
+                timeoutMillis,
                 intervalMillis));
       } else {
         future.completeExceptionally(

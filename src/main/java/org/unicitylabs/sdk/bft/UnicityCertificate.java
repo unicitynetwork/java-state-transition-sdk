@@ -1,16 +1,23 @@
 package org.unicitylabs.sdk.bft;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Unicity certificate.
+ */
+@JsonSerialize(using = UnicityCertificateJson.Serializer.class)
+@JsonDeserialize(using = UnicityCertificateJson.Deserializer.class)
 public class UnicityCertificate {
 
   private final int version;
@@ -21,7 +28,7 @@ public class UnicityCertificate {
   private final UnicityTreeCertificate unicityTreeCertificate;
   private final UnicitySeal unicitySeal;
 
-  public UnicityCertificate(
+  UnicityCertificate(
       int version,
       InputRecord inputRecord,
       byte[] technicalRecordHash,
@@ -48,68 +55,150 @@ public class UnicityCertificate {
     this.unicitySeal = unicitySeal;
   }
 
+  /**
+   * Get the certificate version.
+   *
+   * @return certificate version
+   */
   public int getVersion() {
     return this.version;
   }
 
+  /**
+   * Get the input record.
+   *
+   * @return input record
+   */
   public InputRecord getInputRecord() {
     return this.inputRecord;
   }
 
+  /**
+   * Get the technical record hash.
+   *
+   * @return technical record hash
+   */
   public byte[] getTechnicalRecordHash() {
     return Arrays.copyOf(this.technicalRecordHash, this.technicalRecordHash.length);
   }
 
+  /**
+   * Get the shard configuration hash.
+   *
+   * @return shard configuration hash
+   */
   public byte[] getShardConfigurationHash() {
     return Arrays.copyOf(this.shardConfigurationHash, this.shardConfigurationHash.length);
   }
 
+  /**
+   * Get the shard tree certificate.
+   *
+   * @return shard tree certificate
+   */
   public ShardTreeCertificate getShardTreeCertificate() {
     return this.shardTreeCertificate;
   }
 
+  /**
+   * Get the unicity tree certificate.
+   *
+   * @return unicity tree certificate
+   */
   public UnicityTreeCertificate getUnicityTreeCertificate() {
     return this.unicityTreeCertificate;
   }
 
+  /**
+   * Get the unicity seal.
+   *
+   * @return unicity seal
+   */
   public UnicitySeal getUnicitySeal() {
     return this.unicitySeal;
   }
 
+  /**
+   * Calculate the root hash of the shard tree certificate.
+   *
+   * @param inputRecord            input record
+   * @param technicalRecordHash    technical record hash
+   * @param shardConfigurationHash shard configuration hash
+   * @param shardTreeCertificate   shard tree certificate
+   * @return root hash
+   */
   public static DataHash calculateShardTreeCertificateRootHash(
       InputRecord inputRecord,
       byte[] technicalRecordHash,
       byte[] shardConfigurationHash,
       ShardTreeCertificate shardTreeCertificate
   ) {
-    try {
-      DataHash rootHash = new DataHasher(HashAlgorithm.SHA256)
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(inputRecord))
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(technicalRecordHash))
-          .update(UnicityObjectMapper.CBOR.writeValueAsBytes(shardConfigurationHash))
-          .digest();
 
-      byte[] shardId = shardTreeCertificate.getShard();
-      List<byte[]> siblingHashes = shardTreeCertificate.getSiblingHashList();
-      for (int i = 0; i < siblingHashes.size(); i++) {
-        boolean isRight = shardId[(shardId.length - 1) - (i / 8)] == 1;
-        if (isRight) {
-          rootHash = new DataHasher(HashAlgorithm.SHA256)
-              .update(siblingHashes.get(i))
-              .update(rootHash.getData())
-              .digest();
-        } else {
-          rootHash = new DataHasher(HashAlgorithm.SHA256)
-              .update(rootHash.getData())
-              .update(siblingHashes.get(i))
-              .digest();
-        }
+    DataHash rootHash = new DataHasher(HashAlgorithm.SHA256)
+        .update(inputRecord.toCbor())
+        .update(CborSerializer.encodeByteString(technicalRecordHash))
+        .update(CborSerializer.encodeByteString(shardConfigurationHash))
+        .digest();
+
+    byte[] shardId = shardTreeCertificate.getShard();
+    List<byte[]> siblingHashes = shardTreeCertificate.getSiblingHashList();
+    for (int i = 0; i < siblingHashes.size(); i++) {
+      boolean isRight = shardId[(shardId.length - 1) - (i / 8)] == 1;
+      if (isRight) {
+        rootHash = new DataHasher(HashAlgorithm.SHA256)
+            .update(siblingHashes.get(i))
+            .update(rootHash.getData())
+            .digest();
+      } else {
+        rootHash = new DataHasher(HashAlgorithm.SHA256)
+            .update(rootHash.getData())
+            .update(siblingHashes.get(i))
+            .digest();
       }
-
-      return rootHash;
-    } catch (IOException e) {
-      throw new CborSerializationException(e);
     }
+
+    return rootHash;
+
+  }
+
+  /**
+   * Create unicity certificate from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return unicity certificate
+   */
+  public static UnicityCertificate fromCbor(byte[] bytes) {
+    CborTag tag = CborDeserializer.readTag(bytes);
+    List<byte[]> data = CborDeserializer.readArray(tag.getData());
+
+    return new UnicityCertificate(
+        CborDeserializer.readUnsignedInteger(data.get(0)).asInt(),
+        InputRecord.fromCbor(data.get(1)),
+        CborDeserializer.readByteString(data.get(2)),
+        CborDeserializer.readByteString(data.get(3)),
+        ShardTreeCertificate.fromCbor(data.get(4)),
+        UnicityTreeCertificate.fromCbor(data.get(5)),
+        UnicitySeal.fromCbor(data.get(6))
+    );
+  }
+
+  /**
+   * Convert unicity certificate to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
+  public byte[] toCbor() {
+    return CborSerializer.encodeTag(
+        1007,
+        CborSerializer.encodeArray(
+            CborSerializer.encodeUnsignedInteger(this.version),
+            this.inputRecord.toCbor(),
+            CborSerializer.encodeByteString(this.technicalRecordHash),
+            CborSerializer.encodeByteString(this.shardConfigurationHash),
+            this.shardTreeCertificate.toCbor(),
+            this.unicityTreeCertificate.toCbor(),
+            this.unicitySeal.toCbor()
+        ));
   }
 
   @Override

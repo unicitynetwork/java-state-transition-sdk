@@ -1,11 +1,18 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import org.unicitylabs.sdk.util.HexConverter;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
+import org.unicitylabs.sdk.util.HexConverter;
 
+/**
+ * Step in a sparse merkle sum tree path.
+ */
 public class SparseMerkleSumTreePathStep {
 
   private final BigInteger path;
@@ -49,7 +56,7 @@ public class SparseMerkleSumTreePathStep {
     );
   }
 
-  public SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -57,16 +64,60 @@ public class SparseMerkleSumTreePathStep {
     this.branch = branch;
   }
 
+  /**
+   * Get path of the step.
+   *
+   * @return path
+   */
   public BigInteger getPath() {
     return this.path;
   }
 
+  /**
+   * Get sibling branch.
+   *
+   * @return sibling branch
+   */
   public Optional<Branch> getSibling() {
     return Optional.ofNullable(this.sibling);
   }
 
+  /**
+   * Get branch at this step (can be null for non-leaf steps).
+   *
+   * @return branch
+   */
   public Optional<Branch> getBranch() {
     return Optional.ofNullable(this.branch);
+  }
+
+  /**
+   * Create a step from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return step
+   */
+  public static SparseMerkleSumTreePathStep fromCbor(byte[] bytes) {
+    List<byte[]> data = CborDeserializer.readArray(bytes);
+
+    return new SparseMerkleSumTreePathStep(
+        BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(0))),
+        Branch.fromCbor(data.get(1)),
+        Branch.fromCbor(data.get(2))
+    );
+  }
+
+  /**
+   * Convert step to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
+  public byte[] toCbor() {
+    return CborSerializer.encodeArray(
+        CborSerializer.encodeByteString(BigIntegerConverter.encode(this.path)),
+        CborSerializer.encodeOptional(this.sibling, Branch::toCbor),
+        CborSerializer.encodeOptional(this.branch, Branch::toCbor)
+    );
   }
 
   @Override
@@ -90,24 +141,64 @@ public class SparseMerkleSumTreePathStep {
         this.path.toString(2), this.sibling, this.branch);
   }
 
+  /**
+   * A branch in the sparse merkle sum tree.
+   */
   public static class Branch {
 
     private final byte[] value;
     private final BigInteger counter;
 
-    public Branch(byte[] value, BigInteger counter) {
+    Branch(byte[] value, BigInteger counter) {
       Objects.requireNonNull(counter, "counter cannot be null");
 
       this.value = value == null ? null : Arrays.copyOf(value, value.length);
       this.counter = counter;
     }
 
+    /**
+     * Get branch value.
+     *
+     * @return value
+     */
     public byte[] getValue() {
       return this.value == null ? null : Arrays.copyOf(this.value, this.value.length);
     }
 
+    /**
+     * Get the counter.
+     *
+     * @return counter
+     */
     public BigInteger getCounter() {
       return this.counter;
+    }
+
+    /**
+     * Create branch from CBOR bytes.
+     *
+     * @param bytes CBOR bytes
+     * @return branch
+     */
+    public static Branch fromCbor(byte[] bytes) {
+      List<byte[]> data = CborDeserializer.readArray(bytes);
+
+      return new Branch(
+          CborDeserializer.readByteString(data.get(0)),
+          BigIntegerConverter.decode(CborDeserializer.readByteString(data.get(1)))
+      );
+    }
+
+    /**
+     * Convert branch to CBOR bytes.
+     *
+     * @return CBOR bytes
+     */
+    public byte[] toCbor() {
+      return CborSerializer.encodeArray(
+          CborSerializer.encodeOptional(this.value, CborSerializer::encodeByteString),
+          CborSerializer.encodeByteString(BigIntegerConverter.encode(this.counter))
+      );
     }
 
     @Override

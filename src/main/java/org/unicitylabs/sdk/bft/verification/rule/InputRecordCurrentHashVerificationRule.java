@@ -5,13 +5,25 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.verification.VerificationResult;
 import org.unicitylabs.sdk.verification.VerificationRule;
 
+/**
+ * Input record current hash verification rule.
+ */
 public class InputRecordCurrentHashVerificationRule extends
     VerificationRule<UnicityCertificateVerificationContext> {
 
+  /**
+   * Create the rule without any subsequent rules.
+   */
   public InputRecordCurrentHashVerificationRule() {
     this(null, null);
   }
 
+  /**
+   * Create the rule with subsequent rules for success and failure.
+   *
+   * @param onSuccessRule rule to execute on success
+   * @param onFailureRule rule to execute on failure
+   */
   public InputRecordCurrentHashVerificationRule(
       VerificationRule<UnicityCertificateVerificationContext> onSuccessRule,
       VerificationRule<UnicityCertificateVerificationContext> onFailureRule

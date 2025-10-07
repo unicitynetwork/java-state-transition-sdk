@@ -1,8 +1,8 @@
 package org.unicitylabs.sdk.signing;
 
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
@@ -13,10 +13,9 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.Arrays;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.DataHasher;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
 
 /**
  * Default signing service.
@@ -52,8 +51,8 @@ public class SigningService {
     }
 
     // Calculate public key
-    ECPoint Q = EC_SPEC.getG().multiply(privateKeyAsBigInt);
-    this.publicKey = Q.getEncoded(true); // compressed format
+    ECPoint q = EC_SPEC.getG().multiply(privateKeyAsBigInt);
+    this.publicKey = q.getEncoded(true); // compressed format
     this.privateKey = new ECPrivateKeyParameters(
         privateKeyAsBigInt,
         EC_DOMAIN_PARAMETERS
@@ -98,6 +97,12 @@ public class SigningService {
     return new SigningService(hasher.digest().getData());
   }
 
+  /**
+   * Sign data hash.
+   *
+   * @param hash data hash
+   * @return signature
+   */
   public Signature sign(DataHash hash) {
     ECDSASigner signer = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()));
     signer.init(true, this.privateKey);
@@ -133,19 +138,36 @@ public class SigningService {
     return new Signature(signatureBytes, recoveryId);
   }
 
+  /**
+   * Verify signature and data hash.
+   *
+   * @param hash      data hash
+   * @param signature signature
+   * @return true if successful
+   */
   public boolean verify(DataHash hash, Signature signature) {
     return verifyWithPublicKey(hash, signature.getBytes(), this.publicKey);
   }
 
   /**
-   * Verify signature with public key and hash.
+   * Verify signature with public key.
+   *
+   * @param hash      data hash
+   * @param signature signature bytes
+   * @param publicKey public key
+   * @return true if successful
    */
   public static boolean verifyWithPublicKey(DataHash hash, byte[] signature, byte[] publicKey) {
     return SigningService.verifyWithPublicKey(hash.getData(), signature, publicKey);
   }
 
   /**
-   * Verify signature with public key and hash bytes.
+   * Verify signature with public key and data hash bytes.
+   *
+   * @param hash      hash bytes
+   * @param signature signature bytes
+   * @param publicKey public key
+   * @return true if successful
    */
   public static boolean verifyWithPublicKey(byte[] hash, byte[] signature, byte[] publicKey) {
     ECPoint pubPoint = EC_SPEC.getCurve().decodePoint(publicKey);
@@ -182,10 +204,13 @@ public class SigningService {
   /**
    * Recover public key from signature for a specific recovery ID.
    */
-  private static ECPoint recoverFromSignature(int recId, BigInteger r, BigInteger s,
-      byte[] message) {
+  private static ECPoint recoverFromSignature(
+      int recId,
+      BigInteger r,
+      BigInteger s,
+      byte[] message
+  ) {
     BigInteger n = EC_DOMAIN_PARAMETERS.getN();
-    BigInteger e = new BigInteger(1, message);
     BigInteger x = r;
 
     if (recId >= 2) {
@@ -195,36 +220,39 @@ public class SigningService {
     ECCurve curve = EC_DOMAIN_PARAMETERS.getCurve();
 
     // Calculate y from x
-    ECPoint R = SigningService.decompressKey(x, (recId & 1) == 1, curve);
-    if (R == null) {
+    ECPoint y = SigningService.decompressKey(x, (recId & 1) == 1, curve);
+    if (y == null) {
       return null;
     }
 
     // Verify R is on curve and has order n
-    if (!R.isValid() || !R.multiply(n).isInfinity()) {
+    if (!y.isValid() || !y.multiply(n).isInfinity()) {
       return null;
     }
 
+    BigInteger e = new BigInteger(1, message);
+
     // Calculate public key: Q = r^-1 * (s*R - e*G)
-    BigInteger rInv = r.modInverse(n);
-    ECPoint point1 = R.multiply(s);
+    ECPoint point1 = y.multiply(s);
     ECPoint point2 = EC_DOMAIN_PARAMETERS.getG().multiply(e);
-    return point1.subtract(point2).multiply(rInv);
+    return point1
+        .subtract(point2)
+        .multiply(r.modInverse(n));
   }
 
 
   /**
    * Decompress a compressed public key point.
    */
-  private static ECPoint decompressKey(BigInteger x, boolean yBit, ECCurve curve) {
+  private static ECPoint decompressKey(BigInteger x, boolean ybit, ECCurve curve) {
     try {
       byte[] compEnc = new byte[33];
-      compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
-      byte[] xBytes = x.toByteArray();
-      if (xBytes.length > 32) {
-        System.arraycopy(xBytes, xBytes.length - 32, compEnc, 1, 32);
+      compEnc[0] = (byte) (ybit ? 0x03 : 0x02);
+      byte[] xbytes = x.toByteArray();
+      if (xbytes.length > 32) {
+        System.arraycopy(xbytes, xbytes.length - 32, compEnc, 1, 32);
       } else {
-        System.arraycopy(xBytes, 0, compEnc, 33 - xBytes.length, xBytes.length);
+        System.arraycopy(xbytes, 0, compEnc, 33 - xbytes.length, xbytes.length);
       }
       return curve.decodePoint(compEnc);
     } catch (Exception e) {

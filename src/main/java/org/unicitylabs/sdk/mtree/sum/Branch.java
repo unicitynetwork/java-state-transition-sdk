@@ -1,9 +1,25 @@
 package org.unicitylabs.sdk.mtree.sum;
 
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import java.math.BigInteger;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
 
+/**
+ * Branch in a sparse merkle sum tree.
+ */
 interface Branch {
-    BigInteger getPath();
-    FinalizedBranch finalize(HashAlgorithm hashAlgorithm);
+
+  /**
+   * Get path of the branch.
+   *
+   * @return path
+   */
+  BigInteger getPath();
+
+  /**
+   * Finalize the branch by computing its hash.
+   *
+   * @param hashAlgorithm hash algorithm to use
+   * @return finalized branch
+   */
+  FinalizedBranch finalize(HashAlgorithm hashAlgorithm);
 }

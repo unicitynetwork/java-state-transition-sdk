@@ -26,7 +26,6 @@ import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransactionData;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
@@ -125,7 +124,7 @@ public abstract class BaseTokenSplitTest {
           burnCommitmentResponse.getStatus()));
     }
 
-    List<MintCommitment<MintTransactionData<SplitMintReason>>> mintCommitments = split.createSplitMintCommitments(
+    List<MintCommitment<SplitMintReason>> mintCommitments = split.createSplitMintCommitments(
         this.trustBase,
         burnCommitment.toTransaction(
             InclusionProofUtils.waitInclusionProof(
@@ -136,7 +135,7 @@ public abstract class BaseTokenSplitTest {
         )
     );
 
-    for (MintCommitment<MintTransactionData<SplitMintReason>> commitment : mintCommitments) {
+    for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
       SubmitCommitmentResponse response = this.client
           .submitCommitment(commitment)
           .get();
@@ -157,7 +156,7 @@ public abstract class BaseTokenSplitTest {
           null
       );
 
-      Token<MintTransactionData<SplitMintReason>> splitToken = Token.create(
+      Token<SplitMintReason> splitToken = Token.create(
           this.trustBase,
           state,
           commitment.toTransaction(

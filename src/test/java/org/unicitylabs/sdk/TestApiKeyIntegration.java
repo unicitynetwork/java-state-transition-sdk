@@ -6,12 +6,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.Authenticator;
+import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.jsonrpc.JsonRpcNetworkError;
+import org.unicitylabs.sdk.jsonrpc.JsonRpcNetworkException;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
 
@@ -39,8 +40,9 @@ public class TestApiKeyIntegration {
         mockServer.setExpectedApiKey(TEST_API_KEY);
         mockServer.start();
 
-        clientWithApiKey = new AggregatorClient(mockServer.getUrl(), TEST_API_KEY);
-        clientWithoutApiKey = new AggregatorClient(mockServer.getUrl());
+        clientWithApiKey = new JsonRpcAggregatorClient(
+            mockServer.getUrl(), TEST_API_KEY);
+        clientWithoutApiKey = new JsonRpcAggregatorClient(mockServer.getUrl());
 
         SigningService signingService = new SigningService(
                 HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
@@ -79,7 +81,7 @@ public class TestApiKeyIntegration {
             fail("Expected UnauthorizedException to be thrown");
         } catch (Exception e) {
             assertInstanceOf(ExecutionException.class, e);
-            assertInstanceOf(JsonRpcNetworkError.class, e.getCause());
+            assertInstanceOf(JsonRpcNetworkException.class, e.getCause());
             assertEquals("Network error [401] occurred: Unauthorized", e.getCause().getMessage());
         }
         
@@ -99,7 +101,7 @@ public class TestApiKeyIntegration {
             fail("Expected UnauthorizedException to be thrown");
         } catch (Exception e) {
             assertInstanceOf(ExecutionException.class, e);
-            assertInstanceOf(JsonRpcNetworkError.class, e.getCause());
+            assertInstanceOf(JsonRpcNetworkException.class, e.getCause());
             assertEquals("Network error [401] occurred: Unauthorized",  e.getCause().getMessage());
         }
         
@@ -119,7 +121,7 @@ public class TestApiKeyIntegration {
             fail("Expected RateLimitExceededException to be thrown");
         } catch (Exception e) {
             assertInstanceOf(ExecutionException.class, e);
-            assertInstanceOf(JsonRpcNetworkError.class, e.getCause());
+            assertInstanceOf(JsonRpcNetworkException.class, e.getCause());
             assertTrue(e.getCause().getMessage().contains("Network error [429] occurred: Too Many Requests"), e.getCause().getMessage());
         }
     }

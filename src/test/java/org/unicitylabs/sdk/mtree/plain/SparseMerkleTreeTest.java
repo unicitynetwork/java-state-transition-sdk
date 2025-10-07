@@ -151,25 +151,25 @@ public class SparseMerkleTreeTest {
     MerkleTreePathVerificationResult result = path.verify(BigInteger.valueOf(0b11010));
     Assertions.assertFalse(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
-    Assertions.assertFalse(result.isValid());
+    Assertions.assertFalse(result.isSuccessful());
 
     path = root.getPath(BigInteger.valueOf(0b110010000));
     result = path.verify(BigInteger.valueOf(0b110010000));
     Assertions.assertTrue(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
-    Assertions.assertTrue(result.isValid());
+    Assertions.assertTrue(result.isSuccessful());
 
     path = root.getPath(BigInteger.valueOf(0b110010000));
     result = path.verify(BigInteger.valueOf(0b11010));
     Assertions.assertFalse(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
-    Assertions.assertFalse(result.isValid());
+    Assertions.assertFalse(result.isSuccessful());
 
     path = root.getPath(BigInteger.valueOf(0b111100101));
     result = path.verify(BigInteger.valueOf(0b111100101));
     Assertions.assertTrue(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
-    Assertions.assertTrue(result.isValid());
+    Assertions.assertTrue(result.isSuccessful());
 
     SparseMerkleTree emptyTree = new SparseMerkleTree(HashAlgorithm.SHA256);
     SparseMerkleTreeRootNode emptyRoot = emptyTree.calculateRoot();
@@ -177,6 +177,6 @@ public class SparseMerkleTreeTest {
     result = path.verify(BigInteger.valueOf(0b10));
     Assertions.assertFalse(result.isPathIncluded());
     Assertions.assertTrue(result.isPathValid());
-    Assertions.assertFalse(result.isValid());
+    Assertions.assertFalse(result.isSuccessful());
   }
 }

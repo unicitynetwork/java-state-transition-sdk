@@ -1,15 +1,14 @@
 package org.unicitylabs.sdk.address;
 
+import java.util.Arrays;
+import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.util.HexConverter;
 
-import java.util.Arrays;
-import java.util.Objects;
-
 /**
- * Direct address implementation
+ * Direct address implementation.
  */
 public class DirectAddress implements Address {
 
@@ -21,6 +20,12 @@ public class DirectAddress implements Address {
     this.checksum = Arrays.copyOf(checksum, checksum.length);
   }
 
+  /**
+   * Create a direct address from a predicate reference.
+   *
+   * @param reference the data hash to create the address from
+   * @return the direct address
+   */
   public static DirectAddress create(DataHash reference) {
     DataHash checksum = new DataHasher(HashAlgorithm.SHA256).update(reference.getImprint())
         .digest();
