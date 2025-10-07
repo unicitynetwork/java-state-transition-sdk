@@ -6,6 +6,7 @@ Feature: Token Transfer Operations
 
   Background:
     Given the aggregator URL is configured
+    And trust-base.json is set
     And the state transition client is initialized
     And the following users are set up with their signing services
       | name  |
@@ -14,8 +15,8 @@ Feature: Token Transfer Operations
       | Carol |
 
   Scenario: Complete token transfer flow from Alice to Bob to Carol
-    Given user "Bob" create a nametag token with custom data "Bob Custom data"
-    And "Alice" mints a token with random coin data
+    Given "Alice" mints a token with random coin data
+    And user "Bob" create a nametag token with custom data "Bob Custom data"
     When "Alice" transfers the token to "Bob" using a proxy address
     And "Bob" finalizes all received tokens
     Then "Bob" should own the token successfully
@@ -40,7 +41,8 @@ Feature: Token Transfer Operations
       | Carol | 16         | Basic     | 1         |
 
   Scenario Outline: Name tag token creation and usage
-    Given user "<user>" create a nametag token with custom data "<nametagData>"
+    Given "Carol" mints a token with random coin data
+    And user "<user>" create a nametag token with custom data "<nametagData>"
     Then the name tag token should be created successfully
     And the name tag should be usable for proxy addressing
 
