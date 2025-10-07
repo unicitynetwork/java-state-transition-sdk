@@ -1,6 +1,10 @@
 package org.unicitylabs.sdk.api;
 
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
@@ -11,6 +15,7 @@ import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
 public class DefaultAggregatorClient implements AggregatorClient {
 
   private final JsonRpcHttpTransport transport;
+  private final String apiKey;
 
   /**
    * Create aggregator client for destination url.
@@ -18,7 +23,20 @@ public class DefaultAggregatorClient implements AggregatorClient {
    * @param url destination url
    */
   public DefaultAggregatorClient(String url) {
+    this(url, null);
+  }
+
+
+  /**
+   * Create aggregator client for destination url with api key.
+   *
+   * @param url    destination url
+   * @param apiKey api key
+   *
+   */
+  public DefaultAggregatorClient(String url, String apiKey) {
     this.transport = new JsonRpcHttpTransport(url);
+    this.apiKey = apiKey;
   }
 
   /**
@@ -32,11 +50,25 @@ public class DefaultAggregatorClient implements AggregatorClient {
   public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
       RequestId requestId,
       DataHash transactionHash,
-      Authenticator authenticator) {
+      Authenticator authenticator
+  ) {
+    SubmitCommitmentRequest request = new SubmitCommitmentRequest(
+        requestId,
+        transactionHash,
+        authenticator,
+        false
+    );
 
-    SubmitCommitmentRequest request = new SubmitCommitmentRequest(requestId, transactionHash,
-        authenticator, false);
-    return this.transport.request("submit_commitment", request, SubmitCommitmentResponse.class);
+    Map<String, List<String>> headers = this.apiKey == null
+        ? Map.of()
+        : Map.of(AUTHORIZATION, List.of(String.format("Bearer %s", this.apiKey)));
+
+    return this.transport.request(
+        "submit_commitment",
+        request,
+        SubmitCommitmentResponse.class,
+        headers
+    );
   }
 
   /**
