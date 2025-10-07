@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.api.DefaultAggregatorClient;
+import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.common.BaseEscrowSwapTest;
 
@@ -19,7 +19,7 @@ public class E2EEscrowSwapTest extends BaseEscrowSwapTest {
     String aggregatorUrl = System.getenv("AGGREGATOR_URL");
     Assertions.assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
-    this.client = new StateTransitionClient(new DefaultAggregatorClient(aggregatorUrl));
+    this.client = new StateTransitionClient(new JsonRpcAggregatorClient(aggregatorUrl));
     // TODO: Close the stream
     this.trustBase = RootTrustBase.fromJson(
         new String(getClass().getResourceAsStream("/trust-base.json").readAllBytes())

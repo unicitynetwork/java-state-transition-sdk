@@ -1,6 +1,6 @@
 package org.unicitylabs.sdk.e2e;
 
-import org.unicitylabs.sdk.api.DefaultAggregatorClient;
+import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
@@ -30,7 +30,7 @@ public class BasicE2ETest {
         String aggregatorUrl = System.getenv("AGGREGATOR_URL");
         assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
         
-        DefaultAggregatorClient aggregatorClient = new DefaultAggregatorClient(aggregatorUrl);
+        JsonRpcAggregatorClient aggregatorClient = new JsonRpcAggregatorClient(aggregatorUrl);
         Long blockHeight = aggregatorClient.getBlockHeight().get();
         
         System.out.println("block height: " + blockHeight);
@@ -43,7 +43,7 @@ public class BasicE2ETest {
         String aggregatorUrl = System.getenv("AGGREGATOR_URL");
         assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
-        DefaultAggregatorClient aggregatorClient = new DefaultAggregatorClient(aggregatorUrl);
+        JsonRpcAggregatorClient aggregatorClient = new JsonRpcAggregatorClient(aggregatorUrl);
 
         long startTime = System.currentTimeMillis();
         SecureRandom sr = new SecureRandom();
@@ -77,7 +77,7 @@ public class BasicE2ETest {
         String aggregatorUrl = System.getenv("AGGREGATOR_URL");
         assertNotNull(aggregatorUrl, "AGGREGATOR_URL environment variable must be set");
 
-        DefaultAggregatorClient aggregatorClient = new DefaultAggregatorClient(aggregatorUrl);
+        JsonRpcAggregatorClient aggregatorClient = new JsonRpcAggregatorClient(aggregatorUrl);
         ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(threadCount);
         java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(threadCount * commitmentsPerThread);
 

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.DefaultAggregatorClient;
+import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
@@ -40,9 +40,9 @@ public class TestApiKeyIntegration {
         mockServer.setExpectedApiKey(TEST_API_KEY);
         mockServer.start();
 
-        clientWithApiKey = new DefaultAggregatorClient(
+        clientWithApiKey = new JsonRpcAggregatorClient(
             mockServer.getUrl(), TEST_API_KEY);
-        clientWithoutApiKey = new DefaultAggregatorClient(mockServer.getUrl());
+        clientWithoutApiKey = new JsonRpcAggregatorClient(mockServer.getUrl());
 
         SigningService signingService = new SigningService(
                 HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));

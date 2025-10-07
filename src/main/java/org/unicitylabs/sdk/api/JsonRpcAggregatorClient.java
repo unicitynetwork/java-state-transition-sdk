@@ -12,7 +12,7 @@ import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
 /**
  * Default aggregator client.
  */
-public class DefaultAggregatorClient implements AggregatorClient {
+public class JsonRpcAggregatorClient implements AggregatorClient {
 
   private final JsonRpcHttpTransport transport;
   private final String apiKey;
@@ -22,7 +22,7 @@ public class DefaultAggregatorClient implements AggregatorClient {
    *
    * @param url destination url
    */
-  public DefaultAggregatorClient(String url) {
+  public JsonRpcAggregatorClient(String url) {
     this(url, null);
   }
 
@@ -34,7 +34,7 @@ public class DefaultAggregatorClient implements AggregatorClient {
    * @param apiKey api key
    *
    */
-  public DefaultAggregatorClient(String url, String apiKey) {
+  public JsonRpcAggregatorClient(String url, String apiKey) {
     this.transport = new JsonRpcHttpTransport(url);
     this.apiKey = apiKey;
   }
