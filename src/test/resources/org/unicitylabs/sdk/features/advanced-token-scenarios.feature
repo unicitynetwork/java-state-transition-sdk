@@ -6,6 +6,7 @@ Feature: Advanced Token Scenarios
 
   Background:
     Given the aggregator URL is configured
+    And trust-base.json is set
     And the state transition client is initialized
     And the following users are set up with their signing services
       | Alice |
@@ -46,16 +47,17 @@ Feature: Advanced Token Scenarios
   @nametag-scenarios
   @reset
   Scenario Outline: Complex name tag token interactions
-    Given "Bob" creates <nametagCount> name tag tokens with different addresses
-    When "Alice" transfers tokens to each of "Bob" name tags
+    Given "Alice" creates <tokenCount> tokens
+    Given "Bob" creates nametags for each token
+    When "Alice" transfers tokens to each of "Bob" nametags
     And "Bob" finalizes all received tokens
     And "Bob" consolidates all received tokens
-    Then "Bob" should own <nametagCount> tokens
+    Then "Bob" should own <tokenCount> tokens
     And all "Bob" nametag tokens should remain valid
     And proxy addressing should work for all "Bob" name tags
 
     Examples:
-      | nametagCount |
+      | tokenCount |
       | 3           |
       | 5           |
 
