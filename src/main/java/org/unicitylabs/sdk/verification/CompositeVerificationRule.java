@@ -13,25 +13,27 @@ import java.util.List;
  *
  * <p>When the {@code verify} method is called, it starts with the first rule and continues to
  * execute subsequent rules based on whether the previous rule was successful or not. The final
- * result is a composite {@code VerificationResult} that includes the results of all executed rules.
+ * result is a composite {@code VerificationResult} that includes the results of all executed
+ * rules.
  *
- * @param <ContextT> the type of context used for verification
+ * @param <C> the type of context used for verification
  */
-public abstract class CompositeVerificationRule<ContextT> extends VerificationRule<ContextT> {
+public abstract class CompositeVerificationRule<C extends VerificationContext>
+    extends VerificationRule<C> {
 
-  private final VerificationRule<ContextT> firstRule;
+  private final VerificationRule<C> firstRule;
   private final String message;
 
   /**
-   * Constructs a {@code CompositeVerificationRule} with the specified message and the first rule
-   * in the chain.
+   * Constructs a {@code CompositeVerificationRule} with the specified message and the first rule in
+   * the chain.
    *
    * @param message   a descriptive message for the composite rule
    * @param firstRule the first verification rule to execute in the chain
    */
   public CompositeVerificationRule(
       String message,
-      VerificationRule<ContextT> firstRule
+      VerificationRule<C> firstRule
   ) {
     super(message);
 
@@ -40,8 +42,8 @@ public abstract class CompositeVerificationRule<ContextT> extends VerificationRu
   }
 
   @Override
-  public VerificationResult verify(ContextT context) {
-    VerificationRule<ContextT> rule = this.firstRule;
+  public VerificationResult verify(C context) {
+    VerificationRule<C> rule = this.firstRule;
     List<VerificationResult> results = new ArrayList<>();
 
     while (rule != null) {

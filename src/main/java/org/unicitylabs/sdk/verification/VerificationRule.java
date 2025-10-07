@@ -7,7 +7,7 @@ import java.util.Objects;
  *
  * @param <C> verification context
  */
-public abstract class VerificationRule<C> {
+public abstract class VerificationRule<C extends VerificationContext> {
 
   private final String message;
   private final VerificationRule<C> onSuccessRule;

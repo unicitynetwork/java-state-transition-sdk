@@ -3,11 +3,12 @@ package org.unicitylabs.sdk.bft.verification;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.verification.VerificationContext;
 
 /**
  * Unicity certificate verification context.
  */
-public class UnicityCertificateVerificationContext {
+public class UnicityCertificateVerificationContext implements VerificationContext {
 
   private final DataHash inputHash;
   private final UnicityCertificate unicityCertificate;
