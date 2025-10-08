@@ -1,5 +1,7 @@
 package org.unicitylabs.sdk.mtree.plain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
@@ -15,8 +17,6 @@ import org.unicitylabs.sdk.util.HexConverter;
 /**
  * Sparse Merkle tree path step.
  */
-@JsonSerialize(using = SparseMerkleTreePathStepJson.Serializer.class)
-@JsonDeserialize(using = SparseMerkleTreePathStepJson.Deserializer.class)
 public class SparseMerkleTreePathStep {
 
   private final BigInteger path;
@@ -51,7 +51,12 @@ public class SparseMerkleTreePathStep {
     );
   }
 
-  SparseMerkleTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  @JsonCreator
+  SparseMerkleTreePathStep(
+      @JsonProperty("path") BigInteger path,
+      @JsonProperty("sibling") Branch sibling,
+      @JsonProperty("branch") Branch branch
+  ) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -139,10 +144,12 @@ public class SparseMerkleTreePathStep {
   /**
    * Sparse Merkle tree branch.
    */
+  @JsonSerialize(using = SparseMerkleTreePathStepBranchJson.Serializer.class)
+  @JsonDeserialize(using = SparseMerkleTreePathStepBranchJson.Deserializer.class)
   public static class Branch {
 
     private final byte[] value;
-    
+
     Branch(byte[] value) {
       this.value = value == null ? null : Arrays.copyOf(value, value.length);
     }
@@ -177,7 +184,7 @@ public class SparseMerkleTreePathStep {
      */
     public byte[] toCbor() {
       return CborSerializer.encodeArray(
-          CborSerializer.encodeByteString(this.value)
+          CborSerializer.encodeOptional(this.value, CborSerializer::encodeByteString)
       );
     }
 
