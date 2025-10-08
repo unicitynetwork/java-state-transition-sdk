@@ -79,7 +79,7 @@ jobs:
     - name: Run integration tests
       run: ./gradlew integrationTest
       env:
-        AGGREGATOR_URL: ${{ secrets.AGGREGATOR_URL }}
+        AGGREGATOR_URL: ${{ vars.AGGREGATOR_URL || '__MISSING__' }}
     
     - name: Upload integration test results
       uses: actions/upload-artifact@v4
