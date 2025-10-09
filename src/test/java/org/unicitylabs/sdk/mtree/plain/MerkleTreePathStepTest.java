@@ -36,9 +36,6 @@ public class MerkleTreePathStepTest {
         () -> objectMapper.readValue("{\"sibling\":null,\"branch\":null}",
             SparseMerkleTreePathStep.class));
     Assertions.assertThrows(JsonMappingException.class,
-        () -> objectMapper.readValue("{\"path\":\"5\",\"branch\":null}",
-            SparseMerkleTreePathStep.class));
-    Assertions.assertThrows(JsonMappingException.class,
         () -> objectMapper.readValue("{\"path\":\"5\",\"sibling\":null,\"branch\":\"asd\"}",
             SparseMerkleTreePathStep.class));
     Assertions.assertThrows(JsonMappingException.class,

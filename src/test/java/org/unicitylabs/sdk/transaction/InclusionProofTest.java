@@ -8,15 +8,15 @@ import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
+import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
+import org.unicitylabs.sdk.bft.UnicityCertificateUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTree;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
-import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
-import org.unicitylabs.sdk.bft.UnicityCertificateUtils;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
@@ -46,7 +46,8 @@ public class InclusionProofTest {
     merkleTreePath = smt.calculateRoot().getPath(requestId.toBitString().toBigInteger());
     SigningService ucSigningService = new SigningService(SigningService.generatePrivateKey());
     trustBase = RootTrustBaseUtils.generateRootTrustBase(ucSigningService.getPublicKey());
-    unicityCertificate = UnicityCertificateUtils.generateCertificate(ucSigningService, merkleTreePath.getRootHash());
+    unicityCertificate = UnicityCertificateUtils.generateCertificate(ucSigningService,
+        merkleTreePath.getRootHash());
   }
 
   @Test

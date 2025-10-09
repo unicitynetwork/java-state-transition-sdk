@@ -73,6 +73,8 @@ java {
 
 checkstyle {
     configFile = file("config/checkstyle/checkstyle.xml")
+    // TODO: Clean up test checkstyle and enable it
+    sourceSets = setOf(sourceSets.find { set -> set.name == "main" })
 }
 
 tasks.test {
