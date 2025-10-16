@@ -81,7 +81,6 @@ public class TokenSplitBuilder {
     Objects.requireNonNull(token, "Token cannot be null");
 
     Map<CoinId, SparseMerkleSumTree> trees = new HashMap<>();
-    Map<CoinId, List<TokenRequest>> tokensByCoin = new HashMap<>();
 
     for (TokenRequest data : this.tokens.values()) {
       for (Map.Entry<CoinId, BigInteger> coin : data.coinData.getCoins().entrySet()) {
@@ -89,8 +88,6 @@ public class TokenSplitBuilder {
             k -> new SparseMerkleSumTree(HashAlgorithm.SHA256));
         tree.addLeaf(data.id.toBitString().toBigInteger(),
             new LeafValue(coin.getKey().getBytes(), coin.getValue()));
-        tokensByCoin.computeIfAbsent(coin.getKey(), k -> new java.util.ArrayList<>())
-            .add(data);
       }
     }
 

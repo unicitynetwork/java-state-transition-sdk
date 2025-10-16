@@ -2,6 +2,8 @@
 package org.unicitylabs.sdk.transaction.split;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -28,6 +30,7 @@ import org.unicitylabs.sdk.verification.VerificationResult;
 /**
  * Mint reason for splitting a token.
  */
+@JsonIgnoreProperties()
 public class SplitMintReason implements MintTransactionReason {
 
   private final Token<?> token;
@@ -50,6 +53,7 @@ public class SplitMintReason implements MintTransactionReason {
    *
    * @return token split reason
    */
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   public String getType() {
     return MintReasonType.TOKEN_SPLIT.name();
   }

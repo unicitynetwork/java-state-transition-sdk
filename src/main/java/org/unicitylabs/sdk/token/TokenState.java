@@ -100,8 +100,8 @@ public class TokenState {
     return CborSerializer.encodeArray(
         CborSerializer.encodeArray(
             CborSerializer.encodeUnsignedInteger(this.predicate.getEngine().ordinal()),
-            this.predicate.encode(),
-            this.predicate.encodeParameters()
+            CborSerializer.encodeByteString(this.predicate.encode()),
+            CborSerializer.encodeByteString(this.predicate.encodeParameters())
         ),
         CborSerializer.encodeOptional(this.data, CborSerializer::encodeByteString)
     );

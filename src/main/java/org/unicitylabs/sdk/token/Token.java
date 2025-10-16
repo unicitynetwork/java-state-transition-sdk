@@ -292,9 +292,12 @@ public class Token<R extends MintTransactionReason> {
       RootTrustBase trustBase
   ) {
     for (Token<?> nametag : token.getNametags()) {
-      if (!nametag.verify(trustBase).isSuccessful()) {
+      VerificationResult result = nametag.verify(trustBase);
+      if (!result.isSuccessful()) {
         return VerificationResult.fail(
-            String.format("Nametag token %s verification failed", nametag.getId()));
+            String.format("Nametag token %s verification failed", nametag.getId()),
+            List.of(result)
+        );
       }
     }
 

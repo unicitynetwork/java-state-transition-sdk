@@ -45,7 +45,9 @@ public class UnicityCertificate {
 
     this.version = version;
     this.inputRecord = inputRecord;
-    this.technicalRecordHash = Arrays.copyOf(technicalRecordHash, technicalRecordHash.length);
+    this.technicalRecordHash = technicalRecordHash != null
+        ? Arrays.copyOf(technicalRecordHash, technicalRecordHash.length)
+        : null;
     this.shardConfigurationHash = Arrays.copyOf(
         shardConfigurationHash,
         shardConfigurationHash.length
@@ -79,7 +81,9 @@ public class UnicityCertificate {
    * @return technical record hash
    */
   public byte[] getTechnicalRecordHash() {
-    return Arrays.copyOf(this.technicalRecordHash, this.technicalRecordHash.length);
+    return this.technicalRecordHash != null
+        ? Arrays.copyOf(this.technicalRecordHash, this.technicalRecordHash.length)
+        : null;
   }
 
   /**
@@ -136,7 +140,8 @@ public class UnicityCertificate {
 
     DataHash rootHash = new DataHasher(HashAlgorithm.SHA256)
         .update(inputRecord.toCbor())
-        .update(CborSerializer.encodeByteString(technicalRecordHash))
+        .update(
+            CborSerializer.encodeOptional(technicalRecordHash, CborSerializer::encodeByteString))
         .update(CborSerializer.encodeByteString(shardConfigurationHash))
         .digest();
 
@@ -174,7 +179,7 @@ public class UnicityCertificate {
     return new UnicityCertificate(
         CborDeserializer.readUnsignedInteger(data.get(0)).asInt(),
         InputRecord.fromCbor(data.get(1)),
-        CborDeserializer.readByteString(data.get(2)),
+        CborDeserializer.readOptional(data.get(2), CborDeserializer::readByteString),
         CborDeserializer.readByteString(data.get(3)),
         ShardTreeCertificate.fromCbor(data.get(4)),
         UnicityTreeCertificate.fromCbor(data.get(5)),
@@ -193,7 +198,8 @@ public class UnicityCertificate {
         CborSerializer.encodeArray(
             CborSerializer.encodeUnsignedInteger(this.version),
             this.inputRecord.toCbor(),
-            CborSerializer.encodeByteString(this.technicalRecordHash),
+            CborSerializer.encodeOptional(this.technicalRecordHash,
+                CborSerializer::encodeByteString),
             CborSerializer.encodeByteString(this.shardConfigurationHash),
             this.shardTreeCertificate.toCbor(),
             this.unicityTreeCertificate.toCbor(),

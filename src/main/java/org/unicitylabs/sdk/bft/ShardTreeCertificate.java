@@ -18,11 +18,7 @@ public class ShardTreeCertificate {
   private final byte[] shard;
   private final List<byte[]> siblingHashList;
 
-  @JsonCreator
-  ShardTreeCertificate(
-      @JsonProperty("shard") byte[] shard,
-      @JsonProperty("siblingHashList") List<byte[]> siblingHashList
-  ) {
+  ShardTreeCertificate(byte[] shard, List<byte[]> siblingHashList) {
     Objects.requireNonNull(shard, "Shard cannot be null");
     Objects.requireNonNull(siblingHashList, "Sibling hash list cannot be null");
 

@@ -2,6 +2,7 @@ package org.unicitylabs.sdk.mtree.sum;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +13,8 @@ import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.serializer.json.BigIntegerAsStringSerializer;
+import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
 /**
@@ -211,6 +214,7 @@ public class SparseMerkleSumTreePath {
      *
      * @return counter
      */
+    @JsonSerialize(using = BigIntegerAsStringSerializer.class)
     public BigInteger getCounter() {
       return this.counter;
     }

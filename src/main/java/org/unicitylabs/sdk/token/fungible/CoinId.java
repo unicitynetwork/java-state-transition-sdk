@@ -1,6 +1,8 @@
 
 package org.unicitylabs.sdk.token.fungible;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import org.unicitylabs.sdk.util.BitString;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -8,6 +10,8 @@ import org.unicitylabs.sdk.util.HexConverter;
 /**
  * Coin ID representation.
  */
+@JsonSerialize(using = CoinIdJson.Serializer.class)
+@JsonDeserialize(using = CoinIdJson.Deserializer.class)
 public class CoinId {
 
   private final byte[] bytes;
