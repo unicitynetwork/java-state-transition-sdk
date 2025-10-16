@@ -10,9 +10,11 @@ import java.math.BigInteger;
  * Serializes a long value as a JSON string.
  */
 public class BigIntegerAsStringSerializer extends JsonSerializer<BigInteger> {
-    @Override
-    public void serialize(BigInteger value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeString(value.toString());
-    }
+
+  @Override
+  public void serialize(BigInteger value, JsonGenerator gen, SerializerProvider serializers)
+      throws IOException {
+    gen.writeString(value.toString());
+  }
 }
 

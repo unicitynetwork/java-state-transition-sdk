@@ -9,9 +9,11 @@ import java.io.IOException;
  * Serializes a long value as a JSON string.
  */
 public class LongAsStringSerializer extends JsonSerializer<Long> {
-    @Override
-    public void serialize(Long value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeString(value.toString());
-    }
+
+  @Override
+  public void serialize(Long value, JsonGenerator gen, SerializerProvider serializers)
+      throws IOException {
+    gen.writeString(value.toString());
+  }
 }
 

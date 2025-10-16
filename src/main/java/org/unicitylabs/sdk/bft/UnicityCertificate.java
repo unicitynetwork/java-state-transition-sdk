@@ -140,7 +140,8 @@ public class UnicityCertificate {
 
     DataHash rootHash = new DataHasher(HashAlgorithm.SHA256)
         .update(inputRecord.toCbor())
-        .update(CborSerializer.encodeOptional(technicalRecordHash, CborSerializer::encodeByteString))
+        .update(
+            CborSerializer.encodeOptional(technicalRecordHash, CborSerializer::encodeByteString))
         .update(CborSerializer.encodeByteString(shardConfigurationHash))
         .digest();
 
