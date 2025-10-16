@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -111,7 +112,9 @@ public class MintTransaction<R extends MintTransactionReason> extends
         @JsonProperty("recipient") Address recipient,
         @JsonProperty("salt") byte[] salt,
         @JsonProperty("recipientDataHash") DataHash recipientDataHash,
-        @JsonProperty("reason") R reason
+        @JsonProperty("reason")
+        @JsonDeserialize(using = MintTransactionReasonJson.Deserializer.class)
+        R reason
     ) {
       Objects.requireNonNull(tokenId, "Token ID cannot be null");
       Objects.requireNonNull(tokenType, "Token type cannot be null");
@@ -327,7 +330,8 @@ public class MintTransaction<R extends MintTransactionReason> extends
               + "dataHash=%s, "
               + "reason=%s"
               + "}",
-          this.tokenId, this.tokenType, HexConverter.encode(this.tokenData), this.coinData,
+          this.tokenId, this.tokenType,
+          this.tokenData != null ? HexConverter.encode(this.tokenData) : null, this.coinData,
           this.sourceState, this.recipient, HexConverter.encode(this.salt), this.recipientDataHash,
           this.reason);
     }

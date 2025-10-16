@@ -11,6 +11,8 @@ import java.util.Objects;
 import java.util.Optional;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.serializer.json.BigIntegerAsStringSerializer;
+import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 import org.unicitylabs.sdk.util.HexConverter;
 
@@ -69,6 +71,7 @@ public class SparseMerkleTreePathStep {
    *
    * @return path
    */
+  @JsonSerialize(using = BigIntegerAsStringSerializer.class)
   public BigInteger getPath() {
     return this.path;
   }
