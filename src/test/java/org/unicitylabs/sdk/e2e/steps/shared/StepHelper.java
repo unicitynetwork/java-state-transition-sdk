@@ -10,6 +10,7 @@ import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.SerializablePredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
@@ -90,10 +91,51 @@ public class StepHelper {
         );
     }
 
-    public void transferToken(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
-        SigningService fromSigningService = context.getUserSigningServices().get(fromUser);
+//    public void transferToken(String fromUser, String toUser, Token token, Address toAddress, String customData) throws Exception {
+////        SigningService fromSigningService = context.getUserSigningServices().get(fromUser);
+//
+//        // Create data hash and state data if custom data provided
+//        DataHash dataHash = null;
+//        byte[] stateData = null;
+//        if (customData != null && !customData.isEmpty()) {
+//            stateData = customData.getBytes(StandardCharsets.UTF_8);
+//            dataHash = TestUtils.hashData(stateData);
+//        }
+//
+//        // Submit transfer commitment
+//        TransferCommitment transferCommitment = TransferCommitment.create(
+//                token,
+//                toAddress,
+//                randomBytes(32),
+//                dataHash,
+//                null,
+////                SigningService.createFromSecret(context.getUserSecret().get(fromUser))
+////                context.getUserSigningServices().get(fromUser)
+//                getSigningServiceForToken(fromUser, token)// sign using service that matches token predicate:
+//
+//        );
+//
+//        SubmitCommitmentResponse response = context.getClient().submitCommitment(transferCommitment).get();
+//        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+//            throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
+//        }
+//
+//        // Wait for inclusion proof
+//        InclusionProof inclusionProof = waitInclusionProof(
+//                context.getClient(),
+//                context.getTrustBase(),
+//                transferCommitment
+//        ).get();
+//      TransferTransaction transferTransaction = transferCommitment.toTransaction(
+//                inclusionProof
+//        );
+//
+//        context.savePendingTransfer(toUser, token, transferTransaction);
+//    }
 
-        // Create data hash and state data if custom data provided
+    public void transferToken(String fromUser, String toUser, Token<?> token, Address toAddress, String customData) throws Exception {
+        SigningService fromSigningService = getSigningServiceForToken(fromUser, token);
+
         DataHash dataHash = null;
         byte[] stateData = null;
         if (customData != null && !customData.isEmpty()) {
@@ -101,7 +143,6 @@ public class StepHelper {
             dataHash = TestUtils.hashData(stateData);
         }
 
-        // Submit transfer commitment
         TransferCommitment transferCommitment = TransferCommitment.create(
                 token,
                 toAddress,
@@ -116,21 +157,64 @@ public class StepHelper {
             throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
         }
 
-        // Wait for inclusion proof
-        InclusionProof inclusionProof = waitInclusionProof(
-                context.getClient(),
-                context.getTrustBase(),
-                transferCommitment
-        ).get();
-      TransferTransaction transferTransaction = transferCommitment.toTransaction(
-                inclusionProof
-        );
+        InclusionProof inclusionProof = waitInclusionProof(context.getClient(), context.getTrustBase(), transferCommitment).get();
+        TransferTransaction transferTransaction = transferCommitment.toTransaction(inclusionProof);
 
         context.savePendingTransfer(toUser, token, transferTransaction);
     }
 
-    public void finalizeTransfer(String username, Token<?> token, TransferTransaction tx) throws Exception {
+//    public void finalizeTransfer(String username, Token<?> token, TransferTransaction tx) throws Exception {
+//
+//        byte[] secret = context.getUserSecret().get(username);
+//
+//        Token<?> currentNameTagToken = context.getNameTagToken(username);
+//        List<Token> nametagTokens = context.getNameTagTokens().get(username);
+//        if (nametagTokens != null && !nametagTokens.isEmpty()) {
+//            for (Token<?> t : nametagTokens) {
+//                String actualNametagAddress = tx.getData().getRecipient().getAddress();
+//                String expectedProxyAddress = ProxyAddress.create(t.getId()).getAddress();
+//
+//                if (actualNametagAddress.equalsIgnoreCase(expectedProxyAddress)) {
+//                    currentNameTagToken = t;
+//                    break;
+//                }
+//            }
+//        }
+//
+//        List<Token<?>> additionalTokens = new ArrayList<>();
+//        if (currentNameTagToken != null) {
+//            additionalTokens.add(currentNameTagToken);
+//        }
+//        Predicate unlockPredicate = context.getUserPredicate().get(username);
+//        if (unlockPredicate == null){
+//            context.getUserSigningServices().put(username, SigningService.createFromSecret(secret));
+//            unlockPredicate = UnmaskedPredicate.create(
+//                        token.getId(),
+//                        token.getType(),
+//                        context.getUserSigningServices().get(username),
+//                        HashAlgorithm.SHA256,
+//                        tx.getData().getSalt()
+//                );
+//        }
+//
+//        TokenState recipientState = new TokenState(
+//                unlockPredicate,
+//                null
+//        );
+//
+//
+//        Token finalizedToken = context.getClient().finalizeTransaction(
+//                context.getTrustBase(),
+//                token,
+//                recipientState,
+//                tx,
+//                additionalTokens
+//        );
+//
+//        context.addUserToken(username, finalizedToken);
+//    }
 
+    public void finalizeTransfer(String username, Token<?> token, TransferTransaction tx) throws Exception {
         byte[] secret = context.getUserSecret().get(username);
 
         Token<?> currentNameTagToken = context.getNameTagToken(username);
@@ -139,7 +223,6 @@ public class StepHelper {
             for (Token<?> t : nametagTokens) {
                 String actualNametagAddress = tx.getData().getRecipient().getAddress();
                 String expectedProxyAddress = ProxyAddress.create(t.getId()).getAddress();
-
                 if (actualNametagAddress.equalsIgnoreCase(expectedProxyAddress)) {
                     currentNameTagToken = t;
                     break;
@@ -152,23 +235,9 @@ public class StepHelper {
             additionalTokens.add(currentNameTagToken);
         }
 
-        Predicate unlockPredicate = context.getUserPredicate().get(username);
-        if (unlockPredicate == null){
-            context.getUserSigningServices().put(username, SigningService.createFromSecret(secret));
-            unlockPredicate = UnmaskedPredicate.create(
-                        token.getId(),
-                        token.getType(),
-                        context.getUserSigningServices().get(username),
-                        HashAlgorithm.SHA256,
-                        tx.getData().getSalt()
-                );
-        }
+        Predicate recipientPredicate = createRecipientPredicate(username, token, tx, PredicateType.NAMETAG_AWARE);
 
-        TokenState recipientState = new TokenState(
-                unlockPredicate,
-                null
-        );
-
+        TokenState recipientState = new TokenState(recipientPredicate, null);
         Token finalizedToken = context.getClient().finalizeTransaction(
                 context.getTrustBase(),
                 token,
@@ -177,8 +246,71 @@ public class StepHelper {
                 additionalTokens
         );
 
+        // Сохраняем state
+        context.getUserSigningServices().put(username, getSigningServiceForToken(username, finalizedToken));
         context.addUserToken(username, finalizedToken);
     }
+
+        public void finalizeTransfer2(String username, Token<?> token, TransferTransaction tx) throws Exception {
+
+            byte[] secret = context.getUserSecret().get(username);
+
+            Token<?> currentNameTagToken = context.getNameTagToken(username);
+            List<Token> nametagTokens = context.getNameTagTokens().get(username);
+            if (nametagTokens != null && !nametagTokens.isEmpty()) {
+                for (Token<?> t : nametagTokens) {
+                    String actualNametagAddress = tx.getData().getRecipient().getAddress();
+                    String expectedProxyAddress = ProxyAddress.create(t.getId()).getAddress();
+
+                    if (actualNametagAddress.equalsIgnoreCase(expectedProxyAddress)) {
+                        currentNameTagToken = t;
+                        break;
+                    }
+                }
+            }
+
+            List<Token<?>> additionalTokens = new ArrayList<>();
+            if (currentNameTagToken != null) {
+                additionalTokens.add(currentNameTagToken);
+            }
+
+            SigningService signingService = getSigningServiceForToken(username, token);
+
+            Predicate unlockPredicate;
+            Predicate sourcePredicate = (Predicate) token.getState().getPredicate();
+            if (sourcePredicate instanceof MaskedPredicate) {
+                MaskedPredicate maskedPredicate = (MaskedPredicate) sourcePredicate;
+                unlockPredicate = MaskedPredicate.create(
+                        token.getId(),
+                        token.getType(),
+                        SigningService.createFromMaskedSecret(secret, maskedPredicate.getNonce()),
+                        HashAlgorithm.SHA256,
+                        maskedPredicate.getNonce()
+                );
+            } else {
+                unlockPredicate = UnmaskedPredicate.create(
+                        token.getId(),
+                        token.getType(),
+                        signingService,
+                        HashAlgorithm.SHA256,
+                        tx.getData().getSalt()
+                );
+            }
+
+            TokenState recipientState = new TokenState(unlockPredicate, null);
+
+            Token finalizedToken = context.getClient().finalizeTransaction(
+                    context.getTrustBase(),
+                    token,
+                    recipientState,
+                    tx,
+                    additionalTokens
+            );
+
+            context.getUserSigningServices().put(username, signingService);
+            context.getUserPredicate().put(username, unlockPredicate);
+            context.addUserToken(username, finalizedToken);
+        }
 
     public boolean submitSingleCommitment() {
         try {
@@ -483,5 +615,66 @@ public class StepHelper {
         }
 
         System.out.println("=====================================\n");
+    }
+
+    public SigningService getSigningServiceForToken(String username, Token<?> token) {
+        byte[] secret = context.getUserSecret().get(username);
+        SerializablePredicate predicate = token.getState().getPredicate();
+
+        if (predicate instanceof MaskedPredicate) {
+            MaskedPredicate maskedPredicate = (MaskedPredicate) predicate;
+            return SigningService.createFromMaskedSecret(secret, maskedPredicate.getNonce());
+        } else {
+            return SigningService.createFromSecret(secret);
+        }
+    }
+
+    public boolean isProxyTransfer(TransferTransaction tx) {
+        return tx.getData().getRecipient() instanceof ProxyAddress;
+    }
+
+    public Predicate createRecipientPredicate(String username, Token<?> sourceToken, TransferTransaction tx, PredicateType type) {
+        byte[] secret = context.getUserSecret().get(username);
+        byte[] salt = tx.getData().getSalt();
+
+        switch (type) {
+            case UNMASKED:
+                return UnmaskedPredicate.create(
+                        sourceToken.getId(),
+                        sourceToken.getType(),
+                        SigningService.createFromSecret(secret),
+                        HashAlgorithm.SHA256,
+                        salt
+                );
+            case MASKED:
+                MaskedPredicate srcMasked = (MaskedPredicate) sourceToken.getState().getPredicate();
+                return MaskedPredicate.create(
+                        sourceToken.getId(),
+                        sourceToken.getType(),
+                        SigningService.createFromMaskedSecret(secret, srcMasked.getNonce()),
+                        HashAlgorithm.SHA256,
+                        srcMasked.getNonce()
+                );
+            case NAMETAG_AWARE:
+            default:
+                if (isProxyTransfer(tx)) {
+                    return UnmaskedPredicate.create(
+                            sourceToken.getId(),
+                            sourceToken.getType(),
+                            SigningService.createFromSecret(secret),
+                            HashAlgorithm.SHA256,
+                            salt
+                    );
+                } else {
+                    MaskedPredicate src = (MaskedPredicate) sourceToken.getState().getPredicate();
+                    return MaskedPredicate.create(
+                            sourceToken.getId(),
+                            sourceToken.getType(),
+                            SigningService.createFromMaskedSecret(secret, src.getNonce()),
+                            HashAlgorithm.SHA256,
+                            src.getNonce()
+                    );
+                }
+        }
     }
 }

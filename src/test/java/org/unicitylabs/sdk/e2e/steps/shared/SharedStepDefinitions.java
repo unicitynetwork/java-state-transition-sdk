@@ -1,16 +1,26 @@
 package org.unicitylabs.sdk.e2e.steps.shared;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.address.AddressFactory;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.*;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.transaction.*;
+import org.unicitylabs.sdk.transaction.split.SplitMintReason;
+import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
+import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -26,16 +36,21 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
+import static org.unicitylabs.sdk.util.InclusionProofUtils.waitInclusionProof;
+import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 import org.unicitylabs.sdk.verification.VerificationResult;
+
+
 
 
 /**
@@ -231,6 +246,7 @@ public class SharedStepDefinitions {
         TokenType tokenType = TestUtils.generateRandomTokenType();;
         TokenCoinData coinData = TestUtils.createRandomCoinData(2);
 
+        // Mint with masked predicate n0 (internally)
         Token <?> token = TestUtils.mintTokenForUser(
                 context.getClient(),
                 context.getUserSigningServices().get(username),
@@ -285,7 +301,6 @@ public class SharedStepDefinitions {
         SigningService signingService = context.getUserSigningServices().get(username);
         VerificationResult result = token.verify(context.getTrustBase());
         assertTrue(result.isSuccessful(), "Token should be valid");
-//        assertTrue(token.getState().getPredicate().getEngine().equals(signingService.getPublicKey()), username + " should own the token");
         assertTrue(PredicateEngineService.createPredicate(token.getState().getPredicate()).isOwner(signingService.getPublicKey()), username + " should own the token");
     }
 
@@ -326,18 +341,21 @@ public class SharedStepDefinitions {
     }
 
     @Given("the aggregator URLs are configured")
-    public void theAggregatorURLsAreConfigured() {
+    public void theAggregatorURLsAreConfigured(DataTable dataTable) {
+        List<String> aggregatorUrls = dataTable.asList();
+
         // You can either use environment variables or hardcode the URLs
-        List<String> aggregatorUrls = Arrays.asList(
-                System.getenv("AGGREGATOR_URL")
-        );
+//        List<String> aggregatorUrls = Arrays.asList(
+////                System.getenv("AGGREGATOR_URL")
+//                "http://localhost:3001"
+//        );
 
         assertNotNull(aggregatorUrls, "Aggregator URLs must be configured");
         assertFalse(aggregatorUrls.isEmpty(), "At least one aggregator URL must be provided");
 
         List<AggregatorClient> clients = new ArrayList<>();
         for (String url : aggregatorUrls) {
-            clients.add(new JsonRpcAggregatorClient(url.trim()));
+            clients.add(new JsonRpcAggregatorClient(url.trim(), "premium-key-abc"));
         }
 
         context.setAggregatorClients(clients);
@@ -644,5 +662,352 @@ public class SharedStepDefinitions {
             )
         );
         assertNotNull(context.getTrustBase(), "trust-base.json must be set");
+    }
+
+    @When("{string} splits her token into halves as {string}")
+    public void userSplitsHerTokenIntoHalves(String username, String splitMintType) throws Exception {
+
+
+        Token<?> originalToken = context.getUserToken(username);
+        SigningService signingService = helper.getSigningServiceForToken(username, originalToken);
+
+        // Extract original coin data and halve each amount
+        TokenCoinData originalData = originalToken.getCoins().orElseThrow(() -> new IllegalStateException("Token has no coin data"));;
+        Map<CoinId, BigInteger> originalCoins = originalData.getCoins();
+
+        Map<CoinId, BigInteger> halfCoins1 = new HashMap<>();
+        Map<CoinId, BigInteger> halfCoins2 = new HashMap<>();
+
+        for (Map.Entry<CoinId, BigInteger> entry : originalCoins.entrySet()) {
+            BigInteger value = entry.getValue();
+            BigInteger half = value.divide(BigInteger.valueOf(2));
+            BigInteger remainder = value.mod(BigInteger.valueOf(2));
+            halfCoins1.put(entry.getKey(), half);
+            halfCoins2.put(entry.getKey(), half.add(remainder)); // add remainder if odd
+        }
+
+        TokenCoinData data1 = new TokenCoinData(halfCoins1);
+        TokenCoinData data2 = new TokenCoinData(halfCoins2);
+
+        Token nametagToken = context.getNameTagToken(username);
+
+        // Create TokenSplit using TokenSplitBuilder
+        TokenSplitBuilder builder = new TokenSplitBuilder();
+
+        TokenSplitBuilder.TokenSplit split = builder
+                .createToken(
+                        new TokenId(TestUtils.generateRandomBytes(32)),
+                        originalToken.getType(),
+                        null,
+                        data1,
+                        ProxyAddress.create(
+                                nametagToken.getId()
+                        ),
+                        TestUtils.generateRandomBytes(32),
+                        null
+                )
+                .createToken(
+                        new TokenId(TestUtils.generateRandomBytes(32)),
+                        originalToken.getType(),
+                        null,
+                        data2,
+                        ProxyAddress.create(
+                                context.getNameTagToken(username).getId()
+                        ),
+                        TestUtils.generateRandomBytes(32),
+                        null
+                )
+                .build(originalToken);
+
+        // Submit burn commitment
+        TransferCommitment burnCommitment = split.createBurnCommitment(
+                TestUtils.generateRandomBytes(32),
+                signingService
+        );
+
+        SubmitCommitmentResponse burnResponse = context.getClient()
+                .submitCommitment(burnCommitment).get();
+        assertEquals(SubmitCommitmentStatus.SUCCESS, burnResponse.getStatus(), "Burn failed");
+
+        // Mint new split tokens
+        List<MintCommitment<SplitMintReason>> mintCommitments = split.createSplitMintCommitments(
+                context.getTrustBase(),
+                burnCommitment.toTransaction(
+                        InclusionProofUtils.waitInclusionProof(
+                                context.getClient(),
+                                context.getTrustBase(),
+                                burnCommitment
+                        ).get()
+                )
+        );
+
+        List<Token> splitTokens = new ArrayList<>();
+        for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
+            SubmitCommitmentResponse response = context.getClient().submitCommitment(commitment).get();
+            assertEquals(SubmitCommitmentStatus.SUCCESS, response.getStatus(), "Split mint failed");
+
+            Predicate predicate;
+            if (splitMintType == "Masked") {
+                predicate = MaskedPredicate.create(
+                        commitment.getTransactionData().getTokenId(),
+                        commitment.getTransactionData().getTokenType(),
+                        SigningService.createFromMaskedSecret(
+                                context.getUserSecret().get(username),
+                                TestUtils.generateRandomBytes(32)
+                        ),
+                        HashAlgorithm.SHA256,
+                        commitment.getTransactionData().getSalt()
+                );
+            } else {
+                predicate = UnmaskedPredicate.create(
+                        commitment.getTransactionData().getTokenId(),
+                        commitment.getTransactionData().getTokenType(),
+                        SigningService.createFromSecret(context.getUserSecret().get(username)),
+                        HashAlgorithm.SHA256,
+                        commitment.getTransactionData().getSalt()
+                );
+            }
+
+//            TokenState state = new TokenState(
+//                    UnmaskedPredicate.create(
+//                            commitment.getTransactionData().getTokenId(),
+//                            commitment.getTransactionData().getTokenType(),
+//                            SigningService.createFromSecret(context.getUserSecret().get(username)),
+//                            HashAlgorithm.SHA256,
+//                            commitment.getTransactionData().getSalt()
+//                    ),
+//                    null
+//            );
+
+
+            TokenState state = new TokenState(predicate, null);
+            Token<SplitMintReason> splitToken = Token.create(
+                    context.getTrustBase(),
+                    state,
+                    commitment.toTransaction(
+                            InclusionProofUtils.waitInclusionProof(
+                                    context.getClient(),
+                                    context.getTrustBase(),
+                                    commitment
+                            ).get()
+                    ),
+                    List.of(nametagToken)
+            );
+
+            assertTrue(splitToken.verify(context.getTrustBase()).isSuccessful(), "Split token invalid");
+            splitTokens.add(splitToken);
+        }
+
+        context.removeUserToken(username,originalToken);
+        // Save split tokens in context
+        context.getUserTokens().put(username, splitTokens);
+        context.setCurrentUser(username);
+    }
+
+
+//    @When("{string} splits her token into {int} equal parts")
+//    public void userSplitsTokenIntoNParts(String username, int parts) throws Exception {
+//        Token<?> originalToken = context.getUserToken(username);
+//        SigningService signingService = context.getUserSigningServices().get(username);
+//
+//        TokenCoinData originalData = originalToken.getCoins()
+//                .orElseThrow(() -> new IllegalStateException("Token has no coin data"));
+//
+//        Map<CoinId, BigInteger> originalCoins = originalData.getCoins();
+//
+//        // Create divided coin data for each part
+//        List<TokenCoinData> dividedCoinDataList = new ArrayList<>();
+//
+//        for (int i = 0; i < parts; i++) {
+//            Map<CoinId, BigInteger> coinMap = new HashMap<>();
+//            for (Map.Entry<CoinId, BigInteger> entry : originalCoins.entrySet()) {
+//                BigInteger value = entry.getValue();
+//                BigInteger baseSplit = value.divide(BigInteger.valueOf(parts));
+//                BigInteger remainder = value.mod(BigInteger.valueOf(parts));
+//                BigInteger adjusted = (i == parts - 1) ? baseSplit.add(remainder) : baseSplit;
+//                coinMap.put(entry.getKey(), adjusted);
+//            }
+//            dividedCoinDataList.add(new TokenCoinData(coinMap));
+//        }
+//
+//        // Build token split using nametag predicate for each part
+//        TokenSplitBuilder builder = new TokenSplitBuilder();
+//        for (int i = 0; i < parts; i++) {
+//            TokenId newId = new TokenId(TestUtils.generateRandomBytes(32));
+//            TokenCoinData coinData = dividedCoinDataList.get(i);
+//            ProxyAddress proxyAddress = ProxyAddress.create(
+//                    context.getNameTagToken(username).getId() // mint to user's nametag
+//            );
+//            builder.createToken(
+//                    newId,
+//                    originalToken.getState().getTokenType(),
+//                    null,
+//                    coinData,
+//                    proxyAddress,
+//                    TestUtils.generateRandomBytes(32),
+//                    null
+//            );
+//        }
+//
+//        TokenSplit split = builder.build(originalToken);
+//
+//        // Burn the original token
+//        TransferCommitment burnCommitment = split.createBurnCommitment(
+//                TestUtils.generateRandomBytes(32),
+//                SigningService.createFromMaskedSecret(
+//                        signingService.getSecret(),
+//                        ((MaskedPredicate) originalToken.getState().getPredicate()).getNonce()
+//                )
+//        );
+//
+//        SubmitCommitmentResponse burnResponse = context.getClient()
+//                .submitCommitment(burnCommitment).get();
+//        assertEquals(SubmitCommitmentStatus.SUCCESS, burnResponse.getStatus(), "Burn failed");
+//
+//        // Mint the split tokens
+//        List<MintCommitment<SplitMintReason>> mintCommitments = split.createSplitMintCommitments(
+//                context.getTrustBase(),
+//                burnCommitment.toTransaction(
+//                        InclusionProofUtils.waitInclusionProof(
+//                                context.getClient(),
+//                                context.getTrustBase(),
+//                                burnCommitment
+//                        ).get()
+//                )
+//        );
+//
+//        List<Token<?>> splitTokens = new ArrayList<>();
+//        for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
+//            SubmitCommitmentResponse response = context.getClient().submitCommitment(commitment).get();
+//            assertEquals(SubmitCommitmentStatus.SUCCESS, response.getStatus(), "Split mint failed");
+//
+//            TokenState state = new TokenState(
+//                    UnmaskedPredicate.create(
+//                            commitment.getTransactionData().getTokenId(),
+//                            commitment.getTransactionData().getTokenType(),
+//                            signingService,
+//                            HashAlgorithm.SHA256,
+//                            commitment.getTransactionData().getSalt()
+//                    ),
+//                    null
+//            );
+//
+//            Token<SplitMintReason> splitToken = Token.create(
+//                    context.getTrustBase(),
+//                    state,
+//                    commitment.toTransaction(
+//                            InclusionProofUtils.waitInclusionProof(
+//                                    context.getClient(),
+//                                    context.getTrustBase(),
+//                                    commitment
+//                            ).get()
+//                    ),
+//                    List.of()
+//            );
+//
+//            assertTrue(splitToken.verify(context.getTrustBase()).isSuccessful(), "Split token invalid");
+//            splitTokens.add(splitToken);
+//        }
+//
+//        context.getUserTokens().put(username, splitTokens);
+//        context.setCurrentUser(username);
+//
+//        System.out.printf("%s successfully split token into %d parts%n", username, parts);
+//    }
+
+    @Given("each user have nametags prepared")
+    public void eachUserHaveNametagsPrepared() throws Exception {
+        for (Map.Entry<String, SigningService> entry : context.getUserSigningServices().entrySet()) {
+            String userName = entry.getKey();
+
+            // Create a nametag for each user
+            String nameTagIdentifier = TestUtils.generateRandomString(10);
+            Token nametagToken = helper.createNameTagTokenForUser(
+                    userName,
+                    context.getUserToken(context.getCurrentUser()),
+                    nameTagIdentifier,
+                    userName
+            );
+
+            assertNotNull(nametagToken, "Nametag token should be created for " + userName);
+            assertTrue(nametagToken.verify(context.getTrustBase()).isSuccessful(),
+                    "Nametag token should be valid for " + userName);
+
+            context.addNameTagToken(userName, nametagToken);
+        }
+    }
+
+    @And("{string} transfers one split token to {string}")
+    public void userTransfersOneSplitTokenToAnother(String fromUser, String toUser) throws Exception {
+        List<Token> tokens = context.getUserTokens().get(fromUser);
+        assertNotNull(tokens, "No split tokens found for " + fromUser);
+        assertFalse(tokens.isEmpty(), "No split tokens available");
+
+        Token<?> tokenToTransfer = tokens.get(0); // send one half
+        ProxyAddress proxyAddress = ProxyAddress.create(
+                context.getNameTagToken(toUser).getId()
+        );
+
+        helper.transferToken(fromUser, toUser, tokenToTransfer, proxyAddress, null);
+    }
+
+    @When("{string} transfers the token to direct address {string}")
+    public void transfersTheTokenToDirectAddress(String fromUser, String directAddress) throws Exception {
+        Token sourceToken = context.getUserToken(fromUser);
+        String sourceJsonToken = sourceToken.toJson();
+        System.out.println(sourceJsonToken);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        byte[] salt = new byte[32]; // 256-bit salt
+        new SecureRandom().nextBytes(salt);
+
+        String sessionId = "09b3ed23-6ffd-48bc-a48e-d3c3a59b3e2e";
+        String saltString = Base64.getEncoder().encodeToString(salt);
+
+
+        // Create data hash and state data if custom data provided
+        DataHash dataHash = null;
+
+        // Submit transfer commitment
+        TransferCommitment transferCommitment = TransferCommitment.create(
+                sourceToken,
+                AddressFactory.createAddress(directAddress),
+                randomBytes(32),
+                dataHash,
+                null,
+                context.getUserSigningServices().get(fromUser)
+        );
+
+        SubmitCommitmentResponse response = context.getClient().submitCommitment(transferCommitment).get();
+        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+            throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
+        }
+
+        // Wait for inclusion proof
+        InclusionProof inclusionProof = waitInclusionProof(
+                context.getClient(),
+                context.getTrustBase(),
+                transferCommitment
+        ).get();
+        TransferTransaction transferTransaction = transferCommitment.toTransaction(
+                inclusionProof
+        );
+        System.out.println(transferTransaction.toJson());
+        Map<String, Object> payload = Map.of(
+                "sessionId", sessionId,
+                "salt", saltString,
+                // Escape the inner JSONs so they become valid JSON string values
+                "transferCommitmentJson", UnicityObjectMapper.JSON.writeValueAsString(transferCommitment),
+                "sourceTokenJson", UnicityObjectMapper.JSON.writeValueAsString(sourceToken)
+        );
+
+        System.out.println(UnicityObjectMapper.JSON.writeValueAsString(payload));
+
+       mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        String prettyJson = mapper.writerWithDefaultPrettyPrinter()
+                .writeValueAsString(payload);
+
+        System.out.println(prettyJson);
     }
 }

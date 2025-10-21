@@ -3,6 +3,7 @@ package org.unicitylabs.sdk.utils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -185,6 +186,25 @@ public class TestUtils {
             BigInteger value = BigInteger.valueOf(SECURE_RANDOM.nextInt(1000) + 100); // Random value between 100-1099
             coins.put(coinId, value);
         }
+        return new TokenCoinData(coins);
+    }
+
+    public static TokenCoinData createCoinDataFromTable(List<Map<String, String>> coinRows) {
+        Map<CoinId, BigInteger> coins = new HashMap<>();
+
+        for (Map<String, String> row : coinRows) {
+            String idHex = row.get("id");
+            String valueStr = row.get("value");
+
+            // Convert hex ID → CoinId
+            CoinId coinId = new CoinId(idHex.getBytes(StandardCharsets.UTF_8));
+
+            // Convert value → BigInteger
+            BigInteger value = new BigInteger(valueStr);
+
+            coins.put(coinId, value);
+        }
+
         return new TokenCoinData(coins);
     }
 
