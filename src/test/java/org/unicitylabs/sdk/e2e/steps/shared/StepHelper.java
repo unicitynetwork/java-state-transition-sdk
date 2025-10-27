@@ -235,7 +235,16 @@ public class StepHelper {
             additionalTokens.add(currentNameTagToken);
         }
 
-        Predicate recipientPredicate = createRecipientPredicate(username, token, tx, PredicateType.NAMETAG_AWARE);
+
+
+        Predicate recipientPredicate = createRecipientPredicate(
+                username,
+                token,
+                tx,
+                detectPredicateType(
+                        token,
+                        tx)
+        );
 
         TokenState recipientState = new TokenState(recipientPredicate, null);
         Token finalizedToken = context.getClient().finalizeTransaction(
@@ -676,5 +685,22 @@ public class StepHelper {
                     );
                 }
         }
+    }
+
+    private PredicateType detectPredicateType(Token<?> token, TransferTransaction tx) {
+        if (tx.getData().getRecipient() instanceof ProxyAddress) {
+            // Transfer goes through a name-tag (proxy) system
+            return PredicateType.NAMETAG_AWARE;
+        }
+
+        Predicate predicate = (Predicate) token.getState().getPredicate();
+
+        if (predicate instanceof MaskedPredicate) {
+            // Previous state was masked — continuing the masked ownership chain
+            return PredicateType.MASKED;
+        }
+
+        // Default fallback: direct unmasked ownership
+        return PredicateType.UNMASKED;
     }
 }

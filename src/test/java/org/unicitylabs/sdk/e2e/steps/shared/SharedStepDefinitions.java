@@ -287,7 +287,6 @@ public class SharedStepDefinitions {
                 HashAlgorithm.SHA256,
                 context.getUserNonces().get(toUser)
         );
-        context.getUserPredicate().put(toUser, userPredicate);
 
         DirectAddress toAddress = userPredicate.getReference().toAddress();
 
@@ -300,8 +299,10 @@ public class SharedStepDefinitions {
         context.setCurrentUser(username);
         SigningService signingService = context.getUserSigningServices().get(username);
         VerificationResult result = token.verify(context.getTrustBase());
-        assertTrue(result.isSuccessful(), "Token should be valid");
-        assertTrue(PredicateEngineService.createPredicate(token.getState().getPredicate()).isOwner(signingService.getPublicKey()), username + " should own the token");
+        assertTrue(result.isSuccessful(), () -> "Token should be valid but failed with reason: " + result);
+
+        assertTrue(PredicateEngineService.createPredicate(token.getState().getPredicate())
+                .isOwner(helper.getSigningServiceForToken(username, token).getPublicKey()), username + " should own the token");
     }
 
     @Then("all mint commitments should receive inclusion proofs within {int} seconds")
