@@ -119,6 +119,53 @@ public class TestContext {
     public Map<String, List<Token>> getUserTokens() { return userTokens; }
     public void setUserTokens(Map<String, List<Token>> userTokens) { this.userTokens = userTokens; }
 
+
+    /**
+     * Removes a token owned by a user using any of:
+     * - the token object itself
+     * - its index in the user's token list
+     * - its token ID
+     *
+     * @param userName name of the user
+     * @param identifier can be Token, Integer (index), or TokenId / String (id)
+     * @return true if a token was removed, false otherwise
+     */
+    public boolean removeUserToken(String userName, Object identifier) {
+        List<Token> tokens = userTokens.get(userName);
+        if (tokens == null || tokens.isEmpty()) {
+            return false;
+        }
+
+        // 1️⃣ Case: remove by token object
+        if (identifier instanceof Token) {
+            return tokens.remove((Token) identifier);
+        }
+
+        // 2️⃣ Case: remove by index (Integer)
+        if (identifier instanceof Integer) {
+            int index = (Integer) identifier;
+            if (index >= 0 && index < tokens.size()) {
+                tokens.remove(index);
+                return true;
+            }
+            return false;
+        }
+
+        // 3️⃣ Case: remove by token ID (TokenId or String)
+        if (identifier instanceof TokenId) {
+            TokenId tokenId = (TokenId) identifier;
+            return tokens.removeIf(t -> t.getId().equals(tokenId));
+        }
+
+        if (identifier instanceof String) {
+            String tokenIdString = (String) identifier;
+            return tokens.removeIf(t -> t.getId().toString().equals(tokenIdString));
+        }
+
+        // 4️⃣ Unknown identifier type
+        return false;
+    }
+
     public Map<String, List<Token>> getNameTagTokens() { return nameTagTokens; }
     public void setNameTagTokens(Map<String, List<Token>> nameTagTokens) { this.nameTagTokens = nameTagTokens; }
 
