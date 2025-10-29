@@ -7,6 +7,8 @@ public class HexConverter {
 
   private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
+  private HexConverter() {}
+
   /**
    * Convert byte array to hex.
    *

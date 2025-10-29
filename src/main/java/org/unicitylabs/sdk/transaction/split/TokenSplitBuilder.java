@@ -43,6 +43,12 @@ public class TokenSplitBuilder {
   private final Map<TokenId, TokenRequest> tokens = new HashMap<>();
 
   /**
+   * Create new token split builder.
+   */
+  public TokenSplitBuilder() {
+  }
+
+  /**
    * Create new token which will be created from selected token.
    *
    * @param id                new token id

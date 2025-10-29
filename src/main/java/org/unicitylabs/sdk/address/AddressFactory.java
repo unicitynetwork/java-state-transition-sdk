@@ -11,6 +11,8 @@ import org.unicitylabs.sdk.util.HexConverter;
  */
 public class AddressFactory {
 
+  private AddressFactory() {}
+
   /**
    * Create an Address from its string representation.
    *

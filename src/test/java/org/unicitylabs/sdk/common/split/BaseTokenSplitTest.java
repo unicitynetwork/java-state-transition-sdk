@@ -165,9 +165,6 @@ public abstract class BaseTokenSplitTest {
           List.of(nametagToken)
       );
 
-      System.out.println(this.trustBase.toJson());
-      System.out.println(splitToken.toJson());
-
       Assertions.assertTrue(splitToken.verify(this.trustBase).isSuccessful());
     }
 

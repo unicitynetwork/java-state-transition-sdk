@@ -15,6 +15,9 @@ import java.util.function.Function;
  */
 public class CborSerializer {
 
+  private CborSerializer() {
+  }
+
   /**
    * Encode value to CBOR, if null encode null bytes.
    *

@@ -38,6 +38,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
    * @param signingService signing service
    * @param hashAlgorithm  hash algorithm
    * @param salt           received transaction salt
+   * @return unmasked predicate
    */
   public static UnmaskedPredicate create(
       TokenId tokenId,

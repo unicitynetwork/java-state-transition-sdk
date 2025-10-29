@@ -6,6 +6,9 @@ package org.unicitylabs.sdk.hash;
  */
 public class UnsupportedHashAlgorithmException extends RuntimeException {
 
+  /**
+   * Hash algorithm which is not supported.
+   */
   private final HashAlgorithm algorithm;
 
   /**

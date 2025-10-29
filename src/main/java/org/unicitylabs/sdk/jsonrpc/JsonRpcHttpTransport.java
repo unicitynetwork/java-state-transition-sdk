@@ -27,6 +27,8 @@ public class JsonRpcHttpTransport {
 
   /**
    * JSON-RPC HTTP service constructor.
+   *
+   * @param url service URL
    */
   public JsonRpcHttpTransport(String url) {
     this.url = url;
@@ -35,6 +37,12 @@ public class JsonRpcHttpTransport {
 
   /**
    * Send a JSON-RPC request.
+   *
+   * @param <T>        expected result type
+   * @param method     JSON-RPC method
+   * @param params     JSON-RPC parameters
+   * @param resultType expected result type
+   * @return future with result
    */
   public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType) {
     return request(method, params, resultType, Map.of());
@@ -42,6 +50,13 @@ public class JsonRpcHttpTransport {
 
   /**
    * Send a JSON-RPC request with optional API key.
+   *
+   * @param <T>        expected result type
+   * @param method     JSON-RPC method
+   * @param params     JSON-RPC parameters
+   * @param resultType expected result type
+   * @param headers    additional HTTP headers
+   * @return future with result
    */
   public <T> CompletableFuture<T> request(
       String method,

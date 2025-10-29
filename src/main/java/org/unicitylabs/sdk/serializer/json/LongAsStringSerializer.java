@@ -10,6 +10,13 @@ import java.io.IOException;
  */
 public class LongAsStringSerializer extends JsonSerializer<Long> {
 
+  /**
+   * Create long serializer.
+   */
+  public LongAsStringSerializer() {
+    super();
+  }
+
   @Override
   public void serialize(Long value, JsonGenerator gen, SerializerProvider serializers)
       throws IOException {

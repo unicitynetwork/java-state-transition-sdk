@@ -4,9 +4,21 @@ package org.unicitylabs.sdk.transaction;
  * Status codes for verifying an InclusionProof.
  */
 public enum InclusionProofVerificationStatus {
+  /**
+   * Inclusion proof verification failed because the proof could not be authenticated.
+   */
   NOT_AUTHENTICATED("NOT_AUTHENTICATED"),
+  /**
+   * Inclusion proof verification failed because the path is not included in the Merkle tree.
+   */
   PATH_NOT_INCLUDED("PATH_NOT_INCLUDED"),
+  /**
+   * Inclusion proof verification failed because the path is invalid.
+   */
   PATH_INVALID("PATH_INVALID"),
+  /**
+   * Inclusion proof verification succeeded.
+   */
   OK("OK");
 
   private final String value;

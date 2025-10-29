@@ -11,6 +11,13 @@ import java.math.BigInteger;
  */
 public class BigIntegerAsStringSerializer extends JsonSerializer<BigInteger> {
 
+  /**
+   * Create bigint serializer.
+   */
+  public BigIntegerAsStringSerializer() {
+    super();
+  }
+
   @Override
   public void serialize(BigInteger value, JsonGenerator gen, SerializerProvider serializers)
       throws IOException {

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -13,7 +12,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.ProxyAddress;
-import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
@@ -22,13 +20,9 @@ import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
-import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
-import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
-import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
@@ -230,7 +224,7 @@ public class Token<R extends MintTransactionReason> {
     Objects.requireNonNull(nametags, "Nametag tokens cannot be null");
     Objects.requireNonNull(trustBase, "Trust base cannot be null");
 
-    VerificationResult result = Token.verifyTransaction(this, transaction, trustBase);
+    VerificationResult result = transaction.verify(trustBase, this);
 
     if (!result.isSuccessful()) {
       throw new VerificationException("Transaction verification failed", result);
@@ -238,8 +232,24 @@ public class Token<R extends MintTransactionReason> {
 
     LinkedList<TransferTransaction> transactions = new LinkedList<>(this.transactions);
     transactions.add(transaction);
+    Token<R> token = new Token<>(state, this.genesis, transactions, nametags);
 
-    return new Token<>(state, this.genesis, transactions, nametags);
+    result = token.verifyNametagTokens(trustBase);
+    if (!result.isSuccessful()) {
+      throw new VerificationException("Nametag tokens verification failed", result);
+    }
+
+    result = token.verifyRecipient();
+    if (!result.isSuccessful()) {
+      throw new VerificationException("Recipient verification failed", result);
+    }
+
+    result = token.verifyRecipientData();
+    if (!result.isSuccessful()) {
+      throw new VerificationException("Recipient data verification failed", result);
+    }
+
+    return token;
   }
 
   /**
@@ -253,129 +263,91 @@ public class Token<R extends MintTransactionReason> {
     results.add(
         VerificationResult.fromChildren(
             "Genesis verification",
-            List.of(Token.verifyGenesis(this.genesis, trustBase)))
+            List.of(this.genesis.verify(trustBase))
+        )
     );
 
     for (int i = 0; i < this.transactions.size(); i++) {
       TransferTransaction transaction = this.transactions.get(i);
-
       results.add(
-          VerificationResult.fromChildren(
-              "Transaction verification",
-              List.of(
-                  Token.verifyTransaction(
-                      new Token<>(
-                          transaction.getData().getSourceState(),
-                          this.genesis,
-                          this.transactions.subList(0, i),
-                          transaction.getData().getNametags()
-                      ),
-                      transaction,
-                      trustBase
-                  )
+          transaction.verify(
+              trustBase,
+              new Token<>(
+                  transaction.getData().getSourceState(),
+                  this.genesis,
+                  this.transactions.subList(0, i),
+                  transaction.getData().getNametags()
               )
           )
       );
     }
 
-    results.add(VerificationResult.fromChildren(
-        "Token current state verification",
-        List.of(Token.verifyTransaction(this, null, trustBase))
-    ));
+    results.add(
+        VerificationResult.fromChildren(
+            "Current state verification",
+            List.of(
+                this.verifyNametagTokens(trustBase),
+                this.verifyRecipient(),
+                this.verifyRecipientData()
+            )
+        )
+    );
 
     return VerificationResult.fromChildren("Token verification", results);
   }
 
-  private static VerificationResult verifyTransaction(
-      Token<?> token,
-      TransferTransaction transaction,
-      RootTrustBase trustBase
-  ) {
-    for (Token<?> nametag : token.getNametags()) {
-      VerificationResult result = nametag.verify(trustBase);
-      if (!result.isSuccessful()) {
-        return VerificationResult.fail(
-            String.format("Nametag token %s verification failed", nametag.getId()),
-            List.of(result)
-        );
-      }
-    }
-
-    Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
-    Address expectedRecipient = predicate.getReference().toAddress();
-
-    Transaction<?> previousTransaction = !token.transactions.isEmpty()
-        ? token.transactions.get(token.transactions.size() - 1)
-        : token.genesis;
-    if (!expectedRecipient.equals(
-        ProxyAddress.resolve(previousTransaction.getData().getRecipient(), token.getNametags()))) {
-      return VerificationResult.fail("recipient mismatch");
-    }
-
-    if (!previousTransaction.containsRecipientDataHash(
-        token.getState().getData().orElse(null))
-    ) {
-      return VerificationResult.fail("data mismatch");
-    }
-
-    if (transaction != null && !predicate.verify(token, transaction, trustBase)) {
-      return VerificationResult.fail("predicate verification failed");
-    }
-
-    return VerificationResult.success();
+  /**
+   * Verify token nametag tokens against trust base.
+   *
+   * @param trustBase trust base to verify against
+   * @return verification result
+   */
+  public VerificationResult verifyNametagTokens(RootTrustBase trustBase) {
+    return VerificationResult.fromChildren(
+        "Nametag verification",
+        this.nametags.stream()
+            .map(token -> token.verify(trustBase))
+            .collect(Collectors.toList()));
   }
 
-  private static VerificationResult verifyGenesis(
-      MintTransaction<?> transaction,
-      RootTrustBase trustBase
-  ) {
-    if (transaction.getInclusionProof().getAuthenticator().isEmpty()) {
-      return VerificationResult.fail("Missing authenticator.");
-    }
+  /**
+   * Verify if token owner is the result of last transaction.
+   *
+   * @return verification result
+   */
+  public VerificationResult verifyRecipient() {
+    Predicate predicate = PredicateEngineService.createPredicate(this.state.getPredicate());
+    Address expectedRecipient = predicate.getReference().toAddress();
 
-    if (transaction.getInclusionProof().getTransactionHash().isEmpty()) {
-      return VerificationResult.fail("Missing transaction hash.");
-    }
+    Transaction<?> previousTransaction = this.transactions.isEmpty()
+        ? this.genesis
+        : this.transactions.get(this.transactions.size() - 1);
 
-    if (!transaction.getData().getSourceState()
-        .equals(MintTransactionState.create(transaction.getData().getTokenId()))) {
-      return VerificationResult.fail("Invalid source state");
-    }
+    Address transactionRecipient = ProxyAddress.resolve(
+        previousTransaction.getData().getRecipient(), this.nametags);
+    return VerificationResult.fromChildren("Recipient verification", List.of(
+        expectedRecipient.equals(transactionRecipient)
+            ? VerificationResult.success()
+            : VerificationResult.fail("Recipient address mismatch")
+    ));
+  }
 
-    SigningService signingService = MintCommitment.createSigningService(transaction.getData());
+  /**
+   * Verify if token state data matches last transaction recipient data hash.
+   *
+   * @return verification result
+   */
+  public VerificationResult verifyRecipientData() {
+    Transaction<?> previousTransaction = this.transactions.isEmpty()
+        ? this.genesis
+        : this.transactions.get(this.transactions.size() - 1);
 
-    if (!Arrays.equals(transaction.getInclusionProof().getAuthenticator().get().getPublicKey(),
-        signingService.getPublicKey())) {
-      return VerificationResult.fail("Authenticator public key mismatch.");
-    }
-
-    if (!transaction.getInclusionProof().getAuthenticator().get()
-        .verify(transaction.getData().calculateHash())) {
-      return VerificationResult.fail("Authenticator verification failed.");
-    }
-
-    VerificationResult reasonResult = VerificationResult.fromChildren(
-        "Mint reason verification",
-        List.of(
-            transaction.getData().getReason()
-                .map(reason -> reason.verify(transaction))
-                .orElse(VerificationResult.success())
-        )
-    );
-    if (!reasonResult.isSuccessful()) {
-      return reasonResult;
-    }
-
-    RequestId requestId = RequestId.create(
-        signingService.getPublicKey(),
-        transaction.getData().getSourceState()
-    );
-    if (transaction.getInclusionProof().verify(requestId, trustBase)
-        != InclusionProofVerificationStatus.OK) {
-      return VerificationResult.fail("Inclusion proof verification failed.");
-    }
-
-    return VerificationResult.success();
+    return VerificationResult.fromChildren("Recipient data verification", List.of(
+        previousTransaction.containsRecipientData(this.state.getData().orElse(null))
+            ? VerificationResult.success()
+            : VerificationResult.fail(
+                "State data hash does not match previous transaction recipient data hash")
+    ));
   }
 
   /**

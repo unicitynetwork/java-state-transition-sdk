@@ -80,6 +80,8 @@ public class DataHash {
   /**
    * Returns the imprint of this DataHash (algorithm + hash bytes). Format:
    * [algorithm_byte_1][algorithm_byte_2][hash_bytes...]
+   *
+   * @return imprint bytes
    */
   public byte[] getImprint() {
     byte[] imprint = new byte[this.data.length + 2];
