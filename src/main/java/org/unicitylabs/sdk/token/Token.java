@@ -203,6 +203,7 @@ public class Token<R extends MintTransactionReason> {
     Token<R> token = new Token<>(state, transaction, List.of(), nametags);
     VerificationResult result = token.verify(trustBase);
     if (!result.isSuccessful()) {
+        System.out.println(result);
       throw new VerificationException("Token verification failed", result);
     }
 
@@ -238,8 +239,13 @@ public class Token<R extends MintTransactionReason> {
 
     LinkedList<TransferTransaction> transactions = new LinkedList<>(this.transactions);
     transactions.add(transaction);
+      Token token = new Token<>(state, this.genesis, transactions, nametags);
+      VerificationResult result2 = token.verify(trustBase);
+      if (!result2.isSuccessful()) {
+          throw new VerificationException("Token verification failed", result2);
+      }
 
-    return new Token<>(state, this.genesis, transactions, nametags);
+      return token;
   }
 
   /**

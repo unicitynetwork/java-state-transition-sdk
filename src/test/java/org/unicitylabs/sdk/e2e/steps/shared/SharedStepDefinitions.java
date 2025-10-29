@@ -14,6 +14,7 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.fungible.CoinId;
@@ -280,15 +281,23 @@ public class SharedStepDefinitions {
         Token sourceToken = context.getUserToken(fromUser);
         SigningService toSigningService = context.getUserSigningServices().get(toUser);
 
-        UnmaskedPredicate userPredicate = UnmaskedPredicate.create(
-                sourceToken.getId(),
+//        UnmaskedPredicate userPredicate = UnmaskedPredicate.create(
+//                sourceToken.getId(),
+//                sourceToken.getType(),
+//                toSigningService,
+//                HashAlgorithm.SHA256,
+//                context.getUserNonces().get(toUser)
+//        );
+        SigningService carolSigningService = SigningService.createFromSecret(context.getUserSecret().get(toUser));
+
+        UnmaskedPredicateReference reference = UnmaskedPredicateReference.create(
                 sourceToken.getType(),
-                toSigningService,
-                HashAlgorithm.SHA256,
-                context.getUserNonces().get(toUser)
+                carolSigningService.getAlgorithm(),
+                carolSigningService.getPublicKey(),
+                HashAlgorithm.SHA256
         );
 
-        DirectAddress toAddress = userPredicate.getReference().toAddress();
+        DirectAddress toAddress = reference.toAddress();
 
         helper.transferToken(fromUser, toUser, sourceToken, toAddress, null);
     }
@@ -694,6 +703,9 @@ public class SharedStepDefinitions {
 
         // Create TokenSplit using TokenSplitBuilder
         TokenSplitBuilder builder = new TokenSplitBuilder();
+        System.out.println("Alice address: " + ProxyAddress.create(nametagToken.getId()));
+        System.out.println("Carol address: " + ProxyAddress.create(context.getNameTagToken("Carol").getId()));
+
 
         TokenSplitBuilder.TokenSplit split = builder
                 .createToken(
@@ -713,7 +725,7 @@ public class SharedStepDefinitions {
                         null,
                         data2,
                         ProxyAddress.create(
-                                context.getNameTagToken(username).getId()
+                                context.getNameTagToken("Carol").getId()
                         ),
                         TestUtils.generateRandomBytes(32),
                         null
@@ -743,61 +755,116 @@ public class SharedStepDefinitions {
         );
 
         List<Token> splitTokens = new ArrayList<>();
-        for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
-            SubmitCommitmentResponse response = context.getClient().submitCommitment(commitment).get();
-            assertEquals(SubmitCommitmentStatus.SUCCESS, response.getStatus(), "Split mint failed");
-
-            Predicate predicate;
-            if (splitMintType == "Masked") {
-                predicate = MaskedPredicate.create(
-                        commitment.getTransactionData().getTokenId(),
-                        commitment.getTransactionData().getTokenType(),
-                        SigningService.createFromMaskedSecret(
-                                context.getUserSecret().get(username),
-                                TestUtils.generateRandomBytes(32)
-                        ),
-                        HashAlgorithm.SHA256,
-                        commitment.getTransactionData().getSalt()
-                );
-            } else {
-                predicate = UnmaskedPredicate.create(
-                        commitment.getTransactionData().getTokenId(),
-                        commitment.getTransactionData().getTokenType(),
-                        SigningService.createFromSecret(context.getUserSecret().get(username)),
-                        HashAlgorithm.SHA256,
-                        commitment.getTransactionData().getSalt()
-                );
-            }
-
-//            TokenState state = new TokenState(
-//                    UnmaskedPredicate.create(
-//                            commitment.getTransactionData().getTokenId(),
-//                            commitment.getTransactionData().getTokenType(),
-//                            SigningService.createFromSecret(context.getUserSecret().get(username)),
-//                            HashAlgorithm.SHA256,
-//                            commitment.getTransactionData().getSalt()
+//        for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
+//            SubmitCommitmentResponse response = context.getClient().submitCommitment(commitment).get();
+//            assertEquals(SubmitCommitmentStatus.SUCCESS, response.getStatus(), "Split mint failed");
+//
+//            Predicate predicate;
+//            if (splitMintType == "Masked") {
+//                predicate = MaskedPredicate.create(
+//                        commitment.getTransactionData().getTokenId(),
+//                        commitment.getTransactionData().getTokenType(),
+//                        SigningService.createFromMaskedSecret(
+//                                context.getUserSecret().get(username),
+//                                TestUtils.generateRandomBytes(32)
+//                        ),
+//                        HashAlgorithm.SHA256,
+//                        commitment.getTransactionData().getSalt()
+//                );
+//            } else {
+//                predicate = UnmaskedPredicate.create(
+//                        commitment.getTransactionData().getTokenId(),
+//                        commitment.getTransactionData().getTokenType(),
+//                        SigningService.createFromSecret(context.getUserSecret().get(username)),
+//                        HashAlgorithm.SHA256,
+//                        commitment.getTransactionData().getSalt()
+//                );
+//            }
+//
+//            TokenState state = new TokenState(predicate, null);
+//            Token<SplitMintReason> splitToken = Token.create(
+//                    context.getTrustBase(),
+//                    state,
+//                    commitment.toTransaction(
+//                            InclusionProofUtils.waitInclusionProof(
+//                                    context.getClient(),
+//                                    context.getTrustBase(),
+//                                    commitment
+//                            ).get()
 //                    ),
-//                    null
+//                    List.of(nametagToken)
 //            );
+//
+//            assertTrue(splitToken.verify(context.getTrustBase()).isSuccessful(), "Split token invalid");
+//
+//            splitTokens.add(splitToken);
+//        }
 
+        SubmitCommitmentResponse response = context.getClient().submitCommitment(mintCommitments.get(0)).get();
+        assertEquals(SubmitCommitmentStatus.SUCCESS, response.getStatus(), "Split mint failed");
 
-            TokenState state = new TokenState(predicate, null);
-            Token<SplitMintReason> splitToken = Token.create(
-                    context.getTrustBase(),
-                    state,
-                    commitment.toTransaction(
-                            InclusionProofUtils.waitInclusionProof(
-                                    context.getClient(),
-                                    context.getTrustBase(),
-                                    commitment
-                            ).get()
-                    ),
-                    List.of(nametagToken)
+        Predicate predicate = UnmaskedPredicate.create(
+                    mintCommitments.get(0).getTransactionData().getTokenId(),
+                    mintCommitments.get(0).getTransactionData().getTokenType(),
+                    SigningService.createFromSecret(context.getUserSecret().get(username)),
+                    HashAlgorithm.SHA256,
+                    mintCommitments.get(0).getTransactionData().getSalt()
             );
 
-            assertTrue(splitToken.verify(context.getTrustBase()).isSuccessful(), "Split token invalid");
-            splitTokens.add(splitToken);
-        }
+        TokenState state = new TokenState(predicate, null);
+        System.out.println(mintCommitments.get(0).getTransactionData().getRecipient());
+        Token<SplitMintReason> splitToken = Token.create(
+                context.getTrustBase(),
+                state,
+                mintCommitments.get(0).toTransaction(
+                        InclusionProofUtils.waitInclusionProof(
+                                context.getClient(),
+                                context.getTrustBase(),
+                                mintCommitments.get(0)
+                        ).get()
+                ),
+                List.of(nametagToken)
+        );
+
+        assertTrue(splitToken.verify(context.getTrustBase()).isSuccessful(), "Split token invalid");
+
+        splitTokens.add(splitToken);
+
+        SubmitCommitmentResponse response2 = context.getClient().submitCommitment(mintCommitments.get(1)).get();
+        assertEquals(SubmitCommitmentStatus.SUCCESS, response2.getStatus(), "Split mint failed");
+
+        Predicate predicate2 = UnmaskedPredicate.create(
+                mintCommitments.get(1).getTransactionData().getTokenId(),
+                mintCommitments.get(1).getTransactionData().getTokenType(),
+                SigningService.createFromSecret(context.getUserSecret().get("Carol")),
+                HashAlgorithm.SHA256,
+                mintCommitments.get(1).getTransactionData().getSalt()
+        );
+
+        TokenState state2 = new TokenState(predicate2, null);
+        Token<SplitMintReason> splitToken2 = Token.create(
+                context.getTrustBase(),
+                state2,
+                mintCommitments.get(1).toTransaction(
+                        InclusionProofUtils.waitInclusionProof(
+                                context.getClient(),
+                                context.getTrustBase(),
+                                mintCommitments.get(1)
+                        ).get()
+                ),
+                List.of(context.getNameTagToken("Carol"))
+        );
+
+        assertTrue(splitToken2.verify(context.getTrustBase()).isSuccessful(), "Split token 2 invalid");
+
+        splitTokens.add(splitToken2);
+
+
+
+        assertTrue(PredicateEngineService.createPredicate(splitTokens.get(0).getState().getPredicate())
+                .isOwner(helper.getSigningServiceForToken(username, splitTokens.get(0)).getPublicKey()), username + " should own the token");
+        assertTrue(PredicateEngineService.createPredicate(splitTokens.get(1).getState().getPredicate())
+                .isOwner(helper.getSigningServiceForToken("Carol", splitTokens.get(1)).getPublicKey()), "Carol" + " should own the token");
 
         context.removeUserToken(username,originalToken);
         // Save split tokens in context

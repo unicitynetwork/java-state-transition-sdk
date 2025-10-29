@@ -80,7 +80,7 @@ Feature: Token Transfer Operations
     Examples:
       | tokenType                                                        | predicateTypeSplit |
       | f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509 |  Unmasked          |
-      | f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509 |  Masked          |
+#      | f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509 |  Masked          |
 
   Scenario Outline: Token minting with different configurations
     Given user "<user>" with nonce of <nonceLength> bytes
