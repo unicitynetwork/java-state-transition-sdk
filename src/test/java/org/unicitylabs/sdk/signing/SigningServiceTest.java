@@ -5,7 +5,6 @@ import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import org.unicitylabs.sdk.util.HexConverter;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -3,16 +3,17 @@ package org.unicitylabs.sdk.serializer.json;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+
 import java.io.IOException;
 import java.math.BigInteger;
 
 /**
- * Serializes a long value as a JSON string.
+ * Serializes a BigInteger value as a JSON string.
  */
 public class BigIntegerAsStringSerializer extends JsonSerializer<BigInteger> {
 
   /**
-   * Create bigint serializer.
+   * Create BigInteger serializer.
    */
   public BigIntegerAsStringSerializer() {
     super();
@@ -24,4 +25,3 @@ public class BigIntegerAsStringSerializer extends JsonSerializer<BigInteger> {
     gen.writeString(value.toString());
   }
 }
-
