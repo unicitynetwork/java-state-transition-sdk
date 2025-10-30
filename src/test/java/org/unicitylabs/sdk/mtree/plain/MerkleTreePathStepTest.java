@@ -18,7 +18,7 @@ public class MerkleTreePathStepTest {
   @Test
   public void testConstructorThrowsOnNullArguments() {
     Exception exception = assertThrows(NullPointerException.class,
-        () -> new SparseMerkleTreePathStep(null, (SparseMerkleTreePathStep.Branch) null, null));
+        () -> new SparseMerkleTreePathStep(null, null));
     assertEquals("path cannot be null", exception.getMessage());
   }
 
@@ -44,10 +44,7 @@ public class MerkleTreePathStepTest {
 
     SparseMerkleTreePathStep step = new SparseMerkleTreePathStep(
         BigInteger.ONE,
-        new SparseMerkleTreePathStep.Branch(
-            new DataHash(HashAlgorithm.SHA384, new byte[5]).getImprint()
-        ),
-        new SparseMerkleTreePathStep.Branch(new byte[3])
+        new DataHash(HashAlgorithm.SHA384, new byte[5]).getImprint()
     );
     Assertions.assertEquals(step,
         objectMapper.readValue(objectMapper.writeValueAsString(step),

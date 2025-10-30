@@ -53,9 +53,7 @@ public class MerkleTreePathTest {
         List.of(
             new SparseMerkleTreePathStep(
                 BigInteger.ONE,
-                new SparseMerkleTreePathStep.Branch(
-                    new DataHash(HashAlgorithm.SHA384, new byte[5]).getImprint()),
-                new SparseMerkleTreePathStep.Branch(new byte[3])
+                new DataHash(HashAlgorithm.SHA384, new byte[5]).getImprint()
             )
         ));
 
@@ -66,66 +64,34 @@ public class MerkleTreePathTest {
   @Test
   public void testShouldVerifyInclusionProof() {
     SparseMerkleTreePath path = new SparseMerkleTreePath(
-        DataHash.fromImprint(HexConverter.decode(
-            "00001fd5fffc41e26f249d04e435b71dbe86d079711131671ed54431a5e117291b42")),
+        DataHash.fromImprint(
+            HexConverter.decode(
+                "0000e9748bbd0c45fc357ffe7c221c7db1ef02f589680d8b0a370b48a669435bde13"
+            )
+        ),
         List.of(
             new SparseMerkleTreePathStep(
-                BigInteger.valueOf(16),
-                new SparseMerkleTreePathStep.Branch(
-                    HexConverter.decode(
-                        "6c5ad75422175395b4b63390e9dea5d0a39017f4750b78cc4b89ac6451265345")),
-                new SparseMerkleTreePathStep.Branch(
-                    HexConverter.decode("76616c75653030303030303030"))),
+                BigInteger.valueOf(69),
+                HexConverter.decode("76616c756535")
+            ),
             new SparseMerkleTreePathStep(
                 BigInteger.valueOf(4),
-                new SparseMerkleTreePathStep.Branch(
-                    HexConverter.decode(
-                        "ed454d5723b169c882ec9ad5e7f73b2bb804ec1a3cf1dd0eb24faa833ffd9eef")),
-                new SparseMerkleTreePathStep.Branch(null)),
+                HexConverter.decode(
+                    "8471f8ea3c9a0e50627df4c72d9bd5affbdc12050ee7f4250974ed64949f3b0f"
+                )
+            ),
             new SparseMerkleTreePathStep(
-                BigInteger.valueOf(2),
-                new SparseMerkleTreePathStep.Branch(
-                    HexConverter.decode(
-                        "e61c02aab33310b526224da3f2ed765ecea0e9a7ac5a307bf7736cca38d00067")),
-                new SparseMerkleTreePathStep.Branch(null)),
-            new SparseMerkleTreePathStep(
-                BigInteger.valueOf(2),
-                new SparseMerkleTreePathStep.Branch(
-                    HexConverter.decode(
-                        "be9ef65f6d3b6057acc7668fcbb23f9a5ae573d21bd5ebc3d9f4eee3a3c706a3")),
-                new SparseMerkleTreePathStep.Branch(null))
-        )
-    );
-
-    Assertions.assertEquals(new MerkleTreePathVerificationResult(true, true),
-        path.verify(BigInteger.valueOf(0b100000000)));
-    Assertions.assertEquals(new MerkleTreePathVerificationResult(true, false),
-        path.verify(BigInteger.valueOf(0b100)));
-  }
-
-  @Test
-  public void testShouldVerifyNonInclusionProof() {
-    SparseMerkleTreePath path = new SparseMerkleTreePath(
-        DataHash.fromImprint(HexConverter.decode(
-            "000096a296d224f285c67bee93c30f8a309157f0daa35dc5b87e410b78630a09cfc7")),
-        List.of(
-            new SparseMerkleTreePathStep(
-                BigInteger.valueOf(16),
-                new SparseMerkleTreePathStep.Branch(HexConverter.decode(
-                    "00006c5ad75422175395b4b63390e9dea5d0a39017f4750b78cc4b89ac6451265345")),
-                new SparseMerkleTreePathStep.Branch(
-                    HexConverter.decode("76616c75653030303030303030"))),
-            new SparseMerkleTreePathStep(
-                BigInteger.valueOf(4),
-                (SparseMerkleTreePathStep.Branch) null,
-                null
+                BigInteger.valueOf(1),
+                HexConverter.decode(
+                    "66507538ce0fae31018cfc7b01841b5308e7e44306445710acee947ec4a4b2cd"
+                )
             )
         )
     );
 
+    Assertions.assertEquals(new MerkleTreePathVerificationResult(true, true),
+        path.verify(BigInteger.valueOf(0b100010100)));
     Assertions.assertEquals(new MerkleTreePathVerificationResult(true, false),
-        path.verify(BigInteger.valueOf(0b1000000)));
+        path.verify(BigInteger.valueOf(0b111)));
   }
-
-
 }

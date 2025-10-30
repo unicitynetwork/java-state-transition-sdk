@@ -114,12 +114,9 @@ public class SplitMintReason implements MintTransactionReason {
 
       List<SparseMerkleTreePathStep> aggregationPathSteps = proof.getAggregationPath()
           .getSteps();
-      if (aggregationPathSteps.isEmpty()
-          || !Arrays.equals(
-          proof.getCoinTreePath().getRoot().getHash().getImprint(),
-          aggregationPathSteps.get(0).getBranch()
-              .map(SparseMerkleTreePathStep.Branch::getValue)
-              .orElse(null))
+      if (aggregationPathSteps.size() == 0
+          || !Arrays.equals(proof.getCoinTreePath().getRoot().getHash().getImprint(),
+          aggregationPathSteps.get(0).getData().orElse(null))
       ) {
         return VerificationResult.fail("Coin tree root does not match aggregation path leaf.");
       }

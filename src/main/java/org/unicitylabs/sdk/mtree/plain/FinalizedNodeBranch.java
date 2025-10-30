@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
 /**
@@ -16,14 +17,16 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
   private final FinalizedBranch left;
   private final FinalizedBranch right;
   private final DataHash hash;
-  private final DataHash childrenHash;
 
-  private FinalizedNodeBranch(BigInteger path, FinalizedBranch left, FinalizedBranch right,
-      DataHash childrenHash, DataHash hash) {
+  private FinalizedNodeBranch(
+      BigInteger path,
+      FinalizedBranch left,
+      FinalizedBranch right,
+      DataHash hash
+  ) {
     this.path = path;
     this.left = left;
     this.right = right;
-    this.childrenHash = childrenHash;
     this.hash = hash;
   }
 
@@ -36,19 +39,33 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
    * @param hashAlgorithm hash algorithm to use
    * @return finalized node branch
    */
-  public static FinalizedNodeBranch create(BigInteger path, FinalizedBranch left,
-      FinalizedBranch right, HashAlgorithm hashAlgorithm) {
-    DataHash childrenHash = new DataHasher(hashAlgorithm)
-        .update(left.getHash().getData())
-        .update(right.getHash().getData())
-        .digest();
-
+  public static FinalizedNodeBranch create(
+      BigInteger path,
+      FinalizedBranch left,
+      FinalizedBranch right,
+      HashAlgorithm hashAlgorithm
+  ) {
     DataHash hash = new DataHasher(hashAlgorithm)
-        .update(BigIntegerConverter.encode(path))
-        .update(childrenHash.getData())
+        .update(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(path)),
+                CborSerializer.encodeOptional(
+                    left == null
+                        ? null
+                        : left.getHash().getData(),
+                    CborSerializer::encodeByteString
+                ),
+                CborSerializer.encodeOptional(
+                    right == null
+                        ? null
+                        : right.getHash().getData(),
+                    CborSerializer::encodeByteString
+                )
+            )
+        )
         .digest();
 
-    return new FinalizedNodeBranch(path, left, right, childrenHash, hash);
+    return new FinalizedNodeBranch(path, left, right, hash);
   }
 
   @Override
@@ -64,15 +81,6 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
   @Override
   public FinalizedBranch getRight() {
     return this.right;
-  }
-
-  /**
-   * Get hash of the children (left and right).
-   *
-   * @return children hash
-   */
-  public DataHash getChildrenHash() {
-    return this.childrenHash;
   }
 
   @Override
