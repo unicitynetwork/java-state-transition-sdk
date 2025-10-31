@@ -7,6 +7,9 @@ import java.util.Objects;
  */
 public class VerificationException extends Exception {
 
+  /**
+   * Verification result.
+   */
   private final VerificationResult verificationResult;
 
   /**

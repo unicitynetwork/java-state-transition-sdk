@@ -58,7 +58,7 @@ public class TokenSplitBuilderTest {
                 null
             ),
             InclusionProofFixture.create(
-                SparseMerkleTreePathFixture.create(List.of()),
+                SparseMerkleTreePathFixture.create(),
                 null,
                 null,
                 unicityCertificate

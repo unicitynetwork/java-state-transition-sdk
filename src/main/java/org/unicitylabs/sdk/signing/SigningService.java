@@ -59,16 +59,28 @@ public class SigningService {
     );
   }
 
+  /**
+   * Get public key.
+   *
+   * @return public key bytes
+   */
   public byte[] getPublicKey() {
     return Arrays.copyOf(publicKey, publicKey.length);
   }
 
+  /**
+   * Get signing algorithm.
+   *
+   * @return algorithm name
+   */
   public String getAlgorithm() {
     return "secp256k1";
   }
 
   /**
    * Generate a random private key.
+   *
+   * @return private key bytes
    */
   public static byte[] generatePrivateKey() {
     SecureRandom random = new SecureRandom();
@@ -79,6 +91,9 @@ public class SigningService {
 
   /**
    * Create signing service from secret.
+   *
+   * @param secret secret bytes
+   * @return signing service
    */
   public static SigningService createFromSecret(byte[] secret) {
     return SigningService.createFromMaskedSecret(secret, null);
@@ -86,6 +101,10 @@ public class SigningService {
 
   /**
    * Create signing service from secret and nonce.
+   *
+   * @param secret secret bytes
+   * @param nonce  nonce bytes
+   * @return signing service
    */
   public static SigningService createFromMaskedSecret(byte[] secret, byte[] nonce) {
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
@@ -262,6 +281,10 @@ public class SigningService {
 
   /**
    * Verify signature with recovered public key - extract public key from signature.
+   *
+   * @param hash      data hash
+   * @param signature signature
+   * @return true if successful
    */
   public static boolean verifySignatureWithRecoveredPublicKey(DataHash hash, Signature signature) {
     // Extract r and s from signature

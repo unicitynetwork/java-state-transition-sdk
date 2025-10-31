@@ -3,9 +3,11 @@ package org.unicitylabs.sdk.api;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Objects;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
+import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
 
 /**
  * Block height response.
@@ -26,6 +28,7 @@ public class BlockHeightResponse {
    *
    * @return block height
    */
+  @JsonSerialize(using = LongAsStringSerializer.class)
   public long getBlockNumber() {
     return this.blockNumber;
   }

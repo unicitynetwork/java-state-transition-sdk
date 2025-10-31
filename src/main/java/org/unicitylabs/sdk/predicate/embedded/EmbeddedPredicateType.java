@@ -7,8 +7,17 @@ import java.util.Arrays;
  * Embedded predicate types.
  */
 public enum EmbeddedPredicateType {
+  /**
+   * Unmasked predicate type.
+   */
   UNMASKED(new byte[]{0x0}),
+  /**
+   * Masked predicate type.
+   */
   MASKED(new byte[]{0x1}),
+  /**
+   * Burn predicate type.
+   */
   BURN(new byte[]{0x2});
 
   private final byte[] bytes;

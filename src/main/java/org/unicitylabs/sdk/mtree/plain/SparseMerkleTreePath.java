@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
@@ -66,39 +65,64 @@ public class SparseMerkleTreePath {
    * @return true if successful
    */
   public MerkleTreePathVerificationResult verify(BigInteger requestId) {
-    BigInteger currentPath = BigInteger.ONE; // Root path is always 1
-    DataHash currentHash = null;
-
-    for (int i = 0; i < this.steps.size(); i++) {
-      SparseMerkleTreePathStep step = this.steps.get(i);
-      byte[] hash;
-      if (step.getBranch().isEmpty()) {
-        hash = new byte[]{0};
-      } else {
-        byte[] bytes = i == 0
-            ? step.getBranch().map(SparseMerkleTreePathStep.Branch::getValue).orElse(null)
-            : (currentHash != null ? currentHash.getData() : null);
-
-        hash = new DataHasher(HashAlgorithm.SHA256)
-            .update(BigIntegerConverter.encode(step.getPath()))
-            .update(bytes == null ? new byte[]{0} : bytes)
-            .digest()
-            .getData();
-
-        int length = step.getPath().bitLength() - 1;
-        currentPath = currentPath.shiftLeft(length)
-            .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
-      }
-
-      byte[] siblingHash = step.getSibling().map(SparseMerkleTreePathStep.Branch::getValue)
-          .orElse(new byte[]{0});
-      boolean isRight = step.getPath().testBit(0);
-      currentHash = new DataHasher(HashAlgorithm.SHA256).update(isRight ? siblingHash : hash)
-          .update(isRight ? hash : siblingHash).digest();
+    if (this.steps.size() == 0) {
+      return new MerkleTreePathVerificationResult(false, false);
     }
 
-    return new MerkleTreePathVerificationResult(this.rootHash.equals(currentHash),
-        currentPath.equals(requestId));
+    SparseMerkleTreePathStep step = this.steps.get(0);
+    byte[] currentData;
+    BigInteger currentPath = BigInteger.ONE;
+    if (step.getPath().compareTo(BigInteger.ZERO) > 0) {
+      DataHash hash = new DataHasher(this.rootHash.getAlgorithm())
+          .update(
+              CborSerializer.encodeArray(
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(step.getPath())),
+                  CborSerializer.encodeOptional(
+                      step.getData().orElse(null),
+                      CborSerializer::encodeByteString
+                  )
+              )
+          )
+          .digest();
+
+      currentData = hash.getData();
+
+      int length = step.getPath().bitLength() - 1;
+      currentPath = currentPath.shiftLeft(length)
+          .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
+    } else {
+      currentData = step.getData().orElse(null);
+    }
+
+    for (int i = 1; i < this.steps.size(); i++) {
+      step = this.steps.get(i);
+      boolean isRight = currentPath.testBit(0);
+
+      byte[] left = isRight ? step.getData().orElse(null) : currentData;
+      byte[] right = isRight ? currentData : step.getData().orElse(null);
+
+      DataHash hash = new DataHasher(this.rootHash.getAlgorithm())
+          .update(
+              CborSerializer.encodeArray(
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(step.getPath())),
+                  CborSerializer.encodeOptional(left, CborSerializer::encodeByteString),
+                  CborSerializer.encodeOptional(right, CborSerializer::encodeByteString)
+                  )
+              )
+          .digest();
+
+      currentData = hash.getData();
+
+      int length = step.getPath().bitLength() - 1;
+      currentPath = currentPath.shiftLeft(length)
+          .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
+    }
+
+    boolean pathValid = currentData != null
+        && this.rootHash.equals(new DataHash(this.rootHash.getAlgorithm(), currentData));
+    boolean pathIncluded = currentPath.compareTo(requestId) == 0;
+
+    return new MerkleTreePathVerificationResult(pathValid, pathIncluded);
   }
 
   /**

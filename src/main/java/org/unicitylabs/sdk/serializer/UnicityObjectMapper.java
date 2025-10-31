@@ -16,6 +16,8 @@ public class UnicityObjectMapper {
    */
   public static final ObjectMapper JSON = createJsonObjectMapper();
 
+  private UnicityObjectMapper() {}
+
   private static ObjectMapper createJsonObjectMapper() {
     SimpleModule module = new SimpleModule();
     module.addSerializer(byte[].class, new ByteArrayJson.Serializer());

@@ -35,7 +35,7 @@ public class InputRecord {
       long timestamp,
       byte[] blockHash,
       long sumOfEarnedFees,
-      @JsonProperty("executedTransactionsHash") byte[] executedTransactionsHash
+      byte[] executedTransactionsHash
   ) {
     Objects.requireNonNull(hash, "Hash cannot be null");
     Objects.requireNonNull(summaryValue, "Summary value cannot be null");

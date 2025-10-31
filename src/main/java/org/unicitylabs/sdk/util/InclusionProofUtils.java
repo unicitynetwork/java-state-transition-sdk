@@ -22,8 +22,16 @@ public class InclusionProofUtils {
       30);  // 30 seconds should be enough for direct leader
   private static final Duration DEFAULT_INTERVAL = Duration.ofMillis(1000);
 
+  private InclusionProofUtils() {
+  }
+
   /**
    * Wait for an inclusion proof to be available and verified.
+   *
+   * @param client     State transition client
+   * @param trustBase  Root trust base
+   * @param commitment Inclusion proof commitment to wait for
+   * @return Completable future with inclusion proof
    */
   public static CompletableFuture<InclusionProof> waitInclusionProof(
       StateTransitionClient client,
@@ -35,6 +43,13 @@ public class InclusionProofUtils {
 
   /**
    * Wait for an inclusion proof to be available and verified with custom timeout.
+   *
+   * @param client     State transition client
+   * @param trustBase  Root trust base
+   * @param commitment Inclusion proof commitment to wait for
+   * @param timeout    Maximum duration to wait for the inclusion proof
+   * @param interval   Interval between checks for the inclusion proof
+   * @return Completable future with inclusion proof
    */
   public static CompletableFuture<InclusionProof> waitInclusionProof(
       StateTransitionClient client,
