@@ -122,9 +122,12 @@ public class InclusionProof {
 
       try {
         LeafValue leafValue = LeafValue.create(this.authenticator, this.transactionHash);
+        if (this.merkleTreePath.getSteps().size() == 0) {
+          return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
+        }
+
         SparseMerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
-        if (step == null || !Arrays.equals(leafValue.getBytes(), step.getBranch().map(
-            SparseMerkleTreePathStep.Branch::getValue).orElse(null))) {
+        if (!Arrays.equals(leafValue.getBytes(), step.getData().orElse(null))) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
         }
       } catch (CborSerializationException e) {

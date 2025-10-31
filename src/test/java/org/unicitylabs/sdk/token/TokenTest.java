@@ -69,7 +69,7 @@ public class TokenTest {
         MintTransactionFixture.create(
             nametagGenesisData,
             InclusionProofFixture.create(
-                SparseMerkleTreePathFixture.create(List.of()),
+                SparseMerkleTreePathFixture.create(),
                 null,
                 null,
                 unicityCertificate
@@ -95,7 +95,7 @@ public class TokenTest {
         MintTransactionFixture.create(
             genesisData,
             InclusionProofFixture.create(
-                SparseMerkleTreePathFixture.create(List.of()),
+                SparseMerkleTreePathFixture.create(),
                 null,
                 null,
                 unicityCertificate
