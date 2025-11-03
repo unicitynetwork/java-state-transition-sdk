@@ -43,8 +43,12 @@ class PendingNodeBranch implements NodeBranch {
 
   @Override
   public FinalizedNodeBranch finalize(HashAlgorithm hashAlgorithm) {
-    return FinalizedNodeBranch.create(this.path, this.left.finalize(hashAlgorithm),
-        this.right.finalize(hashAlgorithm), hashAlgorithm);
+    return FinalizedNodeBranch.create(
+        this.path,
+        this.left.finalize(hashAlgorithm),
+        this.right.finalize(hashAlgorithm),
+        hashAlgorithm
+    );
   }
 
   @Override

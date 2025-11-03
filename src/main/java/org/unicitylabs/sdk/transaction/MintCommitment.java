@@ -17,8 +17,7 @@ import org.unicitylabs.sdk.util.HexConverter;
  */
 public class MintCommitment<R extends MintTransactionReason> extends
     Commitment<MintTransaction.Data<R>> {
-
-  public static final byte[] MINTER_SECRET = HexConverter.decode(
+  private static final byte[] MINTER_SECRET = HexConverter.decode(
       "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 
   @JsonCreator

@@ -6,7 +6,13 @@ package org.unicitylabs.sdk.jsonrpc;
  */
 public class JsonRpcNetworkException extends Exception {
 
+  /**
+   * Status code.
+   */
   private final int status;
+  /**
+   * Error message.
+   */
   private final String errorMessage;
 
   /**

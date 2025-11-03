@@ -14,6 +14,9 @@ public class PredicateEngineService {
     }
   };
 
+  private PredicateEngineService() {
+  }
+
   /**
    * Create predicate from serializable predicate.
    *

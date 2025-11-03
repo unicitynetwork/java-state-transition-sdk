@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
 /**
@@ -31,12 +32,20 @@ class FinalizedLeafBranch implements LeafBranch, FinalizedBranch {
    * @param hashAlgorithm hash algorithm to use
    * @return finalized leaf branch
    */
-  public static FinalizedLeafBranch create(BigInteger path, byte[] value,
-      HashAlgorithm hashAlgorithm) {
+  public static FinalizedLeafBranch create(
+      BigInteger path,
+      byte[] value,
+      HashAlgorithm hashAlgorithm
+  ) {
     DataHash hash = new DataHasher(hashAlgorithm)
-        .update(BigIntegerConverter.encode(path))
-        .update(value)
+        .update(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(path)),
+                CborSerializer.encodeByteString(value)
+            )
+        )
         .digest();
+
     return new FinalizedLeafBranch(path, value, hash);
   }
 

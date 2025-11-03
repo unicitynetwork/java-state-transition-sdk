@@ -1,4 +1,4 @@
-package org.unicitylabs.sdk.mtree.plain;
+package org.unicitylabs.sdk.mtree.sum;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -9,25 +9,26 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.math.BigInteger;
 
 /**
  * Sparse merkle tree path step serializer and deserializer implementation.
  */
-public class SparseMerkleTreePathStepBranchJson {
+public class SparseMerkleSumTreePathStepBranchJson {
 
-  private SparseMerkleTreePathStepBranchJson() {
+  private SparseMerkleSumTreePathStepBranchJson() {
   }
 
   /**
    * Sparse merkle tree path step serializer.
    */
-  public static class Serializer extends StdSerializer<SparseMerkleTreePathStep.Branch> {
+  public static class Serializer extends StdSerializer<SparseMerkleSumTreePathStep.Branch> {
 
     /**
      * Create serializer.
      */
     public Serializer() {
-      super(SparseMerkleTreePathStep.Branch.class);
+      super(SparseMerkleSumTreePathStep.Branch.class);
     }
 
     /**
@@ -39,11 +40,12 @@ public class SparseMerkleTreePathStepBranchJson {
      * @throws IOException on serialization failure
      */
     @Override
-    public void serialize(SparseMerkleTreePathStep.Branch value, JsonGenerator gen,
+    public void serialize(SparseMerkleSumTreePathStep.Branch value, JsonGenerator gen,
         SerializerProvider serializers)
         throws IOException {
       gen.writeStartArray();
       gen.writeObject(value.getValue());
+      gen.writeObject(value.getCounter().toString());
       gen.writeEndArray();
     }
   }
@@ -51,13 +53,13 @@ public class SparseMerkleTreePathStepBranchJson {
   /**
    * Sparse merkle tree path step deserializer.
    */
-  public static class Deserializer extends StdDeserializer<SparseMerkleTreePathStep.Branch> {
+  public static class Deserializer extends StdDeserializer<SparseMerkleSumTreePathStep.Branch> {
 
     /**
      * Create deserializer.
      */
     public Deserializer() {
-      super(SparseMerkleTreePathStep.Branch.class);
+      super(SparseMerkleSumTreePathStep.Branch.class);
     }
 
     /**
@@ -70,28 +72,29 @@ public class SparseMerkleTreePathStepBranchJson {
      * @throws IOException on deserialization failure
      */
     @Override
-    public SparseMerkleTreePathStep.Branch deserialize(JsonParser p, DeserializationContext ctx)
+    public SparseMerkleSumTreePathStep.Branch deserialize(JsonParser p, DeserializationContext ctx)
         throws IOException {
       if (p.currentToken() != JsonToken.START_ARRAY) {
         throw MismatchedInputException.from(
             p,
-            SparseMerkleTreePathStep.Branch.class,
+            SparseMerkleSumTreePathStep.Branch.class,
             "Expected start of array"
         );
       }
 
       if (p.nextToken() == JsonToken.END_ARRAY) {
-        return new SparseMerkleTreePathStep.Branch(null);
+        return new SparseMerkleSumTreePathStep.Branch(null, BigInteger.ZERO);
       }
 
-      SparseMerkleTreePathStep.Branch branch = new SparseMerkleTreePathStep.Branch(
-          p.readValueAs(byte[].class)
+      SparseMerkleSumTreePathStep.Branch branch = new SparseMerkleSumTreePathStep.Branch(
+          p.readValueAs(byte[].class),
+          p.readValueAs(BigInteger.class)
       );
 
       if (p.nextToken() != JsonToken.END_ARRAY) {
         throw MismatchedInputException.from(
             p,
-            SparseMerkleTreePathStep.Branch.class,
+            SparseMerkleSumTreePathStep.Branch.class,
             "Expected end of array"
         );
       }
