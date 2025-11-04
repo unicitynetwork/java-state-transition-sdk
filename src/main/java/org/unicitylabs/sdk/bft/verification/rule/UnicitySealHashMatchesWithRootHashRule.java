@@ -89,7 +89,7 @@ public class UnicitySealHashMatchesWithRootHashRule extends
           .update(CborSerializer.encodeByteString(new byte[]{(byte) 0x00})) // NODE
           .update(CborSerializer.encodeByteString(stepKey));
 
-      if (Arrays.compare(key, stepKey) > 0) {
+      if (UnicitySealHashMatchesWithRootHashRule.compareArrays(key, stepKey) > 0) {
         hasher
             .update(CborSerializer.encodeByteString(step.getHash()))
             .update(CborSerializer.encodeByteString(result.getData()));
@@ -104,10 +104,28 @@ public class UnicitySealHashMatchesWithRootHashRule extends
 
     byte[] unicitySealHash = context.getUnicityCertificate().getUnicitySeal().getHash();
 
-    if (Arrays.compare(unicitySealHash, result.getData()) != 0) {
+    if (UnicitySealHashMatchesWithRootHashRule.compareArrays(unicitySealHash, result.getData())
+        != 0) {
       return VerificationResult.fail("Unicity seal hash does not match tree root.");
     }
 
     return VerificationResult.success();
+  }
+
+  private static int compareArrays(byte[] a, byte[] b) {
+    int lengthCompare = Integer.compare(a.length, b.length);
+    if (a.length != b.length) {
+      return lengthCompare;
+    }
+
+    int len = Math.min(a.length, b.length);
+    for (int i = 0; i < len; i++) {
+      int diff = Byte.compare(a[i], b[i]);
+      if (diff != 0) {
+        return diff;
+      }
+    }
+
+    return 0;
   }
 }

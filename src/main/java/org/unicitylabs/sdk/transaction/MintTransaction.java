@@ -84,11 +84,11 @@ public class MintTransaction<R extends MintTransactionReason> extends
    * @return verification result
    */
   public VerificationResult verify(RootTrustBase trustBase) {
-    if (this.getInclusionProof().getAuthenticator().isEmpty()) {
+    if (!this.getInclusionProof().getAuthenticator().isPresent()) {
       return VerificationResult.fail("Missing authenticator");
     }
 
-    if (this.getInclusionProof().getTransactionHash().isEmpty()) {
+    if (!this.getInclusionProof().getTransactionHash().isPresent()) {
       return VerificationResult.fail("Missing transaction hash");
     }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -57,9 +58,12 @@ public class RootTrustBase {
         : Arrays.copyOf(previousEntryHash, previousEntryHash.length);
     this.signatures = signatures.entrySet().stream()
         .collect(
-            Collectors.toUnmodifiableMap(
-                Map.Entry::getKey,
-                e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+            Collectors.collectingAndThen(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+                ),
+                Collections::unmodifiableMap
             )
         );
   }
@@ -161,9 +165,12 @@ public class RootTrustBase {
   public Map<String, byte[]> getSignatures() {
     return this.signatures.entrySet().stream()
         .collect(
-            Collectors.toUnmodifiableMap(
-                Map.Entry::getKey,
-                e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+            Collectors.collectingAndThen(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+                ),
+                Collections::unmodifiableMap
             )
         );
   }

@@ -63,7 +63,7 @@ public abstract class Transaction<T extends TransactionData<?>> {
       return false;
     }
 
-    if (this.data.getRecipientDataHash().isEmpty()) {
+    if (!this.data.getRecipientDataHash().isPresent()) {
       return true;
     }
 
