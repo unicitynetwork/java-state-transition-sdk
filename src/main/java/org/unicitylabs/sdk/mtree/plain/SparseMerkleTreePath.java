@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -63,10 +62,10 @@ public class SparseMerkleTreePath {
    * Verify merkle tree path against given path.
    *
    * @param requestId path
-   * @return true if successful
+   * @return MerkleTreePathVerificationResult
    */
   public MerkleTreePathVerificationResult verify(BigInteger requestId) {
-    if (this.steps.size() == 0) {
+    if (this.steps.isEmpty()) {
       return new MerkleTreePathVerificationResult(false, false);
     }
 
