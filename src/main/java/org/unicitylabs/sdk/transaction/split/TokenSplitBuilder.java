@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.transaction.split;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -200,7 +201,7 @@ public class TokenSplitBuilder {
           Collections.emptyList()
       );
 
-      return List.copyOf(
+      return Collections.unmodifiableList(new ArrayList<>(
           this.tokens.values().stream()
               .map(request -> MintCommitment.create(
                       new MintTransaction.Data<>(
@@ -213,7 +214,7 @@ public class TokenSplitBuilder {
                           request.recipientDataHash,
                           new SplitMintReason(
                               burnedToken,
-                              List.copyOf(
+                              Collections.unmodifiableList(new ArrayList<>(
                                   request.coinData.getCoins().keySet().stream()
                                       .map(coinId -> new SplitMintReasonProof(
                                               coinId,
@@ -224,13 +225,13 @@ public class TokenSplitBuilder {
                                           )
                                       )
                                       .collect(Collectors.toList())
-                              )
+                              ))
                           )
                       )
                   )
               )
               .collect(Collectors.toList())
-      );
+      ));
     }
   }
 

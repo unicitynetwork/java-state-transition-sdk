@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -261,7 +262,7 @@ public class CborSerializer {
      * @return element list
      */
     public List<Entry> getEntries() {
-      return List.copyOf(this.entries);
+      return Collections.unmodifiableList(new ArrayList<>(this.entries));
     }
 
     /**

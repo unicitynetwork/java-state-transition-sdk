@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +47,7 @@ public class SplitMintReason implements MintTransactionReason {
     Objects.requireNonNull(proofs, "Proofs cannot be null");
 
     this.token = token;
-    this.proofs = List.copyOf(proofs);
+    this.proofs = Collections.unmodifiableList(new ArrayList<>(proofs));
   }
 
   /**
@@ -74,7 +75,7 @@ public class SplitMintReason implements MintTransactionReason {
    * @return split proofs
    */
   public List<SplitMintReasonProof> getProofs() {
-    return List.copyOf(this.proofs);
+    return Collections.unmodifiableList(new ArrayList<>(this.proofs));
   }
 
   /**

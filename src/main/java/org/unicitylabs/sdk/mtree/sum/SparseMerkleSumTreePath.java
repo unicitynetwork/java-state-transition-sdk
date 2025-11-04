@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -34,7 +36,7 @@ public class SparseMerkleSumTreePath {
     Objects.requireNonNull(steps, "steps cannot be null");
 
     this.root = root;
-    this.steps = List.copyOf(steps);
+    this.steps = Collections.unmodifiableList(new ArrayList<>(steps));
   }
 
   /**

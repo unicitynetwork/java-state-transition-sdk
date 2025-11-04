@@ -21,6 +21,14 @@ public class CborDeserializer {
   private CborDeserializer() {}
 
   /**
+   * Android-compatible unsigned byte comparison.
+   * Replaces Byte.compareUnsigned which is not available on Android API 31.
+   */
+  private static int compareUnsigned(byte a, byte b) {
+    return Integer.compare(a & 0xFF, b & 0xFF);
+  }
+
+  /**
    * Read optional value from CBOR bytes.
    *
    * @param data   bytes
@@ -29,7 +37,7 @@ public class CborDeserializer {
    * @return parsed value
    */
   public static <T> T readOptional(byte[] data, Function<byte[], T> reader) {
-    if (Byte.compareUnsigned(new CborReader(data).readByte(), (byte) 0xf6) == 0) {
+    if (compareUnsigned(new CborReader(data).readByte(), (byte) 0xf6) == 0) {
       return null;
     }
 
@@ -177,7 +185,7 @@ public class CborDeserializer {
 
       byte additionalInformation = (byte) (initialByte
           & CborDeserializer.ADDITIONAL_INFORMATION_MASK);
-      if (Byte.compareUnsigned(additionalInformation, (byte) 24) < 0) {
+      if (compareUnsigned(additionalInformation, (byte) 24) < 0) {
         return additionalInformation;
       }
 
@@ -185,14 +193,14 @@ public class CborDeserializer {
         case ARRAY:
         case BYTE_STRING:
         case TEXT_STRING:
-          if (Byte.compareUnsigned(additionalInformation, (byte) 31) == 0) {
+          if (compareUnsigned(additionalInformation, (byte) 31) == 0) {
             throw new CborSerializationException("Indefinite length array not supported.");
           }
           break;
         default:
       }
 
-      if (Byte.compareUnsigned(additionalInformation, (byte) 27) > 0) {
+      if (compareUnsigned(additionalInformation, (byte) 27) > 0) {
         throw new CborSerializationException("Encoded item is not well-formed.");
       }
 

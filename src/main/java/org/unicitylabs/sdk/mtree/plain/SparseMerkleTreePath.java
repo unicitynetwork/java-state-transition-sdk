@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -36,7 +38,7 @@ public class SparseMerkleTreePath {
     Objects.requireNonNull(steps, "steps cannot be null");
 
     this.rootHash = rootHash;
-    this.steps = List.copyOf(steps);
+    this.steps = Collections.unmodifiableList(new ArrayList<>(steps));
   }
 
   /**

@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.verification;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public class VerificationResult {
   private VerificationResult(VerificationResultCode status, String message,
       List<VerificationResult> results) {
     this.message = message;
-    this.results = List.copyOf(results);
+    this.results = Collections.unmodifiableList(new ArrayList<>(results));
     this.status = status;
   }
 

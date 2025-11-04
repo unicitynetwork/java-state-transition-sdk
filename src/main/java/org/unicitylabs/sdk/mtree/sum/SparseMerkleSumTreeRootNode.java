@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.mtree.sum;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -135,7 +136,7 @@ public class SparseMerkleSumTreeRootNode {
             new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
-      return List.copyOf(
+      return Collections.unmodifiableList(new ArrayList<>(
           Stream.concat(
                   SparseMerkleSumTreeRootNode.generatePath(
                           remainingPath.shiftRight(commonPath.getLength()),
@@ -147,7 +148,7 @@ public class SparseMerkleSumTreeRootNode {
                       new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
               )
               .collect(Collectors.toList())
-      );
+      ));
     }
 
     if (branch instanceof FinalizedLeafBranch) {

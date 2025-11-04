@@ -65,8 +65,8 @@ public class Token<R extends MintTransactionReason> {
 
     this.state = state;
     this.genesis = genesis;
-    this.transactions = List.copyOf(transactions);
-    this.nametags = List.copyOf(nametags);
+    this.transactions = Collections.unmodifiableList(new ArrayList<>(transactions));
+    this.nametags = Collections.unmodifiableList(new ArrayList<>(nametags));
   }
 
   /**
