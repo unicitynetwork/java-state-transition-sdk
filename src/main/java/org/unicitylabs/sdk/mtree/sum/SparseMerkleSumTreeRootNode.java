@@ -129,8 +129,7 @@ public class SparseMerkleSumTreeRootNode {
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;
 
       if (remainingPath.shiftRight(commonPath.getLength()).compareTo(BigInteger.ONE) == 0) {
-        return List.of(
-            new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
+        return List.of(new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
       return List.copyOf(

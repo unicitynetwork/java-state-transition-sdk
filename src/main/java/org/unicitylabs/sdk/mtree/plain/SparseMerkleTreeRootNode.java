@@ -2,7 +2,6 @@ package org.unicitylabs.sdk.mtree.plain;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
@@ -127,6 +126,6 @@ public class SparseMerkleTreeRootNode {
         )
     );
 
-    return Collections.unmodifiableList(list);
+    return List.copyOf(list);
   }
 }

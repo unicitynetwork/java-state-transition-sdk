@@ -4,7 +4,6 @@ package org.unicitylabs.sdk.token.fungible;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,7 @@ public class TokenCoinData {
    * @param coins map of token coins
    */
   public TokenCoinData(Map<CoinId, BigInteger> coins) {
-    this.coins = Collections.unmodifiableMap(coins);
+    this.coins = Map.copyOf(coins);
   }
 
   /**
