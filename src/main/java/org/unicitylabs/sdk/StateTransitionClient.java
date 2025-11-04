@@ -1,6 +1,7 @@
 
 package org.unicitylabs.sdk;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -97,7 +98,7 @@ public class StateTransitionClient {
       TokenState state,
       TransferTransaction transaction
   ) throws VerificationException {
-    return this.finalizeTransaction(trustBase, token, state, transaction, List.of());
+    return this.finalizeTransaction(trustBase, token, state, transaction, Collections.emptyList());
   }
 
   /**

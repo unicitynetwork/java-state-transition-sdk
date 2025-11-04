@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.mtree.sum;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -113,13 +114,14 @@ public class SparseMerkleSumTreeRootNode {
     FinalizedBranch siblingBranch = isRight ? left : right;
 
     if (branch == null) {
-      return List.of(new SparseMerkleSumTreePathStep(remainingPath, siblingBranch));
+      return Collections.singletonList(
+          new SparseMerkleSumTreePathStep(remainingPath, siblingBranch));
     }
 
     CommonPath commonPath = CommonPath.create(remainingPath, branch.getPath());
     if (branch.getPath().equals(commonPath.getPath())) {
       if (branch instanceof FinalizedLeafBranch) {
-        return List.of(
+        return Collections.singletonList(
             new SparseMerkleSumTreePathStep(
                 branch.getPath(),
                 siblingBranch,
@@ -129,7 +131,7 @@ public class SparseMerkleSumTreeRootNode {
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;
 
       if (remainingPath.shiftRight(commonPath.getLength()).compareTo(BigInteger.ONE) == 0) {
-        return List.of(
+        return Collections.singletonList(
             new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
@@ -149,12 +151,12 @@ public class SparseMerkleSumTreeRootNode {
     }
 
     if (branch instanceof FinalizedLeafBranch) {
-      return List.of(
+      return Collections.singletonList(
           new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch,
               (FinalizedLeafBranch) branch));
     }
 
-    return List.of(
+    return Collections.singletonList(
         new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch,
             (FinalizedNodeBranch) branch));
   }

@@ -60,8 +60,9 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
     );
 
     Map<String, List<String>> headers = this.apiKey == null
-        ? Map.of()
-        : Map.of(AUTHORIZATION, List.of(String.format("Bearer %s", this.apiKey)));
+        ? Collections.emptyMap()
+        : Collections.singletonMap(AUTHORIZATION,
+            Collections.singletonList(String.format("Bearer %s", this.apiKey)));
 
     return this.transport.request(
         "submit_commitment",

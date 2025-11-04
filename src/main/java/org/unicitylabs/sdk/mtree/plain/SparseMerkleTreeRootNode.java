@@ -2,6 +2,7 @@ package org.unicitylabs.sdk.mtree.plain;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -73,7 +74,8 @@ public class SparseMerkleTreeRootNode {
   ) {
     if (parent instanceof LeafBranch) {
       LeafBranch leaf = (LeafBranch) parent;
-      return List.of(new SparseMerkleTreePathStep(leaf.getPath(), leaf.getValue()));
+      return Collections.singletonList(
+          new SparseMerkleTreePathStep(leaf.getPath(), leaf.getValue()));
     }
 
     FinalizedNodeBranch node = (FinalizedNodeBranch) parent;
@@ -82,7 +84,7 @@ public class SparseMerkleTreeRootNode {
 
     if (commonPath.getPath().compareTo(parent.getPath()) != 0
         || remainingPath.compareTo(BigInteger.ONE) == 0) {
-      return List.of(
+      return Arrays.asList(
           new SparseMerkleTreePathStep(
               BigInteger.ONE,
               node.getRight() == null
@@ -103,7 +105,7 @@ public class SparseMerkleTreeRootNode {
     FinalizedBranch siblingBranch = isRight ? node.getLeft() : node.getRight();
 
     if (branch == null) {
-      return List.of(
+      return Arrays.asList(
           new SparseMerkleTreePathStep(
               BigInteger.ZERO,
               node.getRight() == null

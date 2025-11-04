@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -168,7 +170,7 @@ public class Token<R extends MintTransactionReason> {
       TokenState state,
       MintTransaction<R> transaction
   ) throws VerificationException {
-    return Token.create(trustBase, state, transaction, List.of());
+    return Token.create(trustBase, state, transaction, Collections.emptyList());
   }
 
   /**
@@ -194,7 +196,7 @@ public class Token<R extends MintTransactionReason> {
     Objects.requireNonNull(trustBase, "Trust base cannot be null");
     Objects.requireNonNull(nametags, "Nametag tokens cannot be null");
 
-    Token<R> token = new Token<>(state, transaction, List.of(), nametags);
+    Token<R> token = new Token<>(state, transaction, Collections.emptyList(), nametags);
     VerificationResult result = token.verify(trustBase);
     if (!result.isSuccessful()) {
       throw new VerificationException("Token verification failed", result);
@@ -263,7 +265,7 @@ public class Token<R extends MintTransactionReason> {
     results.add(
         VerificationResult.fromChildren(
             "Genesis verification",
-            List.of(this.genesis.verify(trustBase))
+            Collections.singletonList(this.genesis.verify(trustBase))
         )
     );
 
@@ -285,7 +287,7 @@ public class Token<R extends MintTransactionReason> {
     results.add(
         VerificationResult.fromChildren(
             "Current state verification",
-            List.of(
+            Arrays.asList(
                 this.verifyNametagTokens(trustBase),
                 this.verifyRecipient(),
                 this.verifyRecipientData()
@@ -325,7 +327,7 @@ public class Token<R extends MintTransactionReason> {
 
     Address transactionRecipient = ProxyAddress.resolve(
         previousTransaction.getData().getRecipient(), this.nametags);
-    return VerificationResult.fromChildren("Recipient verification", List.of(
+    return VerificationResult.fromChildren("Recipient verification", Collections.singletonList(
         expectedRecipient.equals(transactionRecipient)
             ? VerificationResult.success()
             : VerificationResult.fail("Recipient address mismatch")
@@ -342,7 +344,7 @@ public class Token<R extends MintTransactionReason> {
         ? this.genesis
         : this.transactions.get(this.transactions.size() - 1);
 
-    return VerificationResult.fromChildren("Recipient data verification", List.of(
+    return VerificationResult.fromChildren("Recipient data verification", Collections.singletonList(
         previousTransaction.containsRecipientData(this.state.getData().orElse(null))
             ? VerificationResult.success()
             : VerificationResult.fail(

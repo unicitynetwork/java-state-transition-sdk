@@ -81,7 +81,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
   public VerificationResult verify(RootTrustBase trustBase, Token<?> token) {
     Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
 
-    return VerificationResult.fromChildren("Transaction verification", List.of(
+    return VerificationResult.fromChildren("Transaction verification", Arrays.asList(
         token.verifyNametagTokens(trustBase),
         token.verifyRecipient(),
         token.verifyRecipientData(),

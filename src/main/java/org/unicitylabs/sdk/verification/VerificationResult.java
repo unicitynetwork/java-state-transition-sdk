@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.verification;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,7 +25,8 @@ public class VerificationResult {
    * @return verification result
    */
   public static VerificationResult success() {
-    return new VerificationResult(VerificationResultCode.OK, "Verification successful", List.of());
+    return new VerificationResult(
+        VerificationResultCode.OK, "Verification successful", Collections.emptyList());
   }
 
   /**
@@ -44,7 +46,7 @@ public class VerificationResult {
    * @return verification result
    */
   public static VerificationResult fail(String error) {
-    return new VerificationResult(VerificationResultCode.FAIL, error, List.of());
+    return new VerificationResult(VerificationResultCode.FAIL, error, Collections.emptyList());
   }
 
   /**

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -113,7 +114,8 @@ public class MintTransaction<R extends MintTransactionReason> extends
         .orElse(VerificationResult.success());
 
     if (!reasonResult.isSuccessful()) {
-      return VerificationResult.fail("Mint reason verification failed", List.of(reasonResult));
+      return VerificationResult.fail(
+          "Mint reason verification failed", Collections.singletonList(reasonResult));
     }
 
     InclusionProofVerificationStatus inclusionProofStatus = this.getInclusionProof().verify(
