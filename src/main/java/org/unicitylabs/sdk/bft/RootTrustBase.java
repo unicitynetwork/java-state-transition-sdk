@@ -157,11 +157,13 @@ public class RootTrustBase {
    * @return signatures
    */
   public Map<String, byte[]> getSignatures() {
-    return this.signatures.entrySet().stream()
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            e -> Arrays.copyOf(e.getValue(), e.getValue().length)
-        ));
+    return Map.copyOf(
+        this.signatures.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+            ))
+    );
   }
 
   /**
