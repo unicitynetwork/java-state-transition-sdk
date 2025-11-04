@@ -1,7 +1,5 @@
 package org.unicitylabs.sdk.verification;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -16,7 +14,7 @@ public class VerificationResult {
   private VerificationResult(VerificationResultCode status, String message,
       List<VerificationResult> results) {
     this.message = message;
-    this.results = Collections.unmodifiableList(new ArrayList<>(results));
+    this.results = List.copyOf(results);
     this.status = status;
   }
 
@@ -26,8 +24,7 @@ public class VerificationResult {
    * @return verification result
    */
   public static VerificationResult success() {
-    return new VerificationResult(
-        VerificationResultCode.OK, "Verification successful", Collections.emptyList());
+    return new VerificationResult(VerificationResultCode.OK, "Verification successful", List.of());
   }
 
   /**
@@ -47,7 +44,7 @@ public class VerificationResult {
    * @return verification result
    */
   public static VerificationResult fail(String error) {
-    return new VerificationResult(VerificationResultCode.FAIL, error, Collections.emptyList());
+    return new VerificationResult(VerificationResultCode.FAIL, error, List.of());
   }
 
   /**

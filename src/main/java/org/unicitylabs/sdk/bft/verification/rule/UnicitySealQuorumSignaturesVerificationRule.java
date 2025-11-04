@@ -2,7 +2,6 @@ package org.unicitylabs.sdk.bft.verification.rule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.unicitylabs.sdk.bft.RootTrustBase;
@@ -70,7 +69,7 @@ public class UnicitySealQuorumSignaturesVerificationRule extends
       results.add(
           VerificationResult.fromChildren(
               String.format("Verifying node '%s' signature.", nodeId),
-              Collections.singletonList(result)
+              List.of(result)
           )
       );
 

@@ -2,7 +2,6 @@
 package org.unicitylabs.sdk.jsonrpc;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -46,7 +45,7 @@ public class JsonRpcHttpTransport {
    * @return future with result
    */
   public <T> CompletableFuture<T> request(String method, Object params, Class<T> resultType) {
-    return request(method, params, resultType, Collections.emptyMap());
+    return request(method, params, resultType, Map.of());
   }
 
   /**
@@ -123,9 +122,7 @@ public class JsonRpcHttpTransport {
         }
       });
     } catch (Exception e) {
-      CompletableFuture<T> failedFuture = new CompletableFuture<>();
-      failedFuture.completeExceptionally(e);
-      return failedFuture;
+      return CompletableFuture.failedFuture(e);
     }
 
     return future;

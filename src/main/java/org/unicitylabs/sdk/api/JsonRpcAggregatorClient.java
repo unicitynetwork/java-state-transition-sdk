@@ -2,7 +2,6 @@ package org.unicitylabs.sdk.api;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -60,9 +59,8 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
     );
 
     Map<String, List<String>> headers = this.apiKey == null
-        ? Collections.emptyMap()
-        : Collections.singletonMap(AUTHORIZATION,
-            Collections.singletonList(String.format("Bearer %s", this.apiKey)));
+        ? Map.of()
+        : Map.of(AUTHORIZATION, List.of(String.format("Bearer %s", this.apiKey)));
 
     return this.transport.request(
         "submit_commitment",
@@ -90,8 +88,7 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
    * @return block height
    */
   public CompletableFuture<Long> getBlockHeight() {
-    return this.transport.request("get_block_height", Collections.emptyMap(),
-            BlockHeightResponse.class)
+    return this.transport.request("get_block_height", Map.of(), BlockHeightResponse.class)
         .thenApply(BlockHeightResponse::getBlockNumber);
   }
 }

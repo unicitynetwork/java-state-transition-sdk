@@ -1,9 +1,7 @@
 package org.unicitylabs.sdk.transaction.split;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +98,7 @@ public class TokenSplitBuilder {
     }
 
     Map<CoinId, BigInteger> tokenCoins = token.getCoins().map(TokenCoinData::getCoins)
-        .orElse(Collections.emptyMap());
+        .orElse(Map.of());
     if (trees.size() != tokenCoins.size()) {
       throw new IllegalArgumentException("Token has different number of coins than expected");
     }
@@ -198,10 +196,10 @@ public class TokenSplitBuilder {
               null
           ),
           burnTransaction,
-          Collections.emptyList()
+          List.of()
       );
 
-      return Collections.unmodifiableList(new ArrayList<>(
+      return List.copyOf(
           this.tokens.values().stream()
               .map(request -> MintCommitment.create(
                       new MintTransaction.Data<>(
@@ -214,7 +212,7 @@ public class TokenSplitBuilder {
                           request.recipientDataHash,
                           new SplitMintReason(
                               burnedToken,
-                              Collections.unmodifiableList(new ArrayList<>(
+                              List.copyOf(
                                   request.coinData.getCoins().keySet().stream()
                                       .map(coinId -> new SplitMintReasonProof(
                                               coinId,
@@ -225,13 +223,13 @@ public class TokenSplitBuilder {
                                           )
                                       )
                                       .collect(Collectors.toList())
-                              ))
+                              )
                           )
                       )
                   )
               )
               .collect(Collectors.toList())
-      ));
+      );
     }
   }
 

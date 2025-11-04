@@ -6,9 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,7 +45,7 @@ public class SplitMintReason implements MintTransactionReason {
     Objects.requireNonNull(proofs, "Proofs cannot be null");
 
     this.token = token;
-    this.proofs = Collections.unmodifiableList(new ArrayList<>(proofs));
+    this.proofs = List.copyOf(proofs);
   }
 
   /**
@@ -75,7 +73,7 @@ public class SplitMintReason implements MintTransactionReason {
    * @return split proofs
    */
   public List<SplitMintReasonProof> getProofs() {
-    return Collections.unmodifiableList(new ArrayList<>(this.proofs));
+    return List.copyOf(this.proofs);
   }
 
   /**
@@ -96,7 +94,7 @@ public class SplitMintReason implements MintTransactionReason {
     }
 
     Map<CoinId, BigInteger> coins = transaction.getData().getCoinData().map(TokenCoinData::getCoins)
-        .orElse(Collections.emptyMap());
+        .orElse(Map.of());
     if (coins.size() != this.proofs.size()) {
       return VerificationResult.fail("Total amount of coins differ in token and proofs.");
     }

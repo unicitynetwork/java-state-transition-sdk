@@ -1,8 +1,6 @@
 package org.unicitylabs.sdk.mtree.sum;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -115,14 +113,13 @@ public class SparseMerkleSumTreeRootNode {
     FinalizedBranch siblingBranch = isRight ? left : right;
 
     if (branch == null) {
-      return Collections.singletonList(
-          new SparseMerkleSumTreePathStep(remainingPath, siblingBranch));
+      return List.of(new SparseMerkleSumTreePathStep(remainingPath, siblingBranch));
     }
 
     CommonPath commonPath = CommonPath.create(remainingPath, branch.getPath());
     if (branch.getPath().equals(commonPath.getPath())) {
       if (branch instanceof FinalizedLeafBranch) {
-        return Collections.singletonList(
+        return List.of(
             new SparseMerkleSumTreePathStep(
                 branch.getPath(),
                 siblingBranch,
@@ -132,11 +129,10 @@ public class SparseMerkleSumTreeRootNode {
       FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) branch;
 
       if (remainingPath.shiftRight(commonPath.getLength()).compareTo(BigInteger.ONE) == 0) {
-        return Collections.singletonList(
-            new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
+        return List.of(new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch));
       }
 
-      return Collections.unmodifiableList(new ArrayList<>(
+      return List.copyOf(
           Stream.concat(
                   SparseMerkleSumTreeRootNode.generatePath(
                           remainingPath.shiftRight(commonPath.getLength()),
@@ -148,16 +144,16 @@ public class SparseMerkleSumTreeRootNode {
                       new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch, nodeBranch))
               )
               .collect(Collectors.toList())
-      ));
+      );
     }
 
     if (branch instanceof FinalizedLeafBranch) {
-      return Collections.singletonList(
+      return List.of(
           new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch,
               (FinalizedLeafBranch) branch));
     }
 
-    return Collections.singletonList(
+    return List.of(
         new SparseMerkleSumTreePathStep(branch.getPath(), siblingBranch,
             (FinalizedNodeBranch) branch));
   }

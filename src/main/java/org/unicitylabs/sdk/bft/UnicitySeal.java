@@ -1,6 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +48,7 @@ public class UnicitySeal {
     this.signatures = signatures == null
         ? null
         : signatures.entrySet().stream()
-            .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
+            .map(entry -> Map.entry(
                     entry.getKey(),
                     Arrays.copyOf(entry.getValue(), entry.getValue().length)
                 )
@@ -156,7 +155,7 @@ public class UnicitySeal {
     return this.signatures == null
         ? null
         : this.signatures.entrySet().stream()
-            .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
+            .map(entry -> Map.entry(
                     entry.getKey(),
                     Arrays.copyOf(entry.getValue(), entry.getValue().length)
                 )

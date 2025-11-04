@@ -1,8 +1,6 @@
 package org.unicitylabs.sdk.bft;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -29,7 +27,7 @@ public class UnicityTreeCertificate {
 
     this.version = version;
     this.partitionIdentifier = partitionIdentifier;
-    this.steps = Collections.unmodifiableList(new ArrayList<>(steps));
+    this.steps = List.copyOf(steps);
   }
 
   /**

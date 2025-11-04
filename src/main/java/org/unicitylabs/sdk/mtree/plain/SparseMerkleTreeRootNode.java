@@ -2,8 +2,6 @@ package org.unicitylabs.sdk.mtree.plain;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.unicitylabs.sdk.hash.DataHash;
@@ -74,8 +72,7 @@ public class SparseMerkleTreeRootNode {
   ) {
     if (parent instanceof LeafBranch) {
       LeafBranch leaf = (LeafBranch) parent;
-      return Collections.singletonList(
-          new SparseMerkleTreePathStep(leaf.getPath(), leaf.getValue()));
+      return List.of(new SparseMerkleTreePathStep(leaf.getPath(), leaf.getValue()));
     }
 
     FinalizedNodeBranch node = (FinalizedNodeBranch) parent;
@@ -84,7 +81,7 @@ public class SparseMerkleTreeRootNode {
 
     if (commonPath.getPath().compareTo(parent.getPath()) != 0
         || remainingPath.compareTo(BigInteger.ONE) == 0) {
-      return Arrays.asList(
+      return List.of(
           new SparseMerkleTreePathStep(
               BigInteger.ONE,
               node.getRight() == null
@@ -105,7 +102,7 @@ public class SparseMerkleTreeRootNode {
     FinalizedBranch siblingBranch = isRight ? node.getLeft() : node.getRight();
 
     if (branch == null) {
-      return Arrays.asList(
+      return List.of(
           new SparseMerkleTreePathStep(
               BigInteger.ZERO,
               node.getRight() == null
@@ -129,6 +126,6 @@ public class SparseMerkleTreeRootNode {
         )
     );
 
-    return Collections.unmodifiableList(list);
+    return List.copyOf(list);
   }
 }

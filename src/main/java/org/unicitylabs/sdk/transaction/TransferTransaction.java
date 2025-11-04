@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -82,7 +81,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
   public VerificationResult verify(RootTrustBase trustBase, Token<?> token) {
     Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
 
-    return VerificationResult.fromChildren("Transaction verification", Arrays.asList(
+    return VerificationResult.fromChildren("Transaction verification", List.of(
         token.verifyNametagTokens(trustBase),
         token.verifyRecipient(),
         token.verifyRecipientData(),
@@ -123,7 +122,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
       this.salt = Arrays.copyOf(salt, salt.length);
       this.recipientDataHash = recipientDataHash;
       this.message = message != null ? Arrays.copyOf(message, message.length) : null;
-      this.nametags = Collections.unmodifiableList(new ArrayList<>(nametags));
+      this.nametags = List.copyOf(nametags);
     }
 
     /**
