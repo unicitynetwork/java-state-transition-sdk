@@ -2,8 +2,6 @@ package org.unicitylabs.sdk.util;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -93,13 +91,10 @@ public class InclusionProofUtils {
       }
 
       if (status == InclusionProofVerificationStatus.PATH_NOT_INCLUDED) {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.schedule(() -> {
-          checkInclusionProof(client, trustBase, commitment, future, startTime,
-              timeoutMillis,
-              intervalMillis);
-          scheduler.shutdown();
-        }, intervalMillis, TimeUnit.MILLISECONDS);
+        CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
+            .execute(() -> checkInclusionProof(client, trustBase, commitment, future, startTime,
+                timeoutMillis,
+                intervalMillis));
       } else {
         future.completeExceptionally(
             new RuntimeException(String.format("Inclusion proof verification failed: %s", status)));
