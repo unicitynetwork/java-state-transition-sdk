@@ -40,7 +40,10 @@ dependencies {
     "jvm"("com.google.guava:guava:33.0.0-jre")
 
     // Animal Sniffer signatures
-    signature("com.toasttab.android:gummy-bears-api-31:0.7.0@signature")
+    // Use Android API 31 signature (upgraded to latest version)
+    signature("com.toasttab.android:gummy-bears-api-31:0.11.0@signature")
+    // Add Java 8 signature to catch Java 9+ APIs (List.of, Map.of, CompletableFuture.failedFuture, etc.)
+    signature("org.codehaus.mojo.signature:java18:1.0@signature")
 
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
