@@ -12,8 +12,6 @@ import org.unicitylabs.sdk.mtree.CommonPath;
  * Sparse merkle tree state for given root.
  */
 public class SparseMerkleTreeRootNode {
-
-  private final BigInteger path = BigInteger.ONE; // Root path is always 0
   private final FinalizedNodeBranch root;
 
   private SparseMerkleTreeRootNode(FinalizedNodeBranch root) {
@@ -58,12 +56,12 @@ public class SparseMerkleTreeRootNode {
       return false;
     }
     SparseMerkleTreeRootNode that = (SparseMerkleTreeRootNode) o;
-    return Objects.equals(this.path, that.path) && Objects.equals(this.root, that.root);
+    return Objects.equals(this.root, that.root);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.path, this.root);
+    return Objects.hash(this.root);
   }
 
   private static List<SparseMerkleTreePathStep> generatePath(
