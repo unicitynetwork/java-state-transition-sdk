@@ -62,10 +62,10 @@ public class SparseMerkleTreePath {
    * Verify merkle tree path against given path.
    *
    * @param requestId path
-   * @return true if successful
+   * @return MerkleTreePathVerificationResult
    */
   public MerkleTreePathVerificationResult verify(BigInteger requestId) {
-    if (this.steps.size() == 0) {
+    if (this.steps.isEmpty()) {
       return new MerkleTreePathVerificationResult(false, false);
     }
 

@@ -83,7 +83,7 @@ public class SplitMintReason implements MintTransactionReason {
    * @return verification result
    */
   public VerificationResult verify(MintTransaction<?> transaction) {
-    if (transaction.getData().getCoinData().isEmpty()) {
+    if (!transaction.getData().getCoinData().isPresent()) {
       return VerificationResult.fail("Coin data is missing.");
     }
 

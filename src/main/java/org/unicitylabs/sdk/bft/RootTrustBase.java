@@ -56,12 +56,10 @@ public class RootTrustBase {
         ? null
         : Arrays.copyOf(previousEntryHash, previousEntryHash.length);
     this.signatures = signatures.entrySet().stream()
-        .collect(
-            Collectors.toUnmodifiableMap(
-                Map.Entry::getKey,
-                e -> Arrays.copyOf(e.getValue(), e.getValue().length)
-            )
-        );
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+        ));
   }
 
   /**
@@ -159,13 +157,13 @@ public class RootTrustBase {
    * @return signatures
    */
   public Map<String, byte[]> getSignatures() {
-    return this.signatures.entrySet().stream()
-        .collect(
-            Collectors.toUnmodifiableMap(
+    return Map.copyOf(
+        this.signatures.entrySet().stream()
+            .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 e -> Arrays.copyOf(e.getValue(), e.getValue().length)
-            )
-        );
+            ))
+    );
   }
 
   /**
