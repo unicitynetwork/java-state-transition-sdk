@@ -18,6 +18,8 @@ public class CborDeserializer {
   private static final byte MAJOR_TYPE_MASK = (byte) 0b11100000;
   private static final byte ADDITIONAL_INFORMATION_MASK = (byte) 0b00011111;
 
+  private CborDeserializer() {}
+
   /**
    * Read optional value from CBOR bytes.
    *

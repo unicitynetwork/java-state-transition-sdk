@@ -10,6 +10,11 @@ import org.unicitylabs.sdk.predicate.SerializablePredicate;
 public class EmbeddedPredicateEngine implements PredicateEngine {
 
   /**
+   * Create embedded predicate engine.
+   */
+  public EmbeddedPredicateEngine() {}
+
+  /**
    * Create predicate from embedded predicate engine.
    *
    * @param predicate serializable predicate.

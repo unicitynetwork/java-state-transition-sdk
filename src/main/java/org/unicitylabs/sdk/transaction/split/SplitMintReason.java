@@ -2,6 +2,8 @@
 package org.unicitylabs.sdk.transaction.split;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -28,6 +30,7 @@ import org.unicitylabs.sdk.verification.VerificationResult;
 /**
  * Mint reason for splitting a token.
  */
+@JsonIgnoreProperties()
 public class SplitMintReason implements MintTransactionReason {
 
   private final Token<?> token;
@@ -50,6 +53,7 @@ public class SplitMintReason implements MintTransactionReason {
    *
    * @return token split reason
    */
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   public String getType() {
     return MintReasonType.TOKEN_SPLIT.name();
   }
@@ -79,7 +83,7 @@ public class SplitMintReason implements MintTransactionReason {
    * @return verification result
    */
   public VerificationResult verify(MintTransaction<?> transaction) {
-    if (transaction.getData().getCoinData().isEmpty()) {
+    if (!transaction.getData().getCoinData().isPresent()) {
       return VerificationResult.fail("Coin data is missing.");
     }
 
@@ -110,12 +114,9 @@ public class SplitMintReason implements MintTransactionReason {
 
       List<SparseMerkleTreePathStep> aggregationPathSteps = proof.getAggregationPath()
           .getSteps();
-      if (aggregationPathSteps.isEmpty()
-          || !Arrays.equals(
-          proof.getCoinTreePath().getRoot().getHash().getImprint(),
-          aggregationPathSteps.get(0).getBranch()
-              .map(SparseMerkleTreePathStep.Branch::getValue)
-              .orElse(null))
+      if (aggregationPathSteps.size() == 0
+          || !Arrays.equals(proof.getCoinTreePath().getRoot().getHash().getImprint(),
+          aggregationPathSteps.get(0).getData().orElse(null))
       ) {
         return VerificationResult.fail("Coin tree root does not match aggregation path leaf.");
       }

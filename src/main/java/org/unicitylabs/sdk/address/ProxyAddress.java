@@ -85,7 +85,7 @@ public class ProxyAddress implements Address {
     Address targetAddress = inputAddress;
     while (targetAddress.getScheme() != AddressScheme.DIRECT) {
       Token<?> nametag = nametagMap.get(targetAddress);
-      if (nametag == null || nametag.getData().isEmpty()) {
+      if (nametag == null || !nametag.getData().isPresent()) {
         return null;
       }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.Objects;
 import java.util.Optional;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.AddressFactory;
+import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -19,11 +22,13 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
+import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.util.HexConverter;
+import org.unicitylabs.sdk.verification.VerificationResult;
 
 
 /**
@@ -73,6 +78,57 @@ public class MintTransaction<R extends MintTransactionReason> extends
   }
 
   /**
+   * Verify mint transaction.
+   *
+   * @param trustBase root trust base
+   * @return verification result
+   */
+  public VerificationResult verify(RootTrustBase trustBase) {
+    if (!this.getInclusionProof().getAuthenticator().isPresent()) {
+      return VerificationResult.fail("Missing authenticator");
+    }
+
+    if (!this.getInclusionProof().getTransactionHash().isPresent()) {
+      return VerificationResult.fail("Missing transaction hash");
+    }
+
+    if (!this.getData().getSourceState()
+        .equals(MintTransactionState.create(this.getData().getTokenId()))) {
+      return VerificationResult.fail("Invalid source state");
+    }
+
+    SigningService signingService = MintCommitment.createSigningService(this.getData());
+    if (!Arrays.equals(signingService.getPublicKey(),
+        this.getInclusionProof().getAuthenticator().get().getPublicKey())) {
+      return VerificationResult.fail("Authenticator public key mismatch");
+    }
+
+    if (!this.getInclusionProof().getAuthenticator().get()
+        .verify(this.getInclusionProof().getTransactionHash().get())) {
+      return VerificationResult.fail("Authenticator verification failed");
+    }
+
+    VerificationResult reasonResult = this.getData().getReason()
+        .map(reason -> reason.verify(this))
+        .orElse(VerificationResult.success());
+
+    if (!reasonResult.isSuccessful()) {
+      return VerificationResult.fail("Mint reason verification failed", List.of(reasonResult));
+    }
+
+    InclusionProofVerificationStatus inclusionProofStatus = this.getInclusionProof().verify(
+        RequestId.create(signingService.getPublicKey(), this.getData().getSourceState()),
+        trustBase
+    );
+
+    if (inclusionProofStatus != InclusionProofVerificationStatus.OK) {
+      return VerificationResult.fail("Inclusion proof verification failed");
+    }
+
+    return VerificationResult.success();
+  }
+
+  /**
    * Mint transaction data.
    *
    * @param <R> mint reason
@@ -111,7 +167,9 @@ public class MintTransaction<R extends MintTransactionReason> extends
         @JsonProperty("recipient") Address recipient,
         @JsonProperty("salt") byte[] salt,
         @JsonProperty("recipientDataHash") DataHash recipientDataHash,
-        @JsonProperty("reason") R reason
+        @JsonProperty("reason")
+        @JsonDeserialize(using = MintTransactionReasonJson.Deserializer.class)
+        R reason
     ) {
       Objects.requireNonNull(tokenId, "Token ID cannot be null");
       Objects.requireNonNull(tokenType, "Token type cannot be null");
@@ -327,7 +385,8 @@ public class MintTransaction<R extends MintTransactionReason> extends
               + "dataHash=%s, "
               + "reason=%s"
               + "}",
-          this.tokenId, this.tokenType, HexConverter.encode(this.tokenData), this.coinData,
+          this.tokenId, this.tokenType,
+          this.tokenData != null ? HexConverter.encode(this.tokenData) : null, this.coinData,
           this.sourceState, this.recipient, HexConverter.encode(this.salt), this.recipientDataHash,
           this.reason);
     }

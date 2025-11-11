@@ -4,6 +4,7 @@ package org.unicitylabs.sdk.transaction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -11,9 +12,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.AddressFactory;
+import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
+import org.unicitylabs.sdk.predicate.Predicate;
+import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
@@ -21,6 +25,8 @@ import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.util.HexConverter;
+import org.unicitylabs.sdk.verification.VerificationResult;
+import org.unicitylabs.sdk.verification.VerificationResultCode;
 
 /**
  * Token transfer transaction.
@@ -63,6 +69,26 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
     } catch (JsonProcessingException e) {
       throw new JsonSerializationException(TransferTransaction.class, e);
     }
+  }
+
+  /**
+   * Verify if transaction is based off of that token state.
+   *
+   * @param trustBase trust base to verify against
+   * @param token     token
+   * @return verification result
+   */
+  public VerificationResult verify(RootTrustBase trustBase, Token<?> token) {
+    Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
+
+    return VerificationResult.fromChildren("Transaction verification", List.of(
+        token.verifyNametagTokens(trustBase),
+        token.verifyRecipient(),
+        token.verifyRecipientData(),
+        predicate.verify(token, this, trustBase)
+            ? VerificationResult.success()
+            : VerificationResult.fail("Predicate verification failed")
+    ));
   }
 
   /**

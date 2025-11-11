@@ -58,12 +58,12 @@ public abstract class Transaction<T extends TransactionData<?>> {
    * @param stateData recipient data
    * @return true if contains given data hash
    */
-  public boolean containsRecipientDataHash(byte[] stateData) {
+  public boolean containsRecipientData(byte[] stateData) {
     if (this.data.getRecipientDataHash().isPresent() == (stateData == null)) {
       return false;
     }
 
-    if (this.data.getRecipientDataHash().isEmpty()) {
+    if (!this.data.getRecipientDataHash().isPresent()) {
       return true;
     }
 

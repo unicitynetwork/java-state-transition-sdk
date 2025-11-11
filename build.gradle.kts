@@ -39,8 +39,19 @@ dependencies {
     "android"("com.google.guava:guava:33.0.0-android")
     "jvm"("com.google.guava:guava:33.0.0-jre")
 
-    // Animal Sniffer signatures
-    signature("com.toasttab.android:gummy-bears-api-34:0.7.0@signature")
+    // Animal Sniffer signature for Android API 31
+    // Note: This SDK uses Java 9-11 APIs (List.of, Map.of, Stream enhancements, etc.)
+    // which require core library desugaring to be enabled in consuming Android apps.
+    // Apps using this SDK must add to their build.gradle:
+    //   android {
+    //     compileOptions {
+    //       coreLibraryDesugaringEnabled true
+    //     }
+    //   }
+    //   dependencies {
+    //     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    //   }
+    signature("com.toasttab.android:gummy-bears-api-31:0.11.0@signature")
 
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.2"))

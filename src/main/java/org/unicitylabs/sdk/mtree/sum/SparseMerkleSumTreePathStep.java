@@ -1,5 +1,9 @@
 package org.unicitylabs.sdk.mtree.sum;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -7,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.serializer.json.BigIntegerAsStringSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 import org.unicitylabs.sdk.util.HexConverter;
 
@@ -56,7 +61,12 @@ public class SparseMerkleSumTreePathStep {
     );
   }
 
-  SparseMerkleSumTreePathStep(BigInteger path, Branch sibling, Branch branch) {
+  @JsonCreator
+  SparseMerkleSumTreePathStep(
+      @JsonProperty("path") BigInteger path,
+      @JsonProperty("sibling") Branch sibling,
+      @JsonProperty("branch") Branch branch
+  ) {
     Objects.requireNonNull(path, "path cannot be null");
 
     this.path = path;
@@ -69,6 +79,7 @@ public class SparseMerkleSumTreePathStep {
    *
    * @return path
    */
+  @JsonSerialize(using = BigIntegerAsStringSerializer.class)
   public BigInteger getPath() {
     return this.path;
   }
@@ -144,6 +155,8 @@ public class SparseMerkleSumTreePathStep {
   /**
    * A branch in the sparse merkle sum tree.
    */
+  @JsonSerialize(using = SparseMerkleSumTreePathStepBranchJson.Serializer.class)
+  @JsonDeserialize(using = SparseMerkleSumTreePathStepBranchJson.Deserializer.class)
   public static class Branch {
 
     private final byte[] value;

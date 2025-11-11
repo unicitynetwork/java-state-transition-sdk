@@ -3,6 +3,7 @@ package org.unicitylabs.sdk.bft;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
+import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
 
 /**
  * Root trust base information.
@@ -54,12 +56,10 @@ public class RootTrustBase {
         ? null
         : Arrays.copyOf(previousEntryHash, previousEntryHash.length);
     this.signatures = signatures.entrySet().stream()
-        .collect(
-            Collectors.toUnmodifiableMap(
-                Map.Entry::getKey,
-                e -> Arrays.copyOf(e.getValue(), e.getValue().length)
-            )
-        );
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> Arrays.copyOf(e.getValue(), e.getValue().length)
+        ));
   }
 
   /**
@@ -67,6 +67,7 @@ public class RootTrustBase {
    *
    * @return version
    */
+  @JsonSerialize(using = LongAsStringSerializer.class)
   public long getVersion() {
     return this.version;
   }
@@ -85,6 +86,7 @@ public class RootTrustBase {
    *
    * @return epoch
    */
+  @JsonSerialize(using = LongAsStringSerializer.class)
   public long getEpoch() {
     return this.epoch;
   }
@@ -94,6 +96,7 @@ public class RootTrustBase {
    *
    * @return epoch start round
    */
+  @JsonSerialize(using = LongAsStringSerializer.class)
   public long getEpochStartRound() {
     return this.epochStartRound;
   }
@@ -112,6 +115,7 @@ public class RootTrustBase {
    *
    * @return quorum threshold
    */
+  @JsonSerialize(using = LongAsStringSerializer.class)
   public long getQuorumThreshold() {
     return this.quorumThreshold;
   }
@@ -153,13 +157,13 @@ public class RootTrustBase {
    * @return signatures
    */
   public Map<String, byte[]> getSignatures() {
-    return this.signatures.entrySet().stream()
-        .collect(
-            Collectors.toUnmodifiableMap(
+    return Map.copyOf(
+        this.signatures.entrySet().stream()
+            .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 e -> Arrays.copyOf(e.getValue(), e.getValue().length)
-            )
-        );
+            ))
+    );
   }
 
   /**
@@ -234,6 +238,7 @@ public class RootTrustBase {
      * @return staked amount
      */
     @JsonProperty("stake")
+    @JsonSerialize(using = LongAsStringSerializer.class)
     public long getStakedAmount() {
       return this.stakedAmount;
     }

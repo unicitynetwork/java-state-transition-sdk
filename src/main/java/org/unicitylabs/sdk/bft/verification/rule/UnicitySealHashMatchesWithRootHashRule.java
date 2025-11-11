@@ -3,6 +3,8 @@ package org.unicitylabs.sdk.bft.verification.rule;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+
+import com.google.common.primitives.UnsignedBytes;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;
@@ -89,7 +91,7 @@ public class UnicitySealHashMatchesWithRootHashRule extends
           .update(CborSerializer.encodeByteString(new byte[]{(byte) 0x00})) // NODE
           .update(CborSerializer.encodeByteString(stepKey));
 
-      if (Arrays.compare(key, stepKey) > 0) {
+      if (UnsignedBytes.lexicographicalComparator().compare(key, stepKey) > 0) {
         hasher
             .update(CborSerializer.encodeByteString(step.getHash()))
             .update(CborSerializer.encodeByteString(result.getData()));
@@ -104,7 +106,8 @@ public class UnicitySealHashMatchesWithRootHashRule extends
 
     byte[] unicitySealHash = context.getUnicityCertificate().getUnicitySeal().getHash();
 
-    if (Arrays.compare(unicitySealHash, result.getData()) != 0) {
+    if (UnsignedBytes.lexicographicalComparator().compare(unicitySealHash, result.getData())
+        != 0) {
       return VerificationResult.fail("Unicity seal hash does not match tree root.");
     }
 
