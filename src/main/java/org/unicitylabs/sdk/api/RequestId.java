@@ -7,6 +7,8 @@ import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
+import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.util.BitString;
 import org.unicitylabs.sdk.util.HexConverter;
 
@@ -26,27 +28,38 @@ public class RequestId extends DataHash {
   }
 
   /**
-   * Creates a RequestId from a public key and state hash.
+   * Creates a RequestId from public key and state.
    *
-   * @param id        The public key as a byte array.
-   * @param stateHash The state hash.
-   * @return A CompletableFuture resolving to a RequestId instance.
+   * @param publicKey public key as a byte array.
+   * @param state token state.
+   * @return request id
    */
-  public static RequestId create(byte[] id, DataHash stateHash) {
-    return createFromImprint(id, stateHash.getImprint());
+  public static RequestId create(byte[] publicKey, TokenState state) {
+    return RequestId.create(publicKey, state.calculateHash());
   }
 
   /**
-   * Creates a RequestId from a public key and hash imprint.
+   * Creates a RequestId from public key and hash.
    *
-   * @param id          The public key as a byte array.
-   * @param hashImprint The hash imprint as a byte array.
-   * @return A CompletableFuture resolving to a RequestId instance.
+   * @param publicKey public key as a byte array.
+   * @param hash hash.
+   * @return request id
    */
-  public static RequestId createFromImprint(byte[] id, byte[] hashImprint) {
+  public static RequestId create(byte[] publicKey, DataHash hash) {
+    return RequestId.create(publicKey, hash.getImprint());
+  }
+
+  /**
+   * Creates a RequestId from identifier bytes and hash imprint.
+   *
+   * @param id id bytes.
+   * @param stateBytes state bytes.
+   * @return request id.
+   */
+  public static RequestId create(byte[] id, byte[] stateBytes) {
     DataHasher hasher = new DataHasher(HashAlgorithm.SHA256);
     hasher.update(id);
-    hasher.update(hashImprint);
+    hasher.update(stateBytes);
 
     return new RequestId(hasher.digest());
   }

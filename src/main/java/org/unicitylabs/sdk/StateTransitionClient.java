@@ -9,20 +9,19 @@ import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.bft.RootTrustBase;
+import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
-import org.unicitylabs.sdk.transaction.Commitment;
-import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
+import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
 
 /**
- * Client for handling state transitions of tokens, including submitting commitments and finalizing
- * transactions.
+ * Client for handling state transitions of tokens, including submitting commitments and finalizing transactions.
  */
 public class StateTransitionClient {
 
@@ -80,8 +79,7 @@ public class StateTransitionClient {
   }
 
   /**
-   * Finalizes a transaction by updating the token state based on the provided transaction data
-   * without nametags.
+   * Finalizes a transaction by updating the token state based on the provided transaction data without nametags.
    *
    * @param trustBase   The root trust base for inclusion proof verification.
    * @param token       The token to be updated.
@@ -101,8 +99,7 @@ public class StateTransitionClient {
   }
 
   /**
-   * Finalizes a transaction by updating the token state based on the provided transaction data and
-   * nametags.
+   * Finalizes a transaction by updating the token state based on the provided transaction data and nametags.
    *
    * @param trustBase   The root trust base for inclusion proof verification.
    * @param token       The token to be updated.
@@ -126,31 +123,77 @@ public class StateTransitionClient {
   }
 
   /**
-   * Retrieves the inclusion proof for a token and verifies its status against the provided public
-   * key and trust base.
+   * Retrieves the inclusion proof for a given request id.
    *
-   * @param token     The token for which to retrieve the inclusion proof.
-   * @param publicKey The public key associated with the token.
-   * @param trustBase The root trust base for verification.
-   * @return A CompletableFuture that resolves to the inclusion proof verification status.
+   * @param requestId The request ID of inclusion proof to retrieve.
+   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
    */
-  public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
-      Token<?> token,
-      byte[] publicKey,
-      RootTrustBase trustBase
-  ) {
-    RequestId requestId = RequestId.create(publicKey, token.getState().calculateHash());
-    return this.client.getInclusionProof(requestId)
-        .thenApply(response -> response.getInclusionProof().verify(requestId, trustBase));
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
+    return this.client.getInclusionProof(requestId);
   }
 
   /**
-   * Retrieves the inclusion proof for a given commitment.
+   * Get inclusion proof for mint transaction.
    *
-   * @param commitment The commitment for which to retrieve the inclusion proof.
+   * @param transaction mint transaction.
    * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
    */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(Commitment<?> commitment) {
-    return this.client.getInclusionProof(commitment.getRequestId());
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(MintTransaction<?> transaction) {
+    return this.client.getInclusionProof(
+        RequestId.create(
+            transaction.getData().toSigningService().getPublicKey(),
+            transaction.getData().getSourceState()
+        )
+    );
   }
+
+  /**
+   * Get inclusion proof for transfer transaction. This method does not check if transaction is owned by public key.
+   *
+   * @param transaction transfer transaction.
+   * @param publicKey public key of transaction sender
+   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
+   */
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(
+      TransferTransaction transaction,
+      byte[] publicKey
+  ) {
+    Predicate predicate = PredicateEngineService.createPredicate(transaction.getData().getSourceState().getPredicate());
+    if (!predicate.isOwner(publicKey)) {
+      throw new IllegalArgumentException("Given key is not owner of the token.");
+    }
+
+    return this.client.getInclusionProof(
+        RequestId.create(
+            publicKey,
+            transaction.getData().getSourceState()
+        )
+    );
+  }
+
+  /**
+   * Get inclusion proof for current token state.
+   *
+   * @param token token.
+   * @param publicKey public key of transaction sender
+   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
+   */
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(
+      Token<?> token,
+      byte[] publicKey
+  ) {
+    Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
+    if (!predicate.isOwner(publicKey)) {
+      throw new IllegalArgumentException("Given key is not owner of the token.");
+    }
+
+    return this.client.getInclusionProof(
+        RequestId.create(
+            publicKey,
+            token.getState()
+        )
+    );
+  }
+
+
 }

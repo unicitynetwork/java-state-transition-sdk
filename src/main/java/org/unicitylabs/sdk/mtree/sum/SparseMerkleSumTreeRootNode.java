@@ -95,22 +95,22 @@ public class SparseMerkleSumTreeRootNode {
         || remainingPath.compareTo(BigInteger.ONE) == 0) {
       return List.of(
           new SparseMerkleSumTreePathStep(
-              BigInteger.ONE,
-              node.getRight() == null
-                  ? null
-                  : node.getRight().getHash().getData(),
-              node.getRight() == null
-                  ? BigInteger.ZERO
-                  : node.getRight().getCounter()
-          ),
-          new SparseMerkleSumTreePathStep(
-              node.getPath(),
+              BigInteger.ZERO,
               node.getLeft() == null
                   ? null
                   : node.getLeft().getHash().getData(),
               node.getLeft() == null
                   ? BigInteger.ZERO
                   : node.getLeft().getCounter()
+          ),
+          new SparseMerkleSumTreePathStep(
+              node.getPath(),
+              node.getRight() == null
+                  ? null
+                  : node.getRight().getHash().getData(),
+              node.getRight() == null
+                  ? BigInteger.ZERO
+                  : node.getRight().getCounter()
           )
       );
     }
@@ -119,39 +119,28 @@ public class SparseMerkleSumTreeRootNode {
     FinalizedBranch branch = isRight ? node.getRight() : node.getLeft();
     FinalizedBranch siblingBranch = isRight ? node.getLeft() : node.getRight();
 
+    SparseMerkleSumTreePathStep step = new SparseMerkleSumTreePathStep(
+        node.getPath(),
+        siblingBranch == null ? null : siblingBranch.getHash().getData(),
+        siblingBranch == null ? BigInteger.ZERO : siblingBranch.getCounter()
+    );
+
     if (branch == null) {
       return List.of(
           new SparseMerkleSumTreePathStep(
-              BigInteger.ZERO,
-              node.getRight() == null
-                  ? null
-                  : node.getRight().getHash().getData(),
-              node.getRight() == null
-                  ? BigInteger.ZERO
-                  : node.getRight().getCounter()
+              isRight ? BigInteger.ONE : BigInteger.ZERO,
+              null,
+              BigInteger.ZERO
           ),
-          new SparseMerkleSumTreePathStep(
-              BigInteger.ONE,
-              node.getLeft() == null
-                  ? null
-                  : node.getLeft().getHash().getData(),
-              node.getLeft() == null
-                  ? BigInteger.ZERO
-                  : node.getLeft().getCounter()
-          )
+          step
       );
     }
 
     List<SparseMerkleSumTreePathStep> list = new ArrayList<>(
         SparseMerkleSumTreeRootNode.generatePath(remainingPath, branch)
     );
-    list.add(
-        new SparseMerkleSumTreePathStep(
-            parent.getPath(),
-            siblingBranch == null ? null : siblingBranch.getHash().getData(),
-            siblingBranch == null ? BigInteger.ZERO : siblingBranch.getCounter()
-        )
-    );
+
+    list.add(step);
 
     return List.copyOf(list);
   }

@@ -83,7 +83,7 @@ public class InclusionProofUtils {
       future.completeExceptionally(new TimeoutException("Timeout waiting for inclusion proof"));
     }
 
-    client.getInclusionProof(commitment).thenAccept(response -> {
+    client.getInclusionProof(commitment.getRequestId()).thenAccept(response -> {
       InclusionProofVerificationStatus status = response.getInclusionProof()
           .verify(commitment.getRequestId(), trustBase);
       switch (status) {

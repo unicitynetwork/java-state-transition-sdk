@@ -4,7 +4,6 @@ package org.unicitylabs.sdk.transaction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +25,6 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.verification.VerificationResult;
-import org.unicitylabs.sdk.verification.VerificationResultCode;
 
 /**
  * Token transfer transaction.

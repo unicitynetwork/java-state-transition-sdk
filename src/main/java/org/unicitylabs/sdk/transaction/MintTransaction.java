@@ -97,7 +97,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
       return VerificationResult.fail("Invalid source state");
     }
 
-    SigningService signingService = MintCommitment.createSigningService(this.getData());
+    SigningService signingService = this.getData().toSigningService();
     if (!Arrays.equals(signingService.getPublicKey(),
         this.getInclusionProof().getAuthenticator().get().getPublicKey())) {
       return VerificationResult.fail("Authenticator public key mismatch");
@@ -117,12 +117,14 @@ public class MintTransaction<R extends MintTransactionReason> extends
     }
 
     InclusionProofVerificationStatus inclusionProofStatus = this.getInclusionProof().verify(
-        RequestId.create(signingService.getPublicKey(), this.getData().getSourceState()),
+        RequestId.create(this.getData().toSigningService().getPublicKey(), this.getData().getSourceState()),
         trustBase
     );
 
     if (inclusionProofStatus != InclusionProofVerificationStatus.OK) {
-      return VerificationResult.fail("Inclusion proof verification failed");
+      return VerificationResult.fail(
+          String.format("Inclusion proof verification failed with status %s", inclusionProofStatus)
+      );
     }
 
     return VerificationResult.success();
@@ -135,6 +137,9 @@ public class MintTransaction<R extends MintTransactionReason> extends
    */
   public static class Data<R extends MintTransactionReason> implements
       TransactionData<MintTransactionState> {
+
+    private static final byte[] MINTER_SECRET = HexConverter.decode(
+        "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 
     private final TokenId tokenId;
     private final TokenType tokenType;
@@ -267,6 +272,18 @@ public class MintTransaction<R extends MintTransactionReason> extends
     @JsonIgnore
     public MintTransactionState getSourceState() {
       return this.sourceState;
+    }
+
+    /**
+     * Get signing service for mint transaction.
+     *
+     * @return signing service
+     */
+    public SigningService toSigningService() {
+      return SigningService.createFromMaskedSecret(
+          MINTER_SECRET,
+          this.tokenId.getBytes()
+      );
     }
 
     /**

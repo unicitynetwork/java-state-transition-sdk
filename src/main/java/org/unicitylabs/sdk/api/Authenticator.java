@@ -51,8 +51,12 @@ public class Authenticator {
       DataHash transactionHash,
       DataHash stateHash
   ) {
-    return new Authenticator(signingService.getAlgorithm(), signingService.getPublicKey(),
-        signingService.sign(transactionHash), stateHash);
+    return new Authenticator(
+        signingService.getAlgorithm(),
+        signingService.getPublicKey(),
+        signingService.sign(transactionHash),
+        stateHash
+    );
   }
 
   /**

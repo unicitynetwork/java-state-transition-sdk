@@ -63,16 +63,21 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
     Objects.requireNonNull(salt, "Salt cannot be null");
     Objects.requireNonNull(signingService, "SigningService cannot be null");
 
-    TransferTransaction.Data transactionData = new TransferTransaction.Data(
-        token.getState(), recipient, salt, recipientDataHash, message, token.getNametags());
+    TransferTransaction.Data data = new TransferTransaction.Data(
+        token.getState(),
+        recipient,
+        salt,
+        recipientDataHash,
+        message,
+        token.getNametags()
+    );
+    RequestId requestId = RequestId.create(signingService.getPublicKey(), data.getSourceState());
+    Authenticator authenticator = Authenticator.create(
+        signingService,
+        data.calculateHash(),
+        data.getSourceState().calculateHash()
+    );
 
-    DataHash sourceStateHash = transactionData.getSourceState().calculateHash();
-    DataHash transactionHash = transactionData.calculateHash();
-
-    RequestId requestId = RequestId.create(signingService.getPublicKey(), sourceStateHash);
-    Authenticator authenticator = Authenticator.create(signingService, transactionHash,
-        sourceStateHash);
-
-    return new TransferCommitment(requestId, transactionData, authenticator);
+    return new TransferCommitment(requestId, data, authenticator);
   }
 }

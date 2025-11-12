@@ -68,9 +68,9 @@ public class SparseMerkleSumTreePath {
 
     SparseMerkleSumTreePathStep step = this.steps.get(0);
     byte[] currentData;
-    BigInteger currentPath = BigInteger.ONE;
+    BigInteger currentPath = step.getPath();
     BigInteger currentSum = step.getValue();
-    if (step.getPath().compareTo(BigInteger.ZERO) > 0) {
+    if (step.getPath().compareTo(BigInteger.ONE) > 0) {
       DataHash hash = new DataHasher(this.rootHash.getAlgorithm())
           .update(
               CborSerializer.encodeArray(
@@ -85,17 +85,15 @@ public class SparseMerkleSumTreePath {
           .digest();
 
       currentData = hash.getData();
-
-      int length = step.getPath().bitLength() - 1;
-      currentPath = currentPath.shiftLeft(length)
-          .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
     } else {
+      currentPath = BigInteger.ONE;
       currentData = step.getData().orElse(null);
     }
 
+    SparseMerkleSumTreePathStep previousStep = step;
     for (int i = 1; i < this.steps.size(); i++) {
       step = this.steps.get(i);
-      boolean isRight = currentPath.testBit(0);
+      boolean isRight = previousStep.getPath().testBit(0);
 
       byte[] leftHash = isRight ? step.getData().orElse(null) : currentData;
       byte[] rightHash = isRight ? currentData : step.getData().orElse(null);
@@ -117,9 +115,13 @@ public class SparseMerkleSumTreePath {
       currentData = hash.getData();
 
       int length = step.getPath().bitLength() - 1;
+      if (length < 0) {
+        return new MerkleTreePathVerificationResult(false, false);
+      }
       currentPath = currentPath.shiftLeft(length)
           .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
       currentSum = currentSum.add(step.getValue());
+      previousStep = step;
     }
 
     boolean pathValid = currentData != null
