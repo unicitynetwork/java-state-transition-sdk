@@ -109,15 +109,15 @@ public class TokenSplitBuilder {
       BigInteger coinsInToken = Optional.ofNullable(tokenCoins.get(tree.getKey()))
           .orElse(BigInteger.ZERO);
       SparseMerkleSumTreeRootNode root = tree.getValue().calculateRoot();
-      if (root.getRoot().getCounter().compareTo(coinsInToken) != 0) {
+      if (root.getValue().compareTo(coinsInToken) != 0) {
         throw new IllegalArgumentException(
             String.format("Token contained %s %s coins, but tree has %s",
-                coinsInToken, tree.getKey(), root.getRoot().getCounter()));
+                coinsInToken, tree.getKey(), root.getValue()));
       }
 
       coinRoots.put(tree.getKey(), root);
       aggregationTree.addLeaf(tree.getKey().toBitString().toBigInteger(),
-          root.getRoot().getHash().getImprint());
+          root.getRootHash().getImprint());
     }
 
     return new TokenSplit(

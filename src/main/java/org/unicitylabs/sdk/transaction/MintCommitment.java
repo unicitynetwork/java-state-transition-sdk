@@ -6,9 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
-import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.util.HexConverter;
 
 /**
  * Commitment representing a submitted transaction.
@@ -17,9 +16,6 @@ import org.unicitylabs.sdk.util.HexConverter;
  */
 public class MintCommitment<R extends MintTransactionReason> extends
     Commitment<MintTransaction.Data<R>> {
-  private static final byte[] MINTER_SECRET = HexConverter.decode(
-      "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
-
   @JsonCreator
   private MintCommitment(
       @JsonProperty("requestId")
@@ -46,41 +42,24 @@ public class MintCommitment<R extends MintTransactionReason> extends
   /**
    * Create mint commitment from transaction data.
    *
-   * @param transactionData mint transaction data
+   * @param data mint transaction data
    * @param <R>             mint reason
    * @return mint commitment
    */
   public static <R extends MintTransactionReason> MintCommitment<R> create(
-      MintTransaction.Data<R> transactionData
+      MintTransaction.Data<R> data
   ) {
-    Objects.requireNonNull(transactionData, "Transaction data cannot be null");
+    Objects.requireNonNull(data, "Transaction data cannot be null");
 
-    SigningService signingService = MintCommitment.createSigningService(transactionData);
-
-    DataHash transactionHash = transactionData.calculateHash();
-
-    RequestId requestId = RequestId.create(
-        signingService.getPublicKey(),
-        transactionData.getSourceState()
+    SigningService signingService = MintSigningService.create(data.getTokenId());
+    return new MintCommitment<>(
+        RequestId.create(signingService.getPublicKey(), data.getSourceState()),
+        data,
+        Authenticator.create(
+            signingService,
+            data.calculateHash(),
+            data.getSourceState()
+        )
     );
-    Authenticator authenticator = Authenticator.create(
-        signingService,
-        transactionHash,
-        transactionData.getSourceState()
-    );
-
-    return new MintCommitment<>(requestId, transactionData, authenticator);
-  }
-
-
-  /**
-   * Create signing service for initial mint.
-   *
-   * @param transactionData mint transaction data
-   * @return signing service
-   */
-  public static SigningService createSigningService(MintTransaction.Data<?> transactionData) {
-    return SigningService.createFromMaskedSecret(MINTER_SECRET,
-        transactionData.getTokenId().getBytes());
   }
 }

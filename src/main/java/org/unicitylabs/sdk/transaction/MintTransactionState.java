@@ -24,6 +24,6 @@ public class MintTransactionState extends DataHash {
    * @return mint state
    */
   public static MintTransactionState create(TokenId tokenId) {
-    return new MintTransactionState(RequestId.createFromImprint(tokenId.getBytes(), MINT_SUFFIX));
+    return new MintTransactionState(RequestId.create(tokenId.getBytes(), MINT_SUFFIX));
   }
 }

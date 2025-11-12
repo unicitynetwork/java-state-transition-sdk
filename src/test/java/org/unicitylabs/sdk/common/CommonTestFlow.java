@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
+import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.bft.RootTrustBase;
@@ -26,6 +27,7 @@ import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -34,6 +36,7 @@ import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
+import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
@@ -68,6 +71,19 @@ public abstract class CommonTestFlow {
     );
 
     assertTrue(aliceToken.verify(this.trustBase).isSuccessful());
+    assertEquals(
+        InclusionProofVerificationStatus.OK,
+        this.client.getInclusionProof(aliceToken.getGenesis())
+            .get()
+            .getInclusionProof()
+            .verify(
+                RequestId.create(
+                    MintSigningService.create(aliceToken.getId()).getPublicKey(),
+                    aliceToken.getGenesis().getData().getSourceState()
+                ),
+                this.trustBase
+            )
+    );
 
     String bobNameTag = UUID.randomUUID().toString();
 
@@ -77,16 +93,17 @@ public abstract class CommonTestFlow {
     DataHash bobDataHash = new DataHasher(HashAlgorithm.SHA256).update(bobStateData).digest();
 
     // Submit transfer transaction
+    SigningService aliceSigningService = SigningService.createFromMaskedSecret(
+        ALICE_SECRET,
+        ((MaskedPredicate) aliceToken.getState().getPredicate()).getNonce()
+    );
     TransferCommitment aliceToBobTransferCommitment = TransferCommitment.create(
         aliceToken,
         ProxyAddress.create(bobNameTag),
         randomBytes(32),
         bobDataHash,
         null,
-        SigningService.createFromMaskedSecret(
-            ALICE_SECRET,
-            ((MaskedPredicate) aliceToken.getState().getPredicate()).getNonce()
-        )
+        aliceSigningService
     );
     SubmitCommitmentResponse aliceToBobTransferSubmitResponse = this.client.submitCommitment(
         aliceToBobTransferCommitment
@@ -107,6 +124,21 @@ public abstract class CommonTestFlow {
     // Create transfer transaction
     TransferTransaction aliceToBobTransferTransaction = aliceToBobTransferCommitment.toTransaction(
         aliceToBobTransferInclusionProof
+    );
+
+    // Check if alice token is spent
+    assertEquals(
+        InclusionProofVerificationStatus.OK,
+        this.client.getInclusionProof(aliceToken, aliceSigningService.getPublicKey())
+            .get()
+            .getInclusionProof()
+            .verify(
+                RequestId.create(
+                    aliceSigningService.getPublicKey(),
+                    aliceToken.getState()
+                ),
+                this.trustBase
+            )
     );
 
     // Bob prepares to receive the token
@@ -200,7 +232,7 @@ public abstract class CommonTestFlow {
         bobToken,
         new TokenState(carolPredicate, null),
         bobToCarolTransaction
-        );
+    );
 
     assertTrue(carolToken.verify(this.trustBase).isSuccessful());
     assertEquals(2, carolToken.getTransactions().size());

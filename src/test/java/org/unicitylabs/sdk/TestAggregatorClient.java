@@ -34,9 +34,11 @@ public class TestAggregatorClient implements AggregatorClient {
 
 
   @Override
-  public CompletableFuture<SubmitCommitmentResponse> submitCommitment(RequestId requestId,
-      DataHash transactionHash, Authenticator authenticator) {
-
+  public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
+      RequestId requestId,
+      DataHash transactionHash,
+      Authenticator authenticator
+  ) {
     try {
       tree.addLeaf(
           requestId.toBitString().toBigInteger(),
@@ -61,8 +63,8 @@ public class TestAggregatorClient implements AggregatorClient {
         new InclusionProofResponse(
             InclusionProofFixture.create(
                 root.getPath(requestId.toBitString().toBigInteger()),
-                entry.getKey(),
-                entry.getValue(),
+                entry != null ? entry.getKey() : null,
+                entry != null ? entry.getValue() : null,
                 UnicityCertificateUtils.generateCertificate(signingService, root.getRootHash())
             )
         )

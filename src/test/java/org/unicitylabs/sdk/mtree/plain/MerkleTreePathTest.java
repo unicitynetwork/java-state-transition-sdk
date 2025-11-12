@@ -94,4 +94,15 @@ public class MerkleTreePathTest {
     Assertions.assertEquals(new MerkleTreePathVerificationResult(true, false),
         path.verify(BigInteger.valueOf(0b111)));
   }
+
+  @Test
+  public void testEmptyPathVerification() throws JsonProcessingException {
+    SparseMerkleTreePath path = UnicityObjectMapper.JSON.readValue(
+        "{\"root\":\"00001e54402898172f2948615fb17627733abbd120a85381c624ad060d28321be672\",\"steps\":[{\"path\":\"1\",\"data\":null},{\"path\":\"1\",\"data\":null}]}",
+        SparseMerkleTreePath.class);
+
+    MerkleTreePathVerificationResult result = path.verify(BigInteger.valueOf(101));
+    Assertions.assertTrue(result.isPathValid());
+    Assertions.assertFalse(result.isPathIncluded());
+  }
 }
