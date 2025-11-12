@@ -22,6 +22,7 @@ import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
@@ -97,7 +98,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
       return VerificationResult.fail("Invalid source state");
     }
 
-    SigningService signingService = this.getData().toSigningService();
+    SigningService signingService = MintSigningService.create(this.getData().getTokenId());
     if (!Arrays.equals(signingService.getPublicKey(),
         this.getInclusionProof().getAuthenticator().get().getPublicKey())) {
       return VerificationResult.fail("Authenticator public key mismatch");
@@ -117,7 +118,10 @@ public class MintTransaction<R extends MintTransactionReason> extends
     }
 
     InclusionProofVerificationStatus inclusionProofStatus = this.getInclusionProof().verify(
-        RequestId.create(this.getData().toSigningService().getPublicKey(), this.getData().getSourceState()),
+        RequestId.create(
+            MintSigningService.create(this.getData().getTokenId()).getPublicKey(),
+            this.getData().getSourceState()
+        ),
         trustBase
     );
 
@@ -137,9 +141,6 @@ public class MintTransaction<R extends MintTransactionReason> extends
    */
   public static class Data<R extends MintTransactionReason> implements
       TransactionData<MintTransactionState> {
-
-    private static final byte[] MINTER_SECRET = HexConverter.decode(
-        "495f414d5f554e4956455253414c5f4d494e5445525f464f525f");
 
     private final TokenId tokenId;
     private final TokenType tokenType;
@@ -272,18 +273,6 @@ public class MintTransaction<R extends MintTransactionReason> extends
     @JsonIgnore
     public MintTransactionState getSourceState() {
       return this.sourceState;
-    }
-
-    /**
-     * Get signing service for mint transaction.
-     *
-     * @return signing service
-     */
-    public SigningService toSigningService() {
-      return SigningService.createFromMaskedSecret(
-          MINTER_SECRET,
-          this.tokenId.getBytes()
-      );
     }
 
     /**

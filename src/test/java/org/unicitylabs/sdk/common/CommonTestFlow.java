@@ -27,6 +27,7 @@ import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -77,7 +78,7 @@ public abstract class CommonTestFlow {
             .getInclusionProof()
             .verify(
                 RequestId.create(
-                    aliceToken.getGenesis().getData().toSigningService().getPublicKey(),
+                    MintSigningService.create(aliceToken.getId()).getPublicKey(),
                     aliceToken.getGenesis().getData().getSourceState()
                 ),
                 this.trustBase

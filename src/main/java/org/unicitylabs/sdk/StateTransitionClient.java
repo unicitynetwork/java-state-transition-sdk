@@ -11,6 +11,7 @@ import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.transaction.MintCommitment;
@@ -141,7 +142,7 @@ public class StateTransitionClient {
   public CompletableFuture<InclusionProofResponse> getInclusionProof(MintTransaction<?> transaction) {
     return this.client.getInclusionProof(
         RequestId.create(
-            transaction.getData().toSigningService().getPublicKey(),
+            MintSigningService.create(transaction.getData().getTokenId()).getPublicKey(),
             transaction.getData().getSourceState()
         )
     );

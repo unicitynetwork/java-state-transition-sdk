@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import org.unicitylabs.sdk.api.Authenticator;
 import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.signing.SigningService;
 
 /**
@@ -50,7 +51,7 @@ public class MintCommitment<R extends MintTransactionReason> extends
   ) {
     Objects.requireNonNull(data, "Transaction data cannot be null");
 
-    SigningService signingService = data.toSigningService();
+    SigningService signingService = MintSigningService.create(data.getTokenId());
     return new MintCommitment<>(
         RequestId.create(signingService.getPublicKey(), data.getSourceState()),
         data,
