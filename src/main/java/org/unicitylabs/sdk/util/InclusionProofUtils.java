@@ -97,8 +97,6 @@ public class InclusionProofUtils {
                   intervalMillis));
           break;
         default:
-          System.out.println(response.getInclusionProof()
-              .verify(commitment.getRequestId(), trustBase));
           future.completeExceptionally(
               new RuntimeException(String.format("Inclusion proof verification failed: %s", status)));
       }
