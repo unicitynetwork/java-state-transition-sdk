@@ -4,6 +4,7 @@ import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.AggregatorClient;
+import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
@@ -22,6 +23,7 @@ import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.transaction.*;
 import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.utils.helpers.AggregatorRequestHelper;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 
 import java.nio.charset.StandardCharsets;
@@ -465,6 +467,60 @@ public class StepHelper {
         } finally {
             executor.shutdown();
         }
+    }
+
+    public void verifyAllInclusionProofsInParallelForShardAggregators(
+            int timeoutSeconds,
+            AggregatorRequestHelper shardHelper) throws Exception {
+
+        List<CommitmentResult> results = collectCommitmentResults();
+
+        // Group results by shard ID instead of Aggregator name
+        Map<Integer, List<CommitmentResult>> resultsByShard = results.stream()
+                .collect(Collectors.groupingBy(r -> shardHelper.getShardForRequest(r.getRequestId())));
+
+        ExecutorService executor = Executors.newFixedThreadPool(resultsByShard.size());
+        List<CompletableFuture<Void>> verificationFutures = new ArrayList<>();
+
+        for (Map.Entry<Integer, List<CommitmentResult>> entry : resultsByShard.entrySet()) {
+            int shardId = entry.getKey();
+            List<CommitmentResult> shardResults = entry.getValue();
+            AggregatorClient aggregatorClient = shardHelper.getClientForShard(shardId);
+            String shardUrl = shardHelper.getShardUrl(shardId);
+
+            if (aggregatorClient == null) {
+                System.out.printf("⚠️ No aggregator found for shard %d, skipping %d results%n", shardId, shardResults.size());
+                continue;
+            }
+
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    System.out.printf("🔍 Verifying inclusion proofs for shard %d (%s)%n", shardId, shardUrl);
+                    verifyInclusionProofsForAggregator(aggregatorClient, shardResults, timeoutSeconds);
+
+                    // Update shard-level stats
+                    long verified = shardResults.stream().filter(CommitmentResult::isVerified).count();
+                    shardHelper.getStats(shardId).incrementCommitments();
+                    shardHelper.getStats(shardId).incrementSuccessBy((int) verified);
+                    shardHelper.getStats(shardId).incrementFailuresBy(shardResults.size() - (int) verified);
+
+                    System.out.printf("✅ Shard %d verification complete: %d/%d verified%n",
+                            shardId, verified, shardResults.size());
+                } catch (Exception e) {
+                    System.err.printf("❌ Error verifying shard %d: %s%n", shardId, e.getMessage());
+                    shardHelper.getStats(shardId).incrementFailures();
+                }
+            }, executor);
+
+            verificationFutures.add(future);
+        }
+
+        // Wait for all shard verifications to complete
+        CompletableFuture.allOf(verificationFutures.toArray(new CompletableFuture[0]))
+                .get(timeoutSeconds + 10, TimeUnit.SECONDS);
+
+        executor.shutdown();
+        shardHelper.printShardStats();
     }
 
     private void verifyInclusionProofsForAggregator(AggregatorClient aggregatorClient,

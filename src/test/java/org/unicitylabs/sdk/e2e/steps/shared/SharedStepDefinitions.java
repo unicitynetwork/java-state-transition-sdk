@@ -48,6 +48,7 @@ import static org.unicitylabs.sdk.util.InclusionProofUtils.waitInclusionProof;
 import static org.unicitylabs.sdk.utils.TestUtils.randomBytes;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.unicitylabs.sdk.utils.helpers.AggregatorRequestHelper;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 import org.unicitylabs.sdk.verification.VerificationResult;
 
@@ -354,11 +355,7 @@ public class SharedStepDefinitions {
     public void theAggregatorURLsAreConfigured(DataTable dataTable) {
         List<String> aggregatorUrls = dataTable.asList();
 
-        // You can either use environment variables or hardcode the URLs
-//        List<String> aggregatorUrls = Arrays.asList(
-////                System.getenv("AGGREGATOR_URL")
-//                "http://localhost:3001"
-//        );
+
 
         assertNotNull(aggregatorUrls, "Aggregator URLs must be configured");
         assertFalse(aggregatorUrls.isEmpty(), "At least one aggregator URL must be provided");
@@ -376,6 +373,230 @@ public class SharedStepDefinitions {
         List<AggregatorClient> clients = context.getAggregatorClients();
         assertNotNull(clients, "Aggregator clients should be initialized");
         assertFalse(clients.isEmpty(), "At least one aggregator client should be initialized");
+    }
+
+    @When("I submit conflicting mint commitments concurrently to all aggregators")
+    public void iSubmitConflictingMintCommitmentsConcurrentlyToAllAggregators() {
+        int threadsCount = context.getConfiguredThreadCount();
+        int commitmentsPerThread = context.getConfiguredCommitmentsPerThread();
+        List<AggregatorClient> aggregatorClients = context.getAggregatorClients();
+        Map<String, SigningService> userSigningServices = context.getUserSigningServices();
+
+        // Thread pool = threads × aggregators
+        int totalThreadPoolSize = threadsCount * aggregatorClients.size();
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreadPoolSize);
+        List<CompletableFuture<CommitmentResult>> futures = new ArrayList<>();
+
+        // ------------------------------
+        // STEP 1: Generate canonical commitments for the FIRST user
+        // ------------------------------
+        Iterator<Map.Entry<String, SigningService>> iterator = userSigningServices.entrySet().iterator();
+        if (!iterator.hasNext()) {
+            throw new IllegalStateException("No users configured in context");
+        }
+
+        Map.Entry<String, SigningService> firstUserEntry = iterator.next();
+        SigningService firstUserService = firstUserEntry.getValue();
+
+        List<RequestId> sharedRequestIds = new ArrayList<>();
+        List<DataHash> canonicalTxDataHashes = new ArrayList<>();
+        List<DataHash> canonicalStateHashes = new ArrayList<>();
+
+        for (int i = 0; i < commitmentsPerThread; i++) {
+            byte[] stateBytes = TestUtils.generateRandomBytes(32);
+            byte[] txData = TestUtils.generateRandomBytes(32);
+            DataHash stateHash = TestUtils.hashData(stateBytes);
+            DataHash txDataHash = TestUtils.hashData(txData);
+            RequestId requestId = TestUtils.createRequestId(firstUserService, stateHash);
+
+            sharedRequestIds.add(requestId);
+            canonicalTxDataHashes.add(txDataHash);
+            canonicalStateHashes.add(stateHash);
+        }
+
+        // ------------------------------
+        // STEP 2: Submit commitments for ALL users
+        // ------------------------------
+        for (Map.Entry<String, SigningService> entry : userSigningServices.entrySet()) {
+            String userName = entry.getKey();
+            SigningService signingService = entry.getValue();
+
+            for (int i = 0; i < commitmentsPerThread; i++) {
+                // Get canonical requestId (same as user 1)
+                RequestId reusedRequestId = sharedRequestIds.get(i);
+
+                // Create DIFFERENT commitment data (simulate conflicting payloads)
+                byte[] newStateBytes = TestUtils.generateRandomBytes(32);
+                byte[] newTxData = TestUtils.generateRandomBytes(32);
+                DataHash newStateHash = TestUtils.hashData(newStateBytes);
+                DataHash newTxDataHash = TestUtils.hashData(newTxData);
+
+                for (int aggIndex = 0; aggIndex < aggregatorClients.size(); aggIndex++) {
+                    AggregatorClient aggregatorClient = aggregatorClients.get(aggIndex);
+                    String aggregatorId = "Aggregator" + aggIndex;
+
+                    CompletableFuture<CommitmentResult> future = CompletableFuture.supplyAsync(() -> {
+                        long start = System.nanoTime();
+                        try {
+                            Authenticator authenticator = TestUtils.createAuthenticator(
+                                    signingService, newTxDataHash, newStateHash);
+
+                            SubmitCommitmentResponse response = aggregatorClient
+                                    .submitCommitment(reusedRequestId, newTxDataHash, authenticator)
+                                    .get();
+
+                            boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                            long end = System.nanoTime();
+
+                            return new CommitmentResult(
+                                    userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    reusedRequestId,
+                                    success,
+                                    start,
+                                    end);
+                        } catch (Exception e) {
+                            long end = System.nanoTime();
+                            return new CommitmentResult(
+                                    userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    reusedRequestId,
+                                    false,
+                                    start,
+                                    end);
+                        }
+                    }, executor);
+
+                    futures.add(future);
+                }
+            }
+        }
+
+        context.setCommitmentFutures(futures);
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executor.shutdown();
+    }
+
+    @When("I submit mixed valid and conflicting commitments concurrently to all aggregators")
+    public void iSubmitMixedValidAndConflictingCommitmentsConcurrentlyToAllAggregators() {
+        int threadsCount = context.getConfiguredThreadCount();
+        int commitmentsPerThread = context.getConfiguredCommitmentsPerThread();
+        List<AggregatorClient> aggregatorClients = context.getAggregatorClients();
+        Map<String, SigningService> userSigningServices = context.getUserSigningServices();
+
+        // Create a thread pool sized for users × aggregators
+        int totalThreadPoolSize = threadsCount * aggregatorClients.size();
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreadPoolSize);
+        List<CompletableFuture<CommitmentResult>> futures = new ArrayList<>();
+
+        // -----------------------------
+        // STEP 1: Prepare canonical commitments for FIRST USER
+        // -----------------------------
+        Iterator<Map.Entry<String, SigningService>> iterator = userSigningServices.entrySet().iterator();
+        if (!iterator.hasNext()) {
+            throw new IllegalStateException("No users configured in context");
+        }
+
+        Map.Entry<String, SigningService> firstUserEntry = iterator.next();
+        String firstUserName = firstUserEntry.getKey();
+        SigningService firstUserService = firstUserEntry.getValue();
+
+        List<RequestId> canonicalRequestIds = new ArrayList<>();
+        List<DataHash> canonicalTxDataHashes = new ArrayList<>();
+        List<DataHash> canonicalStateHashes = new ArrayList<>();
+
+        for (int i = 0; i < commitmentsPerThread; i++) {
+            byte[] stateBytes = TestUtils.generateRandomBytes(32);
+            byte[] txData = TestUtils.generateRandomBytes(32);
+            DataHash stateHash = TestUtils.hashData(stateBytes);
+            DataHash txDataHash = TestUtils.hashData(txData);
+            RequestId requestId = TestUtils.createRequestId(firstUserService, stateHash);
+
+            canonicalRequestIds.add(requestId);
+            canonicalTxDataHashes.add(txDataHash);
+            canonicalStateHashes.add(stateHash);
+        }
+
+        // -----------------------------
+        // STEP 2: Submit commitments concurrently
+        // -----------------------------
+        for (Map.Entry<String, SigningService> entry : userSigningServices.entrySet()) {
+            String userName = entry.getKey();
+            SigningService signingService = entry.getValue();
+
+            for (int i = 0; i < commitmentsPerThread; i++) {
+                RequestId reusedRequestId = canonicalRequestIds.get(i);
+                DataHash stateHashToUse;
+                DataHash txDataHashToUse;
+
+                // For the FIRST user: use canonical (correct) data
+                if (userName.equals(firstUserName)) {
+                    stateHashToUse = canonicalStateHashes.get(i);
+                    txDataHashToUse = canonicalTxDataHashes.get(i);
+                } else {
+                    // For all other users: create conflicting data but reuse same RequestId
+                    byte[] newStateBytes = TestUtils.generateRandomBytes(32);
+                    byte[] newTxData = TestUtils.generateRandomBytes(32);
+                    stateHashToUse = TestUtils.hashData(newStateBytes);
+                    txDataHashToUse = TestUtils.hashData(newTxData);
+                }
+
+                for (int aggIndex = 0; aggIndex < aggregatorClients.size(); aggIndex++) {
+                    AggregatorClient aggregatorClient = aggregatorClients.get(aggIndex);
+                    String aggregatorId = "Aggregator" + aggIndex;
+
+                    CompletableFuture<CommitmentResult> future = CompletableFuture.supplyAsync(() -> {
+                        long start = System.nanoTime();
+                        try {
+                            Authenticator authenticator =
+                                    TestUtils.createAuthenticator(signingService, txDataHashToUse, stateHashToUse);
+
+                            // Log outgoing request details
+                            System.out.printf("[%s] Sending commitment to %s (user=%s, reusedRequestId=%s)%n",
+                                    Thread.currentThread().getName(), aggregatorId, userName, reusedRequestId);
+
+                            SubmitCommitmentResponse response =
+                                    aggregatorClient.submitCommitment(reusedRequestId, txDataHashToUse, authenticator).get();
+
+                            boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                            long end = System.nanoTime();
+
+                            // Log response details
+                            System.out.printf("[%s] Response from %s (user=%s, success=%s, durationMs=%.2f)%n",
+                                    Thread.currentThread().getName(), aggregatorId, userName, success,
+                                    (end - start) / 1_000_000.0);
+
+                            return new CommitmentResult(
+                                    userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    reusedRequestId,
+                                    success,
+                                    start,
+                                    end);
+                        } catch (Exception e) {
+                            long end = System.nanoTime();
+                            System.err.printf("[%s] ERROR submitting to %s (user=%s): %s%n",
+                                    Thread.currentThread().getName(), aggregatorId, userName, e.getMessage());
+                            return new CommitmentResult(
+                                    userName + "-" + aggregatorId,
+                                    Thread.currentThread().getName(),
+                                    reusedRequestId,
+                                    false,
+                                    start,
+                                    end);
+                        }
+                    }, executor);
+
+                    futures.add(future);
+                }
+            }
+        }
+
+        // Wait for all submissions to complete
+        context.setCommitmentFutures(futures);
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executor.shutdown();
     }
 
     @When("I submit all mint commitments concurrently to all aggregators")
@@ -564,6 +785,163 @@ public class SharedStepDefinitions {
         }
 
         assertEquals(results.size(), verifiedCount, "All commitments should be verified");
+    }
+
+    @Then("all shard mint commitments should receive inclusion proofs from all aggregators within {int} seconds")
+    public void allShardMintCommitmentsShouldReceiveInclusionProofsFromAllAggregatorsWithinSeconds(int timeoutSeconds) throws Exception {
+        List<CommitmentResult> results = helper.collectCommitmentResults();
+
+        // Verify inclusion proofs for all aggregators in parallel
+        helper.verifyAllInclusionProofsInParallelForShardAggregators(timeoutSeconds, context.getShardHelper());
+
+        long verifiedCount = results.stream()
+                .filter(CommitmentResult::isVerified)
+                .count();
+
+        System.out.println("=== Inclusion Proof Verification Results ===");
+        System.out.println("Total commitments: " + results.size());
+        System.out.println("Verified commitments: " + verifiedCount + " / " + results.size());
+
+        // Group results by aggregator for detailed reporting
+        Map<String, List<CommitmentResult>> resultsByAggregator = results.stream()
+                .collect(Collectors.groupingBy(r -> helper.extractAggregatorFromUserName(r.getUserName())));
+
+        for (Map.Entry<String, List<CommitmentResult>> entry : resultsByAggregator.entrySet()) {
+            String aggregatorId = entry.getKey();
+            List<CommitmentResult> aggregatorResults = entry.getValue();
+
+            long aggregatorVerifiedCount = aggregatorResults.stream()
+                    .filter(CommitmentResult::isVerified)
+                    .count();
+
+            System.out.println("\n" + aggregatorId + ":");
+            System.out.println("  Verified: " + aggregatorVerifiedCount + " / " + aggregatorResults.size());
+
+            // Print failed ones for this aggregator
+            aggregatorResults.stream()
+                    .filter(r -> !r.isVerified())
+                    .forEach(r -> System.out.println(
+                            "  ❌ Failed: requestId=" + r.getRequestId().toString() +
+                                    ", status=" + (r.getStatus() != null ? r.getStatus() : "Unknown") +
+                                    ", user=" + r.getUserName()
+                    ));
+
+            // Print successful ones (optional, for debugging)
+            if (aggregatorVerifiedCount > 0) {
+                System.out.println("  ✅ Successfully verified " + aggregatorVerifiedCount + " commitments");
+            }
+        }
+
+        assertEquals(results.size(), verifiedCount, "All commitments should be verified");
+    }
+
+    @Given("the aggregator URLs are configured with shard_id_length {int}")
+    public void configureAggregatorsWithShardIdLength(int shardIdLength) {
+        List<String> urls = Arrays.asList(
+                "http://localhost:3001",
+                "http://localhost:3002",
+                "http://localhost:3003",
+                "http://localhost:3004",
+                "http://localhost:3005",
+                "http://localhost:3006",
+                "http://localhost:3007",
+                "http://localhost:3008"
+        );
+
+        context.setAggregatorUrls(urls);
+
+        List<AggregatorClient> clients = new ArrayList<>();
+        for (String url : urls) {
+            clients.add(new JsonRpcAggregatorClient(url.trim()));
+        }
+
+        context.setAggregatorClients(clients);
+        context.setShardHelper(new AggregatorRequestHelper(shardIdLength, clients, context.getAggregatorUrls()));
+
+        System.out.printf("Configured %d aggregators with shard_id_length=%d%n",
+                clients.size(), shardIdLength);
+    }
+
+    @When("I submit all mint commitments to correct shards concurrently")
+    public void submitCommitmentsToCorrectShards() throws Exception {
+        int threadsCount = context.getConfiguredThreadCount();
+        int commitmentsPerThread = context.getConfiguredCommitmentsPerThread();
+        AggregatorRequestHelper shardHelper = context.getShardHelper();
+        Map<String, SigningService> userSigningServices = context.getUserSigningServices();
+
+        ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+        List<CompletableFuture<CommitmentResult>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, SigningService> entry : userSigningServices.entrySet()) {
+            String userName = entry.getKey();
+            SigningService signingService = entry.getValue();
+
+            for (int i = 0; i < commitmentsPerThread; i++) {
+                byte[] stateBytes = TestUtils.generateRandomBytes(32);
+                byte[] txData = TestUtils.generateRandomBytes(32);
+                DataHash stateHash = TestUtils.hashData(stateBytes);
+                DataHash txDataHash = TestUtils.hashData(txData);
+                RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+
+                // Determine correct shard
+                int shardId = shardHelper.getShardForRequest(requestId);
+                AggregatorClient aggregatorClient = shardHelper.getClientForShard(shardId);
+                String aggregatorUrl = shardHelper.getShardUrl(shardId);
+
+                if (aggregatorClient == null) {
+                    System.out.printf("⚠️ No aggregator found for shardId=%d (requestId=%s)%n", shardId, requestId);
+                    continue;
+                }
+
+                CompletableFuture<CommitmentResult> future = CompletableFuture.supplyAsync(() -> {
+                    long start = System.nanoTime();
+                    try {
+                        Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+
+                        System.out.printf("→ [Thread: %s] Sending commitment %s to shard %d (%s)%n",
+                                Thread.currentThread().getName(), requestId, shardId, aggregatorUrl);
+
+                        SubmitCommitmentResponse response = aggregatorClient
+                                .submitCommitment(requestId, txDataHash, authenticator).get();
+
+                        boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                        long end = System.nanoTime();
+
+                        shardHelper.getStats(shardId).incrementCommitments();
+                        if (success) shardHelper.getStats(shardId).incrementSuccess();
+                        else shardHelper.getStats(shardId).incrementFailures();
+
+                        System.out.printf("← Response from shard %d (%s): %s%n",
+                                shardId, aggregatorUrl, response.getStatus());
+
+                        return new CommitmentResult(
+                                userName + "-Shard" + shardId,
+                                Thread.currentThread().getName(),
+                                requestId, success, start, end
+                        );
+
+                    } catch (Exception e) {
+                        long end = System.nanoTime();
+                        shardHelper.getStats(shardId).incrementFailures();
+                        System.err.printf("❌ Error sending to shard %d (%s): %s%n",
+                                shardId, aggregatorUrl, e.getMessage());
+                        return new CommitmentResult(
+                                userName + "-Shard" + shardId,
+                                Thread.currentThread().getName(),
+                                requestId, false, start, end
+                        );
+                    }
+                }, executor);
+
+                futures.add(future);
+            }
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executor.shutdown();
+
+        context.setCommitmentFutures(futures);
+        shardHelper.printShardStats();
     }
 
     @Then("all mint commitments should receive inclusion proofs within {int} seconds with {int}% success rate")

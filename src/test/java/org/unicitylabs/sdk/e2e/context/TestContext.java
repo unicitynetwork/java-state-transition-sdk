@@ -13,6 +13,7 @@ import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.utils.TestUtils;
+import org.unicitylabs.sdk.utils.helpers.AggregatorRequestHelper;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
 import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
 
@@ -76,6 +77,24 @@ public class TestContext {
     private int expectedSplitCount;
     private int configuredUserCount;
     private int configuredTokensPerUser;
+    private List<String> aggregatorUrls;
+    private AggregatorRequestHelper shardHelper;
+
+    public AggregatorRequestHelper getShardHelper() {
+        return shardHelper;
+    }
+
+    public void setShardHelper(AggregatorRequestHelper shardHelper) {
+        this.shardHelper = shardHelper;
+    }
+
+    public List<String> getAggregatorUrls() {
+        return aggregatorUrls;
+    }
+
+    public void setAggregatorUrls(List<String> aggregatorUrls) {
+        this.aggregatorUrls = aggregatorUrls;
+    }
 
 
     // Getters and Setters
@@ -310,6 +329,7 @@ public class TestContext {
     }
 
     public void clearTestState() {
+        aggregatorUrls = null;
         configuredUserCount = 0;
         blockHeight = null;
         randomSecret = null;
