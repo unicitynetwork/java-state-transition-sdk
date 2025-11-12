@@ -142,7 +142,7 @@ public class SparseMerkleSumTreeRootNode {
       );
     }
 
-    ArrayList<SparseMerkleSumTreePathStep> list = new ArrayList<>(
+    List<SparseMerkleSumTreePathStep> list = new ArrayList<>(
         SparseMerkleSumTreeRootNode.generatePath(remainingPath, branch)
     );
     list.add(

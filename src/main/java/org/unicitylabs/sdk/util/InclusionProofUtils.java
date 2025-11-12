@@ -86,18 +86,21 @@ public class InclusionProofUtils {
     client.getInclusionProof(commitment).thenAccept(response -> {
       InclusionProofVerificationStatus status = response.getInclusionProof()
           .verify(commitment.getRequestId(), trustBase);
-      if (status == InclusionProofVerificationStatus.OK) {
-        future.complete(response.getInclusionProof());
-      }
-
-      if (status == InclusionProofVerificationStatus.PATH_NOT_INCLUDED) {
-        CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
-            .execute(() -> checkInclusionProof(client, trustBase, commitment, future, startTime,
-                timeoutMillis,
-                intervalMillis));
-      } else {
-        future.completeExceptionally(
-            new RuntimeException(String.format("Inclusion proof verification failed: %s", status)));
+      switch (status) {
+        case OK:
+          future.complete(response.getInclusionProof());
+          break;
+        case PATH_NOT_INCLUDED:
+          CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
+              .execute(() -> checkInclusionProof(client, trustBase, commitment, future, startTime,
+                  timeoutMillis,
+                  intervalMillis));
+          break;
+        default:
+          System.out.println(response.getInclusionProof()
+              .verify(commitment.getRequestId(), trustBase));
+          future.completeExceptionally(
+              new RuntimeException(String.format("Inclusion proof verification failed: %s", status)));
       }
     }).exceptionally(e -> {
       future.completeExceptionally(e);
