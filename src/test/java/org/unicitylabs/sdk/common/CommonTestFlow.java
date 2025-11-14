@@ -70,20 +70,8 @@ public abstract class CommonTestFlow {
         ALICE_SECRET
     );
 
+    assertTrue(this.client.isMinted(aliceToken.getId(), this.trustBase).get());
     assertTrue(aliceToken.verify(this.trustBase).isSuccessful());
-    assertEquals(
-        InclusionProofVerificationStatus.OK,
-        this.client.getInclusionProof(aliceToken.getGenesis())
-            .get()
-            .getInclusionProof()
-            .verify(
-                RequestId.create(
-                    MintSigningService.create(aliceToken.getId()).getPublicKey(),
-                    aliceToken.getGenesis().getData().getSourceState()
-                ),
-                this.trustBase
-            )
-    );
 
     String bobNameTag = UUID.randomUUID().toString();
 
@@ -127,19 +115,7 @@ public abstract class CommonTestFlow {
     );
 
     // Check if alice token is spent
-    assertEquals(
-        InclusionProofVerificationStatus.OK,
-        this.client.getInclusionProof(aliceToken, aliceSigningService.getPublicKey())
-            .get()
-            .getInclusionProof()
-            .verify(
-                RequestId.create(
-                    aliceSigningService.getPublicKey(),
-                    aliceToken.getState()
-                ),
-                this.trustBase
-            )
-    );
+    assertTrue(this.client.isStateSpent(aliceToken, aliceSigningService.getPublicKey(), this.trustBase).get());
 
     // Bob prepares to receive the token
     DirectAddress bobAddress = UnmaskedPredicateReference.create(

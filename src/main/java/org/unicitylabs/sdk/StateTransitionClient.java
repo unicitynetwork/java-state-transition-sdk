@@ -13,10 +13,12 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
+import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
-import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
+import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
@@ -48,7 +50,7 @@ public class StateTransitionClient {
    * @return A CompletableFuture that resolves to the response from the aggregator.
    */
   public <R extends MintTransactionReason>
-        CompletableFuture<SubmitCommitmentResponse> submitCommitment(MintCommitment<R> commitment) {
+  CompletableFuture<SubmitCommitmentResponse> submitCommitment(MintCommitment<R> commitment) {
     return this.client.submitCommitment(
         commitment.getRequestId(),
         commitment.getTransactionData().calculateHash(),
@@ -134,65 +136,65 @@ public class StateTransitionClient {
   }
 
   /**
-   * Get inclusion proof for mint transaction.
+   * Check if state is already spent for given request id.
    *
-   * @param transaction mint transaction.
-   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
+   * @param requestId request id
+   * @param trustBase root trust base
+   * @return A CompletableFuture that resolves to true if state is spent, false otherwise.
    */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(MintTransaction<?> transaction) {
-    return this.client.getInclusionProof(
-        RequestId.create(
-            MintSigningService.create(transaction.getData().getTokenId()).getPublicKey(),
-            transaction.getData().getSourceState()
-        )
-    );
+  public CompletableFuture<Boolean> isStateSpent(RequestId requestId, RootTrustBase trustBase) {
+    return this.getInclusionProof(requestId)
+        .thenApply(inclusionProof -> {
+          InclusionProofVerificationStatus result = inclusionProof.getInclusionProof().verify(requestId, trustBase);
+          switch (result) {
+            case OK:
+              return true;
+            case PATH_NOT_INCLUDED:
+              return false;
+            default:
+              throw new RuntimeException(
+                  String.format("Inclusion proof verification failed with status %s", result)
+              );
+          }
+        });
   }
 
-  /**
-   * Get inclusion proof for transfer transaction. This method does not check if transaction is owned by public key.
-   *
-   * @param transaction transfer transaction.
-   * @param publicKey public key of transaction sender
-   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
-   */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(
-      TransferTransaction transaction,
-      byte[] publicKey
-  ) {
-    Predicate predicate = PredicateEngineService.createPredicate(transaction.getData().getSourceState().getPredicate());
-    if (!predicate.isOwner(publicKey)) {
-      throw new IllegalArgumentException("Given key is not owner of the token.");
-    }
-
-    return this.client.getInclusionProof(
-        RequestId.create(
-            publicKey,
-            transaction.getData().getSourceState()
-        )
-    );
-  }
 
   /**
    * Get inclusion proof for current token state.
    *
-   * @param token token.
-   * @param publicKey public key of transaction sender
+   * @param token     token
+   * @param publicKey public key
+   * @param trustBase trustBase
    * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
    */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(
+  public CompletableFuture<Boolean> isStateSpent(
       Token<?> token,
-      byte[] publicKey
+      byte[] publicKey,
+      RootTrustBase trustBase
   ) {
     Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
     if (!predicate.isOwner(publicKey)) {
       throw new IllegalArgumentException("Given key is not owner of the token.");
     }
 
-    return this.client.getInclusionProof(
+    return this.isStateSpent(RequestId.create(publicKey, token.getState()), trustBase);
+  }
+
+  /**
+   * Check if token id is already minted.
+   *
+   * @param tokenId   token id
+   * @param trustBase root trust base
+   * @return A CompletableFuture that resolves to true if token id is spent, false otherwise.
+   */
+  public CompletableFuture<Boolean> isMinted(TokenId tokenId, RootTrustBase trustBase) {
+    return this.isStateSpent(
         RequestId.create(
-            publicKey,
-            token.getState()
-        )
+            MintSigningService.create(tokenId).getPublicKey(),
+            MintTransactionState.create(tokenId)
+        ),
+        trustBase
     );
   }
 
