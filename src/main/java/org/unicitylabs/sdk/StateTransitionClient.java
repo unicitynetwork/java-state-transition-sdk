@@ -50,7 +50,7 @@ public class StateTransitionClient {
    * @return A CompletableFuture that resolves to the response from the aggregator.
    */
   public <R extends MintTransactionReason>
-  CompletableFuture<SubmitCommitmentResponse> submitCommitment(MintCommitment<R> commitment) {
+        CompletableFuture<SubmitCommitmentResponse> submitCommitment(MintCommitment<R> commitment) {
     return this.client.submitCommitment(
         commitment.getRequestId(),
         commitment.getTransactionData().calculateHash(),
