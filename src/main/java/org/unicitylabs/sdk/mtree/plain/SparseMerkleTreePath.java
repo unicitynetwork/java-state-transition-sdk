@@ -71,8 +71,8 @@ public class SparseMerkleTreePath {
 
     SparseMerkleTreePathStep step = this.steps.get(0);
     byte[] currentData;
-    BigInteger currentPath = BigInteger.ONE;
-    if (step.getPath().compareTo(BigInteger.ZERO) > 0) {
+    BigInteger currentPath = step.getPath();
+    if (step.getPath().compareTo(BigInteger.ONE) > 0) {
       DataHash hash = new DataHasher(this.rootHash.getAlgorithm())
           .update(
               CborSerializer.encodeArray(
@@ -86,17 +86,15 @@ public class SparseMerkleTreePath {
           .digest();
 
       currentData = hash.getData();
-
-      int length = step.getPath().bitLength() - 1;
-      currentPath = currentPath.shiftLeft(length)
-          .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
     } else {
+      currentPath = BigInteger.ONE;
       currentData = step.getData().orElse(null);
     }
 
+    SparseMerkleTreePathStep previousStep = step;
     for (int i = 1; i < this.steps.size(); i++) {
       step = this.steps.get(i);
-      boolean isRight = currentPath.testBit(0);
+      boolean isRight = previousStep.getPath().testBit(0);
 
       byte[] left = isRight ? step.getData().orElse(null) : currentData;
       byte[] right = isRight ? currentData : step.getData().orElse(null);
@@ -114,8 +112,12 @@ public class SparseMerkleTreePath {
       currentData = hash.getData();
 
       int length = step.getPath().bitLength() - 1;
+      if (length < 0) {
+        return new MerkleTreePathVerificationResult(false, false);
+      }
       currentPath = currentPath.shiftLeft(length)
           .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
+      previousStep = step;
     }
 
     boolean pathValid = currentData != null

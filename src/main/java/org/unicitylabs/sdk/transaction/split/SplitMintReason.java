@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathStep;
-import org.unicitylabs.sdk.mtree.sum.SparseMerkleSumTreePathStep.Branch;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
@@ -115,14 +114,13 @@ public class SplitMintReason implements MintTransactionReason {
       List<SparseMerkleTreePathStep> aggregationPathSteps = proof.getAggregationPath()
           .getSteps();
       if (aggregationPathSteps.size() == 0
-          || !Arrays.equals(proof.getCoinTreePath().getRoot().getHash().getImprint(),
+          || !Arrays.equals(proof.getCoinTreePath().getRootHash().getImprint(),
           aggregationPathSteps.get(0).getData().orElse(null))
       ) {
         return VerificationResult.fail("Coin tree root does not match aggregation path leaf.");
       }
 
-      if (!proof.getCoinTreePath().getSteps().get(0).getBranch()
-          .map(Branch::getCounter).equals(Optional.ofNullable(coins.get(proof.getCoinId())))) {
+      if (!proof.getCoinTreePath().getSteps().get(0).getValue().equals(coins.get(proof.getCoinId()))) {
         return VerificationResult.fail("Coin amount in token does not match coin tree leaf.");
       }
 

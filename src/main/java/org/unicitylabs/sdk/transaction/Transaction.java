@@ -40,7 +40,7 @@ public abstract class Transaction<T extends TransactionData<?>> {
    * @return transaction data
    */
   public T getData() {
-    return data;
+    return this.data;
   }
 
   /**
@@ -49,7 +49,7 @@ public abstract class Transaction<T extends TransactionData<?>> {
    * @return inclusion proof
    */
   public InclusionProof getInclusionProof() {
-    return inclusionProof;
+    return this.inclusionProof;
   }
 
   /**

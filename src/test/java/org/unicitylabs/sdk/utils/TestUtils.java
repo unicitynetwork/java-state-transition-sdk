@@ -13,12 +13,9 @@ import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
 import org.unicitylabs.sdk.bft.RootTrustBase;
-import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
-import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
-import org.unicitylabs.sdk.predicate.PredicateEngine;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.signing.SigningService;
@@ -246,7 +243,7 @@ public class TestUtils {
     }
 
     public static RequestId createRequestId(SigningService signingService, DataHash stateHash) {
-        return RequestId.createFromImprint(signingService.getPublicKey(), stateHash.getImprint());
+        return RequestId.create(signingService.getPublicKey(), stateHash);
     }
 
     public static Authenticator createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {

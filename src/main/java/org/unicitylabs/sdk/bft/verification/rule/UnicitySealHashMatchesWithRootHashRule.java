@@ -1,10 +1,8 @@
 package org.unicitylabs.sdk.bft.verification.rule;
 
+import com.google.common.primitives.UnsignedBytes;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-
-import com.google.common.primitives.UnsignedBytes;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.bft.UnicityTreeCertificate;
 import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;

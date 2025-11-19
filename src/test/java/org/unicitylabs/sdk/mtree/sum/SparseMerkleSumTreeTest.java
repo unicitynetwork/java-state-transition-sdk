@@ -26,7 +26,7 @@ class SparseMerkleSumTreeTest {
     }
 
     var root = tree.calculateRoot();
-    Assertions.assertEquals(BigInteger.valueOf(100), root.getRoot().getCounter());
+    Assertions.assertEquals(BigInteger.valueOf(100), root.getValue());
 
     for (var entry : leaves.entrySet()) {
       var path = root.getPath(entry.getKey());
@@ -35,17 +35,20 @@ class SparseMerkleSumTreeTest {
       Assertions.assertTrue(verificationResult.isPathValid());
       Assertions.assertTrue(verificationResult.isSuccessful());
 
-      Assertions.assertEquals(root.getRoot().getCounter(), path.getRoot().getCounter());
-      Assertions.assertEquals(root.getRoot(), path.getRoot());
-      Assertions.assertArrayEquals(entry.getValue().getValue(),
-          path.getSteps().get(0).getBranch().get().getValue());
-      Assertions.assertEquals(entry.getValue().getCounter(),
-          path.getSteps().get(0).getBranch().get().getCounter());
+      Assertions.assertEquals(root.getRootHash(), path.getRootHash());
+      Assertions.assertArrayEquals(
+          entry.getValue().getValue(),
+          path.getSteps().get(0).getData().orElse(null)
+      );
+      Assertions.assertEquals(
+          entry.getValue().getCounter(),
+          path.getSteps().get(0).getValue()
+      );
     }
 
     tree.addLeaf(new BigInteger("1110", 2), new LeafValue(new byte[32], BigInteger.valueOf(100)));
     root = tree.calculateRoot();
-    Assertions.assertEquals(BigInteger.valueOf(200), root.getRoot().getCounter());
+    Assertions.assertEquals(BigInteger.valueOf(200), root.getValue());
   }
 
   @Test

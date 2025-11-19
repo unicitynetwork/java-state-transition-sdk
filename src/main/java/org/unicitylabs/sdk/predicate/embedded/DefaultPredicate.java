@@ -177,10 +177,7 @@ public abstract class DefaultPredicate implements Predicate {
       return false;
     }
 
-    RequestId requestId = RequestId.create(
-        this.publicKey,
-        transaction.getData().getSourceState().calculateHash()
-    );
+    RequestId requestId = RequestId.create(this.publicKey, transaction.getData().getSourceState());
     return transaction.getInclusionProof().verify(
         requestId,
         trustBase

@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.mtree.sum;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigInteger;
@@ -9,12 +10,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.BigIntegerAsStringSerializer;
-import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
 
 /**
@@ -22,28 +21,29 @@ import org.unicitylabs.sdk.util.BigIntegerConverter;
  */
 public class SparseMerkleSumTreePath {
 
-  private final Root root;
+  private final DataHash rootHash;
   private final List<SparseMerkleSumTreePathStep> steps;
 
   @JsonCreator
   SparseMerkleSumTreePath(
-      @JsonProperty("root") Root root,
+      @JsonProperty("root") DataHash rootHash,
       @JsonProperty("steps") List<SparseMerkleSumTreePathStep> steps
   ) {
-    Objects.requireNonNull(root, "root cannot be null");
+    Objects.requireNonNull(rootHash, "root cannot be null");
     Objects.requireNonNull(steps, "steps cannot be null");
 
-    this.root = root;
+    this.rootHash = rootHash;
     this.steps = List.copyOf(steps);
   }
 
   /**
-   * Get root of the path.
+   * Get root hash.
    *
-   * @return root
+   * @return root hash
    */
-  public Root getRoot() {
-    return this.root;
+  @JsonGetter("root")
+  public DataHash getRootHash() {
+    return this.rootHash;
   }
 
   /**
@@ -62,73 +62,73 @@ public class SparseMerkleSumTreePath {
    * @return result of the verification
    */
   public MerkleTreePathVerificationResult verify(BigInteger stateId) {
-    BigInteger currentPath = BigInteger.ONE;
-    DataHash currentHash = null;
-    BigInteger currentCounter = this.steps.isEmpty()
-        ? BigInteger.ZERO
-        : this.steps.get(0)
-            .getBranch()
-            .map(SparseMerkleSumTreePathStep.Branch::getCounter)
-            .orElse(BigInteger.ZERO);
+    if (this.steps.size() == 0) {
+      return new MerkleTreePathVerificationResult(false, false);
+    }
 
-    for (int i = 0; i < this.steps.size(); i++) {
-      SparseMerkleSumTreePathStep step = this.steps.get(i);
-      DataHash hash = null;
-
-      if (step.getBranch().isPresent()) {
-        byte[] bytes = i == 0
-            ? step.getBranch().get().getValue()
-            : (currentHash != null ? currentHash.getImprint() : null);
-        hash = new DataHasher(HashAlgorithm.SHA256)
-            .update(
-                CborSerializer.encodeArray(
-                    CborSerializer.encodeByteString(
-                        BigIntegerConverter.encode(step.getPath())
-                    ),
-                    CborSerializer.encodeByteString(bytes),
-                    CborSerializer.encodeByteString(BigIntegerConverter.encode(currentCounter))
-                )
-            )
-            .digest();
-
-        int length = step.getPath().bitLength() - 1;
-        currentPath = currentPath.shiftLeft(length)
-            .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
-      }
-
-      boolean isRight = step.getPath().testBit(0);
-      byte[] sibling = step.getSibling()
-          .map(
-              data -> CborSerializer.encodeArray(
-                  CborSerializer.encodeByteString(data.getValue()),
-                  CborSerializer.encodeByteString(BigIntegerConverter.encode(data.getCounter()))
-              )
-          ).orElse(CborSerializer.encodeNull());
-      byte[] branch = hash == null
-          ? CborSerializer.encodeNull()
-          : CborSerializer.encodeArray(
-              CborSerializer.encodeByteString(hash.getImprint()),
-              CborSerializer.encodeByteString(BigIntegerConverter.encode(currentCounter))
-          );
-
-      currentHash = new DataHasher(HashAlgorithm.SHA256)
+    SparseMerkleSumTreePathStep step = this.steps.get(0);
+    byte[] currentData;
+    BigInteger currentPath = step.getPath();
+    BigInteger currentSum = step.getValue();
+    if (step.getPath().compareTo(BigInteger.ONE) > 0) {
+      DataHash hash = new DataHasher(this.rootHash.getAlgorithm())
           .update(
               CborSerializer.encodeArray(
-                  isRight ? sibling : branch,
-                  isRight ? branch : sibling
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(step.getPath())),
+                  CborSerializer.encodeOptional(
+                      step.getData().orElse(null),
+                      CborSerializer::encodeByteString
+                  ),
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(step.getValue()))
               )
           )
           .digest();
-      currentCounter = currentCounter.add(
-          step.getSibling()
-              .map(SparseMerkleSumTreePathStep.Branch::getCounter)
-              .orElse(BigInteger.ZERO)
-      );
+
+      currentData = hash.getData();
+    } else {
+      currentPath = BigInteger.ONE;
+      currentData = step.getData().orElse(null);
     }
 
-    return new MerkleTreePathVerificationResult(
-        this.root.hash.equals(currentHash) && this.root.counter.equals(currentCounter),
-        currentPath.equals(stateId));
+    SparseMerkleSumTreePathStep previousStep = step;
+    for (int i = 1; i < this.steps.size(); i++) {
+      step = this.steps.get(i);
+      boolean isRight = previousStep.getPath().testBit(0);
+
+      byte[] leftHash = isRight ? step.getData().orElse(null) : currentData;
+      byte[] rightHash = isRight ? currentData : step.getData().orElse(null);
+      BigInteger leftCounter = isRight ? step.getValue() : currentSum;
+      BigInteger rightCounter = isRight ? currentSum : step.getValue();
+
+      DataHash hash = new DataHasher(this.rootHash.getAlgorithm())
+          .update(
+              CborSerializer.encodeArray(
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(step.getPath())),
+                  CborSerializer.encodeOptional(leftHash, CborSerializer::encodeByteString),
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(leftCounter)),
+                  CborSerializer.encodeOptional(rightHash, CborSerializer::encodeByteString),
+                  CborSerializer.encodeByteString(BigIntegerConverter.encode(rightCounter))
+              )
+          )
+          .digest();
+
+      currentData = hash.getData();
+
+      int length = step.getPath().bitLength() - 1;
+      if (length < 0) {
+        return new MerkleTreePathVerificationResult(false, false);
+      }
+      currentPath = currentPath.shiftLeft(length)
+          .or(step.getPath().and(BigInteger.ONE.shiftLeft(length).subtract(BigInteger.ONE)));
+      currentSum = currentSum.add(step.getValue());
+      previousStep = step;
+    }
+
+    boolean pathValid = currentData != null
+        && this.rootHash.equals(new DataHash(this.rootHash.getAlgorithm(), currentData));
+    boolean pathIncluded = currentPath.compareTo(stateId) == 0;
+
+    return new MerkleTreePathVerificationResult(pathValid, pathIncluded);
   }
 
   /**
@@ -141,7 +141,7 @@ public class SparseMerkleSumTreePath {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
     return new SparseMerkleSumTreePath(
-        SparseMerkleSumTreePath.Root.fromCbor(data.get(0)),
+        DataHash.fromCbor(data.get(0)),
         CborDeserializer.readArray(data.get(1)).stream()
             .map(SparseMerkleSumTreePathStep::fromCbor)
             .collect(Collectors.toList())
@@ -155,7 +155,7 @@ public class SparseMerkleSumTreePath {
    */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
-        this.root.toCbor(),
+        this.rootHash.toCbor(),
         CborSerializer.encodeArray(
             this.steps.stream()
                 .map(SparseMerkleSumTreePathStep::toCbor)
@@ -170,17 +170,17 @@ public class SparseMerkleSumTreePath {
       return false;
     }
     SparseMerkleSumTreePath that = (SparseMerkleSumTreePath) o;
-    return Objects.equals(this.root, that.root) && Objects.equals(this.steps, that.steps);
+    return Objects.equals(this.rootHash, that.rootHash) && Objects.equals(this.steps, that.steps);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.root, this.steps);
+    return Objects.hash(this.rootHash, this.steps);
   }
 
   @Override
   public String toString() {
-    return String.format("MerkleTreePath{root=%s, steps=%s}", this.root, this.steps);
+    return String.format("MerkleTreePath{rootHash=%s, steps=%s}", this.rootHash, this.steps);
   }
 
   /**

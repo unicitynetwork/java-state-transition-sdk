@@ -9,20 +9,22 @@ import org.unicitylabs.sdk.api.InclusionProofResponse;
 import org.unicitylabs.sdk.api.RequestId;
 import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
 import org.unicitylabs.sdk.bft.RootTrustBase;
+import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
+import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
-import org.unicitylabs.sdk.transaction.Commitment;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
+import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
 
 /**
- * Client for handling state transitions of tokens, including submitting commitments and finalizing
- * transactions.
+ * Client for handling state transitions of tokens, including submitting commitments and finalizing transactions.
  */
 public class StateTransitionClient {
 
@@ -80,8 +82,7 @@ public class StateTransitionClient {
   }
 
   /**
-   * Finalizes a transaction by updating the token state based on the provided transaction data
-   * without nametags.
+   * Finalizes a transaction by updating the token state based on the provided transaction data without nametags.
    *
    * @param trustBase   The root trust base for inclusion proof verification.
    * @param token       The token to be updated.
@@ -101,8 +102,7 @@ public class StateTransitionClient {
   }
 
   /**
-   * Finalizes a transaction by updating the token state based on the provided transaction data and
-   * nametags.
+   * Finalizes a transaction by updating the token state based on the provided transaction data and nametags.
    *
    * @param trustBase   The root trust base for inclusion proof verification.
    * @param token       The token to be updated.
@@ -126,31 +126,77 @@ public class StateTransitionClient {
   }
 
   /**
-   * Retrieves the inclusion proof for a token and verifies its status against the provided public
-   * key and trust base.
+   * Retrieves the inclusion proof for a given request id.
    *
-   * @param token     The token for which to retrieve the inclusion proof.
-   * @param publicKey The public key associated with the token.
-   * @param trustBase The root trust base for verification.
-   * @return A CompletableFuture that resolves to the inclusion proof verification status.
+   * @param requestId The request ID of inclusion proof to retrieve.
+   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
    */
-  public CompletableFuture<InclusionProofVerificationStatus> getTokenStatus(
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
+    return this.client.getInclusionProof(requestId);
+  }
+
+  /**
+   * Check if state is already spent for given request id.
+   *
+   * @param requestId request id
+   * @param trustBase root trust base
+   * @return A CompletableFuture that resolves to true if state is spent, false otherwise.
+   */
+  public CompletableFuture<Boolean> isStateSpent(RequestId requestId, RootTrustBase trustBase) {
+    return this.getInclusionProof(requestId)
+        .thenApply(inclusionProof -> {
+          InclusionProofVerificationStatus result = inclusionProof.getInclusionProof().verify(requestId, trustBase);
+          switch (result) {
+            case OK:
+              return true;
+            case PATH_NOT_INCLUDED:
+              return false;
+            default:
+              throw new RuntimeException(
+                  String.format("Inclusion proof verification failed with status %s", result)
+              );
+          }
+        });
+  }
+
+
+  /**
+   * Get inclusion proof for current token state.
+   *
+   * @param token     token
+   * @param publicKey public key
+   * @param trustBase trustBase
+   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
+   */
+  public CompletableFuture<Boolean> isStateSpent(
       Token<?> token,
       byte[] publicKey,
       RootTrustBase trustBase
   ) {
-    RequestId requestId = RequestId.create(publicKey, token.getState().calculateHash());
-    return this.client.getInclusionProof(requestId)
-        .thenApply(response -> response.getInclusionProof().verify(requestId, trustBase));
+    Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
+    if (!predicate.isOwner(publicKey)) {
+      throw new IllegalArgumentException("Given key is not owner of the token.");
+    }
+
+    return this.isStateSpent(RequestId.create(publicKey, token.getState()), trustBase);
   }
 
   /**
-   * Retrieves the inclusion proof for a given commitment.
+   * Check if token id is already minted.
    *
-   * @param commitment The commitment for which to retrieve the inclusion proof.
-   * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
+   * @param tokenId   token id
+   * @param trustBase root trust base
+   * @return A CompletableFuture that resolves to true if token id is spent, false otherwise.
    */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(Commitment<?> commitment) {
-    return this.client.getInclusionProof(commitment.getRequestId());
+  public CompletableFuture<Boolean> isMinted(TokenId tokenId, RootTrustBase trustBase) {
+    return this.isStateSpent(
+        RequestId.create(
+            MintSigningService.create(tokenId).getPublicKey(),
+            MintTransactionState.create(tokenId)
+        ),
+        trustBase
+    );
   }
+
+
 }

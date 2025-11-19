@@ -18,15 +18,18 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
   private final FinalizedBranch right;
   private final BigInteger counter;
   private final DataHash hash;
-  private final DataHash childrenHash;
 
-  private FinalizedNodeBranch(BigInteger path, FinalizedBranch left, FinalizedBranch right,
-      BigInteger counter, DataHash childrenHash, DataHash hash) {
+  private FinalizedNodeBranch(
+      BigInteger path,
+      FinalizedBranch left,
+      FinalizedBranch right,
+      BigInteger counter,
+      DataHash hash
+  ) {
     this.path = path;
     this.left = left;
     this.right = right;
     this.counter = counter;
-    this.childrenHash = childrenHash;
     this.hash = hash;
   }
 
@@ -45,34 +48,26 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
       FinalizedBranch right,
       HashAlgorithm hashAlgorithm
   ) {
-    DataHash childrenHash = new DataHasher(hashAlgorithm)
-        .update(
-            CborSerializer.encodeArray(
-                CborSerializer.encodeArray(
-                    CborSerializer.encodeByteString(left.getHash().getImprint()),
-                    CborSerializer.encodeByteString(BigIntegerConverter.encode(left.getCounter()))
-                ),
-                CborSerializer.encodeArray(
-                    CborSerializer.encodeByteString(right.getHash().getImprint()),
-                    CborSerializer.encodeByteString(
-                        BigIntegerConverter.encode(right.getCounter()))
-                )
-            )
-        )
-        .digest();
+    byte[] leftHash = left == null ? null : left.getHash().getData();
+    byte[] rightHash = right == null ? null : right.getHash().getData();
+    BigInteger leftCounter = left == null ? BigInteger.ZERO : left.getCounter();
+    BigInteger rightCounter = right == null ? BigInteger.ZERO : right.getCounter();
 
-    BigInteger counter = left.getCounter().add(right.getCounter());
     DataHash hash = new DataHasher(hashAlgorithm)
         .update(
             CborSerializer.encodeArray(
                 CborSerializer.encodeByteString(BigIntegerConverter.encode(path)),
-                CborSerializer.encodeByteString(childrenHash.getImprint()),
-                CborSerializer.encodeByteString(BigIntegerConverter.encode(counter))
+                CborSerializer.encodeOptional(leftHash, CborSerializer::encodeByteString),
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(leftCounter)),
+                CborSerializer.encodeOptional(rightHash, CborSerializer::encodeByteString),
+                CborSerializer.encodeByteString(BigIntegerConverter.encode(rightCounter))
             )
         )
         .digest();
 
-    return new FinalizedNodeBranch(path, left, right, counter, childrenHash, hash);
+    BigInteger counter = leftCounter.add(rightCounter);
+
+    return new FinalizedNodeBranch(path, left, right, counter, hash);
   }
 
   @Override
@@ -93,15 +88,6 @@ class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
   @Override
   public BigInteger getCounter() {
     return this.counter;
-  }
-
-  /**
-   * Get hash of the children (left and right).
-   *
-   * @return children hash
-   */
-  public DataHash getChildrenHash() {
-    return this.childrenHash;
   }
 
   @Override
