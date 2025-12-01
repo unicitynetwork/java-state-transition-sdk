@@ -46,7 +46,7 @@ public class MintCommitment<R extends MintTransactionReason> extends
    * @param input JSON string
    * @return mint commitment data
    */
-  public MintCommitment<?> fromJson(String input) {
+  public static MintCommitment<?> fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, MintCommitment.class);
     } catch (JsonProcessingException e) {

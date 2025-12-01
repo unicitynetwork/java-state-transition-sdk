@@ -19,7 +19,7 @@ public class CertificationRequest {
    * Create certification request.
    *
    * @param stateId           state id
-   * @param certificationData transaction hash
+   * @param certificationData certification data
    * @param receipt           get receipt
    */
   @JsonCreator

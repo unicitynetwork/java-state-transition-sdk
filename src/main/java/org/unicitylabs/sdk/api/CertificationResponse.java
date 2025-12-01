@@ -115,7 +115,7 @@ public class CertificationResponse {
 
   @Override
   public String toString() {
-    return String.format("SubmitCommitmentResponse{status=%s}", this.status);
+    return String.format("CertificationResponse{status=%s}", this.status);
   }
 
   /**

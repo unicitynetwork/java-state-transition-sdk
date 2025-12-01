@@ -46,7 +46,7 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
    * @param input JSON string
    * @return transfer commitment data
    */
-  public TransferCommitment fromJson(String input) {
+  public static TransferCommitment fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, TransferCommitment.class);
     } catch (JsonProcessingException e) {
