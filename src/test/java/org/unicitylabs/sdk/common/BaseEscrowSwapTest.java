@@ -20,6 +20,8 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -38,6 +40,7 @@ public abstract class BaseEscrowSwapTest {
 
   protected StateTransitionClient client;
   protected RootTrustBase trustBase;
+  private final MintReasonFactory mintReasonFactory = new DefaultMintReasonFactory();
   private final TokenType tokenType = new TokenType(HexConverter.decode(
       "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509"));
 
@@ -50,7 +53,7 @@ public abstract class BaseEscrowSwapTest {
   private final String BOB_NAMETAG = String.format("BOB_%s", System.currentTimeMillis());
   private final String CAROL_NAMETAG = String.format("CAROL_%s", System.currentTimeMillis());
 
-  private String[] transferToken(Token<?> token, SigningService signingService, String nametag)
+  private String[] transferToken(Token token, SigningService signingService, String nametag)
       throws Exception {
     TransferCommitment commitment = TransferCommitment.create(
         token,
@@ -78,10 +81,11 @@ public abstract class BaseEscrowSwapTest {
     };
   }
 
-  private Token<?> mintToken(byte[] secret) throws Exception {
+  private Token mintToken(byte[] secret) throws Exception {
     return TokenUtils.mintToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         secret,
         new TokenId(randomBytes(32)),
         this.tokenType,
@@ -93,24 +97,25 @@ public abstract class BaseEscrowSwapTest {
     );
   }
 
-  private Token<?> receiveToken(String[] tokenInfo, SigningService signingService,
-      Token<?> nametagToken) throws Exception {
-    Token<?> token = Token.fromJson(tokenInfo[0]);
+  private Token receiveToken(String[] tokenInfo, SigningService signingService,
+      Token nametagToken) throws Exception {
+    Token token = Token.fromJson(tokenInfo[0]);
     TransferTransaction transaction = TransferTransaction.fromJson(tokenInfo[1]);
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
             token.getId(),
             token.getType(),
+            transaction,
             signingService,
-            HashAlgorithm.SHA256,
-            transaction.getData().getSalt()
+            HashAlgorithm.SHA256
         ),
         null
     );
 
     return this.client.finalizeTransaction(
         this.trustBase,
+        this.mintReasonFactory,
         token,
         state,
         transaction,
@@ -121,7 +126,7 @@ public abstract class BaseEscrowSwapTest {
   @Test
   void testEscrow() throws Exception {
     // Make nametags unique for each test run
-    Token<?> bobToken = mintToken(BOB_SECRET);
+    Token bobToken = mintToken(BOB_SECRET);
     String[] bobSerializedData = this.transferToken(
         bobToken,
         SigningService.createFromMaskedSecret(
@@ -131,7 +136,7 @@ public abstract class BaseEscrowSwapTest {
         ALICE_NAMETAG
     );
 
-    Token<?> carolToken = mintToken(CAROL_SECRET);
+    Token carolToken = mintToken(CAROL_SECRET);
     String[] carolSerializedData = this.transferToken(
         carolToken,
         SigningService.createFromMaskedSecret(
@@ -141,9 +146,10 @@ public abstract class BaseEscrowSwapTest {
         ALICE_NAMETAG
     );
 
-    Token<?> aliceNametagToken = TokenUtils.mintNametagToken(
+    Token aliceNametagToken = TokenUtils.mintNametagToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         ALICE_SECRET,
         this.tokenType,
         ALICE_NAMETAG,
@@ -156,20 +162,20 @@ public abstract class BaseEscrowSwapTest {
         randomBytes(32)
     );
 
-    Token<?> aliceBobToken = receiveToken(
+    Token aliceBobToken = receiveToken(
         bobSerializedData,
         SigningService.createFromSecret(ALICE_SECRET),
         aliceNametagToken
     );
-    Assertions.assertTrue(aliceBobToken.verify(this.trustBase).isSuccessful());
-    Token<?> aliceCarolToken = receiveToken(
+    Assertions.assertTrue(aliceBobToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
+    Token aliceCarolToken = receiveToken(
         carolSerializedData,
         SigningService.createFromSecret(ALICE_SECRET),
         aliceNametagToken
     );
-    Assertions.assertTrue(aliceCarolToken.verify(this.trustBase).isSuccessful());
+    Assertions.assertTrue(aliceCarolToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
 
-    Token<?> aliceToCarolToken = receiveToken(
+    Token aliceToCarolToken = receiveToken(
         transferToken(
             aliceBobToken,
             SigningService.createFromSecret(ALICE_SECRET),
@@ -179,6 +185,7 @@ public abstract class BaseEscrowSwapTest {
         TokenUtils.mintNametagToken(
             this.client,
             this.trustBase,
+            this.mintReasonFactory,
             CAROL_SECRET,
             this.tokenType,
             CAROL_NAMETAG,
@@ -191,9 +198,9 @@ public abstract class BaseEscrowSwapTest {
             randomBytes(32)
         )
     );
-    Assertions.assertTrue(aliceToCarolToken.verify(this.trustBase).isSuccessful());
+    Assertions.assertTrue(aliceToCarolToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
 
-    Token<?> aliceToBobToken = receiveToken(
+    Token aliceToBobToken = receiveToken(
         transferToken(
             aliceCarolToken,
             SigningService.createFromSecret(ALICE_SECRET),
@@ -203,6 +210,7 @@ public abstract class BaseEscrowSwapTest {
         TokenUtils.mintNametagToken(
             this.client,
             this.trustBase,
+            this.mintReasonFactory,
             BOB_SECRET,
             this.tokenType,
             BOB_NAMETAG,
@@ -215,6 +223,6 @@ public abstract class BaseEscrowSwapTest {
             randomBytes(32)
         )
     );
-    Assertions.assertTrue(aliceToBobToken.verify(this.trustBase).isSuccessful());
+    Assertions.assertTrue(aliceToBobToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
   }
 }

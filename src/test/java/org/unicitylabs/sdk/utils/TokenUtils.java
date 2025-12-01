@@ -20,19 +20,22 @@ import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintCommitment;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 
 public class TokenUtils {
 
-  public static Token<?> mintToken(
+  public static Token mintToken(
       StateTransitionClient client,
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       byte[] secret
   ) throws Exception {
     return TokenUtils.mintToken(
         client,
         trustBase,
+        mintReasonFactory,
         secret,
         new TokenId(randomBytes(32)),
         new TokenType(randomBytes(32)),
@@ -44,9 +47,10 @@ public class TokenUtils {
     );
   }
 
-  public static Token<?> mintToken(
+  public static Token mintToken(
       StateTransitionClient client,
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       byte[] secret,
       TokenId tokenId,
       TokenType tokenType,
@@ -69,16 +73,15 @@ public class TokenUtils {
     Address address = predicate.getReference().toAddress();
     TokenState tokenState = new TokenState(predicate, null);
 
-    MintCommitment<?> commitment = MintCommitment.create(
-        new MintTransaction.Data<>(
+    MintCommitment commitment = MintCommitment.create(
+        new MintTransaction.Data(
             tokenId,
             tokenType,
             tokenData,
             coinData,
             address,
             salt,
-            dataHash,
-            null
+            dataHash
         )
     );
 
@@ -99,16 +102,18 @@ public class TokenUtils {
     ).get();
 
     // Create mint transaction
-    return Token.create(
+    return Token.mint(
         trustBase,
+        mintReasonFactory,
         tokenState,
         commitment.toTransaction(inclusionProof)
     );
   }
 
-  public static Token<?> mintNametagToken(
+  public static Token mintNametagToken(
       StateTransitionClient client,
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       byte[] secret,
       String nametag,
       Address targetAddress
@@ -116,6 +121,7 @@ public class TokenUtils {
     return mintNametagToken(
         client,
         trustBase,
+        mintReasonFactory,
         secret,
         new TokenType(randomBytes(32)),
         nametag,
@@ -125,9 +131,10 @@ public class TokenUtils {
     );
   }
 
-  public static Token<?> mintNametagToken(
+  public static Token mintNametagToken(
       StateTransitionClient client,
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       byte[] secret,
       TokenType tokenType,
       String nametag,
@@ -143,7 +150,7 @@ public class TokenUtils {
         HashAlgorithm.SHA256,
         nonce).toAddress();
 
-    MintCommitment<?> commitment = MintCommitment.create(
+    MintCommitment commitment = MintCommitment.create(
         new MintTransaction.NametagData(
             nametag,
             tokenType,
@@ -170,8 +177,9 @@ public class TokenUtils {
     ).get();
 
     // Create mint transaction
-    return Token.create(
+    return Token.mint(
         trustBase,
+        mintReasonFactory,
         new TokenState(
             MaskedPredicate.create(
                 commitment.getTransactionData().getTokenId(),

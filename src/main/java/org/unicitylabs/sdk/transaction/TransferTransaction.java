@@ -73,14 +73,15 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
    * Verify if transaction is based off of that token state.
    *
    * @param trustBase trust base to verify against
+   * @param mintReasonFactory factory to create mint transaction reasons
    * @param token     token
    * @return verification result
    */
-  public VerificationResult verify(RootTrustBase trustBase, Token<?> token) {
+  public VerificationResult verify(RootTrustBase trustBase, MintReasonFactory mintReasonFactory, Token token) {
     Predicate predicate = PredicateEngineService.createPredicate(token.getState().getPredicate());
 
     return VerificationResult.fromChildren("Transaction verification", List.of(
-        token.verifyNametagTokens(trustBase),
+        token.verifyNametagTokens(trustBase, mintReasonFactory),
         token.verifyRecipient(),
         token.verifyRecipientData(),
         predicate.verify(token, this, trustBase)
@@ -99,7 +100,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
     private final byte[] salt;
     private final DataHash recipientDataHash;
     private final byte[] message;
-    private final List<Token<?>> nametags;
+    private final List<Token> nametags;
 
     @JsonCreator
     Data(
@@ -108,7 +109,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
         @JsonProperty("salt") byte[] salt,
         @JsonProperty("recipientDataHash") DataHash recipientDataHash,
         @JsonProperty("message") byte[] message,
-        @JsonProperty("nametags") List<Token<?>> nametags
+        @JsonProperty("nametags") List<Token> nametags
     ) {
       Objects.requireNonNull(sourceState, "SourceState cannot be null");
       Objects.requireNonNull(recipient, "Recipient cannot be null");
@@ -175,7 +176,7 @@ public class TransferTransaction extends Transaction<TransferTransaction.Data> {
      *
      * @return nametags
      */
-    public List<Token<?>> getNametags() {
+    public List<Token> getNametags() {
       return this.nametags;
     }
 

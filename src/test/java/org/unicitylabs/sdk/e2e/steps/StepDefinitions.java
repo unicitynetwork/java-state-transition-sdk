@@ -1,30 +1,36 @@
 package org.unicitylabs.sdk.e2e.steps;
 
-import org.unicitylabs.sdk.address.ProxyAddress;
-import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
-import org.unicitylabs.sdk.e2e.context.TestContext;
-import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
-import org.unicitylabs.sdk.token.fungible.CoinId;
-import org.unicitylabs.sdk.utils.TestUtils;
-import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.token.Token;
-import org.unicitylabs.sdk.token.TokenId;
-import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.unicitylabs.sdk.address.ProxyAddress;
+import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
+import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
+import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
+import org.unicitylabs.sdk.token.TokenId;
+import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.token.fungible.CoinId;
+import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
+import org.unicitylabs.sdk.utils.TestUtils;
 
 /**
  * Refactored step definitions that use TestContext and SharedStepDefinitions.
@@ -116,7 +122,11 @@ public class StepDefinitions {
     public void theTokenShouldBeVerifiedSuccessfully() {
         String user = context.getCurrentUser();
         Token token = context.getUserToken(user);
-        assertTrue(token.verify(context.getTrustBase()).isSuccessful(), "Token should be verified successfully");
+        assertTrue(token.verify(
+            context.getTrustBase(),
+            // TODO: Add this to global variable
+            new DefaultMintReasonFactory()
+        ).isSuccessful(), "Token should be verified successfully");
     }
 
     @And("the token should belong to the user")
@@ -139,7 +149,11 @@ public class StepDefinitions {
         String user = context.getCurrentUser();
         Token nametagToken = context.getNameTagToken(user);
         assertNotNull(nametagToken, "Name tag token should be created");
-        assertTrue(nametagToken.verify(context.getTrustBase()).isSuccessful(), "Name tag token should be valid");
+        assertTrue(nametagToken.verify(
+            context.getTrustBase(),
+            // TODO: Add this to global variable
+            new DefaultMintReasonFactory()
+            ).isSuccessful(), "Name tag token should be valid");
     }
 
     @And("the name tag should be usable for proxy addressing")

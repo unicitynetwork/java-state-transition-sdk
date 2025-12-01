@@ -40,6 +40,6 @@ public interface Predicate extends SerializablePredicate {
    * @param trustBase   trust base to verify against.
    * @return true if successful
    */
-  boolean verify(Token<?> token, TransferTransaction transaction, RootTrustBase trustBase);
+  boolean verify(Token token, TransferTransaction transaction, RootTrustBase trustBase);
 }
 

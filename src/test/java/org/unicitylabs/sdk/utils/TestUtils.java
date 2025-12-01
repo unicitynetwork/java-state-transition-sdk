@@ -24,6 +24,7 @@ import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransaction;
@@ -38,7 +39,7 @@ public class TestUtils {
 
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom RANDOM = new SecureRandom();
-    
+
     /**
      * Generate random bytes of specified length.
      */
@@ -47,14 +48,14 @@ public class TestUtils {
         RANDOM.nextBytes(bytes);
         return bytes;
     }
-    
+
     /**
      * Generate a random coin amount between 10 and 99.
      */
     public static BigInteger randomCoinAmount() {
         return BigInteger.valueOf(10 + RANDOM.nextInt(90));
     }
-    
+
     /**
      * Create random coin data with specified number of coins.
      */
@@ -71,7 +72,7 @@ public class TestUtils {
     /**
      * Creates a token mint commitment and submits it to the client
      */
-    public static Token<?> mintTokenForUser(
+    public static Token mintTokenForUser(
             StateTransitionClient client,
             SigningService signingService,
             byte[] nonce,
@@ -85,16 +86,14 @@ public class TestUtils {
         Address address = predicate.getReference().toAddress();
         TokenState tokenState = new TokenState(predicate, null);
 
-        MintCommitment<?> mintCommitment = MintCommitment.create(
-                new MintTransaction.Data<>(
+        MintCommitment mintCommitment = MintCommitment.create(
+                new MintTransaction.Data(
                         tokenId,
                         tokenType,
                         new TestTokenData(randomBytes(32)).getData(),
                         coinData,
                         address,
-                        randomBytes(5),
-                        null,
-                        null
+                        randomBytes(5)
                 )
         );
 
@@ -109,8 +108,10 @@ public class TestUtils {
                         trustBase,
                         mintCommitment
                 ).get();
-        return Token.create(
+        return Token.mint(
                 trustBase,
+                // TODO: Add this to global variable
+                new DefaultMintReasonFactory(),
                 tokenState,
                 mintCommitment.toTransaction(inclusionProof)
         );
@@ -119,15 +120,15 @@ public class TestUtils {
     /**
      * Transfers a token from one user to another
      */
-    public static Token<?> transferToken(
+    public static Token transferToken(
             StateTransitionClient client,
-            Token<?> sourceToken,
+            Token sourceToken,
             SigningService fromSigningService,
             SigningService toSigningService,
             byte[] toNonce,
             Address toAddress,
             byte[] customData,
-            List<Token<?>> additionalTokens,
+            List<Token> additionalTokens,
             RootTrustBase trustBase
             ) throws Exception {
 
@@ -169,6 +170,8 @@ public class TestUtils {
         // Finalize transaction
         return client.finalizeTransaction(
                 trustBase,
+                // TODO: Add this to global variable
+                new DefaultMintReasonFactory(),
                 sourceToken,
                 new TokenState(toPredicate, customData),
                 transferTransaction
@@ -238,8 +241,12 @@ public class TestUtils {
     /**
      * Validates that a token is properly owned by a signing service
      */
-    public static boolean validateTokenOwnership(Token<?> token, SigningService signingService, RootTrustBase trustBase) {
-        if (!token.verify(trustBase).isSuccessful()) {
+    public static boolean validateTokenOwnership(Token token, SigningService signingService, RootTrustBase trustBase) {
+        if (!token.verify(
+            trustBase,
+            // TODO: Add this to global variable
+            new DefaultMintReasonFactory()
+        ).isSuccessful()) {
             return false;
         }
         return PredicateEngineService.createPredicate(token.getState().getPredicate()).isOwner(signingService.getPublicKey());
@@ -302,17 +309,17 @@ public class TestUtils {
     public static class TokenOperationResult {
         private final boolean success;
         private final String message;
-        private final Token<?> token;
+        private final Token token;
         private final Exception error;
 
-        public TokenOperationResult(boolean success, String message, Token<?> token, Exception error) {
+        public TokenOperationResult(boolean success, String message, Token token, Exception error) {
             this.success = success;
             this.message = message;
             this.token = token;
             this.error = error;
         }
 
-        public static TokenOperationResult success(String message, Token<?> token) {
+        public static TokenOperationResult success(String message, Token token) {
             return new TokenOperationResult(true, message, token, null);
         }
 
@@ -322,7 +329,7 @@ public class TestUtils {
 
         public boolean isSuccess() { return success; }
         public String getMessage() { return message; }
-        public Token<?> getToken() { return token; }
+        public Token getToken() { return token; }
         public Exception getError() { return error; }
     }
 

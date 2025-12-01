@@ -37,11 +37,18 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
     this.apiKey = apiKey;
   }
 
+  /**
+   * Submit certification request.
+   *
+   * @param certificationData certification data
+   * @param receipt           whether to request a receipt
+   * @return certification response
+   */
   public CompletableFuture<CertificationResponse> submitCertificationRequest(
       CertificationData certificationData,
       boolean receipt
   ) {
-    CertificationRequest request = CertificationRequest.create(certificationData,receipt);
+    CertificationRequest request = CertificationRequest.create(certificationData, receipt);
 
     Map<String, List<String>> headers = this.apiKey == null
         ? Map.of()

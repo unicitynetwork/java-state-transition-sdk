@@ -25,7 +25,7 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.Transaction;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.helpers.PendingTransfer;
@@ -101,7 +101,11 @@ public class AdvancedStepDefinitions {
     @Then("the final token should maintain original properties")
     public void theFinalTokenShouldMaintainOriginalProperties() {
         assertNotNull(context.getChainToken(), "Final token should exist");
-        assertTrue(context.getChainToken().verify(context.getTrustBase()).isSuccessful(), "Final token should be valid");
+        assertTrue(context.getChainToken().verify(
+            context.getTrustBase(),
+            // TODO: Add this to global variable
+            new DefaultMintReasonFactory()
+            ).isSuccessful(), "Final token should be valid");
 
         // Additional property validation can be added based on requirements
     }
@@ -188,7 +192,11 @@ public class AdvancedStepDefinitions {
             SigningService signingService = SigningService.createFromSecret(
                     context.getUserSecret().get(username)
             );
-            assertTrue(token.verify(context.getTrustBase()).isSuccessful(), "Token should be valid");
+            assertTrue(token.verify(
+                context.getTrustBase(),
+                // TODO: Add this to global variable
+                new DefaultMintReasonFactory()
+            ).isSuccessful(), "Token should be valid");
             assertTrue(TestUtils
                             .validateTokenOwnership(
                                     token,
@@ -203,7 +211,11 @@ public class AdvancedStepDefinitions {
     public void allNameTagTokensShouldRemainValid(String username) {
         List<Token> nametags = context.getNameTagTokens().get(username);
         for (Token nametag : nametags) {
-            assertTrue(nametag.verify(context.getTrustBase()).isSuccessful(), "All name tag tokens should remain valid");
+            assertTrue(nametag.verify(
+                context.getTrustBase(),
+                // TODO: Add this to global variable
+                new DefaultMintReasonFactory()
+            ).isSuccessful(), "All name tag tokens should remain valid");
         }
     }
 
@@ -256,7 +268,7 @@ public class AdvancedStepDefinitions {
         List<PendingTransfer> pendingTransfers = context.getPendingTransfers(username);
 
         for (PendingTransfer pending : pendingTransfers) {
-            Token <?> token = pending.getSourceToken();
+            Token token = pending.getSourceToken();
             TransferTransaction tx = pending.getTransaction();
             helper.finalizeTransfer(
                     username,
@@ -274,7 +286,7 @@ public class AdvancedStepDefinitions {
             TokenType tokenType = TestUtils.generateRandomTokenType();
             TokenCoinData coinData = TestUtils.createRandomCoinData(1);
 
-            Token <?> token = TestUtils.mintTokenForUser(
+            Token token = TestUtils.mintTokenForUser(
                     context.getClient(),
                     context.getUserSigningServices().get(username),
                     context.getUserNonces().get(username),

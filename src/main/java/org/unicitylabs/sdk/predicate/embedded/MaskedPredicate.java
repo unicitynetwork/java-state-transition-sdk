@@ -4,8 +4,10 @@ import java.util.List;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.signing.SigningService;
+import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.MintTransaction;
 
 /**
  * Masked predicate.
@@ -22,7 +24,7 @@ public class MaskedPredicate extends DefaultPredicate {
    * @param hashAlgorithm    hash algorithm
    * @param nonce            predicate nonce
    */
-  public MaskedPredicate(
+  MaskedPredicate(
       TokenId tokenId,
       TokenType tokenType,
       byte[] publicKey,
@@ -41,7 +43,7 @@ public class MaskedPredicate extends DefaultPredicate {
   }
 
   /**
-   * Create masked predicate from signing service.
+   * Create masked predicate from mint transaction and signing service.
    *
    * @param tokenId        token id
    * @param tokenType      token type
@@ -55,7 +57,8 @@ public class MaskedPredicate extends DefaultPredicate {
       TokenType tokenType,
       SigningService signingService,
       HashAlgorithm hashAlgorithm,
-      byte[] nonce) {
+      byte[] nonce
+  ) {
     return new MaskedPredicate(tokenId, tokenType, signingService.getPublicKey(),
         signingService.getAlgorithm(), hashAlgorithm, nonce);
   }

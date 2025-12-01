@@ -67,9 +67,9 @@ public class ProxyAddress implements Address {
    * @throws IllegalArgumentException if the nametags list contains null elements or duplicate
    *                                  addresses
    */
-  public static Address resolve(Address inputAddress, List<Token<?>> nametags) {
-    Map<Address, Token<?>> nametagMap = new HashMap<>();
-    for (Token<?> token : nametags) {
+  public static Address resolve(Address inputAddress, List<Token> nametags) {
+    Map<Address, Token> nametagMap = new HashMap<>();
+    for (Token token : nametags) {
       if (token == null) {
         throw new IllegalArgumentException("Nametag tokens list cannot contain null elements");
       }
@@ -84,7 +84,7 @@ public class ProxyAddress implements Address {
 
     Address targetAddress = inputAddress;
     while (targetAddress.getScheme() != AddressScheme.DIRECT) {
-      Token<?> nametag = nametagMap.get(targetAddress);
+      Token nametag = nametagMap.get(targetAddress);
       if (nametag == null || !nametag.getData().isPresent()) {
         return null;
       }

@@ -7,7 +7,6 @@ import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.api.CertificationResponse;
 import org.unicitylabs.sdk.api.CertificationStatus;
-import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.hash.DataHash;
@@ -83,10 +82,12 @@ public class StepHelper {
                 context.getTrustBase(),
                 nametagMintCommitment
         ).get();
-        MintTransaction<?> nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
+        MintTransaction nametagGenesis = nametagMintCommitment.toTransaction(inclusionProof);
 
-        return Token.create(
+        return Token.mint(
                 context.getTrustBase(),
+                // TODO: Add this to global variable
+                new DefaultMintReasonFactory(),
                 new TokenState(nametagPredicate, null),
                 nametagGenesis
         );
@@ -131,14 +132,14 @@ public class StepHelper {
         context.savePendingTransfer(toUser, token, transferTransaction);
     }
 
-    public void finalizeTransfer(String username, Token<?> token, TransferTransaction tx) throws Exception {
+    public void finalizeTransfer(String username, Token token, TransferTransaction tx) throws Exception {
 
         byte[] secret = context.getUserSecret().get(username);
 
-        Token<?> currentNameTagToken = context.getNameTagToken(username);
+        Token currentNameTagToken = context.getNameTagToken(username);
         List<Token> nametagTokens = context.getNameTagTokens().get(username);
         if (nametagTokens != null && !nametagTokens.isEmpty()) {
-            for (Token<?> t : nametagTokens) {
+            for (Token t : nametagTokens) {
                 String actualNametagAddress = tx.getData().getRecipient().getAddress();
                 String expectedProxyAddress = ProxyAddress.create(t.getId()).getAddress();
 
@@ -149,7 +150,7 @@ public class StepHelper {
             }
         }
 
-        List<Token<?>> additionalTokens = new ArrayList<>();
+        List<Token> additionalTokens = new ArrayList<>();
         if (currentNameTagToken != null) {
             additionalTokens.add(currentNameTagToken);
         }
@@ -160,9 +161,9 @@ public class StepHelper {
             unlockPredicate = UnmaskedPredicate.create(
                         token.getId(),
                         token.getType(),
+                        tx,
                         context.getUserSigningServices().get(username),
-                        HashAlgorithm.SHA256,
-                        tx.getData().getSalt()
+                        HashAlgorithm.SHA256
                 );
         }
 
@@ -173,6 +174,8 @@ public class StepHelper {
 
         Token finalizedToken = context.getClient().finalizeTransaction(
                 context.getTrustBase(),
+                // TODO: Add this to global variable
+                new DefaultMintReasonFactory(),
                 token,
                 recipientState,
                 tx,
