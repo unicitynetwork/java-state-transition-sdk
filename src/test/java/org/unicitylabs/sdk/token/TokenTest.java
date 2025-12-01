@@ -22,7 +22,6 @@ import org.unicitylabs.sdk.transaction.InclusionProofFixture;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionFixture;
 import org.unicitylabs.sdk.utils.TestUtils;
-import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenTest {
 

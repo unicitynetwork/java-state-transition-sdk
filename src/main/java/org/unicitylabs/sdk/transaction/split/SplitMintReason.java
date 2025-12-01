@@ -1,9 +1,6 @@
 
 package org.unicitylabs.sdk.transaction.split;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -15,7 +12,6 @@ import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.predicate.embedded.BurnPredicate;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
-import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborNumber;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.fungible.CoinId;

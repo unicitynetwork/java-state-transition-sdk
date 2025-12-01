@@ -4,10 +4,8 @@ import java.util.List;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
-import org.unicitylabs.sdk.transaction.MintTransaction;
 
 /**
  * Masked predicate.
