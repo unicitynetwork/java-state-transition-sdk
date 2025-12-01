@@ -5,8 +5,8 @@ import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.Address;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -83,10 +83,10 @@ public class TokenUtils {
     );
 
     // Submit mint transaction using StateTransitionClient
-    SubmitCommitmentResponse response = client
+    CertificationResponse response = client
         .submitCommitment(commitment)
         .get();
-    if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (response.getStatus() != CertificationStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit mint commitment: %s",
           response.getStatus()));
     }
@@ -154,10 +154,10 @@ public class TokenUtils {
     );
 
     // Submit mint transaction using StateTransitionClient
-    SubmitCommitmentResponse response = client
+    CertificationResponse response = client
         .submitCommitment(commitment)
         .get();
-    if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (response.getStatus() != CertificationStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit mint commitment: %s",
           response.getStatus()));
     }

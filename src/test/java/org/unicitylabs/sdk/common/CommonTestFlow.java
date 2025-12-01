@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
-import org.unicitylabs.sdk.api.RequestId;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
@@ -27,7 +26,6 @@ import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
-import org.unicitylabs.sdk.signing.MintSigningService;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
@@ -36,7 +34,6 @@ import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProof;
-import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.MintCommitment;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
@@ -93,11 +90,11 @@ public abstract class CommonTestFlow {
         null,
         aliceSigningService
     );
-    SubmitCommitmentResponse aliceToBobTransferSubmitResponse = this.client.submitCommitment(
+    CertificationResponse aliceToBobTransferSubmitResponse = this.client.submitCommitment(
         aliceToBobTransferCommitment
     ).get();
 
-    if (aliceToBobTransferSubmitResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (aliceToBobTransferSubmitResponse.getStatus() != CertificationStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit transaction commitment: %s",
           aliceToBobTransferSubmitResponse.getStatus()));
     }
@@ -176,11 +173,11 @@ public abstract class CommonTestFlow {
         null,
         SigningService.createFromSecret(BOB_SECRET)
     );
-    SubmitCommitmentResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
+    CertificationResponse bobToCarolTransferSubmitResponse = client.submitCommitment(
         bobToCarolTransferCommitment
     ).get();
 
-    if (bobToCarolTransferSubmitResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (bobToCarolTransferSubmitResponse.getStatus() != CertificationStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit transaction commitment: %s",
           bobToCarolTransferSubmitResponse.getStatus()));
     }
@@ -222,11 +219,11 @@ public abstract class CommonTestFlow {
         null,
         SigningService.createFromSecret(CAROL_SECRET)
     );
-    SubmitCommitmentResponse carolToBobTransferSubmitResponse = this.client.submitCommitment(
+    CertificationResponse carolToBobTransferSubmitResponse = this.client.submitCommitment(
         carolToBobTransferCommitment
     ).get();
 
-    if (carolToBobTransferSubmitResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (carolToBobTransferSubmitResponse.getStatus() != CertificationStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit transaction commitment: %s",
           carolToBobTransferSubmitResponse.getStatus()));
     }
@@ -305,7 +302,7 @@ public abstract class CommonTestFlow {
     );
 
     if (client.submitCommitment(burnCommitment).get().getStatus()
-        != SubmitCommitmentStatus.SUCCESS) {
+        != CertificationStatus.SUCCESS) {
       throw new Exception("Failed to submit burn commitment");
     }
 
@@ -322,7 +319,7 @@ public abstract class CommonTestFlow {
 
     List<MintTransaction<SplitMintReason>> splitTransactions = new ArrayList<>();
     for (MintCommitment<SplitMintReason> commitment : splitCommitments) {
-      if (client.submitCommitment(commitment).get().getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      if (client.submitCommitment(commitment).get().getStatus() != CertificationStatus.SUCCESS) {
         throw new Exception("Failed to submit split mint commitment");
       }
 

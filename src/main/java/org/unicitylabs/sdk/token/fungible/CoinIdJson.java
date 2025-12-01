@@ -9,12 +9,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import org.unicitylabs.sdk.token.TokenId;
-import org.unicitylabs.sdk.util.HexConverter;
 
 /**
  * Token coin json serializer and deserializer.

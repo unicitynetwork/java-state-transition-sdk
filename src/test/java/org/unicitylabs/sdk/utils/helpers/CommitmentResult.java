@@ -1,12 +1,12 @@
 package org.unicitylabs.sdk.utils.helpers;
 
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.transaction.InclusionProofVerificationStatus;
 
 public class CommitmentResult {
     private final String userName;
     private final String threadName;
-    private final RequestId requestId;
+    private final StateId stateId;
     private final boolean success;
     private final long startTime;
     private final long endTime;
@@ -16,11 +16,11 @@ public class CommitmentResult {
     private long inclusionEnd;
     private String status;
 
-    public CommitmentResult(String userName, String threadName, RequestId requestId,
+    public CommitmentResult(String userName, String threadName, StateId stateId,
                             boolean success, long startTime, long endTime) {
         this.userName = userName;
         this.threadName = threadName;
-        this.requestId = requestId;
+        this.stateId = stateId;
         this.success = success;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -35,8 +35,8 @@ public class CommitmentResult {
         this.status = InclusionProofVerificationStatus.OK.toString();
     }
 
-    public RequestId getRequestId() {
-        return this.requestId;
+    public StateId getStateId() {
+        return this.stateId;
     }
 
     public void markFailedVerification(long start, long end, String status) {

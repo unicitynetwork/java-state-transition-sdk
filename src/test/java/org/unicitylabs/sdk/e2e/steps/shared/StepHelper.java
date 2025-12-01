@@ -4,8 +4,10 @@ import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.DirectAddress;
 import org.unicitylabs.sdk.address.ProxyAddress;
 import org.unicitylabs.sdk.api.AggregatorClient;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.hash.DataHash;
@@ -71,8 +73,8 @@ public class StepHelper {
                 )
         );
 
-        SubmitCommitmentResponse response = context.getClient().submitCommitment(nametagMintCommitment).get();
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+        CertificationResponse response = context.getClient().submitCommitment(nametagMintCommitment).get();
+        if (response.getStatus() != CertificationStatus.SUCCESS) {
             throw new Exception("Failed to submit nametag mint commitment: " + response.getStatus());
         }
 
@@ -111,8 +113,8 @@ public class StepHelper {
                 fromSigningService
         );
 
-        SubmitCommitmentResponse response = context.getClient().submitCommitment(transferCommitment).get();
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+        CertificationResponse response = context.getClient().submitCommitment(transferCommitment).get();
+        if (response.getStatus() != CertificationStatus.SUCCESS) {
             throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
         }
 
@@ -189,12 +191,13 @@ public class StepHelper {
             DataHash stateHash = TestUtils.hashData(stateBytes);
             DataHash txDataHash = TestUtils.hashData(txData);
             SigningService signingService = SigningService.createFromSecret(randomSecret);
-            var requestId = TestUtils.createRequestId(signingService, stateHash);
-            var authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+            CertificationData certificationData = TestUtils.createCertificationData(signingService, txDataHash, stateHash);
 
-            SubmitCommitmentResponse response = context.getAggregatorClient()
-                    .submitCommitment(requestId, txDataHash, authenticator).get();
-            return response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+            CertificationResponse response = context.getAggregatorClient().submitCertificationRequest(
+                certificationData,
+                false
+            ).get();
+            return response.getStatus() == CertificationStatus.SUCCESS;
         } catch (Exception e) {
             return false;
         }
@@ -219,15 +222,15 @@ public class StepHelper {
                     while (System.nanoTime() < globalTimeout && !verified) {
                         try {
                             InclusionProof proof = context.getAggregatorClient()
-                                    .getInclusionProof(result.getRequestId())
+                                    .getInclusionProof(result.getStateId())
                                     .get(calculateRemainingTimeout(globalTimeout), TimeUnit.MILLISECONDS).getInclusionProof();
 
-                            if (proof != null && proof.verify(result.getRequestId(), context.getTrustBase())
+                            if (proof != null && proof.verify(context.getTrustBase(), result.getStateId())
                                     == InclusionProofVerificationStatus.OK) {
                                 result.markVerified(inclStart, System.nanoTime());
                                 verified = true;
                             } else {
-                                InclusionProofVerificationStatus status = proof.verify(result.getRequestId(), context.getTrustBase());
+                                InclusionProofVerificationStatus status = proof.verify(context.getTrustBase(), result.getStateId());
                                 errorMessage = status.toString();
                                 Thread.sleep(1000); // Небольшая пауза перед повторной попыткой
                             }
@@ -349,15 +352,15 @@ public class StepHelper {
                 try {
                     // Check if inclusion proof is available
                      InclusionProof proofResponse = aggregatorClient
-                            .getInclusionProof(result.getRequestId()).get(5, TimeUnit.SECONDS).getInclusionProof();
-                    if (proofResponse != null && proofResponse.verify(result.getRequestId(), context.getTrustBase())
+                            .getInclusionProof(result.getStateId()).get(5, TimeUnit.SECONDS).getInclusionProof();
+                    if (proofResponse != null && proofResponse.verify(context.getTrustBase(), result.getStateId())
                             == InclusionProofVerificationStatus.OK) {
                         System.out.println("InclusionProofVerificationStatus.OK");
                         result.markVerified(inclusionStartTime, System.nanoTime());
                         verified = true;
                         break;
                     } else {
-                        InclusionProofVerificationStatus status = proofResponse.verify(result.getRequestId(), context.getTrustBase());
+                        InclusionProofVerificationStatus status = proofResponse.verify(context.getTrustBase(), result.getStateId());
                         System.out.println(status.toString());
                         statusMessage = status.toString();
                     }
@@ -422,7 +425,7 @@ public class StepHelper {
 
             if (!failed.isEmpty()) {
                 System.out.println("  Failed verifications (" + failed.size() + "):");
-                failed.forEach(r -> System.out.println("    ❌ " + r.getRequestId() +
+                failed.forEach(r -> System.out.println("    ❌ " + r.getStateId() +
                         " - " + (r.getStatus() != null ? r.getStatus() : "Unknown error")));
             } else {
                 System.out.println("  ✅ All commitments verified successfully!");

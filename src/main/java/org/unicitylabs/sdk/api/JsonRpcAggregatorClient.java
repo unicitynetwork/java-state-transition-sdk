@@ -5,7 +5,6 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.jsonrpc.JsonRpcHttpTransport;
 
 /**
@@ -38,46 +37,32 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
     this.apiKey = apiKey;
   }
 
-  /**
-   * Submit commitment.
-   *
-   * @param requestId       request id
-   * @param transactionHash transaction hash
-   * @param authenticator   authenticator
-   * @return submit commitment response
-   */
-  public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      RequestId requestId,
-      DataHash transactionHash,
-      Authenticator authenticator
+  public CompletableFuture<CertificationResponse> submitCertificationRequest(
+      CertificationData certificationData,
+      boolean receipt
   ) {
-    SubmitCommitmentRequest request = new SubmitCommitmentRequest(
-        requestId,
-        transactionHash,
-        authenticator,
-        false
-    );
+    CertificationRequest request = CertificationRequest.create(certificationData,receipt);
 
     Map<String, List<String>> headers = this.apiKey == null
         ? Map.of()
         : Map.of(AUTHORIZATION, List.of(String.format("Bearer %s", this.apiKey)));
 
     return this.transport.request(
-        "submit_commitment",
+        "certification_request",
         request,
-        SubmitCommitmentResponse.class,
+        CertificationResponse.class,
         headers
     );
   }
 
   /**
-   * Get inclusion proof for request id.
+   * Get inclusion proof for state id.
    *
-   * @param requestId request id
+   * @param stateId state id
    * @return inclusion / non inclusion proof
    */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
-    InclusionProofRequest request = new InclusionProofRequest(requestId);
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(StateId stateId) {
+    InclusionProofRequest request = new InclusionProofRequest(stateId);
 
     return this.transport.request("get_inclusion_proof", request, InclusionProofResponse.class);
   }

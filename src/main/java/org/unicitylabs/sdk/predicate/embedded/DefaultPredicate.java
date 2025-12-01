@@ -2,8 +2,8 @@ package org.unicitylabs.sdk.predicate.embedded;
 
 import java.util.Arrays;
 import java.util.Objects;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
@@ -162,26 +162,27 @@ public abstract class DefaultPredicate implements Predicate {
       return false;
     }
 
-    Authenticator authenticator = transaction.getInclusionProof().getAuthenticator().orElse(null);
+    CertificationData certificationData = transaction.getInclusionProof().getCertificationData().orElse(null);
 
-    if (authenticator == null) {
+    if (certificationData == null) {
       return false;
     }
 
-    if (!Arrays.equals(authenticator.getPublicKey(), this.publicKey)) {
+    if (!Arrays.equals(certificationData.getPublicKey(), this.publicKey)) {
       return false;
     }
 
     DataHash transactionHash = transaction.getData().calculateHash();
-    if (!authenticator.verify(transactionHash)) {
+    if (!certificationData.getTransactionHash().equals(transactionHash)) {
       return false;
     }
 
-    RequestId requestId = RequestId.create(this.publicKey, transaction.getData().getSourceState());
-    return transaction.getInclusionProof().verify(
-        requestId,
-        trustBase
-    ) == InclusionProofVerificationStatus.OK;
+    if (!certificationData.verify()) {
+      return false;
+    }
+
+    StateId stateId = StateId.create(this.publicKey, transaction.getData().getSourceState());
+    return transaction.getInclusionProof().verify(trustBase, stateId) == InclusionProofVerificationStatus.OK;
   }
 
   @Override

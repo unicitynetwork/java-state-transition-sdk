@@ -5,13 +5,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
-
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.Address;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.RequestId;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
@@ -25,7 +24,11 @@ import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.*;
+import org.unicitylabs.sdk.transaction.InclusionProof;
+import org.unicitylabs.sdk.transaction.MintCommitment;
+import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.TransferCommitment;
+import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 
 /**
@@ -68,7 +71,7 @@ public class TestUtils {
     /**
      * Creates a token mint commitment and submits it to the client
      */
-    public static Token mintTokenForUser(
+    public static Token<?> mintTokenForUser(
             StateTransitionClient client,
             SigningService signingService,
             byte[] nonce,
@@ -95,8 +98,8 @@ public class TestUtils {
                 )
         );
 
-        SubmitCommitmentResponse response = client.submitCommitment(mintCommitment).get();
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+        CertificationResponse response = client.submitCommitment(mintCommitment).get();
+        if (response.getStatus() != CertificationStatus.SUCCESS) {
             throw new Exception("Failed to submit mint commitment: " + response.getStatus());
         }
 
@@ -116,9 +119,9 @@ public class TestUtils {
     /**
      * Transfers a token from one user to another
      */
-    public static Token transferToken(
+    public static Token<?> transferToken(
             StateTransitionClient client,
-            Token sourceToken,
+            Token<?> sourceToken,
             SigningService fromSigningService,
             SigningService toSigningService,
             byte[] toNonce,
@@ -144,8 +147,8 @@ public class TestUtils {
                 fromSigningService
         );
 
-        SubmitCommitmentResponse response = client.submitCommitment(transferCommitment).get();
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+        CertificationResponse response = client.submitCommitment(transferCommitment).get();
+        if (response.getStatus() != CertificationStatus.SUCCESS) {
             throw new Exception("Failed to submit transfer commitment: " + response.getStatus());
         }
 
@@ -235,19 +238,19 @@ public class TestUtils {
     /**
      * Validates that a token is properly owned by a signing service
      */
-    public static boolean validateTokenOwnership(Token token, SigningService signingService, RootTrustBase trustBase) {
+    public static boolean validateTokenOwnership(Token<?> token, SigningService signingService, RootTrustBase trustBase) {
         if (!token.verify(trustBase).isSuccessful()) {
             return false;
         }
         return PredicateEngineService.createPredicate(token.getState().getPredicate()).isOwner(signingService.getPublicKey());
     }
 
-    public static RequestId createRequestId(SigningService signingService, DataHash stateHash) {
-        return RequestId.create(signingService.getPublicKey(), stateHash);
+    public static StateId createStateId(SigningService signingService, DataHash stateHash) {
+        return StateId.create(signingService.getPublicKey(), stateHash);
     }
 
-    public static Authenticator createAuthenticator(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
-        return Authenticator.create(signingService, txDataHash, stateHash);
+    public static CertificationData createCertificationData(SigningService signingService, DataHash txDataHash, DataHash stateHash) {
+        return CertificationData.create(stateHash, txDataHash, signingService);
     }
 
     /**
@@ -299,17 +302,17 @@ public class TestUtils {
     public static class TokenOperationResult {
         private final boolean success;
         private final String message;
-        private final Token token;
+        private final Token<?> token;
         private final Exception error;
 
-        public TokenOperationResult(boolean success, String message, Token token, Exception error) {
+        public TokenOperationResult(boolean success, String message, Token<?> token, Exception error) {
             this.success = success;
             this.message = message;
             this.token = token;
             this.error = error;
         }
 
-        public static TokenOperationResult success(String message, Token token) {
+        public static TokenOperationResult success(String message, Token<?> token) {
             return new TokenOperationResult(true, message, token, null);
         }
 
@@ -319,7 +322,7 @@ public class TestUtils {
 
         public boolean isSuccess() { return success; }
         public String getMessage() { return message; }
-        public Token getToken() { return token; }
+        public Token<?> getToken() { return token; }
         public Exception getError() { return error; }
     }
 

@@ -4,9 +4,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.LeafValue;
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
@@ -15,16 +14,16 @@ import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTree;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePath;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.util.HexConverter;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
 
-  RequestId requestId;
-  DataHash transactionHash;
+  StateId stateId;
   SparseMerkleTreePath merkleTreePath;
-  Authenticator authenticator;
+  CertificationData certificationData;
   RootTrustBase trustBase;
   UnicityCertificate unicityCertificate;
 
@@ -33,17 +32,18 @@ public class InclusionProofTest {
     SigningService signingService = new SigningService(
         HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
 
-    transactionHash = new DataHash(HashAlgorithm.SHA256, new byte[32]);
-    authenticator = Authenticator.create(signingService, transactionHash,
-        new DataHash(HashAlgorithm.SHA256, new byte[32]));
+    certificationData = CertificationData.create(
+        new DataHash(HashAlgorithm.SHA256, new byte[32]),
+        new DataHash(HashAlgorithm.SHA256, new byte[32]),
+        signingService
+    );
 
-    LeafValue leaf = LeafValue.create(authenticator, transactionHash);
-    requestId = RequestId.create(signingService.getPublicKey(), authenticator.getStateHash());
+    stateId = StateId.create(signingService.getPublicKey(), certificationData.getSourceStateHash());
 
     SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
-    smt.addLeaf(requestId.toBitString().toBigInteger(), leaf.getBytes());
+    smt.addLeaf(stateId.toBitString().toBigInteger(), certificationData.calculateLeafValue().getImprint());
 
-    merkleTreePath = smt.calculateRoot().getPath(requestId.toBitString().toBigInteger());
+    merkleTreePath = smt.calculateRoot().getPath(stateId.toBitString().toBigInteger());
     SigningService ucSigningService = new SigningService(SigningService.generatePrivateKey());
     trustBase = RootTrustBaseUtils.generateRootTrustBase(ucSigningService.getPublicKey());
     unicityCertificate = UnicityCertificateUtils.generateCertificate(ucSigningService,
@@ -51,64 +51,54 @@ public class InclusionProofTest {
   }
 
   @Test
-  public void testJsonSerialization() throws Exception {
+  public void testJsonSerialization() {
     InclusionProof inclusionProof = new InclusionProof(
         merkleTreePath,
-        authenticator,
-        transactionHash,
+        certificationData,
         unicityCertificate
     );
     Assertions.assertEquals(inclusionProof, InclusionProof.fromJson(inclusionProof.toJson()));
   }
 
   @Test
+  public void testCborSerialization() {
+    InclusionProof inclusionProof = new InclusionProof(
+        merkleTreePath,
+        certificationData,
+        unicityCertificate
+    );
+
+    Assertions.assertEquals(inclusionProof, InclusionProof.fromCbor(inclusionProof.toCbor()));
+  }
+
+  @Test
   public void testStructure() {
-    Assertions.assertThrows(IllegalArgumentException.class,
+    Assertions.assertThrows(NullPointerException.class,
         () -> new InclusionProof(
-            merkleTreePath,
-            authenticator,
             null,
-            unicityCertificate
-        )
-    );
-    Assertions.assertThrows(IllegalArgumentException.class,
-        () -> new InclusionProof(
-            merkleTreePath,
-            null,
-            transactionHash,
-            unicityCertificate
+            this.certificationData,
+            this.unicityCertificate
         )
     );
     Assertions.assertThrows(NullPointerException.class,
         () -> new InclusionProof(
-            null,
-            authenticator,
-            transactionHash,
-            unicityCertificate
-        )
-    );
-    Assertions.assertThrows(NullPointerException.class,
-        () -> new InclusionProof(
-            merkleTreePath,
-            authenticator,
-            transactionHash,
+            this.merkleTreePath,
+            this.certificationData,
             null
         )
     );
     Assertions.assertInstanceOf(InclusionProof.class,
         new InclusionProof(
-            merkleTreePath,
-            authenticator,
-            transactionHash,
-            unicityCertificate
+            this.merkleTreePath,
+            this.certificationData,
+            this.unicityCertificate
         )
     );
     Assertions.assertInstanceOf(InclusionProof.class,
         new InclusionProof(
-            merkleTreePath,
+            this.merkleTreePath,
             null,
-            null,
-            unicityCertificate
+            this.unicityCertificate
         )
     );
   }
@@ -117,34 +107,60 @@ public class InclusionProofTest {
   public void testItVerifies() {
     InclusionProof inclusionProof = new InclusionProof(
         this.merkleTreePath,
-        this.authenticator,
-        this.transactionHash,
+        this.certificationData,
         this.unicityCertificate
     );
     Assertions.assertEquals(
         InclusionProofVerificationStatus.OK,
-        inclusionProof.verify(this.requestId, this.trustBase)
+        inclusionProof.verify(this.trustBase, this.stateId)
     );
     Assertions.assertEquals(InclusionProofVerificationStatus.PATH_NOT_INCLUDED,
         inclusionProof.verify(
-            RequestId.create(new byte[32], new DataHash(HashAlgorithm.SHA256, new byte[32])),
-            this.trustBase
+            this.trustBase,
+            StateId.create(new byte[32], new DataHash(HashAlgorithm.SHA256, new byte[32]))
         )
     );
+  }
 
+  @Test
+  public void testItNotAuthenticated() {
     InclusionProof invalidInclusionProof = new InclusionProof(
         this.merkleTreePath,
-        this.authenticator,
-        new DataHash(
-            HashAlgorithm.SHA224,
-            HexConverter.decode("FF000000000000000000000000000000000000000000000000000000000000FF")
+        CertificationData.fromCbor(
+            CborSerializer.encodeArray(
+                CborSerializer.encodeByteString(certificationData.getPublicKey()),
+                certificationData.getSourceStateHash().toCbor(),
+                DataHash.fromImprint(
+                        HexConverter.decode("00000000000000000000000000000000000000000000000000000000000000000001"))
+                    .toCbor(),
+                certificationData.getSignature().toCbor()
+            )
         ),
         this.unicityCertificate
     );
 
     Assertions.assertEquals(
         InclusionProofVerificationStatus.NOT_AUTHENTICATED,
-        invalidInclusionProof.verify(this.requestId, this.trustBase)
+        invalidInclusionProof.verify(this.trustBase, this.stateId)
+    );
+  }
+
+  @Test
+  public void testVerificationFailsWithInvalidTrustbase() {
+    InclusionProof inclusionProof = new InclusionProof(
+        this.merkleTreePath,
+        this.certificationData,
+        this.unicityCertificate
+    );
+
+    Assertions.assertEquals(
+        InclusionProofVerificationStatus.INVALID_TRUST_BASE,
+        inclusionProof.verify(
+            RootTrustBaseUtils.generateRootTrustBase(
+                HexConverter.decode("020000000000000000000000000000000000000000000000000000000000000001")
+            ),
+            this.stateId
+        )
     );
   }
 }

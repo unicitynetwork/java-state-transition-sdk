@@ -3,14 +3,13 @@ package org.unicitylabs.sdk.e2e.context;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.api.AggregatorClient;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.CertificationResponse;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
-import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
@@ -51,7 +50,7 @@ public class TestContext {
     private byte[] stateBytes;
     private DataHash stateHash;
     private DataHash txDataHash;
-    private SubmitCommitmentResponse commitmentResponse;
+    private CertificationResponse commitmentResponse;
     private long submissionDuration;
     private Exception lastError;
     private boolean operationSucceeded;
@@ -137,8 +136,8 @@ public class TestContext {
     public DataHash getTxDataHash() { return txDataHash; }
     public void setTxDataHash(DataHash txDataHash) { this.txDataHash = txDataHash; }
 
-    public SubmitCommitmentResponse getCommitmentResponse() { return commitmentResponse; }
-    public void setCommitmentResponse(SubmitCommitmentResponse commitmentResponse) { this.commitmentResponse = commitmentResponse; }
+    public CertificationResponse getCommitmentResponse() { return commitmentResponse; }
+    public void setCommitmentResponse(CertificationResponse commitmentResponse) { this.commitmentResponse = commitmentResponse; }
 
     public long getSubmissionDuration() { return submissionDuration; }
     public void setSubmissionDuration(long submissionDuration) { this.submissionDuration = submissionDuration; }

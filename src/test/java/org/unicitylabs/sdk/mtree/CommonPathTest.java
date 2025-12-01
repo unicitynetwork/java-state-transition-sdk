@@ -8,7 +8,7 @@ import java.math.BigInteger;
 public class CommonPathTest {
 
   @Test
-  public void shouldCalculateCommonPath() throws Exception {
+  public void shouldCalculateCommonPath() {
     Assertions.assertEquals(CommonPath.create(
         BigInteger.valueOf(0b11),
         BigInteger.valueOf(0b111101111)

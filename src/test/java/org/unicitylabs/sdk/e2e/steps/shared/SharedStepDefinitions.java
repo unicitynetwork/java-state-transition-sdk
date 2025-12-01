@@ -10,7 +10,6 @@ import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
-import org.unicitylabs.sdk.transaction.*;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -31,7 +30,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static org.unicitylabs.sdk.utils.TestUtils.randomCoinData;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.unicitylabs.sdk.utils.helpers.CommitmentResult;
@@ -130,11 +128,10 @@ public class SharedStepDefinitions {
         long startTime = System.currentTimeMillis();
 
         SigningService signingService = SigningService.createFromSecret(context.getRandomSecret());
-        var requestId = TestUtils.createRequestId(signingService, context.getStateHash());
-        var authenticator = TestUtils.createAuthenticator(signingService, context.getTxDataHash(), context.getStateHash());
+        CertificationData certificationData = TestUtils.createCertificationData(signingService, context.getTxDataHash(), context.getStateHash());
 
-        SubmitCommitmentResponse response = context.getAggregatorClient()
-                .submitCommitment(requestId, context.getTxDataHash(), authenticator).get();
+        CertificationResponse response = context.getAggregatorClient()
+                .submitCertificationRequest(certificationData, false).get();
         context.setCommitmentResponse(response);
 
         long endTime = System.currentTimeMillis();
@@ -144,7 +141,7 @@ public class SharedStepDefinitions {
     @Then("the commitment should be submitted successfully")
     public void theCommitmentShouldBeSubmittedSuccessfully() {
         assertNotNull(context.getCommitmentResponse(), "Commitment response should not be null");
-        assertEquals(SubmitCommitmentStatus.SUCCESS, context.getCommitmentResponse().getStatus(),
+        assertEquals(CertificationStatus.SUCCESS, context.getCommitmentResponse().getStatus(),
                 "Commitment should be submitted successfully");
     }
 
@@ -194,23 +191,23 @@ public class SharedStepDefinitions {
 
                     DataHash stateHash = TestUtils.hashData(stateBytes);
                     DataHash txDataHash = TestUtils.hashData(txData);
-                    RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+                    StateId stateId = TestUtils.createStateId(signingService, stateHash);
 
                     try {
-                        Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+                        CertificationData certificationData = TestUtils.createCertificationData(signingService, txDataHash, stateHash);
 
-                        SubmitCommitmentResponse response = context.getAggregatorClient()
-                                .submitCommitment(requestId, txDataHash, authenticator).get();
+                        CertificationResponse response = context.getAggregatorClient()
+                                .submitCertificationRequest(certificationData, false).get();
 
-                        boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                        boolean success = response.getStatus() == CertificationStatus.SUCCESS;
                         long end = System.nanoTime();
 
                         return new CommitmentResult(userName, Thread.currentThread().getName(),
-                                requestId, success, start, end);
+                            stateId, success, start, end);
                     } catch (Exception e) {
                         long end = System.nanoTime();
                         return new CommitmentResult(userName, Thread.currentThread().getName(),
-                                requestId, false, start, end);
+                            stateId, false, start, end);
                     }
                 }, executor);
 
@@ -303,7 +300,7 @@ public class SharedStepDefinitions {
         results.stream()
                 .filter(r -> !r.isVerified())
                 .forEach(r -> System.out.println(
-                        "❌ Commitment failed: requestId=" + r.getRequestId().toString() + ", status=" + r.getStatus()
+                        "❌ Commitment failed: stateId=" + r.getStateId().toString() + ", status=" + r.getStatus()
                 ));
 
         assertEquals(results.size(), verifiedCount, "All commitments should be verified");
@@ -374,7 +371,7 @@ public class SharedStepDefinitions {
                 byte[] txData = TestUtils.generateRandomBytes(32);
                 DataHash stateHash = TestUtils.hashData(stateBytes);
                 DataHash txDataHash = TestUtils.hashData(txData);
-                RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+                StateId stateId = TestUtils.createStateId(signingService, stateHash);
 
                 // Submit the same commitment to all aggregators concurrently
                 for (int aggIndex = 0; aggIndex < aggregatorClients.size(); aggIndex++) {
@@ -385,22 +382,22 @@ public class SharedStepDefinitions {
                         long start = System.nanoTime();
 
                         try {
-                            Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+                            CertificationData certificationData = TestUtils.createCertificationData(signingService, txDataHash, stateHash);
 
-                            SubmitCommitmentResponse response = aggregatorClient
-                                    .submitCommitment(requestId, txDataHash, authenticator).get();
+                            CertificationResponse response = aggregatorClient
+                                    .submitCertificationRequest(certificationData, false).get();
 
-                            boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                            boolean success = response.getStatus() == CertificationStatus.SUCCESS;
                             long end = System.nanoTime();
 
                             return new CommitmentResult(userName + "-" + aggregatorId,
                                     Thread.currentThread().getName(),
-                                    requestId, success, start, end);
+                                stateId, success, start, end);
                         } catch (Exception e) {
                             long end = System.nanoTime();
                             return new CommitmentResult(userName + "-" + aggregatorId,
                                     Thread.currentThread().getName(),
-                                    requestId, false, start, end);
+                                stateId, false, start, end);
                         }
                     }, executor);
 
@@ -439,7 +436,7 @@ public class SharedStepDefinitions {
                     byte[] txData = TestUtils.generateRandomBytes(32);
                     DataHash stateHash = TestUtils.hashData(stateBytes);
                     DataHash txDataHash = TestUtils.hashData(txData);
-                    RequestId requestId = TestUtils.createRequestId(signingService, stateHash);
+                    StateId stateId = TestUtils.createStateId(signingService, stateHash);
 
                     // Submit to all aggregators with the same data
                     for (int aggIndex = 0; aggIndex < aggregatorClients.size(); aggIndex++) {
@@ -448,22 +445,22 @@ public class SharedStepDefinitions {
 
                         long start = System.nanoTime();
                         try {
-                            Authenticator authenticator = TestUtils.createAuthenticator(signingService, txDataHash, stateHash);
+                            CertificationData certificationData = TestUtils.createCertificationData(signingService, txDataHash, stateHash);
 
-                            SubmitCommitmentResponse response = aggregatorClient
-                                    .submitCommitment(requestId, txDataHash, authenticator).get();
+                            CertificationResponse response = aggregatorClient
+                                    .submitCertificationRequest(certificationData, false).get();
 
-                            boolean success = response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                            boolean success = response.getStatus() == CertificationStatus.SUCCESS;
                             long end = System.nanoTime();
 
                             results.add(new CommitmentResult(userName + "-" + aggregatorId,
                                     Thread.currentThread().getName(),
-                                    requestId, success, start, end));
+                                stateId, success, start, end));
                         } catch (Exception e) {
                             long end = System.nanoTime();
                             results.add(new CommitmentResult(userName + "-" + aggregatorId,
                                     Thread.currentThread().getName(),
-                                    requestId, false, start, end));
+                                stateId, false, start, end));
                         }
                     }
 
@@ -524,7 +521,7 @@ public class SharedStepDefinitions {
             aggregatorResults.stream()
                     .filter(r -> !r.isVerified())
                     .forEach(r -> System.out.println(
-                            "  ❌ Failed: requestId=" + r.getRequestId().toString() +
+                            "  ❌ Failed: stateId=" + r.getStateId().toString() +
                                     ", status=" + (r.getStatus() != null ? r.getStatus() : "Unknown") +
                                     ", user=" + r.getUserName()
                     ));

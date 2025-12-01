@@ -3,11 +3,14 @@ package org.unicitylabs.sdk.transaction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Objects;
 import org.unicitylabs.sdk.address.Address;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.BlockHeightResponse;
+import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 
@@ -18,14 +21,12 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
 
   @JsonCreator
   private TransferCommitment(
-      @JsonProperty("requestId")
-      RequestId requestId,
       @JsonProperty("transactionData")
       TransferTransaction.Data transactionData,
-      @JsonProperty("authenticator")
-      Authenticator authenticator
+      @JsonProperty("certificationData")
+      CertificationData certificationData
   ) {
-    super(requestId, transactionData, authenticator);
+    super(transactionData, certificationData);
   }
 
   /**
@@ -37,6 +38,20 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
   @Override
   public TransferTransaction toTransaction(InclusionProof inclusionProof) {
     return new TransferTransaction(this.getTransactionData(), inclusionProof);
+  }
+
+  /**
+   * Create transfer commitment from JSON string.
+   *
+   * @param input JSON string
+   * @return transfer commitment data
+   */
+  public TransferCommitment fromJson(String input) {
+    try {
+      return UnicityObjectMapper.JSON.readValue(input, TransferCommitment.class);
+    } catch (JsonProcessingException e) {
+      throw new JsonSerializationException(BlockHeightResponse.class, e);
+    }
   }
 
   /**
@@ -63,7 +78,7 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
     Objects.requireNonNull(salt, "Salt cannot be null");
     Objects.requireNonNull(signingService, "SigningService cannot be null");
 
-    TransferTransaction.Data data = new TransferTransaction.Data(
+    TransferTransaction.Data transactionData = new TransferTransaction.Data(
         token.getState(),
         recipient,
         salt,
@@ -71,13 +86,13 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
         message,
         token.getNametags()
     );
-    RequestId requestId = RequestId.create(signingService.getPublicKey(), data.getSourceState());
-    Authenticator authenticator = Authenticator.create(
-        signingService,
-        data.calculateHash(),
-        data.getSourceState().calculateHash()
+
+    CertificationData certificationData = CertificationData.create(
+        transactionData.getSourceState().calculateHash(),
+        transactionData.calculateHash(),
+        signingService
     );
 
-    return new TransferCommitment(requestId, data, authenticator);
+    return new TransferCommitment(transactionData, certificationData);
   }
 }

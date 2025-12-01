@@ -11,27 +11,27 @@ import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
  */
 public class InclusionProofRequest {
 
-  private final RequestId requestId;
+  private final StateId stateId;
 
   /**
    * Create inclusion proof request.
    *
-   * @param requestId request id
+   * @param stateId state id
    */
   @JsonCreator
   public InclusionProofRequest(
-      @JsonProperty("requestId") RequestId requestId
+      @JsonProperty("stateId") StateId stateId
   ) {
-    this.requestId = requestId;
+    this.stateId = stateId;
   }
 
   /**
-   * Get request id.
+   * Get state id.
    *
-   * @return request id
+   * @return state id
    */
-  public RequestId getRequestId() {
-    return this.requestId;
+  public StateId getStateId() {
+    return this.stateId;
   }
 
   /**

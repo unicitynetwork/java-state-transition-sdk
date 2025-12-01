@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.address.Address;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.mtree.BranchExistsException;
@@ -50,8 +50,8 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         )
     );
 
-    SubmitCommitmentResponse response = this.client.submitCommitment(commitment).get();
-    if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    CertificationResponse response = this.client.submitCommitment(commitment).get();
+    if (response.getStatus() != CertificationStatus.SUCCESS) {
       throw new RuntimeException("Failed to submit transfer commitment: " + response);
     }
 

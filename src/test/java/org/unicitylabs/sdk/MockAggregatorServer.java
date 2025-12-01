@@ -27,7 +27,7 @@ public class MockAggregatorServer {
         this.server = new MockWebServer();
         this.objectMapper = new ObjectMapper();
         this.protectedMethods = new HashSet<>();
-        this.protectedMethods.add("submit_commitment");
+        this.protectedMethods.add("certification_request");
         
         server.setDispatcher(new Dispatcher() {
             @Override
@@ -117,7 +117,7 @@ public class MockAggregatorServer {
         String id = UUID.randomUUID().toString();
         
         switch (method != null ? method : "") {
-            case "submit_commitment":
+            case "certification_request":
                 responseBody = String.format(
                     "{\n" +
                     "    \"jsonrpc\": \"2.0\",\n" +

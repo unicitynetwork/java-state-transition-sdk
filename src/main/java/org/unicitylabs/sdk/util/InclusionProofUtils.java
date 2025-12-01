@@ -7,6 +7,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unicitylabs.sdk.StateTransitionClient;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.transaction.Commitment;
 import org.unicitylabs.sdk.transaction.InclusionProof;
@@ -78,14 +79,13 @@ public class InclusionProofUtils {
       long startTime,
       long timeoutMillis,
       long intervalMillis) {
-
     if (System.currentTimeMillis() - startTime > timeoutMillis) {
       future.completeExceptionally(new TimeoutException("Timeout waiting for inclusion proof"));
     }
 
-    client.getInclusionProof(commitment.getRequestId()).thenAccept(response -> {
-      InclusionProofVerificationStatus status = response.getInclusionProof()
-          .verify(commitment.getRequestId(), trustBase);
+    StateId stateId = commitment.getCertificationData().calculateStateId();
+    client.getInclusionProof(stateId).thenAccept(response -> {
+      InclusionProofVerificationStatus status = response.getInclusionProof().verify(trustBase, stateId);
       switch (status) {
         case OK:
           future.complete(response.getInclusionProof());

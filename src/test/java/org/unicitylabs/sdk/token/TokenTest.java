@@ -27,7 +27,7 @@ import org.unicitylabs.sdk.verification.VerificationException;
 public class TokenTest {
 
   @Test
-  public void testJsonSerialization() throws IOException, VerificationException {
+  public void testJsonSerialization() throws IOException {
     SigningService signingService = new SigningService(SigningService.generatePrivateKey());
     UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
         signingService, DataHash.fromImprint(new byte[34]));
@@ -71,7 +71,6 @@ public class TokenTest {
             InclusionProofFixture.create(
                 SparseMerkleTreePathFixture.create(),
                 null,
-                null,
                 unicityCertificate
             )
         ),
@@ -96,7 +95,6 @@ public class TokenTest {
             genesisData,
             InclusionProofFixture.create(
                 SparseMerkleTreePathFixture.create(),
-                null,
                 null,
                 unicityCertificate
             )

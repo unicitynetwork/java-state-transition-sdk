@@ -7,37 +7,37 @@ import java.io.IOException;
 import org.unicitylabs.sdk.hash.DataHash;
 
 /**
- * Request ID deserializer implementation.
+ * State ID deserializer implementation.
  */
-public class RequestIdJson {
+public class StateIdJson {
 
-  private RequestIdJson() {
+  private StateIdJson() {
   }
 
   /**
-   * Request ID deserializer.
+   * State ID deserializer.
    */
-  public static class Deserializer extends StdDeserializer<RequestId> {
+  public static class Deserializer extends StdDeserializer<StateId> {
 
     /**
      * Create deserializer.
      */
     public Deserializer() {
-      super(RequestId.class);
+      super(StateId.class);
     }
 
     /**
-     * Deserialize request id.
+     * Deserialize state id.
      *
      * @param p   Parser used for reading JSON content
      * @param ctx Context that can be used to access information about this deserialization
      *            activity.
-     * @return request id
+     * @return state id
      * @throws IOException on deserialization failure
      */
     @Override
-    public RequestId deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-      return new RequestId(p.readValueAs(DataHash.class));
+    public StateId deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+      return new StateId(p.readValueAs(DataHash.class));
     }
   }
 }

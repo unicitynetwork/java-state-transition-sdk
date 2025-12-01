@@ -65,7 +65,7 @@ public class SigningService {
    * @return public key bytes
    */
   public byte[] getPublicKey() {
-    return Arrays.copyOf(publicKey, publicKey.length);
+    return Arrays.copyOf(this.publicKey, this.publicKey.length);
   }
 
   /**

@@ -6,8 +6,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.InclusionProofResponse;
-import org.unicitylabs.sdk.api.RequestId;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
+import org.unicitylabs.sdk.api.StateId;
+import org.unicitylabs.sdk.api.CertificationResponse;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
@@ -50,12 +50,8 @@ public class StateTransitionClient {
    * @return A CompletableFuture that resolves to the response from the aggregator.
    */
   public <R extends MintTransactionReason>
-        CompletableFuture<SubmitCommitmentResponse> submitCommitment(MintCommitment<R> commitment) {
-    return this.client.submitCommitment(
-        commitment.getRequestId(),
-        commitment.getTransactionData().calculateHash(),
-        commitment.getAuthenticator()
-    );
+        CompletableFuture<CertificationResponse> submitCommitment(MintCommitment<R> commitment) {
+    return this.client.submitCertificationRequest(commitment.getCertificationData(), false);
   }
 
   /**
@@ -65,20 +61,17 @@ public class StateTransitionClient {
    * @return A CompletableFuture that resolves to the response from the aggregator.
    * @throws IllegalArgumentException if ownership verification fails.
    */
-  public CompletableFuture<SubmitCommitmentResponse> submitCommitment(
-      TransferCommitment commitment
-  ) {
+  public CompletableFuture<CertificationResponse> submitCommitment(TransferCommitment commitment) {
     if (
         !PredicateEngineService.createPredicate(
             commitment.getTransactionData().getSourceState().getPredicate()
-        ).isOwner(commitment.getAuthenticator().getPublicKey())
+        ).isOwner(commitment.getCertificationData().getPublicKey())
     ) {
       throw new IllegalArgumentException(
           "Ownership verification failed: Authenticator does not match source state predicate.");
     }
 
-    return this.client.submitCommitment(commitment.getRequestId(), commitment.getTransactionData()
-        .calculateHash(), commitment.getAuthenticator());
+    return this.client.submitCertificationRequest(commitment.getCertificationData(), false);
   }
 
   /**
@@ -126,26 +119,26 @@ public class StateTransitionClient {
   }
 
   /**
-   * Retrieves the inclusion proof for a given request id.
+   * Retrieves the inclusion proof for a given state id.
    *
-   * @param requestId The request ID of inclusion proof to retrieve.
+   * @param stateId The state ID of inclusion proof to retrieve.
    * @return A CompletableFuture that resolves to the inclusion proof response from the aggregator.
    */
-  public CompletableFuture<InclusionProofResponse> getInclusionProof(RequestId requestId) {
-    return this.client.getInclusionProof(requestId);
+  public CompletableFuture<InclusionProofResponse> getInclusionProof(StateId stateId) {
+    return this.client.getInclusionProof(stateId);
   }
 
   /**
-   * Check if state is already spent for given request id.
+   * Check if state is already spent for given state id.
    *
-   * @param requestId request id
+   * @param stateId state id
    * @param trustBase root trust base
    * @return A CompletableFuture that resolves to true if state is spent, false otherwise.
    */
-  public CompletableFuture<Boolean> isStateSpent(RequestId requestId, RootTrustBase trustBase) {
-    return this.getInclusionProof(requestId)
+  public CompletableFuture<Boolean> isStateSpent(StateId stateId, RootTrustBase trustBase) {
+    return this.getInclusionProof(stateId)
         .thenApply(inclusionProof -> {
-          InclusionProofVerificationStatus result = inclusionProof.getInclusionProof().verify(requestId, trustBase);
+          InclusionProofVerificationStatus result = inclusionProof.getInclusionProof().verify(trustBase, stateId);
           switch (result) {
             case OK:
               return true;
@@ -178,7 +171,7 @@ public class StateTransitionClient {
       throw new IllegalArgumentException("Given key is not owner of the token.");
     }
 
-    return this.isStateSpent(RequestId.create(publicKey, token.getState()), trustBase);
+    return this.isStateSpent(StateId.create(publicKey, token.getState()), trustBase);
   }
 
   /**
@@ -190,7 +183,7 @@ public class StateTransitionClient {
    */
   public CompletableFuture<Boolean> isMinted(TokenId tokenId, RootTrustBase trustBase) {
     return this.isStateSpent(
-        RequestId.create(
+        StateId.create(
             MintSigningService.create(tokenId).getPublicKey(),
             MintTransactionState.create(tokenId)
         ),

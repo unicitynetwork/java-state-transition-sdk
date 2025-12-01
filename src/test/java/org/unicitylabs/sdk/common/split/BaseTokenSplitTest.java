@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.address.ProxyAddress;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
@@ -115,11 +115,11 @@ public abstract class BaseTokenSplitTest {
         )
     );
 
-    SubmitCommitmentResponse burnCommitmentResponse = this.client
+    CertificationResponse burnCommitmentResponse = this.client
         .submitCommitment(burnCommitment)
         .get();
 
-    if (burnCommitmentResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (burnCommitmentResponse.getStatus() != CertificationStatus.SUCCESS) {
       throw new Exception(String.format("Failed to submit burn commitment: %s",
           burnCommitmentResponse.getStatus()));
     }
@@ -136,11 +136,11 @@ public abstract class BaseTokenSplitTest {
     );
 
     for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
-      SubmitCommitmentResponse response = this.client
+      CertificationResponse response = this.client
           .submitCommitment(commitment)
           .get();
 
-      if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+      if (response.getStatus() != CertificationStatus.SUCCESS) {
         throw new Exception(String.format("Failed to submit burn commitment: %s",
             response.getStatus()));
       }
