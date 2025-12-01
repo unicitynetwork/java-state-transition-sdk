@@ -5,6 +5,10 @@ package org.unicitylabs.sdk.transaction;
  */
 public enum InclusionProofVerificationStatus {
   /**
+   * Inclusion proof verification failed because the trust base is invalid.
+   */
+  INVALID_TRUST_BASE("INVALID_TRUST_BASE"),
+  /**
    * Inclusion proof verification failed because the proof could not be authenticated.
    */
   NOT_AUTHENTICATED("NOT_AUTHENTICATED"),

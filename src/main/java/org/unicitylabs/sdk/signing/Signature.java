@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Arrays;
 import java.util.Objects;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.HexConverter;
 
 /**
@@ -52,6 +54,15 @@ public class Signature {
   }
 
   /**
+   * Serialize Signature to CBOR bytes.
+   *
+   * @return CBOR bytes
+   */
+  public byte[] toCbor() {
+    return CborSerializer.encodeByteString(this.encode());
+  }
+
+  /**
    * Decodes a byte array into a Signature object.
    *
    * @param input The byte array containing the signature (64 bytes + 1 recovery byte)
@@ -65,6 +76,16 @@ public class Signature {
     byte[] bytes = Arrays.copyOf(input, 64);
     int recovery = input[64] & 0xFF; // Ensure recovery is unsigned
     return new Signature(bytes, recovery);
+  }
+
+  /**
+   * Create Signature from CBOR bytes.
+   *
+   * @param bytes CBOR bytes
+   * @return signature
+   */
+  public static Signature fromCbor(byte[] bytes) {
+    return Signature.decode(CborDeserializer.readByteString(bytes));
   }
 
   @Override

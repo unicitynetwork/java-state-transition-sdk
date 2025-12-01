@@ -3,9 +3,9 @@ package org.unicitylabs.sdk.functional;
 import org.junit.jupiter.api.BeforeEach;
 import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.TestAggregatorClient;
+import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.common.CommonTestFlow;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.unicitylabs.sdk.bft.RootTrustBaseUtils;
 
 public class FunctionalCommonFlowTest extends CommonTestFlow {
 

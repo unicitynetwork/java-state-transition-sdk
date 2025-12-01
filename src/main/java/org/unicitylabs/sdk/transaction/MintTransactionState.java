@@ -1,6 +1,6 @@
 package org.unicitylabs.sdk.transaction;
 
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -24,6 +24,6 @@ public class MintTransactionState extends DataHash {
    * @return mint state
    */
   public static MintTransactionState create(TokenId tokenId) {
-    return new MintTransactionState(RequestId.create(tokenId.getBytes(), MINT_SUFFIX));
+    return new MintTransactionState(StateId.create(tokenId.getBytes(), MINT_SUFFIX));
   }
 }

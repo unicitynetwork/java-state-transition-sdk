@@ -1,23 +1,24 @@
 package org.unicitylabs.sdk.e2e;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.security.SecureRandom;
+import java.util.concurrent.ExecutorService;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.CertificationResponse;
+import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.RequestId;
-import org.unicitylabs.sdk.api.SubmitCommitmentResponse;
-import org.unicitylabs.sdk.api.SubmitCommitmentStatus;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
 import org.unicitylabs.sdk.signing.SigningService;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import java.security.SecureRandom;
-import java.util.concurrent.ExecutorService;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Basic end-to-end test to verify connectivity with aggregator.
@@ -43,11 +44,10 @@ public class BasicE2ETest {
         DataHash stateHash = new DataHasher(HashAlgorithm.SHA256).update(stateBytes).digest();
         DataHash txDataHash = new DataHasher(HashAlgorithm.SHA256).update("test commitment performance".getBytes()).digest();
         SigningService signingService = SigningService.createFromSecret(randomSecret);
-        RequestId requestId = RequestId.create(signingService.getPublicKey(), stateHash.getImprint());
-        Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
-        SubmitCommitmentResponse response = aggregatorClient.submitCommitment(requestId, txDataHash, auth).get();
+        CertificationData certificationData = CertificationData.create(stateHash, txDataHash, signingService);
+        CertificationResponse response = aggregatorClient.submitCertificationRequest(certificationData, false).get();
 
-        if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+        if (response.getStatus() != CertificationStatus.SUCCESS) {
             System.err.println("Commitment submission failed with status: " + response.getStatus());
         }
         long endTime = System.currentTimeMillis();
@@ -88,10 +88,10 @@ public class BasicE2ETest {
                         DataHash stateHash = new DataHasher(HashAlgorithm.SHA256).update(stateBytes).digest();
                         DataHash txDataHash = new DataHasher(HashAlgorithm.SHA256).update(txData).digest();
                         SigningService signingService = SigningService.createFromSecret(randomSecret);
-                        RequestId requestId = RequestId.create(signingService.getPublicKey(), stateHash.getImprint());
-                        Authenticator auth = Authenticator.create(signingService, txDataHash, stateHash);
-                        SubmitCommitmentResponse response = aggregatorClient.submitCommitment(requestId, txDataHash, auth).get();
-                        return response.getStatus() == SubmitCommitmentStatus.SUCCESS;
+                        StateId stateId = StateId.create(signingService.getPublicKey(), stateHash.getImprint());
+                        CertificationData certificationData = CertificationData.create(stateId, txDataHash, signingService);
+                        CertificationResponse response = aggregatorClient.submitCertificationRequest(certificationData, false).get();
+                        return response.getStatus() == CertificationStatus.SUCCESS;
                     } finally {
                         latch.countDown();
                     }

@@ -13,7 +13,8 @@ import java.util.Objects;
 import java.util.Optional;
 import org.unicitylabs.sdk.address.Address;
 import org.unicitylabs.sdk.address.AddressFactory;
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.DataHasher;
@@ -85,12 +86,9 @@ public class MintTransaction<R extends MintTransactionReason> extends
    * @return verification result
    */
   public VerificationResult verify(RootTrustBase trustBase) {
-    if (!this.getInclusionProof().getAuthenticator().isPresent()) {
-      return VerificationResult.fail("Missing authenticator");
-    }
-
-    if (!this.getInclusionProof().getTransactionHash().isPresent()) {
-      return VerificationResult.fail("Missing transaction hash");
+    CertificationData certificationData = this.getInclusionProof().getCertificationData().orElse(null);
+    if (certificationData == null) {
+      return VerificationResult.fail("Missing certification data");
     }
 
     if (!this.getData().getSourceState()
@@ -99,13 +97,11 @@ public class MintTransaction<R extends MintTransactionReason> extends
     }
 
     SigningService signingService = MintSigningService.create(this.getData().getTokenId());
-    if (!Arrays.equals(signingService.getPublicKey(),
-        this.getInclusionProof().getAuthenticator().get().getPublicKey())) {
-      return VerificationResult.fail("Authenticator public key mismatch");
+    if (!Arrays.equals(signingService.getPublicKey(), certificationData.getPublicKey())) {
+      return VerificationResult.fail("Certification data public key mismatch");
     }
 
-    if (!this.getInclusionProof().getAuthenticator().get()
-        .verify(this.getInclusionProof().getTransactionHash().get())) {
+    if (!certificationData.verify()) {
       return VerificationResult.fail("Authenticator verification failed");
     }
 
@@ -118,11 +114,8 @@ public class MintTransaction<R extends MintTransactionReason> extends
     }
 
     InclusionProofVerificationStatus inclusionProofStatus = this.getInclusionProof().verify(
-        RequestId.create(
-            MintSigningService.create(this.getData().getTokenId()).getPublicKey(),
-            this.getData().getSourceState()
-        ),
-        trustBase
+        trustBase,
+        StateId.create(signingService.getPublicKey(), this.getData().getSourceState())
     );
 
     if (inclusionProofStatus != InclusionProofVerificationStatus.OK) {

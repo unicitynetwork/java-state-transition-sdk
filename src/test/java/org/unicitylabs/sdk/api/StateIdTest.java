@@ -7,29 +7,29 @@ import java.math.BigInteger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class RequestIdTest {
+public class StateIdTest {
 
   @Test
   public void shouldResolveToBigInteger() {
-    RequestId requestId = RequestId.create(new byte[5],
+    StateId stateId = StateId.create(new byte[5],
         new DataHash(HashAlgorithm.SHA256, new byte[32]));
     Assertions.assertEquals(
         new BigInteger(
-            "7588617643772589565921291111125869131233840654380505021472016115258380142349673042"
+            "7588640947079736950651543599112501467726489700903461286985351382586976462842180672"
         ),
-        requestId.toBitString().toBigInteger());
+        stateId.toBitString().toBigInteger());
   }
 
   @Test
-  public void testJsonSerialization() throws JsonProcessingException {
-    RequestId requestId = RequestId.create(
+  public void testJsonSerialization() {
+    StateId stateId = StateId.create(
         new byte[5],
         new DataHash(HashAlgorithm.SHA256, new byte[32])
     );
 
     Assertions.assertEquals(
-        requestId,
-        RequestId.fromJson(requestId.toJson())
+        stateId,
+        StateId.fromJson(stateId.toJson())
     );
   }
 }

@@ -61,10 +61,10 @@ public class SparseMerkleTreePath {
   /**
    * Verify merkle tree path against given path.
    *
-   * @param requestId path
+   * @param stateId path
    * @return MerkleTreePathVerificationResult
    */
-  public MerkleTreePathVerificationResult verify(BigInteger requestId) {
+  public MerkleTreePathVerificationResult verify(BigInteger stateId) {
     if (this.steps.isEmpty()) {
       return new MerkleTreePathVerificationResult(false, false);
     }
@@ -122,7 +122,7 @@ public class SparseMerkleTreePath {
 
     boolean pathValid = currentData != null
         && this.rootHash.equals(new DataHash(this.rootHash.getAlgorithm(), currentData));
-    boolean pathIncluded = currentPath.compareTo(requestId) == 0;
+    boolean pathIncluded = currentPath.compareTo(stateId) == 0;
 
     return new MerkleTreePathVerificationResult(pathValid, pathIncluded);
   }

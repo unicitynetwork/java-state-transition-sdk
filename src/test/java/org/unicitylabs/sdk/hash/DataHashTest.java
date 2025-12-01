@@ -18,7 +18,7 @@ public class DataHashTest {
   }
 
   @Test
-  public void testDataHashJsonSerialization() throws JsonProcessingException {
+  public void testDataHashJsonSerialization() {
     Assertions.assertEquals(
         "\"00000000000000000000000000000000000000000000000000000000000000000000\"",
 

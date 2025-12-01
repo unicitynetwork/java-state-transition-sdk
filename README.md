@@ -127,18 +127,18 @@ MintCommitment<?> commitment = MintCommitment.create(
 );
 
 // Submit mint transaction using StateTransitionClient
-SubmitCommitmentResponse response = client
+CertificationResponse response = client
     .submitCommitment(commitment)
     .get();
 
-if (response.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+    if (response.getStatus() != CertificationStatus.SUCCESS) {
     throw new Exception(
-        String.format(
-            "Failed to submit mint commitment: %s", 
-            response.getStatus()
-        )
-    );
-}
+    String.format(
+        "Failed to submit mint commitment: %s",
+    response.getStatus()
+          )
+              );
+              }
 
 // Wait for inclusion proof
 InclusionProof inclusionProof = InclusionProofUtils.waitInclusionProof(
@@ -187,8 +187,8 @@ TransferCommitment transferCommitment = TransferCommitment.create(
     SigningService.createFromMaskedSecret(senderSecret, senderNonce)
 );
 
-SubmitCommitmentResponse transferResponse = this.client.submitCommitment(transferCommitment).get();
-if (transferResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+CertificationResponse transferResponse = this.client.submitCommitment(transferCommitment).get();
+if (transferResponse.getStatus() != CertificationStatus.SUCCESS) {
     throw new Exception(
       String.format(
         "Failed to submit transfer commitment: %s",
@@ -245,8 +245,8 @@ MintCommitment<?> nametagMintCommitment = MintCommitment.create(
 );
 
 // Submit nametag mint transaction using StateTransitionClient
-SubmitCommitmentResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment).get();
-if (nametagMintResponse.getStatus() != SubmitCommitmentStatus.SUCCESS) {
+CertificationResponse nametagMintResponse = client.submitCommitment(nametagMintCommitment).get();
+if (nametagMintResponse.getStatus() != CertificationStatus.SUCCESS) {
     throw new Exception(
         String.format(
             "Failed to submit nametag mint commitment: %s",
@@ -294,7 +294,6 @@ Token<?> finalizedToken = client.finalizeTransaction(
     transaction,
     List.of(nametagToken)
 );
-
 ```
 
 ## Building from Source
@@ -410,7 +409,7 @@ Located in `src/test/java/org/unicitylabs/sdk/`:
 ./gradlew integrationTest
 
 # Specific test class
-./gradlew test --tests "org.unicitylabs.sdk.api.RequestIdTest"
+./gradlew test --tests "org.unicitylabs.sdk.api.StateIdTest"
 ```
 
 ## License

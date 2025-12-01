@@ -1,7 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;

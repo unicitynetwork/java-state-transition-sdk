@@ -27,7 +27,7 @@ import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenSplitBuilderTest {
 
-  private Token<?> createToken(TokenCoinData coinData) throws VerificationException {
+  private Token<?> createToken(TokenCoinData coinData) {
     SigningService signingService = new SigningService(SigningService.generatePrivateKey());
     UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
         signingService, DataHash.fromImprint(new byte[34]));
@@ -60,7 +60,6 @@ public class TokenSplitBuilderTest {
             InclusionProofFixture.create(
                 SparseMerkleTreePathFixture.create(),
                 null,
-                null,
                 unicityCertificate
             )
         ),
@@ -71,7 +70,7 @@ public class TokenSplitBuilderTest {
 
   @Test
   public void testTokenSplitIntoMultipleTokens()
-      throws LeafOutOfBoundsException, BranchExistsException, VerificationException, IOException {
+      throws LeafOutOfBoundsException, BranchExistsException {
     Token<?> token = this.createToken(
         new TokenCoinData(
             Map.of(
@@ -145,7 +144,7 @@ public class TokenSplitBuilderTest {
   }
 
   @Test
-  public void testTokenSplitUnknownSplitCoin() throws VerificationException, IOException {
+  public void testTokenSplitUnknownSplitCoin() {
     Token<?> token = this.createToken(null);
 
     Predicate predicate = new MaskedPredicate(

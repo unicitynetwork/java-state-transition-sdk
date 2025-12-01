@@ -3,13 +3,11 @@ package org.unicitylabs.sdk.transaction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.unicitylabs.sdk.api.Authenticator;
-import org.unicitylabs.sdk.api.LeafValue;
-import org.unicitylabs.sdk.api.RequestId;
+import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.bft.RootTrustBase;
 import org.unicitylabs.sdk.bft.UnicityCertificate;
 import org.unicitylabs.sdk.bft.verification.UnicityCertificateVerificationContext;
@@ -30,27 +28,20 @@ import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 public class InclusionProof {
 
   private final SparseMerkleTreePath merkleTreePath;
-  private final Authenticator authenticator;
-  private final DataHash transactionHash;
+  private final CertificationData certificationData;
   private final UnicityCertificate unicityCertificate;
 
   @JsonCreator
   InclusionProof(
       @JsonProperty("merkleTreePath") SparseMerkleTreePath merkleTreePath,
-      @JsonProperty("authenticator") Authenticator authenticator,
-      @JsonProperty("transactionHash") DataHash transactionHash,
+      @JsonProperty("certificationData") CertificationData certificationData,
       @JsonProperty("unicityCertificate") UnicityCertificate unicityCertificate
   ) {
     Objects.requireNonNull(merkleTreePath, "Merkle tree path cannot be null.");
     Objects.requireNonNull(unicityCertificate, "Unicity certificate cannot be null.");
 
-    if ((authenticator == null) != (transactionHash == null)) {
-      throw new IllegalArgumentException(
-          "Authenticator and transaction hash must be both set or both null.");
-    }
     this.merkleTreePath = merkleTreePath;
-    this.authenticator = authenticator;
-    this.transactionHash = transactionHash;
+    this.certificationData = certificationData;
     this.unicityCertificate = unicityCertificate;
   }
 
@@ -73,31 +64,23 @@ public class InclusionProof {
   }
 
   /**
-   * Get authenticator on inclusion proof, null on non inclusion proof.
+   * Get certification data on inclusion proof, null on non inclusion proof.
    *
    * @return authenticator
    */
-  public Optional<Authenticator> getAuthenticator() {
-    return Optional.ofNullable(this.authenticator);
-  }
-
-  /**
-   * Get authenticator on inclusion proof, null on non inclusion proof.
-   *
-   * @return inclusion proof
-   */
-  public Optional<DataHash> getTransactionHash() {
-    return Optional.ofNullable(this.transactionHash);
+  public Optional<CertificationData> getCertificationData() {
+    return Optional.ofNullable(this.certificationData);
   }
 
   /**
    * Verify inclusion proof.
    *
-   * @param requestId request id
    * @param trustBase trust base for unicity certificate anchor verification
+   * @param stateId   state id
+   *
    * @return inclusion proof verification status
    */
-  public InclusionProofVerificationStatus verify(RequestId requestId, RootTrustBase trustBase) {
+  public InclusionProofVerificationStatus verify(RootTrustBase trustBase, StateId stateId) {
     // Check if path is valid and signed by a trusted authority
     if (!new UnicityCertificateVerificationRule().verify(
         new UnicityCertificateVerificationContext(
@@ -106,30 +89,30 @@ public class InclusionProof {
             trustBase
         )
     ).isSuccessful()) {
-      return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
+      return InclusionProofVerificationStatus.INVALID_TRUST_BASE;
     }
 
-    MerkleTreePathVerificationResult result = this.merkleTreePath.verify(
-        requestId.toBitString().toBigInteger());
+    MerkleTreePathVerificationResult result = this.merkleTreePath.verify(stateId.toBitString().toBigInteger());
     if (!result.isPathValid()) {
       return InclusionProofVerificationStatus.PATH_INVALID;
     }
 
-    if (this.authenticator != null && this.transactionHash != null) {
-      if (!this.authenticator.verify(this.transactionHash)) {
+    if (this.certificationData != null) {
+      if (!this.certificationData.verify()) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }
 
       try {
-        LeafValue leafValue = LeafValue.create(this.authenticator, this.transactionHash);
         if (this.merkleTreePath.getSteps().size() == 0) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
         }
 
+        DataHash leafValue = this.certificationData.calculateLeafValue();
         SparseMerkleTreePathStep step = this.merkleTreePath.getSteps().get(0);
-        if (!Arrays.equals(leafValue.getBytes(), step.getData().orElse(null))) {
+        if (!leafValue.equals(step.getData().map(DataHash::fromImprint).orElse(null))) {
           return InclusionProofVerificationStatus.PATH_NOT_INCLUDED;
         }
+
       } catch (CborSerializationException e) {
         return InclusionProofVerificationStatus.NOT_AUTHENTICATED;
       }
@@ -153,9 +136,8 @@ public class InclusionProof {
 
     return new InclusionProof(
         SparseMerkleTreePath.fromCbor(data.get(0)),
-        CborDeserializer.readOptional(data.get(1), Authenticator::fromCbor),
-        CborDeserializer.readOptional(data.get(2), DataHash::fromCbor),
-        UnicityCertificate.fromCbor(data.get(3))
+        CborDeserializer.readOptional(data.get(1), CertificationData::fromCbor),
+        UnicityCertificate.fromCbor(data.get(2))
     );
   }
 
@@ -167,8 +149,7 @@ public class InclusionProof {
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
         this.merkleTreePath.toCbor(),
-        CborSerializer.encodeOptional(this.authenticator, Authenticator::toCbor),
-        CborSerializer.encodeOptional(this.transactionHash, DataHash::toCbor),
+        CborSerializer.encodeOptional(this.certificationData, CertificationData::toCbor),
         this.unicityCertificate.toCbor()
     );
   }
@@ -206,18 +187,18 @@ public class InclusionProof {
       return false;
     }
     InclusionProof that = (InclusionProof) o;
-    return Objects.equals(merkleTreePath, that.merkleTreePath) && Objects.equals(authenticator,
-        that.authenticator) && Objects.equals(transactionHash, that.transactionHash);
+    return Objects.equals(this.merkleTreePath, that.merkleTreePath) && Objects.equals(this.certificationData,
+        that.certificationData);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(merkleTreePath, authenticator, transactionHash);
+    return Objects.hash(this.merkleTreePath, this.certificationData);
   }
 
   @Override
   public String toString() {
-    return String.format("InclusionProof{merkleTreePath=%s, authenticator=%s, transactionHash=%s}",
-        merkleTreePath, authenticator, transactionHash);
+    return String.format("InclusionProof{merkleTreePath=%s, certificationData=%s}", this.merkleTreePath,
+        this.certificationData);
   }
 }
