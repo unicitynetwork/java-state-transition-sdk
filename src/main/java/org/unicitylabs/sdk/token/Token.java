@@ -21,8 +21,8 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
 import org.unicitylabs.sdk.transaction.MintTransaction;
-import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.verification.VerificationException;
@@ -30,10 +30,8 @@ import org.unicitylabs.sdk.verification.VerificationResult;
 
 /**
  * Token representation.
- *
- * @param <R> mint transaction reason for current token.
  */
-public class Token<R extends MintTransactionReason> {
+public class Token {
 
   /**
    * Current token representation version.
@@ -41,20 +39,20 @@ public class Token<R extends MintTransactionReason> {
   public static final String TOKEN_VERSION = "2.0";
 
   private final TokenState state;
-  private final MintTransaction<R> genesis;
+  private final MintTransaction genesis;
   private final List<TransferTransaction> transactions;
-  private final List<Token<?>> nametags;
+  private final List<Token> nametags;
 
   @JsonCreator
   Token(
       @JsonProperty("state")
       TokenState state,
       @JsonProperty("genesis")
-      MintTransaction<R> genesis,
+      MintTransaction genesis,
       @JsonProperty("transactions")
       List<TransferTransaction> transactions,
       @JsonProperty("nametags")
-      List<Token<?>> nametags
+      List<Token> nametags
   ) {
     Objects.requireNonNull(state, "State cannot be null");
     Objects.requireNonNull(genesis, "Genesis cannot be null");
@@ -131,7 +129,7 @@ public class Token<R extends MintTransactionReason> {
    *
    * @return token genesis
    */
-  public MintTransaction<R> getGenesis() {
+  public MintTransaction getGenesis() {
     return this.genesis;
   }
 
@@ -145,57 +143,69 @@ public class Token<R extends MintTransactionReason> {
   }
 
   /**
+   * Get token's latest transaction.
+   *
+   * @return latest transaction
+   */
+  @JsonIgnore
+  public Transaction<?> getLatestTransaction() {
+    return this.transactions.size() > 0 ? this.transactions.get(this.transactions.size() - 1) : this.genesis;
+  }
+
+  /**
    * Get token current state nametags.
    *
    * @return nametags
    */
-  public List<Token<?>> getNametags() {
+  public List<Token> getNametags() {
     return this.nametags;
   }
 
   /**
    * Create token from mint transaction and initial state. Also verify if state is correct.
    *
-   * @param trustBase   trust base for mint transaction verification
-   * @param state       initial state
-   * @param transaction mint transaction
-   * @param <R>         mint transaction reason
+   * @param trustBase         trust base for mint transaction verification
+   * @param mintReasonFactory factory to create mint transaction reasons
+   * @param state             initial state
+   * @param transaction       mint transaction
    * @return token
    * @throws VerificationException if token state is invalid
    */
-  public static <R extends MintTransactionReason> Token<R> create(
+  public static Token mint(
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       TokenState state,
-      MintTransaction<R> transaction
+      MintTransaction transaction
   ) throws VerificationException {
-    return Token.create(trustBase, state, transaction, List.of());
+    return Token.mint(trustBase, mintReasonFactory, state, transaction, List.of());
   }
 
   /**
-   * Create token state from mint transaction, initial state and nametags. Also verify if state is
-   * correct.
+   * Create token state from mint transaction, initial state and nametags. Also verify if state is correct.
    *
-   * @param trustBase   trust base for mint transaction verification
-   * @param state       initial state
-   * @param transaction mint transaction
-   * @param nametags    nametags associated with transaction
-   * @param <R>         mint transaction reason
+   * @param trustBase         trust base for mint transaction verification
+   * @param mintReasonFactory factory to create mint transaction reasons
+   * @param state             initial state
+   * @param transaction       mint transaction
+   * @param nametags          nametags associated with transaction
    * @return token
    * @throws VerificationException if token state is invalid
    */
-  public static <R extends MintTransactionReason> Token<R> create(
+  public static Token mint(
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       TokenState state,
-      MintTransaction<R> transaction,
-      List<Token<?>> nametags
+      MintTransaction transaction,
+      List<Token> nametags
   ) throws VerificationException {
     Objects.requireNonNull(state, "State cannot be null");
     Objects.requireNonNull(transaction, "Genesis cannot be null");
     Objects.requireNonNull(trustBase, "Trust base cannot be null");
+    Objects.requireNonNull(mintReasonFactory, "Mint reason factory cannot be null");
     Objects.requireNonNull(nametags, "Nametag tokens cannot be null");
 
-    Token<R> token = new Token<>(state, transaction, List.of(), nametags);
-    VerificationResult result = token.verify(trustBase);
+    Token token = new Token(state, transaction, List.of(), nametags);
+    VerificationResult result = token.verify(trustBase, mintReasonFactory);
     if (!result.isSuccessful()) {
       throw new VerificationException("Token verification failed", result);
     }
@@ -206,25 +216,28 @@ public class Token<R extends MintTransactionReason> {
   /**
    * Update token to next state with given transfer transaction.
    *
-   * @param trustBase   trust base to verify latest state
-   * @param state       current state
-   * @param transaction latest transaction
-   * @param nametags    nametags associated with transaction
+   * @param trustBase         trust base to verify latest state
+   * @param mintReasonFactory factory to create mint transaction reasons
+   * @param state             current state
+   * @param transaction       latest transaction
+   * @param nametags          nametags associated with transaction
    * @return tokest with latest state
    * @throws VerificationException if token state is invalid
    */
-  public Token<R> update(
+  public Token update(
       RootTrustBase trustBase,
+      MintReasonFactory mintReasonFactory,
       TokenState state,
       TransferTransaction transaction,
-      List<Token<?>> nametags
+      List<Token> nametags
   ) throws VerificationException {
     Objects.requireNonNull(state, "State cannot be null");
     Objects.requireNonNull(transaction, "Transaction cannot be null");
     Objects.requireNonNull(nametags, "Nametag tokens cannot be null");
     Objects.requireNonNull(trustBase, "Trust base cannot be null");
+    Objects.requireNonNull(mintReasonFactory, "MintReasonFactory cannot be null");
 
-    VerificationResult result = transaction.verify(trustBase, this);
+    VerificationResult result = transaction.verify(trustBase, mintReasonFactory, this);
 
     if (!result.isSuccessful()) {
       throw new VerificationException("Transaction verification failed", result);
@@ -232,9 +245,9 @@ public class Token<R extends MintTransactionReason> {
 
     LinkedList<TransferTransaction> transactions = new LinkedList<>(this.transactions);
     transactions.add(transaction);
-    Token<R> token = new Token<>(state, this.genesis, transactions, nametags);
+    Token token = new Token(state, this.genesis, transactions, nametags);
 
-    result = token.verifyNametagTokens(trustBase);
+    result = token.verifyNametagTokens(trustBase, mintReasonFactory);
     if (!result.isSuccessful()) {
       throw new VerificationException("Nametag tokens verification failed", result);
     }
@@ -255,15 +268,19 @@ public class Token<R extends MintTransactionReason> {
   /**
    * Verify current token state against trustbase.
    *
-   * @param trustBase trust base to verify state against
+   * @param trustBase         trust base to verify state against
+   * @param mintReasonFactory factory to create mint transaction reasons
    * @return verification result
    */
-  public VerificationResult verify(RootTrustBase trustBase) {
+  public VerificationResult verify(RootTrustBase trustBase, MintReasonFactory mintReasonFactory) {
+    Objects.requireNonNull(trustBase, "Trust base cannot be null");
+    Objects.requireNonNull(mintReasonFactory, "Mint reason factory cannot be null");
+
     List<VerificationResult> results = new ArrayList<>();
     results.add(
         VerificationResult.fromChildren(
             "Genesis verification",
-            List.of(this.genesis.verify(trustBase))
+            List.of(this.genesis.verify(trustBase, mintReasonFactory))
         )
     );
 
@@ -272,7 +289,8 @@ public class Token<R extends MintTransactionReason> {
       results.add(
           transaction.verify(
               trustBase,
-              new Token<>(
+              mintReasonFactory,
+              new Token(
                   transaction.getData().getSourceState(),
                   this.genesis,
                   this.transactions.subList(0, i),
@@ -286,7 +304,7 @@ public class Token<R extends MintTransactionReason> {
         VerificationResult.fromChildren(
             "Current state verification",
             List.of(
-                this.verifyNametagTokens(trustBase),
+                this.verifyNametagTokens(trustBase, mintReasonFactory),
                 this.verifyRecipient(),
                 this.verifyRecipientData()
             )
@@ -299,14 +317,18 @@ public class Token<R extends MintTransactionReason> {
   /**
    * Verify token nametag tokens against trust base.
    *
-   * @param trustBase trust base to verify against
+   * @param trustBase         trust base to verify against
+   * @param mintReasonFactory factory to create mint transaction reasons
    * @return verification result
    */
-  public VerificationResult verifyNametagTokens(RootTrustBase trustBase) {
+  public VerificationResult verifyNametagTokens(RootTrustBase trustBase, MintReasonFactory mintReasonFactory) {
+    Objects.requireNonNull(trustBase, "Trust base cannot be null");
+    Objects.requireNonNull(mintReasonFactory, "Mint reason factory cannot be null");
+
     return VerificationResult.fromChildren(
         "Nametag verification",
         this.nametags.stream()
-            .map(token -> token.verify(trustBase))
+            .map(token -> token.verify(trustBase, mintReasonFactory))
             .collect(Collectors.toList()));
   }
 
@@ -356,14 +378,14 @@ public class Token<R extends MintTransactionReason> {
    * @param bytes CBOR bytes
    * @return token
    */
-  public static Token<?> fromCbor(byte[] bytes) {
+  public static Token fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
     String version = CborDeserializer.readTextString(data.get(0));
     if (!Token.TOKEN_VERSION.equals(version)) {
       throw new CborSerializationException("Invalid version: " + version);
     }
 
-    return new Token<>(
+    return new Token(
         TokenState.fromCbor(data.get(1)),
         MintTransaction.fromCbor(data.get(2)),
         CborDeserializer.readArray(data.get(3)).stream()
@@ -404,7 +426,7 @@ public class Token<R extends MintTransactionReason> {
    * @param input JSON string
    * @return token
    */
-  public static Token<?> fromJson(String input) {
+  public static Token fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, Token.class);
     } catch (JsonProcessingException e) {
@@ -430,7 +452,7 @@ public class Token<R extends MintTransactionReason> {
     if (!(o instanceof Token)) {
       return false;
     }
-    Token<?> token = (Token<?>) o;
+    Token token = (Token) o;
     return Objects.equals(this.state, token.state) && Objects.equals(this.genesis,
         token.genesis) && Objects.equals(this.transactions, token.transactions)
         && Objects.equals(this.nametags, token.nametags);

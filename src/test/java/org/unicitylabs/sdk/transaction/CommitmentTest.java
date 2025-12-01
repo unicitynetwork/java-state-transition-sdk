@@ -28,7 +28,7 @@ public class CommitmentTest {
 
     MaskedPredicateReference predicateReference = MaskedPredicateReference.create(tokenType,
         signingService.getAlgorithm(), signingService.getPublicKey(), HashAlgorithm.SHA256, nonce);
-    MintTransaction.Data<MintTransactionReason> transactionData = new MintTransaction.Data<>(
+    MintTransaction.Data transactionData = new MintTransaction.Data(
         new TokenId(new byte[32]),
         tokenType,
         new byte[5],
@@ -38,10 +38,9 @@ public class CommitmentTest {
         )),
         predicateReference.toAddress(),
         new byte[10],
-        new DataHash(HashAlgorithm.SHA256, new byte[32]),
-        null
+        new DataHash(HashAlgorithm.SHA256, new byte[32])
     );
-    MintCommitment<?> commitment = MintCommitment.create(transactionData);
+    MintCommitment commitment = MintCommitment.create(transactionData);
 
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new Jdk8Module());

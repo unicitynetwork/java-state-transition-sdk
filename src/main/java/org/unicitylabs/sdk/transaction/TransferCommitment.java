@@ -66,7 +66,7 @@ public class TransferCommitment extends Commitment<TransferTransaction.Data> {
    * @return transfer commitment
    */
   public static TransferCommitment create(
-      Token<?> token,
+      Token token,
       Address recipient,
       byte[] salt,
       DataHash recipientDataHash,

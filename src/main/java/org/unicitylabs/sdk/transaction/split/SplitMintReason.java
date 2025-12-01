@@ -1,9 +1,6 @@
 
 package org.unicitylabs.sdk.transaction.split;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +16,6 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.MintReasonType;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionReason;
 import org.unicitylabs.sdk.verification.VerificationResult;
@@ -27,16 +23,19 @@ import org.unicitylabs.sdk.verification.VerificationResult;
 /**
  * Mint reason for splitting a token.
  */
-@JsonIgnoreProperties()
 public class SplitMintReason implements MintTransactionReason {
 
-  private final Token<?> token;
+  /**
+   * Split reason type for encoding and decoding.
+   */
+  public static final long TYPE = 1;
+
+  private final Token token;
   private final List<SplitMintReasonProof> proofs;
 
-  @JsonCreator
   SplitMintReason(
-      @JsonProperty("token") Token<?> token,
-      @JsonProperty("proofs") List<SplitMintReasonProof> proofs
+      Token token,
+      List<SplitMintReasonProof> proofs
   ) {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(proofs, "Proofs cannot be null");
@@ -46,21 +45,11 @@ public class SplitMintReason implements MintTransactionReason {
   }
 
   /**
-   * Get mint reason type.
-   *
-   * @return token split reason
-   */
-  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-  public String getType() {
-    return MintReasonType.TOKEN_SPLIT.name();
-  }
-
-  /**
    * Get token which was burnt for split.
    *
    * @return burnt token
    */
-  public Token<?> getToken() {
+  public Token getToken() {
     return this.token;
   }
 
@@ -79,7 +68,7 @@ public class SplitMintReason implements MintTransactionReason {
    * @param transaction Genesis to verify against
    * @return verification result
    */
-  public VerificationResult verify(MintTransaction<?> transaction) {
+  public VerificationResult verify(MintTransaction transaction) {
     if (!transaction.getData().getCoinData().isPresent()) {
       return VerificationResult.fail("Coin data is missing.");
     }
@@ -140,6 +129,11 @@ public class SplitMintReason implements MintTransactionReason {
   public static SplitMintReason fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
+    long type = CborDeserializer.readUnsignedInteger(data.get(0)).asLong();
+    if (type != SplitMintReason.TYPE) {
+      throw new IllegalArgumentException("Invalid type for SplitMintReason: " + type);
+    }
+
     return new SplitMintReason(
         Token.fromCbor(data.get(1)),
         CborDeserializer.readArray(data.get(2)).stream()
@@ -155,7 +149,7 @@ public class SplitMintReason implements MintTransactionReason {
    */
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
-        CborSerializer.encodeTextString(this.getType()),
+        CborSerializer.encodeUnsignedInteger(SplitMintReason.TYPE),
         this.token.toCbor(),
         CborSerializer.encodeArray(
             this.proofs.stream()

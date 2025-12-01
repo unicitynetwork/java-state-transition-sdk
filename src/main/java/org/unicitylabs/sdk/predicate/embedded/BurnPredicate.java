@@ -74,7 +74,7 @@ public class BurnPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Token<?> token, TransferTransaction transaction, RootTrustBase trustBase) {
+  public boolean verify(Token token, TransferTransaction transaction, RootTrustBase trustBase) {
     return false;
   }
 

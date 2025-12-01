@@ -14,15 +14,13 @@ import org.unicitylabs.sdk.signing.SigningService;
 
 /**
  * Commitment representing a submitted transaction.
- *
- * @param <R> the type of transaction data
  */
-public class MintCommitment<R extends MintTransactionReason> extends
-    Commitment<MintTransaction.Data<R>> {
+public class MintCommitment extends
+    Commitment<MintTransaction.Data> {
   @JsonCreator
   private MintCommitment(
       @JsonProperty("transactionData")
-      MintTransaction.Data<R> transactionData,
+      MintTransaction.Data transactionData,
       @JsonProperty("authenticator")
       CertificationData certificationData
   ) {
@@ -36,8 +34,8 @@ public class MintCommitment<R extends MintTransactionReason> extends
    * @return mint transaction
    */
   @Override
-  public MintTransaction<R> toTransaction(InclusionProof inclusionProof) {
-    return new MintTransaction<>(this.getTransactionData(), inclusionProof);
+  public MintTransaction toTransaction(InclusionProof inclusionProof) {
+    return new MintTransaction(this.getTransactionData(), inclusionProof);
   }
 
   /**
@@ -46,7 +44,7 @@ public class MintCommitment<R extends MintTransactionReason> extends
    * @param input JSON string
    * @return mint commitment data
    */
-  public static MintCommitment<?> fromJson(String input) {
+  public static MintCommitment fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, MintCommitment.class);
     } catch (JsonProcessingException e) {
@@ -58,11 +56,10 @@ public class MintCommitment<R extends MintTransactionReason> extends
    * Create mint commitment from transaction data.
    *
    * @param transactionData mint transaction data
-   * @param <R>             mint reason
    * @return mint commitment
    */
-  public static <R extends MintTransactionReason> MintCommitment<R> create(
-      MintTransaction.Data<R> transactionData
+  public static MintCommitment create(
+      MintTransaction.Data transactionData
   ) {
     Objects.requireNonNull(transactionData, "Transaction data cannot be null");
 
@@ -73,6 +70,6 @@ public class MintCommitment<R extends MintTransactionReason> extends
         signingService
     );
 
-    return new MintCommitment<>(transactionData, certificationData);
+    return new MintCommitment(transactionData, certificationData);
   }
 }

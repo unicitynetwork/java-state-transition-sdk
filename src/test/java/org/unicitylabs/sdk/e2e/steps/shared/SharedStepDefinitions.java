@@ -9,7 +9,9 @@ import org.unicitylabs.sdk.e2e.config.CucumberConfiguration;
 import org.unicitylabs.sdk.e2e.context.TestContext;
 import org.unicitylabs.sdk.predicate.PredicateEngineService;
 import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.UnmaskedPredicateReference;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
 import org.unicitylabs.sdk.utils.TestUtils;
 import org.unicitylabs.sdk.hash.DataHash;
 import org.unicitylabs.sdk.hash.HashAlgorithm;
@@ -228,7 +230,7 @@ public class SharedStepDefinitions {
         TokenType tokenType = TestUtils.generateRandomTokenType();;
         TokenCoinData coinData = TestUtils.createRandomCoinData(2);
 
-        Token <?> token = TestUtils.mintTokenForUser(
+        Token token = TestUtils.mintTokenForUser(
                 context.getClient(),
                 context.getUserSigningServices().get(username),
                 context.getUserNonces().get(username),
@@ -261,16 +263,13 @@ public class SharedStepDefinitions {
         Token sourceToken = context.getUserToken(fromUser);
         SigningService toSigningService = context.getUserSigningServices().get(toUser);
 
-        UnmaskedPredicate userPredicate = UnmaskedPredicate.create(
-                sourceToken.getId(),
+        UnmaskedPredicateReference userPredicateReference = UnmaskedPredicateReference.create(
                 sourceToken.getType(),
                 toSigningService,
-                HashAlgorithm.SHA256,
-                context.getUserNonces().get(toUser)
+                HashAlgorithm.SHA256
         );
-        context.getUserPredicate().put(toUser, userPredicate);
 
-        DirectAddress toAddress = userPredicate.getReference().toAddress();
+        DirectAddress toAddress = userPredicateReference.toAddress();
 
         helper.transferToken(fromUser, toUser, sourceToken, toAddress, null);
     }
@@ -280,7 +279,11 @@ public class SharedStepDefinitions {
         Token token = context.getUserToken(username);
         context.setCurrentUser(username);
         SigningService signingService = context.getUserSigningServices().get(username);
-        VerificationResult result = token.verify(context.getTrustBase());
+        VerificationResult result = token.verify(
+            context.getTrustBase(),
+            // TODO: Use already defined DefaultMintReasonFactory
+            new DefaultMintReasonFactory()
+        );
         assertTrue(result.isSuccessful(), "Token should be valid");
 //        assertTrue(token.getState().getPredicate().getEngine().equals(signingService.getPublicKey()), username + " should own the token");
         assertTrue(PredicateEngineService.createPredicate(token.getState().getPredicate()).isOwner(signingService.getPublicKey()), username + " should own the token");
@@ -318,7 +321,11 @@ public class SharedStepDefinitions {
                 customData
         );
         assertNotNull(nametagToken, "Name tag token should be created");
-        assertTrue(nametagToken.verify(context.getTrustBase()).isSuccessful(), "Name tag token should be valid");
+        assertTrue(nametagToken.verify(
+            context.getTrustBase(),
+            // TODO: Use already defined DefaultMintReasonFactory
+            new DefaultMintReasonFactory()
+        ).isSuccessful(), "Name tag token should be valid");
         context.addNameTagToken(username, nametagToken);
     }
 

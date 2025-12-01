@@ -22,7 +22,6 @@ import org.unicitylabs.sdk.transaction.InclusionProofFixture;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.MintTransactionFixture;
 import org.unicitylabs.sdk.utils.TestUtils;
-import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenTest {
 
@@ -32,7 +31,7 @@ public class TokenTest {
     UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
         signingService, DataHash.fromImprint(new byte[34]));
 
-    MintTransaction.Data<?> genesisData = new MintTransaction.Data<>(
+    MintTransaction.Data genesisData = new MintTransaction.Data(
         new TokenId(TestUtils.randomBytes(32)),
         new TokenType(TestUtils.randomBytes(32)),
         TestUtils.randomBytes(10),
@@ -43,9 +42,7 @@ public class TokenTest {
             )
         ),
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32))),
-        TestUtils.randomBytes(32),
-        null,
-        null
+        TestUtils.randomBytes(32)
     );
 
     byte[] nametagNonce = TestUtils.randomBytes(32);
@@ -57,7 +54,7 @@ public class TokenTest {
         DirectAddress.create(new DataHash(HashAlgorithm.SHA256, TestUtils.randomBytes(32)))
     );
 
-    Token<?> nametagToken = new Token<>(
+    Token nametagToken = new Token(
         new TokenState(
             MaskedPredicate.create(
                 nametagGenesisData.getTokenId(),
@@ -78,7 +75,7 @@ public class TokenTest {
         List.of()
     );
 
-    Token<?> token = new Token<>(
+    Token token = new Token(
         new TokenState(
             MaskedPredicate.create(
                 genesisData.getTokenId(),

@@ -1,6 +1,5 @@
 package org.unicitylabs.sdk.bft;
 
-import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

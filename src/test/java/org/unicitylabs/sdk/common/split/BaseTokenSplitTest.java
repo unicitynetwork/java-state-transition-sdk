@@ -25,9 +25,11 @@ import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
 import org.unicitylabs.sdk.transaction.MintCommitment;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
+import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
-import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -39,15 +41,18 @@ public abstract class BaseTokenSplitTest {
   protected StateTransitionClient client;
   protected RootTrustBase trustBase;
 
+  private final MintReasonFactory mintReasonFactory = new DefaultMintReasonFactory();
+
   @Test
   void testTokenSplitFullAmounts() throws Exception {
     TokenType tokenType = new TokenType(HexConverter.decode(
         "f8aa13834268d29355ff12183066f0cb902003629bbc5eb9ef0efbe397867509"));
     byte[] secret = "SECRET".getBytes(StandardCharsets.UTF_8);
 
-    Token<?> token = TokenUtils.mintToken(
+    Token token = TokenUtils.mintToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         secret,
         new TokenId(randomBytes(32)),
         tokenType,
@@ -67,9 +72,10 @@ public abstract class BaseTokenSplitTest {
 
     String nametag = UUID.randomUUID().toString();
 
-    Token<?> nametagToken = TokenUtils.mintNametagToken(
+    Token nametagToken = TokenUtils.mintNametagToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         secret,
         nametag,
         UnmaskedPredicateReference.create(
@@ -124,8 +130,9 @@ public abstract class BaseTokenSplitTest {
           burnCommitmentResponse.getStatus()));
     }
 
-    List<MintCommitment<SplitMintReason>> mintCommitments = split.createSplitMintCommitments(
+    List<MintCommitment> mintCommitments = split.createSplitMintCommitments(
         this.trustBase,
+        this.mintReasonFactory,
         burnCommitment.toTransaction(
             InclusionProofUtils.waitInclusionProof(
                 this.client,
@@ -135,7 +142,7 @@ public abstract class BaseTokenSplitTest {
         )
     );
 
-    for (MintCommitment<SplitMintReason> commitment : mintCommitments) {
+    for (MintCommitment commitment : mintCommitments) {
       CertificationResponse response = this.client
           .submitCommitment(commitment)
           .get();
@@ -145,27 +152,30 @@ public abstract class BaseTokenSplitTest {
             response.getStatus()));
       }
 
+      MintTransaction transaction = commitment.toTransaction(
+          InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment).get()
+      );
+
       TokenState state = new TokenState(
           UnmaskedPredicate.create(
               commitment.getTransactionData().getTokenId(),
               commitment.getTransactionData().getTokenType(),
+              transaction,
               SigningService.createFromSecret(secret),
-              HashAlgorithm.SHA256,
-              commitment.getTransactionData().getSalt()
+              HashAlgorithm.SHA256
           ),
           null
       );
 
-      Token<SplitMintReason> splitToken = Token.create(
+      Token splitToken = Token.mint(
           this.trustBase,
+          this.mintReasonFactory,
           state,
-          commitment.toTransaction(
-              InclusionProofUtils.waitInclusionProof(this.client, this.trustBase, commitment).get()
-          ),
+          transaction,
           List.of(nametagToken)
       );
 
-      Assertions.assertTrue(splitToken.verify(this.trustBase).isSuccessful());
+      Assertions.assertTrue(splitToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
     }
 
 

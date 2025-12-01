@@ -26,6 +26,13 @@ public interface TransactionData<T> {
   Address getRecipient();
 
   /**
+   * Get transaction salt.
+   *
+   * @return transaction salt
+   */
+  byte[] getSalt();
+
+  /**
    * Gets the optional recipient data hash.
    *
    * @return an Optional containing the data hash if present, otherwise empty

@@ -33,12 +33,13 @@ import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
 import org.unicitylabs.sdk.transaction.InclusionProof;
 import org.unicitylabs.sdk.transaction.MintCommitment;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
-import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder.TokenSplit;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
@@ -52,6 +53,8 @@ public abstract class CommonTestFlow {
   protected StateTransitionClient client;
   protected RootTrustBase trustBase;
 
+  private final MintReasonFactory mintReasonFactory = new DefaultMintReasonFactory();
+
   private static final byte[] ALICE_SECRET = "Alice".getBytes(StandardCharsets.UTF_8);
   private static final byte[] BOB_SECRET = "Bob".getBytes(StandardCharsets.UTF_8);
   private static final byte[] CAROL_SECRET = "Carol".getBytes(StandardCharsets.UTF_8);
@@ -61,14 +64,15 @@ public abstract class CommonTestFlow {
    */
   @Test
   public void testTransferFlow() throws Exception {
-    Token<?> aliceToken = TokenUtils.mintToken(
+    Token aliceToken = TokenUtils.mintToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         ALICE_SECRET
     );
 
     assertTrue(this.client.isMinted(aliceToken.getId(), this.trustBase).get());
-    assertTrue(aliceToken.verify(this.trustBase).isSuccessful());
+    assertTrue(aliceToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
 
     String bobNameTag = UUID.randomUUID().toString();
 
@@ -122,25 +126,27 @@ public abstract class CommonTestFlow {
     ).toAddress();
 
     // Bob mints a name tag tokens
-    Token<?> bobNametagToken = TokenUtils.mintNametagToken(
+    Token bobNametagToken = TokenUtils.mintNametagToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         BOB_SECRET,
         bobNameTag,
         bobAddress
     );
 
     // Bob finalizes the token
-    Token<?> bobToken = client.finalizeTransaction(
+    Token bobToken = client.finalizeTransaction(
         this.trustBase,
+        this.mintReasonFactory,
         aliceToken,
         new TokenState(
             UnmaskedPredicate.create(
                 aliceToken.getId(),
                 aliceToken.getType(),
+                aliceToBobTransferTransaction,
                 SigningService.createFromSecret(BOB_SECRET),
-                HashAlgorithm.SHA256,
-                aliceToBobTransferTransaction.getData().getSalt()
+                HashAlgorithm.SHA256
             ),
             bobStateData
         ),
@@ -149,7 +155,7 @@ public abstract class CommonTestFlow {
     );
 
     // Verify Bob is now the owner
-    assertTrue(bobToken.verify(this.trustBase).isSuccessful());
+    assertTrue(bobToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
     assertTrue(PredicateEngineService
         .createPredicate(bobToken.getState().getPredicate())
         .isOwner(SigningService.createFromSecret(BOB_SECRET).getPublicKey())
@@ -195,19 +201,20 @@ public abstract class CommonTestFlow {
     UnmaskedPredicate carolPredicate = UnmaskedPredicate.create(
         bobToken.getId(),
         bobToken.getType(),
+        bobToCarolTransaction,
         SigningService.createFromSecret(CAROL_SECRET),
-        HashAlgorithm.SHA256,
-        bobToCarolTransaction.getData().getSalt()
+        HashAlgorithm.SHA256
     );
 
-    Token<?> carolToken = this.client.finalizeTransaction(
+    Token carolToken = this.client.finalizeTransaction(
         this.trustBase,
+        this.mintReasonFactory,
         bobToken,
         new TokenState(carolPredicate, null),
         bobToCarolTransaction
     );
 
-    assertTrue(carolToken.verify(this.trustBase).isSuccessful());
+    assertTrue(carolToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
     assertEquals(2, carolToken.getTransactions().size());
 
     // Bob receives carol token with nametag
@@ -238,16 +245,17 @@ public abstract class CommonTestFlow {
         carolToBobInclusionProof
     );
 
-    Token<?> carolToBobToken = client.finalizeTransaction(
+    Token carolToBobToken = client.finalizeTransaction(
         this.trustBase,
+        this.mintReasonFactory,
         carolToken,
         new TokenState(
             UnmaskedPredicate.create(
                 carolToken.getId(),
                 carolToken.getType(),
+                carolToBobTransaction,
                 SigningService.createFromSecret(BOB_SECRET),
-                HashAlgorithm.SHA256,
-                carolToBobTransaction.getData().getSalt()
+                HashAlgorithm.SHA256
             ),
             null
         ),
@@ -255,7 +263,7 @@ public abstract class CommonTestFlow {
         List.of(bobNametagToken)
     );
 
-    assertTrue(carolToBobToken.verify(this.trustBase).isSuccessful());
+    assertTrue(carolToBobToken.verify(this.trustBase, this.mintReasonFactory).isSuccessful());
 
     // SPLIT
     List<Map.Entry<CoinId, BigInteger>> splitCoins = carolToken.getCoins()
@@ -306,8 +314,9 @@ public abstract class CommonTestFlow {
       throw new Exception("Failed to submit burn commitment");
     }
 
-    List<MintCommitment<SplitMintReason>> splitCommitments = split.createSplitMintCommitments(
+    List<MintCommitment> splitCommitments = split.createSplitMintCommitments(
         this.trustBase,
+        this.mintReasonFactory,
         burnCommitment.toTransaction(
             InclusionProofUtils.waitInclusionProof(
                 this.client,
@@ -317,8 +326,8 @@ public abstract class CommonTestFlow {
         )
     );
 
-    List<MintTransaction<SplitMintReason>> splitTransactions = new ArrayList<>();
-    for (MintCommitment<SplitMintReason> commitment : splitCommitments) {
+    List<MintTransaction> splitTransactions = new ArrayList<>();
+    for (MintCommitment commitment : splitCommitments) {
       if (client.submitCommitment(commitment).get().getStatus() != CertificationStatus.SUCCESS) {
         throw new Exception("Failed to submit split mint commitment");
       }
@@ -329,11 +338,7 @@ public abstract class CommonTestFlow {
     Assertions.assertEquals(
         2,
         splitTransactions.stream()
-            .map(transaction -> transaction.getData()
-                .getReason()
-                .map(reason -> reason.verify(transaction).isSuccessful())
-                .orElse(false)
-            )
+            .map(transaction -> transaction.verify(this.trustBase, this.mintReasonFactory).isSuccessful())
             .filter(Boolean::booleanValue)
             .count()
     );
@@ -347,8 +352,9 @@ public abstract class CommonTestFlow {
     );
 
     Assertions.assertDoesNotThrow(() ->
-        Token.create(
+        Token.mint(
             this.trustBase,
+            this.mintReasonFactory,
             new TokenState(splitTokenPredicate, null),
             splitTransactions.get(0)
         )

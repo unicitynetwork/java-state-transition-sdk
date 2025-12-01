@@ -1,11 +1,10 @@
 package org.unicitylabs.sdk.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.unicitylabs.sdk.hash.DataHash;
-import org.unicitylabs.sdk.hash.HashAlgorithm;
 import java.math.BigInteger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.unicitylabs.sdk.hash.DataHash;
+import org.unicitylabs.sdk.hash.HashAlgorithm;
 
 public class StateIdTest {
 

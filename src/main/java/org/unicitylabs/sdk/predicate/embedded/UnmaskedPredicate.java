@@ -11,6 +11,7 @@ import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 
 /**
@@ -31,24 +32,25 @@ public class UnmaskedPredicate extends DefaultPredicate {
   }
 
   /**
-   * Create unmasked predicate.
+   * Create masked predicate from transaction and signing service.
    *
    * @param tokenId        token id
    * @param tokenType      token type
+   * @param transaction    received transaction
    * @param signingService signing service
    * @param hashAlgorithm  hash algorithm
-   * @param salt           received transaction salt
-   * @return unmasked predicate
+   * @return predicate
    */
   public static UnmaskedPredicate create(
       TokenId tokenId,
       TokenType tokenType,
+      Transaction<?> transaction,
       SigningService signingService,
-      HashAlgorithm hashAlgorithm,
-      byte[] salt
+      HashAlgorithm hashAlgorithm
   ) {
-    Signature nonce = signingService.sign(
-        new DataHasher(HashAlgorithm.SHA256).update(salt).digest());
+    Signature signature = signingService.sign(
+        new DataHasher(HashAlgorithm.SHA256).update(transaction.getData().getSalt()).digest()
+    );
 
     return new UnmaskedPredicate(
         tokenId,
@@ -56,7 +58,8 @@ public class UnmaskedPredicate extends DefaultPredicate {
         signingService.getPublicKey(),
         signingService.getAlgorithm(),
         hashAlgorithm,
-        nonce.getBytes());
+        signature.getBytes()
+    );
   }
 
   /**
@@ -69,7 +72,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
    */
   @Override
   public boolean verify(
-      Token<?> token,
+      Token token,
       TransferTransaction transaction,
       RootTrustBase trustBase
   ) {
@@ -77,11 +80,7 @@ public class UnmaskedPredicate extends DefaultPredicate {
 
     return super.verify(token, transaction, trustBase) && SigningService.verifyWithPublicKey(
         new DataHasher(HashAlgorithm.SHA256)
-            .update(
-                transactions.isEmpty()
-                    ? token.getGenesis().getData().getSalt()
-                    : transactions.get(transactions.size() - 1).getData().getSalt()
-            )
+            .update(token.getLatestTransaction().getData().getSalt())
             .digest(),
         this.getNonce(),
         this.getPublicKey()

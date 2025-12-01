@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -28,23 +27,20 @@ import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
-import org.unicitylabs.sdk.transaction.split.SplitMintReason;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.verification.VerificationResult;
 
 
 /**
  * Mint transaction.
- *
- * @param <R> mint reason
  */
-public class MintTransaction<R extends MintTransactionReason> extends
-    Transaction<MintTransaction.Data<R>> {
+public class MintTransaction extends
+    Transaction<MintTransaction.Data> {
 
   @JsonCreator
   MintTransaction(
       @JsonProperty("data")
-      Data<R> data,
+      Data data,
       @JsonProperty("inclusionProof")
       InclusionProof inclusionProof) {
     super(data, inclusionProof);
@@ -56,10 +52,10 @@ public class MintTransaction<R extends MintTransactionReason> extends
    * @param bytes CBOR bytes
    * @return mint transaction
    */
-  public static MintTransaction<?> fromCbor(byte[] bytes) {
+  public static MintTransaction fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.readArray(bytes);
 
-    return new MintTransaction<>(
+    return new MintTransaction(
         Data.fromCbor(data.get(0)),
         InclusionProof.fromCbor(data.get(1))
     );
@@ -71,7 +67,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
    * @param input JSON string
    * @return mint transaction
    */
-  public static MintTransaction<?> fromJson(String input) {
+  public static MintTransaction fromJson(String input) {
     try {
       return UnicityObjectMapper.JSON.readValue(input, MintTransaction.class);
     } catch (JsonProcessingException e) {
@@ -83,9 +79,10 @@ public class MintTransaction<R extends MintTransactionReason> extends
    * Verify mint transaction.
    *
    * @param trustBase root trust base
+   * @param mintReasonFactory mint reason factory
    * @return verification result
    */
-  public VerificationResult verify(RootTrustBase trustBase) {
+  public VerificationResult verify(RootTrustBase trustBase, MintReasonFactory mintReasonFactory) {
     CertificationData certificationData = this.getInclusionProof().getCertificationData().orElse(null);
     if (certificationData == null) {
       return VerificationResult.fail("Missing certification data");
@@ -106,7 +103,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
     }
 
     VerificationResult reasonResult = this.getData().getReason()
-        .map(reason -> reason.verify(this))
+        .map(reason -> mintReasonFactory.create(reason).verify(this))
         .orElse(VerificationResult.success());
 
     if (!reasonResult.isSuccessful()) {
@@ -129,10 +126,8 @@ public class MintTransaction<R extends MintTransactionReason> extends
 
   /**
    * Mint transaction data.
-   *
-   * @param <R> mint reason
    */
-  public static class Data<R extends MintTransactionReason> implements
+  public static class Data implements
       TransactionData<MintTransactionState> {
 
     private final TokenId tokenId;
@@ -143,7 +138,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
     private final Address recipient;
     private final byte[] salt;
     private final DataHash recipientDataHash;
-    private final R reason;
+    private final byte[] reason;
 
     /**
      * Create mint transaction data.
@@ -155,7 +150,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
      * @param recipient         token recipient address
      * @param salt              mint transaction salt
      * @param recipientDataHash recipient data hash
-     * @param reason            mint reason
+     * @param reason            optional mint reason bytes
      */
     @JsonCreator
     public Data(
@@ -166,9 +161,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
         @JsonProperty("recipient") Address recipient,
         @JsonProperty("salt") byte[] salt,
         @JsonProperty("recipientDataHash") DataHash recipientDataHash,
-        @JsonProperty("reason")
-        @JsonDeserialize(using = MintTransactionReasonJson.Deserializer.class)
-        R reason
+        @JsonProperty("reason") byte[] reason
     ) {
       Objects.requireNonNull(tokenId, "Token ID cannot be null");
       Objects.requireNonNull(tokenType, "Token type cannot be null");
@@ -183,7 +176,103 @@ public class MintTransaction<R extends MintTransactionReason> extends
       this.recipient = recipient;
       this.salt = Arrays.copyOf(salt, salt.length);
       this.recipientDataHash = recipientDataHash;
-      this.reason = reason;
+      this.reason = reason != null ? Arrays.copyOf(reason, reason.length) : null;
+    }
+
+    /**
+     * Create mint transaction data.
+     *
+     * @param tokenId           token id
+     * @param tokenType         token type
+     * @param tokenData         token immutable data
+     * @param coinData          token coin data
+     * @param recipient         token recipient address
+     * @param salt              mint transaction salt
+     * @param recipientDataHash recipient data hash
+     * @param reason            mint reason object
+     */
+    public Data(
+        TokenId tokenId,
+        TokenType tokenType,
+        byte[] tokenData,
+        TokenCoinData coinData,
+        Address recipient,
+        byte[] salt,
+        DataHash recipientDataHash,
+        MintTransactionReason reason
+    ) {
+      this(
+          tokenId,
+          tokenType,
+          tokenData,
+          coinData,
+          recipient,
+          salt,
+          recipientDataHash,
+          reason != null ? reason.toCbor() : null
+      );
+    }
+
+    /**
+     * Create mint transaction data.
+     *
+     * @param tokenId           token id
+     * @param tokenType         token type
+     * @param tokenData         token immutable data
+     * @param coinData          token coin data
+     * @param recipient         token recipient address
+     * @param salt              mint transaction salt
+     * @param recipientDataHash recipient data hash
+     */
+    public Data(
+        TokenId tokenId,
+        TokenType tokenType,
+        byte[] tokenData,
+        TokenCoinData coinData,
+        Address recipient,
+        byte[] salt,
+        DataHash recipientDataHash
+    ) {
+      this(
+          tokenId,
+          tokenType,
+          tokenData,
+          coinData,
+          recipient,
+          salt,
+          recipientDataHash,
+          (byte[]) null
+      );
+    }
+
+    /**
+     * Create mint transaction data.
+     *
+     * @param tokenId           token id
+     * @param tokenType         token type
+     * @param tokenData         token immutable data
+     * @param coinData          token coin data
+     * @param recipient         token recipient address
+     * @param salt              mint transaction salt
+     */
+    public Data(
+        TokenId tokenId,
+        TokenType tokenType,
+        byte[] tokenData,
+        TokenCoinData coinData,
+        Address recipient,
+        byte[] salt
+    ) {
+      this(
+          tokenId,
+          tokenType,
+          tokenData,
+          coinData,
+          recipient,
+          salt,
+          null,
+          (byte[]) null
+      );
     }
 
     /**
@@ -254,8 +343,8 @@ public class MintTransaction<R extends MintTransactionReason> extends
      *
      * @return mint reason
      */
-    public Optional<R> getReason() {
-      return Optional.ofNullable(this.reason);
+    public Optional<byte[]> getReason() {
+      return Optional.ofNullable(this.reason != null ? Arrays.copyOf(this.reason, this.reason.length) : null);
     }
 
     /**
@@ -285,10 +374,10 @@ public class MintTransaction<R extends MintTransactionReason> extends
      * @param bytes CBOR bytes
      * @return mint transaction data
      */
-    public static Data<?> fromCbor(byte[] bytes) {
+    public static Data fromCbor(byte[] bytes) {
       List<byte[]> data = CborDeserializer.readArray(bytes);
 
-      return new Data<>(
+      return new Data(
           TokenId.fromCbor(data.get(0)),
           TokenType.fromCbor(data.get(1)),
           CborDeserializer.readOptional(data.get(2), CborDeserializer::readByteString),
@@ -296,7 +385,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
           AddressFactory.createAddress(CborDeserializer.readTextString(data.get(4))),
           CborDeserializer.readByteString(data.get(5)),
           CborDeserializer.readOptional(data.get(6), DataHash::fromCbor),
-          CborDeserializer.readOptional(data.get(7), SplitMintReason::fromCbor)
+          CborDeserializer.readOptional(data.get(7), CborDeserializer::readByteString)
       );
     }
 
@@ -314,7 +403,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
           CborSerializer.encodeTextString(this.recipient.getAddress()),
           CborSerializer.encodeByteString(this.salt),
           CborSerializer.encodeOptional(this.recipientDataHash, DataHash::toCbor),
-          CborSerializer.encodeOptional(this.reason, MintTransactionReason::toCbor)
+          CborSerializer.encodeOptional(this.reason, CborSerializer::encodeByteString)
       );
     }
 
@@ -324,7 +413,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
      * @param input JSON string
      * @return mint transaction data
      */
-    public static Data<?> fromJson(String input) {
+    public static Data fromJson(String input) {
       try {
         return UnicityObjectMapper.JSON.readValue(input, Data.class);
       } catch (JsonProcessingException e) {
@@ -350,7 +439,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
       if (!(o instanceof Data)) {
         return false;
       }
-      Data<?> that = (Data<?>) o;
+      Data that = (Data) o;
 
       return Objects.equals(this.tokenId, that.tokenId)
           && Objects.equals(this.tokenType, that.tokenType)
@@ -360,14 +449,14 @@ public class MintTransaction<R extends MintTransactionReason> extends
           && Objects.equals(this.recipient, that.recipient)
           && Objects.deepEquals(this.salt, that.salt)
           && Objects.equals(this.recipientDataHash, that.recipientDataHash)
-          && Objects.equals(this.reason, that.reason);
+          && Arrays.equals(this.reason, that.reason);
     }
 
     @Override
     public int hashCode() {
       return Objects.hash(this.tokenId, this.tokenType, Arrays.hashCode(tokenData), this.coinData,
           this.sourceState,
-          this.recipient, Arrays.hashCode(this.salt), this.recipientDataHash, this.reason);
+          this.recipient, Arrays.hashCode(this.salt), this.recipientDataHash, Arrays.hashCode(this.reason));
     }
 
     @Override
@@ -387,14 +476,14 @@ public class MintTransaction<R extends MintTransactionReason> extends
           this.tokenId, this.tokenType,
           this.tokenData != null ? HexConverter.encode(this.tokenData) : null, this.coinData,
           this.sourceState, this.recipient, HexConverter.encode(this.salt), this.recipientDataHash,
-          this.reason);
+          this.reason != null ? HexConverter.encode(this.reason) : null);
     }
   }
 
   /**
    * Nametag mint data.
    */
-  public static class NametagData extends Data<MintTransactionReason> {
+  public static class NametagData extends Data {
 
     /**
      * Create nametag mint data.
@@ -418,9 +507,7 @@ public class MintTransaction<R extends MintTransactionReason> extends
           targetAddress.getAddress().getBytes(StandardCharsets.UTF_8),
           null,
           recipient,
-          salt,
-          null,
-          null
+          salt
       );
     }
   }

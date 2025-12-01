@@ -23,6 +23,8 @@ import org.unicitylabs.sdk.token.Token;
 import org.unicitylabs.sdk.token.TokenId;
 import org.unicitylabs.sdk.token.TokenState;
 import org.unicitylabs.sdk.token.TokenType;
+import org.unicitylabs.sdk.transaction.DefaultMintReasonFactory;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -35,9 +37,11 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
   protected StateTransitionClient client;
   protected RootTrustBase trustBase;
 
+  private final MintReasonFactory mintReasonFactory = new DefaultMintReasonFactory();
+
   private final byte[] BOB_SECRET = "BOB_SECRET".getBytes(StandardCharsets.UTF_8);
 
-  private String[] transferToken(Token<?> token, byte[] secret, Address address) throws Exception {
+  private String[] transferToken(Token token, byte[] secret, Address address) throws Exception {
     TransferCommitment commitment = TransferCommitment.create(
         token,
         address,
@@ -64,10 +68,11 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
     };
   }
 
-  private Token<?> mintToken(byte[] secret) throws Exception {
+  private Token mintToken(byte[] secret) throws Exception {
     return TokenUtils.mintToken(
         this.client,
         this.trustBase,
+        this.mintReasonFactory,
         secret,
         new TokenId(randomBytes(32)),
         new TokenType(HexConverter.decode(
@@ -80,23 +85,24 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
     );
   }
 
-  private Token<?> receiveToken(String[] tokenInfo, byte[] secret) throws Exception {
-    Token<?> token = Token.fromJson(tokenInfo[0]);
+  private Token receiveToken(String[] tokenInfo, byte[] secret) throws Exception {
+    Token token = Token.fromJson(tokenInfo[0]);
     TransferTransaction transaction = TransferTransaction.fromJson(tokenInfo[1]);
 
     TokenState state = new TokenState(
         UnmaskedPredicate.create(
             token.getId(),
             token.getType(),
+            transaction,
             SigningService.createFromSecret(secret),
-            HashAlgorithm.SHA256,
-            transaction.getData().getSalt()
+            HashAlgorithm.SHA256
         ),
         null
     );
 
     return this.client.finalizeTransaction(
         this.trustBase,
+        this.mintReasonFactory,
         token,
         state,
         transaction,
@@ -113,7 +119,7 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
 
   @Test
   void testDoubleSpend() throws Exception {
-    Token<?> token = mintToken(BOB_SECRET);
+    Token token = mintToken(BOB_SECRET);
 
     UnmaskedPredicateReference reference = UnmaskedPredicateReference.create(
         token.getType(),
@@ -125,13 +131,13 @@ public class FunctionalUnsignedPredicateDoubleSpendPreventionTest {
         receiveToken(
             transferToken(token, BOB_SECRET, reference.toAddress()),
             BOB_SECRET
-        ).verify(trustBase).isSuccessful());
+        ).verify(this.trustBase, this.mintReasonFactory).isSuccessful());
     RuntimeException ex = Assertions.assertThrows(
         RuntimeException.class,
         () -> receiveToken(
             transferToken(token, BOB_SECRET, reference.toAddress()),
             BOB_SECRET
-        ).verify(trustBase)
+        ).verify(this.trustBase, this.mintReasonFactory)
     );
 
     Assertions.assertInstanceOf(BranchExistsException.class, ex.getCause());

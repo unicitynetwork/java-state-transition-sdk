@@ -157,7 +157,7 @@ public abstract class DefaultPredicate implements Predicate {
   }
 
   @Override
-  public boolean verify(Token<?> token, TransferTransaction transaction, RootTrustBase trustBase) {
+  public boolean verify(Token token, TransferTransaction transaction, RootTrustBase trustBase) {
     if (!this.tokenId.equals(token.getId()) || !this.tokenType.equals(token.getType())) {
       return false;
     }

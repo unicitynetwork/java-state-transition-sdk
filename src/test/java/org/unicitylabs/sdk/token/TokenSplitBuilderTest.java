@@ -1,6 +1,5 @@
 package org.unicitylabs.sdk.token;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -16,53 +15,55 @@ import org.unicitylabs.sdk.mtree.LeafOutOfBoundsException;
 import org.unicitylabs.sdk.mtree.plain.SparseMerkleTreePathFixture;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.embedded.MaskedPredicate;
+import org.unicitylabs.sdk.predicate.embedded.MaskedPredicateReference;
 import org.unicitylabs.sdk.signing.SigningService;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.InclusionProofFixture;
 import org.unicitylabs.sdk.transaction.MintTransaction;
+import org.unicitylabs.sdk.transaction.MintTransaction.Data;
 import org.unicitylabs.sdk.transaction.MintTransactionFixture;
 import org.unicitylabs.sdk.transaction.split.TokenSplitBuilder;
-import org.unicitylabs.sdk.verification.VerificationException;
 
 public class TokenSplitBuilderTest {
 
-  private Token<?> createToken(TokenCoinData coinData) {
-    SigningService signingService = new SigningService(SigningService.generatePrivateKey());
+  private Token createToken(TokenCoinData coinData) {
     UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
-        signingService, DataHash.fromImprint(new byte[34]));
+        new SigningService(SigningService.generatePrivateKey()), DataHash.fromImprint(new byte[34]));
 
     TokenId tokenId = new TokenId(new byte[10]);
     TokenType tokenType = new TokenType(new byte[10]);
+    byte[] nonce = new byte[32];
 
-    Predicate predicate = new MaskedPredicate(
-        tokenId,
-        tokenType,
-        new byte[32],
-        "secp256k1",
-        HashAlgorithm.SHA256,
-        new byte[32]
+    SigningService signingService = SigningService.createFromMaskedSecret("SECRET".getBytes(), nonce);
+
+    MintTransaction transaction = MintTransactionFixture.create(
+        new Data(
+            tokenId,
+            tokenType,
+            null,
+            coinData,
+            MaskedPredicateReference.create(tokenType, signingService, HashAlgorithm.SHA256, nonce).toAddress(),
+            new byte[20]
+        ),
+        InclusionProofFixture.create(
+            SparseMerkleTreePathFixture.create(),
+            null,
+            unicityCertificate
+        )
     );
 
-    return new Token<>(
+    Predicate predicate = MaskedPredicate.create(
+        tokenId,
+        tokenType,
+        signingService,
+        HashAlgorithm.SHA256,
+        nonce
+    );
+
+    return new Token(
         new TokenState(predicate, null),
-        MintTransactionFixture.create(
-            new MintTransaction.Data<>(
-                tokenId,
-                tokenType,
-                null,
-                coinData,
-                predicate.getReference().toAddress(),
-                new byte[20],
-                null,
-                null
-            ),
-            InclusionProofFixture.create(
-                SparseMerkleTreePathFixture.create(),
-                null,
-                unicityCertificate
-            )
-        ),
+        transaction,
         List.of(),
         List.of()
     );
@@ -71,7 +72,7 @@ public class TokenSplitBuilderTest {
   @Test
   public void testTokenSplitIntoMultipleTokens()
       throws LeafOutOfBoundsException, BranchExistsException {
-    Token<?> token = this.createToken(
+    Token token = this.createToken(
         new TokenCoinData(
             Map.of(
                 new CoinId("coin1".getBytes()),
@@ -79,11 +80,10 @@ public class TokenSplitBuilderTest {
             )
         ));
 
-    Predicate predicate = new MaskedPredicate(
+    Predicate predicate = MaskedPredicate.create(
         token.getId(),
         token.getType(),
-        new byte[32],
-        "secp256k1",
+        SigningService.createFromSecret(SigningService.generatePrivateKey()),
         HashAlgorithm.SHA256,
         new byte[32]
     );
@@ -145,13 +145,12 @@ public class TokenSplitBuilderTest {
 
   @Test
   public void testTokenSplitUnknownSplitCoin() {
-    Token<?> token = this.createToken(null);
+    Token token = this.createToken(null);
 
-    Predicate predicate = new MaskedPredicate(
+    Predicate predicate = MaskedPredicate.create(
         token.getId(),
         token.getType(),
-        new byte[32],
-        "secp256k1",
+        SigningService.createFromSecret(SigningService.generatePrivateKey()),
         HashAlgorithm.SHA256,
         new byte[32]
     );

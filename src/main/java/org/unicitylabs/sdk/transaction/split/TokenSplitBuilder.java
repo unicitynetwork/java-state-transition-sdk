@@ -30,6 +30,7 @@ import org.unicitylabs.sdk.token.TokenType;
 import org.unicitylabs.sdk.token.fungible.CoinId;
 import org.unicitylabs.sdk.token.fungible.TokenCoinData;
 import org.unicitylabs.sdk.transaction.MintCommitment;
+import org.unicitylabs.sdk.transaction.MintReasonFactory;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TransferCommitment;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
@@ -83,7 +84,7 @@ public class TokenSplitBuilder {
    * @throws LeafOutOfBoundsException if building aggregation tree and coin tree fail
    * @throws BranchExistsException    if building aggregation tree and coin tree fail
    */
-  public TokenSplit build(Token<?> token) throws LeafOutOfBoundsException, BranchExistsException {
+  public TokenSplit build(Token token) throws LeafOutOfBoundsException, BranchExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
 
     Map<CoinId, SparseMerkleSumTree> trees = new HashMap<>();
@@ -133,13 +134,13 @@ public class TokenSplitBuilder {
    */
   public static class TokenSplit {
 
-    private final Token<?> token;
+    private final Token token;
     private final SparseMerkleTreeRootNode aggregationRoot;
     private final Map<CoinId, SparseMerkleSumTreeRootNode> coinRoots;
     private final Map<TokenId, TokenRequest> tokens;
 
     private TokenSplit(
-        Token<?> token,
+        Token token,
         SparseMerkleTreeRootNode aggregationRoot,
         Map<CoinId, SparseMerkleSumTreeRootNode> coinRoots,
         Map<TokenId, TokenRequest> tokens
@@ -175,18 +176,21 @@ public class TokenSplitBuilder {
      * Create split mint commitments after burn transaction is received.
      *
      * @param trustBase       trust base for burn transaction verification
+     * @param mintReasonFactory factory to create mint transaction reasons
      * @param burnTransaction burn transaction
      * @return list of mint commitments for sending to unicity service
      * @throws VerificationException if token verification fails
      */
-    public List<MintCommitment<SplitMintReason>> createSplitMintCommitments(
+    public List<MintCommitment> createSplitMintCommitments(
         RootTrustBase trustBase,
+        MintReasonFactory mintReasonFactory,
         TransferTransaction burnTransaction
     ) throws VerificationException {
       Objects.requireNonNull(burnTransaction, "Burn transaction cannot be null");
 
-      Token<?> burnedToken = this.token.update(
+      Token burnedToken = this.token.update(
           trustBase,
+          mintReasonFactory,
           new TokenState(
               new BurnPredicate(
                   this.token.getId(),
@@ -202,7 +206,7 @@ public class TokenSplitBuilder {
       return List.copyOf(
           this.tokens.values().stream()
               .map(request -> MintCommitment.create(
-                      new MintTransaction.Data<>(
+                      new MintTransaction.Data(
                           request.id,
                           request.type,
                           request.data,
