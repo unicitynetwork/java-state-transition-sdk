@@ -15,4 +15,4 @@ Feature: Token Transfer Edge Cases
     Given Bob has a signing key
     When Alice transfers the current token to Bob
     And Alice tries to submit a transfer of the stale token to Bob
-    Then the certification response status is "STATE_ID_EXISTS"
+    Then the re-spend is rejected without finalizing

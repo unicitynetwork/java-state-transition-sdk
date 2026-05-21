@@ -12,6 +12,7 @@ import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.Token;
+import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
 import org.unicitylabs.sdk.unicityid.UnicityIdToken;
 
@@ -51,6 +52,11 @@ public class TestContext {
   // Phase 2 raw-submit scratch — captures the latest CertificationResponse
   // from a manual submission (i.e. not via TokenUtils which throws on non-SUCCESS).
   private CertificationResponse lastCertificationResponse;
+
+  // Re-spend / double-spend scratch — the NEW transaction submitted against an
+  // already-finalized state, so a shared step can assert it never finalizes
+  // (rejected at submit OR at inclusion-proof verification). See #67.
+  private Transaction respendTransaction;
 
   // Phase 5 scratch — snapshot of the freshly minted source token so multi-hop
   // chain scenarios can assert "same ID/type as the original" after transfers.
@@ -204,6 +210,14 @@ public class TestContext {
 
   public void setLastCertificationResponse(CertificationResponse lastCertificationResponse) {
     this.lastCertificationResponse = lastCertificationResponse;
+  }
+
+  public Transaction getRespendTransaction() {
+    return respendTransaction;
+  }
+
+  public void setRespendTransaction(Transaction respendTransaction) {
+    this.respendTransaction = respendTransaction;
   }
 
   public Token getOriginalToken() {

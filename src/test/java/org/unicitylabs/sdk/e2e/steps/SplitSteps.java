@@ -20,6 +20,7 @@ import java.util.Set;
 import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
 import org.unicitylabs.sdk.functional.payment.TestPaymentData;
 
 import org.unicitylabs.sdk.payment.SplitMintJustification;
@@ -337,7 +338,7 @@ public class SplitSteps {
       String sender, int index1Based, String recipient) throws Exception {
     int idx = index1Based - 1;
     // Use the PRE-TRANSFER token (the stale version the sender thinks they still
-    // hold) — StrictTestAggregatorClient must reject with STATE_ID_EXISTS.
+    // hold). The re-spend must never finalize — rejected at submit OR at proof.
     Token staleChild = splitChildrenPreTransfer.get(idx);
     SigningService senderSigning = context.getUserSigningServices().get(sender);
     ensureUser(recipient);
@@ -352,8 +353,7 @@ public class SplitSteps {
             org.unicitylabs.sdk.api.CertificationData.fromTransaction(
                 tx, SignaturePredicateUnlockScript.create(tx, senderSigning)))
             .get();
-    assertEquals("STATE_ID_EXISTS", response.getStatus().name(),
-        "stale split-token transfer should be rejected");
+    StepHelper.assertRespendRejected(context, tx, response);
   }
 
   @When("{word} tries to split with only 1 asset instead of 2")
@@ -755,12 +755,13 @@ public class SplitSteps {
                 tx, SignaturePredicateUnlockScript.create(tx, senderSigning)))
             .get();
     context.setLastCertificationResponse(response);
+    context.setRespendTransaction(tx);
   }
 
   @Then("the transfer should fail because the token was burned")
   public void theTransferShouldFailBecauseTheTokenWasBurned() {
-    assertNotNull(context.getLastCertificationResponse());
-    assertEquals("STATE_ID_EXISTS", context.getLastCertificationResponse().getStatus().name());
+    StepHelper.assertRespendRejected(
+        context, context.getRespendTransaction(), context.getLastCertificationResponse());
   }
 
   // ══ Multi-level / sub-split (Tier A) ═════════════════════════════════════
@@ -967,7 +968,7 @@ public class SplitSteps {
             org.unicitylabs.sdk.api.CertificationData.fromTransaction(
                 tx, SignaturePredicateUnlockScript.create(tx, senderSigning)))
             .get();
-    assertEquals("STATE_ID_EXISTS", response.getStatus().name());
+    StepHelper.assertRespendRejected(context, tx, response);
   }
 
   @Then("{word} cannot transfer the pre-split token because it was burned")
@@ -986,6 +987,6 @@ public class SplitSteps {
             org.unicitylabs.sdk.api.CertificationData.fromTransaction(
                 tx, SignaturePredicateUnlockScript.create(tx, senderSigning)))
             .get();
-    assertEquals("STATE_ID_EXISTS", response.getStatus().name());
+    StepHelper.assertRespendRejected(context, tx, response);
   }
 }

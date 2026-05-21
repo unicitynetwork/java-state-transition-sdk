@@ -33,7 +33,7 @@ Feature: 4-Level Token Tree - Owner Actions and Double-Spend Prevention
 
   Scenario Outline: Double-spend detected when <user> reuses pre-transfer token <token>
     When <user> submits a duplicate transfer for pre-transfer token "<token>"
-    Then the aggregator responds with "STATE_ID_EXISTS"
+    Then the re-spend is rejected without finalizing
 
     Examples:
       | user  | token   |

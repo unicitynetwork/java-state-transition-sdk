@@ -15,8 +15,8 @@ import org.unicitylabs.sdk.api.AggregatorClient;
 import org.unicitylabs.sdk.api.JsonRpcAggregatorClient;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.e2e.support.ForgivingTestAggregatorClient;
 import org.unicitylabs.sdk.e2e.support.ShardAwareAggregatorClient;
-import org.unicitylabs.sdk.e2e.support.StrictTestAggregatorClient;
 import org.unicitylabs.sdk.functional.payment.TestPaymentData;
 import org.unicitylabs.sdk.payment.SplitMintJustificationVerifier;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
@@ -35,8 +35,10 @@ public class AggregatorSteps {
   public void aMockAggregatorIsRunning() {
     // If AGGREGATOR_URL is set, wire up a real JSON-RPC client and load the
     // trust base from TRUST_BASE_PATH. Otherwise fall back to the hermetic
-    // StrictTestAggregatorClient. This mirrors the TS suite's runtime env
-    // (AGGREGATOR_URL + TRUST_BASE_PATH).
+    // ForgivingTestAggregatorClient, which mirrors the canonical v2 aggregator
+    // (async submit: duplicates return SUCCESS, double-spend is caught at
+    // inclusion-proof verification — see #67). This matches the TS suite's
+    // runtime env (AGGREGATOR_URL + TRUST_BASE_PATH).
     String url = System.getenv("AGGREGATOR_URL");
     if (url != null && !url.isEmpty()) {
       try {
@@ -57,7 +59,7 @@ public class AggregatorSteps {
       }
     }
 
-    StrictTestAggregatorClient aggregator = StrictTestAggregatorClient.create();
+    ForgivingTestAggregatorClient aggregator = ForgivingTestAggregatorClient.create();
     context.setAggregatorClient(aggregator);
     context.setClient(new StateTransitionClient(aggregator));
     context.setTrustBase(aggregator.getTrustBase());

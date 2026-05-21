@@ -12,6 +12,7 @@ import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.api.CertificationResponse;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.e2e.context.TestContext;
+import org.unicitylabs.sdk.e2e.steps.shared.StepHelper;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
@@ -165,6 +166,13 @@ public class TokenLifecycleSteps {
     CertificationResponse response =
         context.getClient().submitCertificationRequest(certificationData).get();
     context.setLastCertificationResponse(response);
+    context.setRespendTransaction(tx);
+  }
+
+  @Then("the re-spend is rejected without finalizing")
+  public void theRespendIsRejectedWithoutFinalizing() {
+    StepHelper.assertRespendRejected(
+        context, context.getRespendTransaction(), context.getLastCertificationResponse());
   }
 
   @When("the user mints a token with empty transaction data")

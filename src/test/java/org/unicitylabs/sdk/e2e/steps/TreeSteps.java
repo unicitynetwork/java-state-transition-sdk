@@ -121,6 +121,10 @@ public class TreeSteps {
     CertificationData certData = CertificationData.fromTransaction(
         tx, SignaturePredicateUnlockScript.create(tx, user.getSigningService()));
     lastResponse = tree.getClient().submitCertificationRequest(certData).get();
+    // Hand the re-spend tx + response to the shared "never finalizes" assertion
+    // (rejected at submit OR at inclusion-proof verification). See #67.
+    context.setRespendTransaction(tx);
+    context.setLastCertificationResponse(lastResponse);
   }
 
   @Then("the aggregator responds with {string}")
