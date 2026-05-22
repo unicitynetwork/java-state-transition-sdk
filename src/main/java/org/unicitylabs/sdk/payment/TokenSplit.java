@@ -144,7 +144,7 @@ public class TokenSplit {
     for (Entry<TokenId, SplitTokenRequest> entry : requestsByTokenId.entrySet()) {
       SplitTokenRequest request = entry.getValue();
       BigInteger tokenIdPath = entry.getKey().toBitString().toBigInteger();
-      Set<Asset> requestAssets = new HashSet<>(request.getAssets());
+      Set<Asset> requestAssets = request.getAssets();
       List<SplitAssetProof> proofs = requestAssets.stream()
               .map(asset -> SplitAssetProof.create(
                       asset.getId(),

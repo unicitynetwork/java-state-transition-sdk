@@ -24,7 +24,6 @@ import org.unicitylabs.sdk.utils.TokenUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -81,7 +80,7 @@ public class SplitBuilderTest {
     SplitToken splitResult = split.getTokens().get(0);
     SplitMintJustification justification = SplitMintJustification.create(
             burnToken,
-            new LinkedHashSet<>(splitResult.getProofs())
+            splitResult.getProofs()
     );
 
     Token splitToken = TokenUtils.mintToken(

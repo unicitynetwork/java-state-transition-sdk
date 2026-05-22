@@ -40,7 +40,6 @@ import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -111,7 +110,7 @@ public class SplitMintJustificationVerifierTest {
     SplitToken splitResult = split.getTokens().get(0);
     this.splitJustification = SplitMintJustification.create(
             burnToken,
-            new LinkedHashSet<>(splitResult.getProofs())
+            splitResult.getProofs()
     );
 
     this.splitToken = TokenUtils.mintToken(
@@ -218,7 +217,7 @@ public class SplitMintJustificationVerifierTest {
     );
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result,
@@ -240,7 +239,7 @@ public class SplitMintJustificationVerifierTest {
     proofs.set(0, mutatedProof);
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result,
@@ -267,7 +266,7 @@ public class SplitMintJustificationVerifierTest {
     ));
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result, "Current proof is not derived from the same asset tree as other proofs.");
@@ -295,7 +294,7 @@ public class SplitMintJustificationVerifierTest {
     proofs.set(0, mutatedProof);
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result, "Asset tree root does not match aggregation path leaf.");
@@ -310,7 +309,7 @@ public class SplitMintJustificationVerifierTest {
             .collect(Collectors.toSet());
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
     byte[] data = new TestPaymentData(assets).encode();
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), data);
@@ -360,7 +359,7 @@ public class SplitMintJustificationVerifierTest {
     }
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(mutatedProofs));
+            this.splitJustification.getToken(), mutatedProofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result, "Aggregation path root does not match burn predicate.");

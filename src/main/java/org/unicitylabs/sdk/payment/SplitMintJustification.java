@@ -5,9 +5,9 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.transaction.Token;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -54,12 +54,16 @@ public final class SplitMintJustification {
    *
    * @return split mint justification
    */
-  public static SplitMintJustification create(Token token, Set<SplitAssetProof> proofs) {
+  public static SplitMintJustification create(Token token, List<SplitAssetProof> proofs) {
     Objects.requireNonNull(token, "token cannot be null");
     Objects.requireNonNull(proofs, "proofs cannot be null");
 
     if (proofs.isEmpty()) {
       throw new IllegalArgumentException("proofs cannot be empty");
+    }
+
+    if (new HashSet<>(proofs).size() != proofs.size()) {
+      throw new IllegalArgumentException("proofs contain duplicate asset ids");
     }
 
     return new SplitMintJustification(token, List.copyOf(proofs));
@@ -80,7 +84,9 @@ public final class SplitMintJustification {
     List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 2);
     return SplitMintJustification.create(
             Token.fromCbor(data.get(0)),
-            CborDeserializer.decodeArray(data.get(1)).stream().map(SplitAssetProof::fromCbor).collect(Collectors.toSet())
+            CborDeserializer.decodeArray(data.get(1)).stream()
+                    .map(SplitAssetProof::fromCbor)
+                    .collect(Collectors.toList())
     );
   }
 
