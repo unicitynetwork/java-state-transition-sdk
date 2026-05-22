@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 public class RootTrustBase {
 
   private final long version;
-  private final int networkId;
+  private final NetworkId networkId;
   private final long epoch;
   private final long epochStartRound;
   private final Set<NodeInfo> rootNodes;
@@ -33,7 +34,7 @@ public class RootTrustBase {
   @JsonCreator
   RootTrustBase(
           @JsonProperty("version") long version,
-          @JsonProperty("networkId") int networkId,
+          @JsonProperty("networkId") NetworkId networkId,
           @JsonProperty("epoch") long epoch,
           @JsonProperty("epochStartRound") long epochStartRound,
           @JsonProperty("rootNodes") Set<NodeInfo> rootNodes,
@@ -78,7 +79,7 @@ public class RootTrustBase {
    *
    * @return network id
    */
-  public int getNetworkId() {
+  public NetworkId getNetworkId() {
     return this.networkId;
   }
 

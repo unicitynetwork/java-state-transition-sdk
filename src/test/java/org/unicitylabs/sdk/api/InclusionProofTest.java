@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.api.bft.ShardId;
@@ -18,8 +19,6 @@ import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.smt.radix.FinalizedNodeBranch;
 import org.unicitylabs.sdk.smt.radix.SparseMerkleTree;
 import org.unicitylabs.sdk.transaction.MintTransaction;
-import org.unicitylabs.sdk.transaction.TokenId;
-import org.unicitylabs.sdk.transaction.TokenType;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -42,11 +41,8 @@ public class InclusionProofTest {
 
 
     transaction = MintTransaction.create(
-            SignaturePredicate.fromSigningService(signingService),
-            TokenId.generate(),
-            TokenType.generate(),
-            null,
-            null
+            NetworkId.LOCAL,
+            SignaturePredicate.fromSigningService(signingService)
     );
 
     certificationData = CertificationData.fromMintTransaction(transaction);

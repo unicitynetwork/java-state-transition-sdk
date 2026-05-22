@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.transaction;
 
 import org.unicitylabs.sdk.api.InclusionProof;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.MintSigningService;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
@@ -34,26 +35,32 @@ public class MintTransaction implements Transaction {
 
   private final MintTransactionState sourceStateHash;
   private final EncodedPredicate lockScript;
+  private final NetworkId networkId;
   private final EncodedPredicate recipient;
-  private final TokenId tokenId;
+  private final TokenSalt salt;
   private final TokenType tokenType;
+  private final TokenId tokenId;
   private final byte[] justification;
   private final byte[] data;
 
   private MintTransaction(
           MintTransactionState sourceStateHash,
           EncodedPredicate lockScript,
+          NetworkId networkId,
           EncodedPredicate recipient,
-          TokenId tokenId,
+          TokenSalt salt,
           TokenType tokenType,
+          TokenId tokenId,
           byte[] justification,
           byte[] data
   ) {
     this.sourceStateHash = sourceStateHash;
     this.lockScript = lockScript;
+    this.networkId = networkId;
     this.recipient = recipient;
-    this.tokenId = tokenId;
+    this.salt = salt;
     this.tokenType = tokenType;
+    this.tokenId = tokenId;
     this.justification = justification;
     this.data = data;
   }
@@ -76,6 +83,24 @@ public class MintTransaction implements Transaction {
   @Override
   public EncodedPredicate getRecipient() {
     return this.recipient;
+  }
+
+  /**
+   * Retrieves the network identifier.
+   *
+   * @return the network identifier as a {@code NetworkId}.
+   */
+  public NetworkId getNetworkId() {
+    return this.networkId;
+  }
+
+  /**
+   * Retrieves the mint-transaction salt.
+   *
+   * @return the salt as a {@code TokenSalt}.
+   */
+  public TokenSalt getSalt() {
+    return this.salt;
   }
 
   /**
@@ -118,35 +143,178 @@ public class MintTransaction implements Transaction {
   /**
    * Create a mint transaction.
    *
+   * @param networkId network identifier
    * @param recipient recipient predicate
-   * @param tokenId token identifier
-   * @param tokenType token type identifier
-   * @param justification mint justification bytes, may be null
    * @param data payload bytes, may be null
+   * @param tokenType token type identifier
+   * @param salt mint-transaction salt
+   * @param justification mint justification bytes, may be null
    *
    * @return mint transaction
    */
   public static MintTransaction create(
+          NetworkId networkId,
           Predicate recipient,
-          TokenId tokenId,
+          byte[] data,
           TokenType tokenType,
-          byte[] justification,
-          byte[] data
+          TokenSalt salt,
+          byte[] justification
   ) {
+    Objects.requireNonNull(networkId, "Network id cannot be null");
     Objects.requireNonNull(recipient, "Recipient cannot be null");
-    Objects.requireNonNull(tokenId, "Token ID cannot be null");
     Objects.requireNonNull(tokenType, "Token type cannot be null");
+    Objects.requireNonNull(salt, "Salt cannot be null");
 
+    TokenId tokenId = TokenId.fromSalt(networkId, salt);
     SigningService signingService = MintSigningService.create(tokenId);
     return new MintTransaction(
             MintTransactionState.create(tokenId),
             EncodedPredicate.fromPredicate(SignaturePredicate.fromSigningService(signingService)),
+            networkId,
             EncodedPredicate.fromPredicate(recipient),
-            tokenId,
+            salt,
             tokenType,
+            tokenId,
             justification != null ? Arrays.copyOf(justification, justification.length) : null,
             data != null ? Arrays.copyOf(data, data.length) : null
     );
+  }
+
+  /**
+   * Create a mint transaction without a justification.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param data payload bytes, may be null
+   * @param tokenType token type identifier
+   * @param salt mint-transaction salt
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(
+          NetworkId networkId,
+          Predicate recipient,
+          byte[] data,
+          TokenType tokenType,
+          TokenSalt salt
+  ) {
+    return MintTransaction.create(networkId, recipient, data, tokenType, salt, null);
+  }
+
+  /**
+   * Create a mint transaction with a fresh random salt.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param data payload bytes, may be null
+   * @param tokenType token type identifier
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(
+          NetworkId networkId,
+          Predicate recipient,
+          byte[] data,
+          TokenType tokenType
+  ) {
+    return MintTransaction.create(networkId, recipient, data, tokenType, TokenSalt.generate());
+  }
+
+  /**
+   * Create a mint transaction with a generated token type.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param data payload bytes, may be null
+   * @param salt mint-transaction salt
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(
+          NetworkId networkId,
+          Predicate recipient,
+          byte[] data,
+          TokenSalt salt
+  ) {
+    return MintTransaction.create(networkId, recipient, data, TokenType.generate(), salt);
+  }
+
+  /**
+   * Create a mint transaction with no data.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param tokenType token type identifier
+   * @param salt mint-transaction salt
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(
+          NetworkId networkId,
+          Predicate recipient,
+          TokenType tokenType,
+          TokenSalt salt
+  ) {
+    return MintTransaction.create(networkId, recipient, (byte[]) null, tokenType, salt);
+  }
+
+  /**
+   * Create a mint transaction with a generated token type and salt.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param data payload bytes, may be null
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data) {
+    return MintTransaction.create(networkId, recipient, data, TokenType.generate());
+  }
+
+  /**
+   * Create a mint transaction with no data and a generated salt.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param tokenType token type identifier
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(
+          NetworkId networkId,
+          Predicate recipient,
+          TokenType tokenType
+  ) {
+    return MintTransaction.create(networkId, recipient, (byte[]) null, tokenType);
+  }
+
+  /**
+   * Create a mint transaction with no data and a generated token type.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   * @param salt mint-transaction salt
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(
+          NetworkId networkId,
+          Predicate recipient,
+          TokenSalt salt
+  ) {
+    return MintTransaction.create(networkId, recipient, TokenType.generate(), salt);
+  }
+
+  /**
+   * Create a mint transaction with no data, generated token type and salt.
+   *
+   * @param networkId network identifier
+   * @param recipient recipient predicate
+   *
+   * @return mint transaction
+   */
+  public static MintTransaction create(NetworkId networkId, Predicate recipient) {
+    return MintTransaction.create(networkId, recipient, (byte[]) null);
   }
 
   /**
@@ -161,7 +329,7 @@ public class MintTransaction implements Transaction {
     if (tag.getTag() != MintTransaction.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 6);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 7);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
     if (version != MintTransaction.VERSION) {
@@ -169,10 +337,11 @@ public class MintTransaction implements Transaction {
     }
 
     return MintTransaction.create(
-            EncodedPredicate.fromCbor(data.get(1)),
-            TokenId.fromCbor(data.get(2)),
-            TokenType.fromCbor(data.get(3)),
-            CborDeserializer.decodeNullable(data.get(4), CborDeserializer::decodeByteString),
+            NetworkId.fromId(CborDeserializer.decodeUnsignedInteger(data.get(1)).asShort()),
+            EncodedPredicate.fromCbor(data.get(2)),
+            CborDeserializer.decodeNullable(data.get(6), CborDeserializer::decodeByteString),
+            TokenType.fromCbor(data.get(4)),
+            TokenSalt.fromCbor(data.get(3)),
             CborDeserializer.decodeNullable(data.get(5), CborDeserializer::decodeByteString)
     );
   }
@@ -215,8 +384,9 @@ public class MintTransaction implements Transaction {
             MintTransaction.CBOR_TAG,
             CborSerializer.encodeArray(
                     CborSerializer.encodeUnsignedInteger(MintTransaction.VERSION),
+                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()),
                     this.recipient.toCbor(),
-                    this.tokenId.toCbor(),
+                    this.salt.toCbor(),
                     this.tokenType.toCbor(),
                     CborSerializer.encodeNullable(this.justification, CborSerializer::encodeByteString),
                     CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString)
@@ -245,8 +415,8 @@ public class MintTransaction implements Transaction {
   @Override
   public String toString() {
     return String.format(
-            "MintTransaction{sourceStateHash=%s, lockScript=%s, recipient=%s, tokenId=%s, tokenType=%s, data=%s}",
-            this.sourceStateHash, this.lockScript, this.recipient, this.tokenId, this.tokenType,
-            HexConverter.encode(this.data));
+            "MintTransaction{sourceStateHash=%s, lockScript=%s, networkId=%s, recipient=%s, salt=%s, tokenType=%s, tokenId=%s, data=%s}",
+            this.sourceStateHash, this.lockScript, this.networkId, this.recipient, this.salt,
+            this.tokenType, this.tokenId, HexConverter.encode(this.data));
   }
 }

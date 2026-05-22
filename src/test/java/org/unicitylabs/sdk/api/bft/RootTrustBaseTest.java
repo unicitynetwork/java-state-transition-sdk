@@ -2,6 +2,7 @@ package org.unicitylabs.sdk.api.bft;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.unicitylabs.sdk.api.NetworkId;
 
 public class RootTrustBaseTest {
 
@@ -12,7 +13,7 @@ public class RootTrustBaseTest {
     );
 
     Assertions.assertEquals(1, trustBase.getVersion());
-    Assertions.assertEquals(3, trustBase.getNetworkId());
+    Assertions.assertEquals(NetworkId.LOCAL, trustBase.getNetworkId());
     Assertions.assertEquals(1, trustBase.getEpoch());
     Assertions.assertEquals(1, trustBase.getEpochStartRound());
     Assertions.assertEquals(4, trustBase.getRootNodes().size());

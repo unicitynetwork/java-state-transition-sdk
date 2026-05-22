@@ -9,8 +9,6 @@ import org.unicitylabs.sdk.api.jsonrpc.JsonRpcNetworkException;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.transaction.MintTransaction;
-import org.unicitylabs.sdk.transaction.TokenId;
-import org.unicitylabs.sdk.transaction.TokenType;
 import org.unicitylabs.sdk.util.HexConverter;
 
 import java.util.concurrent.CompletableFuture;
@@ -43,11 +41,8 @@ public class TestApiKeyIntegration {
             HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
 
     MintTransaction transaction = MintTransaction.create(
-            SignaturePredicate.fromSigningService(signingService),
-            TokenId.generate(),
-            TokenType.generate(),
-            null,
-            null
+            NetworkId.LOCAL,
+            SignaturePredicate.fromSigningService(signingService)
     );
     certificationData = CertificationData.fromMintTransaction(transaction);
   }
@@ -131,7 +126,7 @@ public class TestApiKeyIntegration {
 
   @Test
   public void testGetBlockHeightWorksWithoutApiKey() throws Exception {
-    CompletableFuture<Long> future = clientWithoutApiKey.getBlockHeight();
+    CompletableFuture<Long> future = clientWithoutApiKey.getLatestBlockNumber();
 
     Long blockHeight = future.get(5, TimeUnit.SECONDS);
     assertNotNull(blockHeight);
@@ -140,7 +135,7 @@ public class TestApiKeyIntegration {
 
   @Test
   public void testGetBlockHeightAlsoWorksWithApiKey() throws Exception {
-    CompletableFuture<Long> future = clientWithApiKey.getBlockHeight();
+    CompletableFuture<Long> future = clientWithApiKey.getLatestBlockNumber();
 
     Long blockHeight = future.get(5, TimeUnit.SECONDS);
     assertNotNull(blockHeight);

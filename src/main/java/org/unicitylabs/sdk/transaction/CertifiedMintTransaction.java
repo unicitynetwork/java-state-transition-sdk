@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.transaction;
 
 import org.unicitylabs.sdk.api.InclusionProof;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
@@ -47,6 +48,24 @@ public class CertifiedMintTransaction implements Transaction {
   @Override
   public DataHash getSourceStateHash() {
     return this.transaction.getSourceStateHash();
+  }
+
+  /**
+   * Returns the network identifier.
+   *
+   * @return network id
+   */
+  public NetworkId getNetworkId() {
+    return this.transaction.getNetworkId();
+  }
+
+  /**
+   * Returns the mint-transaction salt.
+   *
+   * @return token salt
+   */
+  public TokenSalt getSalt() {
+    return this.transaction.getSalt();
   }
 
   /**

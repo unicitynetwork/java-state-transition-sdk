@@ -1,29 +1,20 @@
 package org.unicitylabs.sdk.payment;
 
-import org.unicitylabs.sdk.transaction.TokenId;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 /**
- * Result of token split generation containing burn transaction and per-token proofs.
+ * Result of token split generation containing burn transaction and per-output split tokens.
  */
 public class SplitResult {
 
   private final TransferTransaction burnTransaction;
-  private final Map<TokenId, List<SplitAssetProof>> proofs;
+  private final List<SplitToken> tokens;
 
-  SplitResult(TransferTransaction burnTransaction, Map<TokenId, List<SplitAssetProof>> proofs) {
+  SplitResult(TransferTransaction burnTransaction, List<SplitToken> tokens) {
     this.burnTransaction = burnTransaction;
-    this.proofs = Map.copyOf(
-            proofs.entrySet().stream()
-                    .collect(
-                            Collectors.toMap(Entry::getKey, value -> List.copyOf(value.getValue()))
-                    )
-    );
+    this.tokens = List.copyOf(tokens);
   }
 
   /**
@@ -36,11 +27,11 @@ public class SplitResult {
   }
 
   /**
-   * Get proofs grouped by resulting token id.
+   * Get the split tokens ready to be minted.
    *
-   * @return split proofs map
+   * @return immutable list of split tokens
    */
-  public Map<TokenId, List<SplitAssetProof>> getProofs() {
-    return this.proofs;
+  public List<SplitToken> getTokens() {
+    return this.tokens;
   }
 }

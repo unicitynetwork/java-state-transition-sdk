@@ -28,6 +28,13 @@ public class UnicityCertificateVerification {
   public static UnicityCertificateVerificationResult verify(RootTrustBase trustBase,
                                                             InclusionProof inclusionProof) {
     ArrayList<VerificationResult<?>> results = new ArrayList<>();
+
+    if (inclusionProof.getUnicityCertificate().getUnicitySeal().getNetworkId() != trustBase.getNetworkId()) {
+      results.add(new VerificationResult<>("UnicitySealNetworkMatchesTrustBaseRule", VerificationStatus.FAIL));
+      return UnicityCertificateVerificationResult.fail(results);
+    }
+    results.add(new VerificationResult<>("UnicitySealNetworkMatchesTrustBaseRule", VerificationStatus.OK));
+
     VerificationResult<VerificationStatus> result = UnicitySealHashMatchesWithRootHashRule.verify(inclusionProof.getUnicityCertificate());
     results.add(result);
     if (result.getStatus() != VerificationStatus.OK) {

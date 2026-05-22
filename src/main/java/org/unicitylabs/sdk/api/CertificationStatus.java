@@ -10,10 +10,6 @@ public enum CertificationStatus {
   SUCCESS("SUCCESS"),
 
   /**
-   * The certification request failed because the state ID already exists.
-   */
-  STATE_ID_EXISTS("STATE_ID_EXISTS"),
-  /**
    * The certification request failed because the state ID does not match the expected format.
    */
   STATE_ID_MISMATCH("STATE_ID_MISMATCH"),
