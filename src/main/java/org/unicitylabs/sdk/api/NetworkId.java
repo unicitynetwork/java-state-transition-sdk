@@ -31,6 +31,10 @@ public final class NetworkId {
    * @return NetworkId for the given identifier
    */
   public static NetworkId fromId(short id) {
+    if (id <= 0) {
+      throw new IllegalArgumentException(
+          "Network identifier out of allowed 16-bit unsigned range: " + id + ".");
+    }
     if (id == MAINNET.id) {
       return MAINNET;
     }
