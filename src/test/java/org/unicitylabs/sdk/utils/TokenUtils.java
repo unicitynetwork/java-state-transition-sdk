@@ -33,7 +33,7 @@ public class TokenUtils {
           Predicate recipient
   ) throws Exception {
     return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
-            recipient, null);
+            recipient, (byte[]) null);
   }
 
   public static Token mintToken(

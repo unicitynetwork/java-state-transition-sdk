@@ -44,7 +44,7 @@ public class CertifiedMintTransactionVerificationRule {
   ) {
     List<VerificationResult<?>> results = new ArrayList<>();
 
-    if (transaction.getNetworkId() != trustBase.getNetworkId()) {
+    if (!transaction.getNetworkId().equals(trustBase.getNetworkId())) {
       results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule", VerificationStatus.FAIL));
       return new VerificationResult<>("CertifiedMintTransactionVerificationRule",
               VerificationStatus.FAIL, "Mint network does not match trust base.", results);

@@ -29,7 +29,7 @@ public class UnicityCertificateVerification {
                                                             InclusionProof inclusionProof) {
     ArrayList<VerificationResult<?>> results = new ArrayList<>();
 
-    if (inclusionProof.getUnicityCertificate().getUnicitySeal().getNetworkId() != trustBase.getNetworkId()) {
+    if (!inclusionProof.getUnicityCertificate().getUnicitySeal().getNetworkId().equals(trustBase.getNetworkId())) {
       results.add(new VerificationResult<>("UnicitySealNetworkMatchesTrustBaseRule", VerificationStatus.FAIL));
       return UnicityCertificateVerificationResult.fail(results);
     }
