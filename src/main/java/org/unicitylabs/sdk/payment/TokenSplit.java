@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.payment;
 
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
@@ -15,10 +16,18 @@ import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.TokenId;
 import org.unicitylabs.sdk.transaction.TransferTransaction;
 
+import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+
 
 /**
  * Utilities for creating and verifying token split proofs.
@@ -31,13 +40,13 @@ public class TokenSplit {
   }
 
   /**
-   * Create split proofs and burn transaction for provided target token distributions.
+   * Create split proofs and burn transaction for the provided split token requests.
    *
    * @param token source token being split
    * @param paymentDataDeserializer payment data decoder for source token payload
-   * @param splitTokens destination token ids and their asset allocations
+   * @param requests per-output mint requests
    *
-   * @return split result containing burn transaction and proof map
+   * @return split result containing burn transaction and split tokens
    *
    * @throws LeafOutOfBoundsException if a leaf path is invalid for merkle tree insertion
    * @throws BranchExistsException if duplicate branches are inserted into a merkle tree
@@ -45,27 +54,34 @@ public class TokenSplit {
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
-          Map<TokenId, Set<Asset>> splitTokens
+          List<SplitTokenRequest> requests
   ) throws LeafOutOfBoundsException, BranchExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(paymentDataDeserializer, "Payment data deserializer cannot be null");
-    Objects.requireNonNull(splitTokens, "Split tokens cannot be null");
+    Objects.requireNonNull(requests, "Requests cannot be null");
     byte[] paymentDataBytes = token.getGenesis().getData().orElse(null);
     if (paymentDataBytes == null) {
       throw new IllegalArgumentException("Token genesis data must be present");
     }
 
-    HashMap<AssetId, SparseMerkleSumTree> trees = new HashMap<AssetId, SparseMerkleSumTree>();
-    for (Entry<TokenId, Set<Asset>> entry : splitTokens.entrySet()) {
-      Objects.requireNonNull(entry, "Split token entry cannot be null");
-      Objects.requireNonNull(entry.getKey(), "Split token id cannot be null");
-      for (Asset asset : entry.getValue()) {
-        Objects.requireNonNull(asset, "Split token asset cannot be null");
+    NetworkId networkId = token.getGenesis().getNetworkId();
+    HashMap<AssetId, SparseMerkleSumTree> trees = new HashMap<>();
+    LinkedHashMap<TokenId, SplitTokenRequest> requestsByTokenId = new LinkedHashMap<>();
+    for (SplitTokenRequest request : requests) {
+      Objects.requireNonNull(request, "Split token request cannot be null");
+      TokenId tokenId = TokenId.fromSalt(networkId, request.getSalt());
+      if (requestsByTokenId.containsKey(tokenId)) {
+        throw new DuplicateSplitTokenIdException(tokenId.toString());
+      }
+      requestsByTokenId.put(tokenId, request);
 
+      BigInteger tokenIdPath = tokenId.toBitString().toBigInteger();
+      for (Asset asset : request.getAssets()) {
+        Objects.requireNonNull(asset, "Split token asset cannot be null");
         SparseMerkleSumTree tree = trees.computeIfAbsent(asset.getId(),
                 v -> new SparseMerkleSumTree(HashAlgorithm.SHA256));
         tree.addLeaf(
-                entry.getKey().toBitString().toBigInteger(),
+                tokenIdPath,
                 new SparseMerkleSumTree.LeafValue(asset.getId().getBytes(), asset.getValue())
         );
       }
@@ -88,7 +104,7 @@ public class TokenSplit {
     }
 
     SparseMerkleTree aggregationTree = new SparseMerkleTree(HashAlgorithm.SHA256);
-    HashMap<AssetId, SparseMerkleSumTreeRootNode> assetTreeRoots = new HashMap<AssetId, SparseMerkleSumTreeRootNode>();
+    HashMap<AssetId, SparseMerkleSumTreeRootNode> assetTreeRoots = new HashMap<>();
     for (Entry<AssetId, SparseMerkleSumTree> entry : trees.entrySet()) {
       Asset tokenAsset = assets.get(entry.getKey());
       if (tokenAsset == null) {
@@ -123,22 +139,29 @@ public class TokenSplit {
             CborSerializer.encodeNull()
     );
 
-    HashMap<TokenId, List<SplitAssetProof>> proofs = new HashMap<TokenId, List<SplitAssetProof>>();
-    for (Entry<TokenId, Set<Asset>> entry : splitTokens.entrySet()) {
-      proofs.put(
-              entry.getKey(),
-              List.copyOf(
-                      entry.getValue().stream().map(asset -> SplitAssetProof.create(
-                                      asset.getId(),
-                                      aggregationRoot.getPath(asset.getId().toBitString().toBigInteger()),
-                                      assetTreeRoots.get(asset.getId()).getPath(entry.getKey().toBitString().toBigInteger())
-                              )
-                      ).collect(Collectors.toList())
-              )
-      );
+    List<SplitToken> tokens = new ArrayList<>(requestsByTokenId.size());
+    for (Entry<TokenId, SplitTokenRequest> entry : requestsByTokenId.entrySet()) {
+      SplitTokenRequest request = entry.getValue();
+      BigInteger tokenIdPath = entry.getKey().toBitString().toBigInteger();
+      Set<Asset> requestAssets = request.getAssets();
+      List<SplitAssetProof> proofs = requestAssets.stream()
+              .map(asset -> SplitAssetProof.create(
+                      asset.getId(),
+                      aggregationRoot.getPath(asset.getId().toBitString().toBigInteger()),
+                      assetTreeRoots.get(asset.getId()).getPath(tokenIdPath)
+              ))
+              .collect(Collectors.toList());
+      tokens.add(new SplitToken(
+              networkId,
+              request.getRecipient(),
+              request.getTokenType(),
+              request.getSalt(),
+              requestAssets,
+              proofs
+      ));
     }
 
-    return new SplitResult(burnTransaction, proofs);
+    return new SplitResult(burnTransaction, tokens);
   }
 
 }

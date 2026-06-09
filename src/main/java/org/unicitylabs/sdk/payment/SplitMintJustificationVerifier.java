@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.payment;
 
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.payment.asset.Asset;
@@ -66,6 +67,19 @@ public class SplitMintJustificationVerifier implements MintJustificationVerifier
               "SplitMintJustificationVerificationRule",
               VerificationStatus.FAIL,
               "Assets data is missing."
+      );
+    }
+
+    NetworkId sourceNetworkId = justification.getToken().getGenesis().getNetworkId();
+    if (!transaction.getNetworkId().equals(sourceNetworkId)) {
+      return new VerificationResult<>(
+              "SplitMintJustificationVerificationRule",
+              VerificationStatus.FAIL,
+              String.format(
+                      "Network identifier mismatch: mint is on %s, source token is on %s.",
+                      transaction.getNetworkId(),
+                      sourceNetworkId
+              )
       );
     }
 

@@ -103,7 +103,7 @@ public class TestAggregatorClient implements AggregatorClient {
   }
 
   @Override
-  public CompletableFuture<Long> getBlockHeight() {
+  public CompletableFuture<Long> getLatestBlockNumber() {
     return CompletableFuture.completedFuture(1L);
   }
 }

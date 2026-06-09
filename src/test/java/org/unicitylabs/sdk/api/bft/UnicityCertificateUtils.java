@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.api.bft;
 
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.DataHasher;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
@@ -72,7 +73,7 @@ public class UnicityCertificateUtils {
             .digest();
 
     UnicitySeal seal = new UnicitySeal(
-            (short) 0,
+            NetworkId.LOCAL,
             0L,
             0L,
             0L,

@@ -5,6 +5,7 @@ import org.unicitylabs.sdk.StateTransitionClient;
 import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.api.CertificationResponse;
 import org.unicitylabs.sdk.api.CertificationStatus;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.Predicate;
@@ -31,17 +32,8 @@ public class TokenUtils {
           MintJustificationVerifierService mintJustificationVerifier,
           Predicate recipient
   ) throws Exception {
-    return TokenUtils.mintToken(
-            client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
-            TokenId.generate(),
-            TokenType.generate(),
-            recipient,
-            null,
-            null
-    );
+    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
+            recipient, (byte[]) null);
   }
 
   public static Token mintToken(
@@ -50,20 +42,10 @@ public class TokenUtils {
           PredicateVerifierService predicateVerifier,
           MintJustificationVerifierService mintJustificationVerifier,
           Predicate recipient,
-          byte[] justification,
           byte[] data
   ) throws Exception {
-    return TokenUtils.mintToken(
-            client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
-            TokenId.generate(),
-            TokenType.generate(),
-            recipient,
-            justification,
-            data
-    );
+    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
+            recipient, data, NetworkId.LOCAL);
   }
 
   public static Token mintToken(
@@ -71,18 +53,62 @@ public class TokenUtils {
           RootTrustBase trustBase,
           PredicateVerifierService predicateVerifier,
           MintJustificationVerifierService mintJustificationVerifier,
-          TokenId tokenId,
-          TokenType tokenType,
           Predicate recipient,
-          byte[] justification,
-          byte[] data
+          byte[] data,
+          NetworkId networkId
+  ) throws Exception {
+    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
+            recipient, data, networkId, TokenType.generate());
+  }
+
+  public static Token mintToken(
+          StateTransitionClient client,
+          RootTrustBase trustBase,
+          PredicateVerifierService predicateVerifier,
+          MintJustificationVerifierService mintJustificationVerifier,
+          Predicate recipient,
+          byte[] data,
+          NetworkId networkId,
+          TokenType tokenType
+  ) throws Exception {
+    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
+            recipient, data, networkId, tokenType, TokenSalt.generate());
+  }
+
+  public static Token mintToken(
+          StateTransitionClient client,
+          RootTrustBase trustBase,
+          PredicateVerifierService predicateVerifier,
+          MintJustificationVerifierService mintJustificationVerifier,
+          Predicate recipient,
+          byte[] data,
+          NetworkId networkId,
+          TokenType tokenType,
+          TokenSalt salt
+  ) throws Exception {
+    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
+            recipient, data, networkId, tokenType, salt, null);
+  }
+
+  public static Token mintToken(
+          StateTransitionClient client,
+          RootTrustBase trustBase,
+          PredicateVerifierService predicateVerifier,
+          MintJustificationVerifierService mintJustificationVerifier,
+          Predicate recipient,
+          byte[] data,
+          NetworkId networkId,
+          TokenType tokenType,
+          TokenSalt salt,
+          byte[] justification
   ) throws Exception {
     MintTransaction transaction = MintTransaction.create(
+            networkId,
             recipient,
-            tokenId,
+            data,
             tokenType,
-            justification,
-            data
+            salt,
+            justification
     );
 
     CertificationData certificationData = CertificationData.fromMintTransaction(transaction);
@@ -139,7 +165,7 @@ public class TokenUtils {
             token,
             recipient,
             x,
-            CborSerializer.encodeArray()
+            null
     );
 
     return TokenUtils.transferToken(

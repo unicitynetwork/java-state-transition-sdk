@@ -45,7 +45,7 @@ public class TokenE2ETest extends CommonTestFlow {
 
   @Test
   void testGetBlockHeight() throws Exception {
-    Long blockHeight = aggregatorClient.getBlockHeight().get();
+    Long blockHeight = aggregatorClient.getLatestBlockNumber().get();
     assertNotNull(blockHeight);
     assertTrue(blockHeight > 0);
   }

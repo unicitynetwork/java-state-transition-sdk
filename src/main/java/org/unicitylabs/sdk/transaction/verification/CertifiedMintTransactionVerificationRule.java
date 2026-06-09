@@ -44,6 +44,13 @@ public class CertifiedMintTransactionVerificationRule {
   ) {
     List<VerificationResult<?>> results = new ArrayList<>();
 
+    if (!transaction.getNetworkId().equals(trustBase.getNetworkId())) {
+      results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule", VerificationStatus.FAIL));
+      return new VerificationResult<>("CertifiedMintTransactionVerificationRule",
+              VerificationStatus.FAIL, "Mint network does not match trust base.", results);
+    }
+    results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule", VerificationStatus.OK));
+
     SigningService signingService = MintSigningService.create(transaction.getTokenId());
     EncodedPredicate expectedLockScript = EncodedPredicate.fromPredicate(SignaturePredicate.fromSigningService(signingService));
     VerificationResult<?> result = expectedLockScript

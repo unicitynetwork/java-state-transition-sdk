@@ -25,9 +25,9 @@ public interface AggregatorClient {
   CompletableFuture<InclusionProofResponse> getInclusionProof(StateId stateId);
 
   /**
-   * Get block height.
+   * Get the latest block number.
    *
-   * @return block height
+   * @return latest block number
    */
-  CompletableFuture<Long> getBlockHeight();
+  CompletableFuture<Long> getLatestBlockNumber();
 }

@@ -9,6 +9,8 @@ import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.payment.SplitMintJustification;
 import org.unicitylabs.sdk.payment.SplitMintJustificationVerifier;
 import org.unicitylabs.sdk.payment.SplitResult;
+import org.unicitylabs.sdk.payment.SplitToken;
+import org.unicitylabs.sdk.payment.SplitTokenRequest;
 import org.unicitylabs.sdk.payment.TokenSplit;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
@@ -16,16 +18,13 @@ import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.Token;
-import org.unicitylabs.sdk.transaction.TokenId;
-import org.unicitylabs.sdk.transaction.TokenType;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -60,15 +59,13 @@ public class SplitBuilderTest {
             predicateVerifier,
             mintJustificationVerifier,
             ownerPredicate,
-            null,
             new TestPaymentData(assets).encode()
     );
 
-    TokenId outputTokenId = TokenId.generate();
     SplitResult split = TokenSplit.split(
             sourceToken,
             TestPaymentData::decode,
-            Map.of(outputTokenId, assets)
+            List.of(SplitTokenRequest.create(ownerPredicate, assets))
     );
 
     Token burnToken = TokenUtils.transferToken(
@@ -80,9 +77,10 @@ public class SplitBuilderTest {
             SignaturePredicateUnlockScript.create(split.getBurnTransaction(), signingService)
     );
 
+    SplitToken splitResult = split.getTokens().get(0);
     SplitMintJustification justification = SplitMintJustification.create(
             burnToken,
-            new LinkedHashSet<>(split.getProofs().get(outputTokenId))
+            splitResult.getProofs()
     );
 
     Token splitToken = TokenUtils.mintToken(
@@ -90,11 +88,12 @@ public class SplitBuilderTest {
             trustBase,
             predicateVerifier,
             mintJustificationVerifier,
-            outputTokenId,
-            TokenType.generate(),
-            ownerPredicate,
-            justification.toCbor(),
-            new TestPaymentData(assets).encode()
+            splitResult.getRecipient(),
+            new TestPaymentData(assets).encode(),
+            splitResult.getNetworkId(),
+            splitResult.getTokenType(),
+            splitResult.getSalt(),
+            justification.toCbor()
     );
 
     Assertions.assertEquals(

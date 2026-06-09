@@ -87,12 +87,12 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
   }
 
   /**
-   * Get block height.
+   * Get the latest block number.
    *
-   * @return block height
+   * @return latest block number
    */
   @Override
-  public CompletableFuture<Long> getBlockHeight() {
+  public CompletableFuture<Long> getLatestBlockNumber() {
     return this.transport.request("get_block_height", Map.of(), BlockHeightResponse.class)
             .thenApply(BlockHeightResponse::getBlockNumber);
   }

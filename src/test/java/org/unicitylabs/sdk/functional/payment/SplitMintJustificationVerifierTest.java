@@ -14,6 +14,8 @@ import org.unicitylabs.sdk.payment.SplitMintJustification;
 import org.unicitylabs.sdk.payment.SplitMintJustificationVerifier;
 import org.unicitylabs.sdk.payment.SplitAssetProof;
 import org.unicitylabs.sdk.payment.SplitResult;
+import org.unicitylabs.sdk.payment.SplitToken;
+import org.unicitylabs.sdk.payment.SplitTokenRequest;
 import org.unicitylabs.sdk.payment.TokenSplit;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
@@ -27,8 +29,6 @@ import org.unicitylabs.sdk.smt.plain.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.smt.sum.SparseMerkleSumTree;
 import org.unicitylabs.sdk.smt.sum.SparseMerkleSumTreeRootNode;
 import org.unicitylabs.sdk.transaction.Token;
-import org.unicitylabs.sdk.transaction.TokenId;
-import org.unicitylabs.sdk.transaction.TokenType;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
@@ -40,9 +40,7 @@ import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -91,15 +89,13 @@ public class SplitMintJustificationVerifierTest {
             this.predicateVerifier,
             this.mintJustificationVerifier,
             ownerPredicate,
-            null,
             new TestPaymentData(assets).encode()
     );
 
-    TokenId outputTokenId = TokenId.generate();
     SplitResult split = TokenSplit.split(
             sourceToken,
             TestPaymentData::decode,
-            Map.of(outputTokenId, assets)
+            List.of(SplitTokenRequest.create(ownerPredicate, assets))
     );
 
     Token burnToken = TokenUtils.transferToken(
@@ -111,9 +107,10 @@ public class SplitMintJustificationVerifierTest {
             SignaturePredicateUnlockScript.create(split.getBurnTransaction(), signingService)
     );
 
+    SplitToken splitResult = split.getTokens().get(0);
     this.splitJustification = SplitMintJustification.create(
             burnToken,
-            new LinkedHashSet<>(split.getProofs().get(outputTokenId))
+            splitResult.getProofs()
     );
 
     this.splitToken = TokenUtils.mintToken(
@@ -121,11 +118,12 @@ public class SplitMintJustificationVerifierTest {
             this.trustBase,
             this.predicateVerifier,
             this.mintJustificationVerifier,
-            outputTokenId,
-            TokenType.generate(),
-            ownerPredicate,
-            this.splitJustification.toCbor(),
-            new TestPaymentData(assets).encode()
+            splitResult.getRecipient(),
+            new TestPaymentData(assets).encode(),
+            splitResult.getNetworkId(),
+            splitResult.getTokenType(),
+            splitResult.getSalt(),
+            this.splitJustification.toCbor()
     );
   }
 
@@ -219,7 +217,7 @@ public class SplitMintJustificationVerifierTest {
     );
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result,
@@ -241,7 +239,7 @@ public class SplitMintJustificationVerifierTest {
     proofs.set(0, mutatedProof);
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result,
@@ -268,7 +266,7 @@ public class SplitMintJustificationVerifierTest {
     ));
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result, "Current proof is not derived from the same asset tree as other proofs.");
@@ -296,7 +294,7 @@ public class SplitMintJustificationVerifierTest {
     proofs.set(0, mutatedProof);
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result, "Asset tree root does not match aggregation path leaf.");
@@ -311,7 +309,7 @@ public class SplitMintJustificationVerifierTest {
             .collect(Collectors.toSet());
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(proofs));
+            this.splitJustification.getToken(), proofs);
     byte[] data = new TestPaymentData(assets).encode();
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), data);
@@ -361,7 +359,7 @@ public class SplitMintJustificationVerifierTest {
     }
 
     SplitMintJustification mutated = SplitMintJustification.create(
-            this.splitJustification.getToken(), new LinkedHashSet<>(mutatedProofs));
+            this.splitJustification.getToken(), mutatedProofs);
 
     VerificationResult<VerificationStatus> result = verifyWith(mutated.toCbor(), originalDataBytes());
     assertFailWithMessage(result, "Aggregation path root does not match burn predicate.");
@@ -393,8 +391,8 @@ public class SplitMintJustificationVerifierTest {
     CborDeserializer.CborTag mintTag = CborDeserializer.decodeTag(certifiedGenesis.get(0));
     List<byte[]> mint = CborDeserializer.decodeArray(mintTag.getData());
 
-    mint.set(4, CborSerializer.encodeNullable(justification, CborSerializer::encodeByteString));
-    mint.set(5, CborSerializer.encodeNullable(data, CborSerializer::encodeByteString));
+    mint.set(5, CborSerializer.encodeNullable(justification, CborSerializer::encodeByteString));
+    mint.set(6, CborSerializer.encodeNullable(data, CborSerializer::encodeByteString));
 
     certifiedGenesis.set(0, CborSerializer.encodeTag(mintTag.getTag(), encodeArray(mint)));
     tokenData.set(1, encodeArray(certifiedGenesis));

@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.api.bft;
 
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
@@ -17,7 +18,7 @@ public class UnicitySeal {
   public static final long CBOR_TAG = 39005;
   private static final int VERSION = 1;
 
-  private final short networkId;
+  private final NetworkId networkId;
   private final long rootChainRoundNumber;
   private final long epoch;
   private final long timestamp;
@@ -26,7 +27,7 @@ public class UnicitySeal {
   private final Set<SignatureEntry> signatures;
 
   UnicitySeal(
-          short networkId,
+          NetworkId networkId,
           long rootChainRoundNumber,
           long epoch,
           long timestamp,
@@ -74,7 +75,7 @@ public class UnicitySeal {
    *
    * @return network ID
    */
-  public short getNetworkId() {
+  public NetworkId getNetworkId() {
     return this.networkId;
   }
 
@@ -152,7 +153,7 @@ public class UnicitySeal {
     }
 
     return new UnicitySeal(
-            CborDeserializer.decodeUnsignedInteger(data.get(1)).asShort(),
+            NetworkId.fromId(CborDeserializer.decodeUnsignedInteger(data.get(1)).asShort()),
             CborDeserializer.decodeUnsignedInteger(data.get(2)).asLong(),
             CborDeserializer.decodeUnsignedInteger(data.get(3)).asLong(),
             CborDeserializer.decodeUnsignedInteger(data.get(4)).asLong(),
@@ -177,7 +178,7 @@ public class UnicitySeal {
             UnicitySeal.CBOR_TAG,
             CborSerializer.encodeArray(
                     CborSerializer.encodeUnsignedInteger(UnicitySeal.VERSION),
-                    CborSerializer.encodeUnsignedInteger(this.networkId),
+                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()),
                     CborSerializer.encodeUnsignedInteger(this.rootChainRoundNumber),
                     CborSerializer.encodeUnsignedInteger(this.epoch),
                     CborSerializer.encodeUnsignedInteger(this.timestamp),

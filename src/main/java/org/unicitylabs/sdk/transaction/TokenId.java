@@ -1,11 +1,13 @@
 package org.unicitylabs.sdk.transaction;
 
+import org.unicitylabs.sdk.api.NetworkId;
+import org.unicitylabs.sdk.crypto.hash.DataHasher;
+import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.BitString;
 import org.unicitylabs.sdk.util.HexConverter;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -15,7 +17,6 @@ import java.util.Objects;
  */
 public class TokenId {
 
-  private static final SecureRandom RANDOM = new SecureRandom();
   private final byte[] bytes;
 
   /**
@@ -30,14 +31,28 @@ public class TokenId {
   }
 
   /**
-   * Generate a random token id.
+   * Derive a token id from a network identifier and salt.
    *
-   * @return token id
+   * @param networkId network identifier
+   * @param salt mint-transaction salt
+   *
+   * @return derived token id
    */
-  public static TokenId generate() {
-    byte[] bytes = new byte[32];
-    RANDOM.nextBytes(bytes);
-    return new TokenId(bytes);
+  public static TokenId fromSalt(NetworkId networkId, TokenSalt salt) {
+    Objects.requireNonNull(networkId, "Network id cannot be null");
+    Objects.requireNonNull(salt, "Token salt cannot be null");
+
+    return new TokenId(
+            new DataHasher(HashAlgorithm.SHA256)
+                    .update(
+                            CborSerializer.encodeArray(
+                                    salt.toCbor(),
+                                    CborSerializer.encodeUnsignedInteger(networkId.getId())
+                            )
+                    )
+                    .digest()
+                    .getData()
+    );
   }
 
   /**
