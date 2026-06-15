@@ -40,6 +40,19 @@ public class CertifiedUnicityIdMintTransactionVerificationRule {
   ) {
     List<VerificationResult<?>> results = new ArrayList<>();
 
+    if (!genesis.getNetworkId().equals(trustBase.getNetworkId())) {
+      results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule",
+              VerificationStatus.FAIL));
+      return new VerificationResult<>(
+              "CertifiedUnicityIdMintTransactionVerificationRule",
+              VerificationStatus.FAIL,
+              "Mint network does not match trust base.",
+              results
+      );
+    }
+    results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule",
+            VerificationStatus.OK));
+
     if (issuerPublicKey != null) {
       EncodedPredicate expectedLockScript = EncodedPredicate.fromPredicate(
               SignaturePredicate.create(issuerPublicKey));

@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.unicityid;
 
 import org.unicitylabs.sdk.api.InclusionProof;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
@@ -47,6 +48,15 @@ public final class CertifiedUnicityIdMintTransaction implements Transaction {
   @Override
   public EncodedPredicate getRecipient() {
     return this.transaction.getRecipient();
+  }
+
+  /**
+   * Returns the network identifier.
+   *
+   * @return network identifier
+   */
+  public NetworkId getNetworkId() {
+    return this.transaction.getNetworkId();
   }
 
   @Override
