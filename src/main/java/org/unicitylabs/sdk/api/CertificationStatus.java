@@ -112,12 +112,12 @@ public final class CertificationStatus {
     if (!(o instanceof CertificationStatus)) {
       return false;
     }
-    return this.value.equalsIgnoreCase(((CertificationStatus) o).value);
+    return this.value.equals(((CertificationStatus) o).value);
   }
 
   @Override
   public int hashCode() {
-    return this.value.toUpperCase().hashCode();
+    return this.value.hashCode();
   }
 
   @Override
