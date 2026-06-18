@@ -5,14 +5,14 @@ import org.unicitylabs.sdk.crypto.hash.DataHasher;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
-import org.unicitylabs.sdk.transaction.TokenId;
+import org.unicitylabs.sdk.transaction.TokenSalt;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Human-readable identifier for a unicity token. The pair (domain, name) is hashed deterministically
- * to derive the corresponding {@link TokenId}.
+ * to derive the corresponding {@link TokenSalt}.
  */
 public final class UnicityId {
 
@@ -85,12 +85,12 @@ public final class UnicityId {
   }
 
   /**
-   * Derive the token id from this unicity id by hashing the tagged ("NAMETAG_", domain, name)
+   * Derive the token salt from this unicity id by hashing the tagged ("NAMETAG_", domain, name)
    * tuple with SHA-256.
    *
-   * @return derived token id
+   * @return derived token salt
    */
-  public TokenId toTokenId() {
+  public TokenSalt toTokenSalt() {
     DataHash hash = new DataHasher(HashAlgorithm.SHA256)
             .update(
                     CborSerializer.encodeArray(
@@ -100,7 +100,7 @@ public final class UnicityId {
                     )
             )
             .digest();
-    return new TokenId(hash.getData());
+    return TokenSalt.fromBytes(hash.getData());
   }
 
   @Override

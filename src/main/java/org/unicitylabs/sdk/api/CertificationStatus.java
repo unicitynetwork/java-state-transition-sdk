@@ -1,50 +1,75 @@
 package org.unicitylabs.sdk.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
- * Status codes for certification.
+ * Status codes for certification. Known statuses are exposed as singleton
+ * constants; any other value returned by the aggregator is accepted and
+ * preserved as a custom status instead of being rejected.
  */
-public enum CertificationStatus {
+public final class CertificationStatus {
+
   /**
    * The certification request was accepted and stored.
    */
-  SUCCESS("SUCCESS"),
+  public static final CertificationStatus SUCCESS = new CertificationStatus("SUCCESS");
 
   /**
    * The certification request failed because the state ID does not match the expected format.
    */
-  STATE_ID_MISMATCH("STATE_ID_MISMATCH"),
+  public static final CertificationStatus STATE_ID_MISMATCH =
+      new CertificationStatus("STATE_ID_MISMATCH");
   /**
    * The certification request failed because the signature verification failed.
    */
-  SIGNATURE_VERIFICATION_FAILED("SIGNATURE_VERIFICATION_FAILED"),
+  public static final CertificationStatus SIGNATURE_VERIFICATION_FAILED =
+      new CertificationStatus("SIGNATURE_VERIFICATION_FAILED");
   /**
    * The certification request failed because signature has invalid format.
    */
-  INVALID_SIGNATURE_FORMAT("INVALID_SIGNATURE_FORMAT"),
+  public static final CertificationStatus INVALID_SIGNATURE_FORMAT =
+      new CertificationStatus("INVALID_SIGNATURE_FORMAT");
   /**
    * The certification request failed because the public key has invalid format.
    */
-  INVALID_PUBLIC_KEY_FORMAT("INVALID_PUBLIC_KEY_FORMAT"),
+  public static final CertificationStatus INVALID_PUBLIC_KEY_FORMAT =
+      new CertificationStatus("INVALID_PUBLIC_KEY_FORMAT");
   /**
    * The certification request failed because the source state hash has invalid format.
    */
-  INVALID_SOURCE_STATE_HASH_FORMAT("INVALID_SOURCE_STATE_HASH_FORMAT"),
+  public static final CertificationStatus INVALID_SOURCE_STATE_HASH_FORMAT =
+      new CertificationStatus("INVALID_SOURCE_STATE_HASH_FORMAT");
   /**
    * The certification request failed because the transaction hash has invalid format.
    */
-  INVALID_TRANSACTION_HASH_FORMAT("INVALID_TRANSACTION_HASH_FORMAT"),
+  public static final CertificationStatus INVALID_TRANSACTION_HASH_FORMAT =
+      new CertificationStatus("INVALID_TRANSACTION_HASH_FORMAT");
   /**
    * The certification request failed because the algorithm is not supported.
    */
-  UNSUPPORTED_ALGORITHM("UNSUPPORTED_ALGORITHM"),
+  public static final CertificationStatus UNSUPPORTED_ALGORITHM =
+      new CertificationStatus("UNSUPPORTED_ALGORITHM");
   /**
    * The certification request failed because request was sent to invalid shard.
    */
-  INVALID_SHARD("INVALID_SHARD");
+  public static final CertificationStatus INVALID_SHARD = new CertificationStatus("INVALID_SHARD");
+
+  private static final CertificationStatus[] VALUES = {
+      SUCCESS,
+      STATE_ID_MISMATCH,
+      SIGNATURE_VERIFICATION_FAILED,
+      INVALID_SIGNATURE_FORMAT,
+      INVALID_PUBLIC_KEY_FORMAT,
+      INVALID_SOURCE_STATE_HASH_FORMAT,
+      INVALID_TRANSACTION_HASH_FORMAT,
+      UNSUPPORTED_ALGORITHM,
+      INVALID_SHARD
+  };
 
   private final String value;
 
-  CertificationStatus(String value) {
+  private CertificationStatus(String value) {
     this.value = value;
   }
 
@@ -53,22 +78,50 @@ public enum CertificationStatus {
    *
    * @return string value
    */
+  @JsonValue
   public String getValue() {
-    return value;
+    return this.value;
   }
 
   /**
-   * Create status from string value.
+   * Resolve a status from its string value. Returns the registered singleton
+   * for known statuses; constructs a new instance for any other (custom) value
+   * returned by the aggregator.
    *
    * @param value string value
    * @return status
    */
+  @JsonCreator
   public static CertificationStatus fromString(String value) {
-    for (CertificationStatus status : CertificationStatus.values()) {
+    if (value == null) {
+      throw new IllegalArgumentException("Status value must not be null");
+    }
+    for (CertificationStatus status : CertificationStatus.VALUES) {
       if (status.value.equalsIgnoreCase(value)) {
         return status;
       }
     }
-    throw new IllegalArgumentException("Unknown status: " + value);
+    return new CertificationStatus(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof CertificationStatus)) {
+      return false;
+    }
+    return this.value.equals(((CertificationStatus) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return this.value.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return this.value;
   }
 }

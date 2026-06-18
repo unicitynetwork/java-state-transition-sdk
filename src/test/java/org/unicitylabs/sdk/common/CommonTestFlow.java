@@ -85,6 +85,7 @@ public abstract class CommonTestFlow {
 
     UnicityId unicityId = new UnicityId("testuser", "unicity-labs/test");
     UnicityIdMintTransaction unicityIdMintTransaction = UnicityIdMintTransaction.create(
+            this.trustBase.getNetworkId(),
             SignaturePredicate.fromSigningService(unicityIdSigningService),
             targetPredicate,
             unicityId,
