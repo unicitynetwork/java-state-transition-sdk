@@ -75,6 +75,11 @@ public final class SplitMintJustification {
           TokenId tokenId,
           byte[] data
   ) {
+    Objects.requireNonNull(token, "token cannot be null");
+    Objects.requireNonNull(recipient, "recipient cannot be null");
+    Objects.requireNonNull(salt, "salt cannot be null");
+    Objects.requireNonNull(tokenId, "tokenId cannot be null");
+
     return new DataHasher(HashAlgorithm.SHA256)
             .update(
                     CborSerializer.encodeArray(

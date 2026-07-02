@@ -23,18 +23,17 @@ public final class NetworkId {
   }
 
   /**
-   * Resolve a NetworkId from its numeric identifier. Returns the registered
-   * singleton for known ids; constructs a new (unnamed) instance for any
-   * other 16-bit value.
+   * Resolve a NetworkId from its raw 16-bit identifier. Returns the registered singleton for
+   * known ids; constructs a new (unnamed) instance for any other value.
    *
-   * @param id numeric network identifier
+   * @param id raw 16-bit network identifier
    * @return NetworkId for the given identifier
    */
   public static NetworkId fromId(short id) {
-    if (id <= 0) {
-      throw new IllegalArgumentException(
-          "Network identifier out of allowed 16-bit unsigned range: " + id + ".");
+    if (id == 0) {
+      throw new IllegalArgumentException("Network identifier cannot be zero.");
     }
+
     if (id == MAINNET.id) {
       return MAINNET;
     }

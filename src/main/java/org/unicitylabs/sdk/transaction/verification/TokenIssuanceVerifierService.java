@@ -8,6 +8,7 @@ import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Registry that dispatches token verification to the right {@link TokenIssuanceVerifier} based on
@@ -46,6 +47,7 @@ public class TokenIssuanceVerifierService {
    * @throws IllegalArgumentException if a policy is already registered for the token type
    */
   public TokenIssuanceVerifierService register(TokenIssuanceVerifier verifier) {
+    Objects.requireNonNull(verifier, "verifier cannot be null");
     String key = HexConverter.encode(verifier.getTokenType().getBytes());
     if (this.verifiers.containsKey(key)) {
       throw new IllegalArgumentException(String.format(

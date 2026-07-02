@@ -54,9 +54,12 @@ public class RootTrustBase {
               String.format("Unsupported RootTrustBase version: %s", version));
     }
 
+    Objects.requireNonNull(rootNodes, "rootNodes cannot be null");
+
     Map<String, NodeInfo> nodes = new LinkedHashMap<>();
     Set<String> signingKeys = new HashSet<>();
     for (NodeInfo node : rootNodes) {
+      Objects.requireNonNull(node, "Trust base node cannot be null");
       if (nodes.putIfAbsent(node.getNodeId(), node) != null) {
         throw new IllegalArgumentException(
                 String.format("Duplicate trust base node id: %s", node.getNodeId()));
@@ -250,6 +253,8 @@ public class RootTrustBase {
             @JsonProperty("sigKey") byte[] signingKey,
             @JsonProperty("stake") long stakedAmount
     ) {
+      Objects.requireNonNull(nodeId, "Node id cannot be null");
+      Objects.requireNonNull(signingKey, "Node signing key cannot be null");
       if (stakedAmount <= 0) {
         throw new IllegalArgumentException("Each trust base root node must have positive stake.");
       }

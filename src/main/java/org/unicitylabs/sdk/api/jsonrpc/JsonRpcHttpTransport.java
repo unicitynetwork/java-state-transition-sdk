@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -22,6 +23,11 @@ public class JsonRpcHttpTransport {
   public static final int DEFAULT_MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 
   private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
+
+  private static final OkHttpClient DEFAULT_HTTP_CLIENT = new OkHttpClient.Builder()
+          .followRedirects(false)
+          .followSslRedirects(false)
+          .build();
 
   private final String url;
   private final int maxResponseBytes;
@@ -43,12 +49,32 @@ public class JsonRpcHttpTransport {
    * @param maxResponseBytes maximum response body size in bytes
    */
   public JsonRpcHttpTransport(String url, int maxResponseBytes) {
-    this.url = url;
+    this(url, JsonRpcHttpTransport.DEFAULT_HTTP_CLIENT, maxResponseBytes);
+  }
+
+  /**
+   * JSON-RPC HTTP service constructor with a caller-supplied HTTP client, to share a single
+   * connection and thread pool across transports.
+   *
+   * @param url service URL
+   * @param httpClient OkHttp client to use
+   */
+  public JsonRpcHttpTransport(String url, OkHttpClient httpClient) {
+    this(url, httpClient, JsonRpcHttpTransport.DEFAULT_MAX_RESPONSE_BYTES);
+  }
+
+  /**
+   * JSON-RPC HTTP service constructor with a caller-supplied HTTP client, to share a single
+   * connection and thread pool across transports.
+   *
+   * @param url service URL
+   * @param httpClient OkHttp client to use
+   * @param maxResponseBytes maximum response body size in bytes
+   */
+  public JsonRpcHttpTransport(String url, OkHttpClient httpClient, int maxResponseBytes) {
+    this.url = Objects.requireNonNull(url, "url cannot be null");
+    this.httpClient = Objects.requireNonNull(httpClient, "httpClient cannot be null");
     this.maxResponseBytes = maxResponseBytes;
-    this.httpClient = new OkHttpClient.Builder()
-            .followRedirects(false)
-            .followSslRedirects(false)
-            .build();
   }
 
   /**
@@ -80,6 +106,10 @@ public class JsonRpcHttpTransport {
           Class<T> resultType,
           Map<String, List<String>> headers
   ) {
+    Objects.requireNonNull(method, "method cannot be null");
+    Objects.requireNonNull(resultType, "resultType cannot be null");
+    Objects.requireNonNull(headers, "headers cannot be null");
+
     CompletableFuture<T> future = new CompletableFuture<>();
 
     try {

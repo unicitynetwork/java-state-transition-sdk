@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Split allocation inclusion proof for one output asset: the explicit-depth inclusion proof of a
@@ -58,6 +59,12 @@ public final class SplitAllocationProof {
    * @throws IllegalArgumentException if the key is not present in the tree
    */
   public static SplitAllocationProof create(SparseMerkleSumTreeRootNode root, byte[] key) {
+    Objects.requireNonNull(root, "root cannot be null");
+    Objects.requireNonNull(key, "key cannot be null");
+    if (key.length != 32) {
+      throw new IllegalArgumentException("Key must be 32 bytes long.");
+    }
+
     BigInteger keyPath = BitString.fromBytesReversedLSB(key).toBigInteger();
     List<Sibling> siblings = new ArrayList<>();
 
@@ -111,7 +118,7 @@ public final class SplitAllocationProof {
     for (byte[] entry : entries) {
       List<byte[]> fields = CborDeserializer.decodeArray(entry, 3);
 
-      int depth = CborDeserializer.decodeUnsignedInteger(fields.get(0)).asInt();
+      int depth = CborDeserializer.decodeUnsignedInteger(fields.get(0)).asListSize();
       if (depth > SplitAllocationProof.MAX_DEPTH) {
         throw new CborSerializationException("Sibling depth must be in the range [0, 255].");
       }
