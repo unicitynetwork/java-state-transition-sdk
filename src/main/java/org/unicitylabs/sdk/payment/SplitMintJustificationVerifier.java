@@ -1,18 +1,16 @@
 package org.unicitylabs.sdk.payment;
 
 import org.unicitylabs.sdk.api.NetworkId;
-import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.BurnPredicate;
-import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.smt.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.transaction.CertifiedMintTransaction;
+import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifier;
-import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
@@ -23,19 +21,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class SplitMintJustificationVerifier implements MintJustificationVerifier {
-  private final RootTrustBase trustBase;
-  private final PredicateVerifierService predicateVerifier;
   private final PaymentDataDeserializer decodePaymentData;
 
-  public SplitMintJustificationVerifier(
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          PaymentDataDeserializer decodePaymentData
-  ) {
-    this.trustBase = Objects.requireNonNull(trustBase, "trustBase cannot be null");
-    this.predicateVerifier = Objects.requireNonNull(predicateVerifier, "predicateVerifier cannot be null");
+  public SplitMintJustificationVerifier(PaymentDataDeserializer decodePaymentData) {
     this.decodePaymentData = Objects.requireNonNull(decodePaymentData, "decodePaymentData cannot be null");
   }
 
@@ -45,9 +36,9 @@ public class SplitMintJustificationVerifier implements MintJustificationVerifier
   }
 
   @Override
-  public VerificationResult<VerificationStatus> verify(CertifiedMintTransaction transaction, MintJustificationVerifierService mintJustificationVerifier) {
+  public VerificationResult<VerificationStatus> verify(CertifiedMintTransaction transaction, Consumer<Token> nestedTokenCollector) {
     Objects.requireNonNull(transaction, "transaction cannot be null");
-    Objects.requireNonNull(mintJustificationVerifier, "mintJustificationVerifierService cannot be null");
+    Objects.requireNonNull(nestedTokenCollector, "nestedTokenCollector cannot be null");
 
     byte[] justificationBytes = transaction.getJustification().orElse(null);
     if (justificationBytes == null) {
@@ -83,16 +74,7 @@ public class SplitMintJustificationVerifier implements MintJustificationVerifier
       );
     }
 
-    VerificationResult<VerificationStatus> verificationResult = justification.getToken()
-            .verify(trustBase, predicateVerifier, mintJustificationVerifier);
-    if (verificationResult.getStatus() != VerificationStatus.OK) {
-      return new VerificationResult<>(
-              "SplitMintJustificationVerificationRule",
-              VerificationStatus.FAIL,
-              "Burn token verification failed.",
-              verificationResult
-      );
-    }
+    nestedTokenCollector.accept(justification.getToken());
 
     Map<AssetId, Asset> assets = new HashMap<>();
     for (Asset asset : paymentData.getAssets()) {
@@ -119,7 +101,7 @@ public class SplitMintJustificationVerifier implements MintJustificationVerifier
               "SplitMintJustificationVerificationRule",
               VerificationStatus.FAIL,
               "Total amount of assets differ in token and proofs."
-      );
+    );
     }
 
     Set<AssetId> validatedAssets = new HashSet<>();

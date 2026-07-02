@@ -70,8 +70,7 @@ public class SplitMintJustificationVerifierTest {
     StateTransitionClient client = new StateTransitionClient(aggregatorClient);
     this.predicateVerifier = PredicateVerifierService.create();
 
-    this.splitMintJustificationVerifier = new SplitMintJustificationVerifier(
-            this.trustBase, this.predicateVerifier, TestPaymentData::decode);
+    this.splitMintJustificationVerifier = new SplitMintJustificationVerifier(TestPaymentData::decode);
     this.mintJustificationVerifier = new MintJustificationVerifierService();
     this.mintJustificationVerifier.register(this.splitMintJustificationVerifier);
 
@@ -130,25 +129,20 @@ public class SplitMintJustificationVerifierTest {
   @Test
   public void verifyFailsWhenTransactionIsNull() {
     assertNpe("transaction cannot be null",
-            () -> this.splitMintJustificationVerifier.verify(null, this.mintJustificationVerifier));
+            () -> this.splitMintJustificationVerifier.verify(null, token -> {
+            }));
+  }
+
+  @Test
+  public void verifyFailsWhenNestedTokenCollectorIsNull() {
+    assertNpe("nestedTokenCollector cannot be null",
+            () -> this.splitMintJustificationVerifier.verify(this.splitToken.getGenesis(), null));
   }
 
   @Test
   public void verifyFailsWhenDeserializerIsNull() {
     assertNpe("decodePaymentData cannot be null",
-            () -> new SplitMintJustificationVerifier(this.trustBase, this.predicateVerifier, null));
-  }
-
-  @Test
-  public void verifyFailsWhenTrustBaseIsNull() {
-    assertNpe("trustBase cannot be null",
-            () -> new SplitMintJustificationVerifier(null, this.predicateVerifier, TestPaymentData::decode));
-  }
-
-  @Test
-  public void verifyFailsWhenPredicateVerifierIsNull() {
-    assertNpe("predicateVerifier cannot be null",
-            () -> new SplitMintJustificationVerifier(this.trustBase, null, TestPaymentData::decode));
+            () -> new SplitMintJustificationVerifier(null));
   }
 
   @Test
@@ -165,12 +159,25 @@ public class SplitMintJustificationVerifierTest {
   }
 
   @Test
-  public void verifyFailsWhenBurnTokenVerificationFails() {
+  public void verifyCollectsBurnTokenForCallerVerification() {
     byte[] corruptedJustification = corruptBurnTokenInJustification(this.splitJustification.toCbor());
+    Token modified = withJustificationAndData(this.splitToken, corruptedJustification, originalDataBytes());
 
-    VerificationResult<VerificationStatus> result = verifyWith(corruptedJustification, originalDataBytes());
-    assertFailWithMessage(result, "Burn token verification failed.");
-    Assertions.assertFalse(result.getResults().isEmpty());
+    List<Token> nestedTokens = new ArrayList<>();
+    VerificationResult<VerificationStatus> result = this.splitMintJustificationVerifier.verify(
+            modified.getGenesis(), nestedTokens::add);
+
+    // Local justification checks pass; the corrupted burn token is handed to the caller...
+    Assertions.assertEquals(VerificationStatus.OK, result.getStatus());
+    Assertions.assertEquals(1, nestedTokens.size());
+
+    // ...and fails when the caller verifies it.
+    Assertions.assertEquals(
+            VerificationStatus.FAIL,
+            nestedTokens.get(0)
+                    .verify(this.trustBase, this.predicateVerifier, this.mintJustificationVerifier)
+                    .getStatus()
+    );
   }
 
   @Test
@@ -371,15 +378,16 @@ public class SplitMintJustificationVerifierTest {
 
   private VerificationResult<VerificationStatus> verifyWith(byte[] justification, byte[] data) {
     Token modified = withJustificationAndData(this.splitToken, justification, data);
-    return this.splitMintJustificationVerifier.verify(modified.getGenesis(), this.mintJustificationVerifier);
+    return this.splitMintJustificationVerifier.verify(modified.getGenesis(), token -> {
+    });
   }
 
   private VerificationResult<VerificationStatus> verifyWithPaymentData(byte[] justification,
                                                                        PaymentData paymentData) {
     Token modified = withJustificationAndData(this.splitToken, justification, originalDataBytes());
-    SplitMintJustificationVerifier verifier = new SplitMintJustificationVerifier(
-            this.trustBase, this.predicateVerifier, ignored -> paymentData);
-    return verifier.verify(modified.getGenesis(), this.mintJustificationVerifier);
+    SplitMintJustificationVerifier verifier = new SplitMintJustificationVerifier(ignored -> paymentData);
+    return verifier.verify(modified.getGenesis(), token -> {
+    });
   }
 
   private Token withJustificationAndData(Token token, byte[] justification, byte[] data) {

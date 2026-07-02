@@ -8,12 +8,14 @@ import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.CertifiedMintTransaction;
+import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Verification rule set for certified mint transactions.
@@ -33,6 +35,8 @@ public class CertifiedMintTransactionVerificationRule {
    * @param predicateVerifier predicate verifier
    * @param mintJustificationVerifier mint justification verifier
    * @param transaction certified mint transaction to verify
+   * @param nestedTokenCollector collector receiving tokens embedded in the mint justification that
+   *     the caller must verify
    *
    * @return verification result with child results for each validation step
    */
@@ -40,7 +44,8 @@ public class CertifiedMintTransactionVerificationRule {
           RootTrustBase trustBase,
           PredicateVerifierService predicateVerifier,
           MintJustificationVerifierService mintJustificationVerifier,
-          CertifiedMintTransaction transaction
+          CertifiedMintTransaction transaction,
+          Consumer<Token> nestedTokenCollector
   ) {
     List<VerificationResult<?>> results = new ArrayList<>();
 
@@ -77,7 +82,7 @@ public class CertifiedMintTransactionVerificationRule {
               VerificationStatus.FAIL, "Inclusion proof verification failed", results);
     }
 
-    result = mintJustificationVerifier.verify(transaction);
+    result = mintJustificationVerifier.verify(transaction, nestedTokenCollector);
     results.add(result);
     if (result.getStatus() != VerificationStatus.OK) {
       return new VerificationResult<>(

@@ -42,8 +42,7 @@ public class TokenSplitTest {
     PredicateVerifierService predicateVerifier = PredicateVerifierService.create();
 
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
-    mintJustificationVerifier.register(new SplitMintJustificationVerifier(
-            trustBase, predicateVerifier, TestPaymentData::decode));
+    mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
 
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(SigningService.generate());
 

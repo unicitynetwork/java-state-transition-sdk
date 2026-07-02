@@ -42,8 +42,7 @@ public class SplitBuilderTest {
     PredicateVerifierService predicateVerifier = PredicateVerifierService.create();
 
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
-    mintJustificationVerifier.register(new SplitMintJustificationVerifier(
-            trustBase, predicateVerifier, TestPaymentData::decode));
+    mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
 
     SigningService signingService = SigningService.generate();
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);
@@ -99,6 +98,47 @@ public class SplitBuilderTest {
     Assertions.assertEquals(
             VerificationStatus.OK,
             splitToken.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus()
+    );
+
+    // Split the split output again: verifying the second-generation token walks the whole
+    // provenance chain (split output -> burned split token -> burned source token) iteratively.
+    SplitResult secondSplit = TokenSplit.split(
+            splitToken,
+            TestPaymentData::decode,
+            List.of(SplitTokenRequest.create(ownerPredicate, assets))
+    );
+
+    Token secondBurnToken = TokenUtils.transferToken(
+            client,
+            trustBase,
+            predicateVerifier,
+            splitToken,
+            secondSplit.getBurnTransaction(),
+            SignaturePredicateUnlockScript.create(secondSplit.getBurnTransaction(), signingService)
+    );
+
+    SplitToken secondSplitResult = secondSplit.getTokens().get(0);
+    SplitMintJustification secondJustification = SplitMintJustification.create(
+            secondBurnToken,
+            secondSplitResult.getProofs()
+    );
+
+    Token secondSplitToken = TokenUtils.mintToken(
+            client,
+            trustBase,
+            predicateVerifier,
+            mintJustificationVerifier,
+            secondSplitResult.getRecipient(),
+            new TestPaymentData(assets).encode(),
+            secondSplitResult.getNetworkId(),
+            secondSplitResult.getTokenType(),
+            secondSplitResult.getSalt(),
+            secondJustification.toCbor()
+    );
+
+    Assertions.assertEquals(
+            VerificationStatus.OK,
+            secondSplitToken.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus()
     );
   }
 }

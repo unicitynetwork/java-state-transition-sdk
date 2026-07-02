@@ -12,6 +12,7 @@ import org.unicitylabs.sdk.util.verification.VerificationException;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -182,10 +183,14 @@ public final class Token {
   /**
    * Verifies genesis and transfer transaction chain integrity.
    *
+   * <p>Tokens embedded in mint justifications (for example, the burn token of a split) are
+   * verified iteratively with a worklist instead of recursion, so arbitrarily long provenance
+   * chains do not grow the call stack.
+   *
    * @param trustBase trust base used for certification checks
    * @param predicateVerifier predicate verifier service
    * @param mintJustificationVerifier mint justification verifier service
-   * @return verification result with nested per-step verification details
+   * @return verification result with a child result per verified token
    */
   public VerificationResult<VerificationStatus> verify(
           RootTrustBase trustBase,
@@ -196,36 +201,51 @@ public final class Token {
     Objects.requireNonNull(predicateVerifier, "predicateVerifier cannot be null");
     Objects.requireNonNull(mintJustificationVerifier, "mintJustificationVerifier cannot be null");
 
+    ArrayDeque<Token> pending = new ArrayDeque<>();
+    pending.add(this);
+
     List<VerificationResult<?>> results = new ArrayList<>();
-    VerificationResult<?> result = CertifiedMintTransactionVerificationRule.verify(
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
-            this.genesis
-    );
-    results.add(result);
-    if (result.getStatus() != VerificationStatus.OK) {
-      return new VerificationResult<>("TokenVerification", VerificationStatus.FAIL,
-              "Genesis verification failed", results);
-    }
+    for (int tokenIndex = 0; !pending.isEmpty(); tokenIndex++) {
+      Token token = pending.poll();
+      String rule = String.format("Token[%s:%s]", tokenIndex, token.getId());
 
-    List<VerificationResult<?>> transferResults = new ArrayList<>();
-    for (int i = 0; i < this.transactions.size(); i++) {
-      CertifiedTransferTransaction transaction = this.transactions.get(i);
-      result = CertifiedTransferTransactionVerificationRule.verify(trustBase, predicateVerifier, transaction);
-      transferResults.add(result);
+      List<VerificationResult<?>> tokenResults = new ArrayList<>();
+      VerificationResult<?> result = CertifiedMintTransactionVerificationRule.verify(
+              trustBase,
+              predicateVerifier,
+              mintJustificationVerifier,
+              token.genesis,
+              pending::add
+      );
+      tokenResults.add(result);
       if (result.getStatus() != VerificationStatus.OK) {
-        results.add(
-                new VerificationResult<>("TokenTransferVerification", VerificationStatus.FAIL, "",
-                        transferResults)
-        );
-
+        results.add(new VerificationResult<>(rule, VerificationStatus.FAIL,
+                "Genesis verification failed", tokenResults));
         return new VerificationResult<>("TokenVerification", VerificationStatus.FAIL,
-                String.format("Transaction[%s] verification failed", i), results);
+                String.format("%s verification failed", rule), results);
       }
+
+      List<VerificationResult<?>> transferResults = new ArrayList<>();
+      for (int i = 0; i < token.transactions.size(); i++) {
+        CertifiedTransferTransaction transaction = token.transactions.get(i);
+        result = CertifiedTransferTransactionVerificationRule.verify(trustBase, predicateVerifier, transaction);
+        transferResults.add(result);
+        if (result.getStatus() != VerificationStatus.OK) {
+          tokenResults.add(
+                  new VerificationResult<>("TokenTransferVerification", VerificationStatus.FAIL, "",
+                          transferResults)
+          );
+          results.add(new VerificationResult<>(rule, VerificationStatus.FAIL,
+                  String.format("Transaction[%s] verification failed", i), tokenResults));
+
+          return new VerificationResult<>("TokenVerification", VerificationStatus.FAIL,
+                  String.format("%s verification failed", rule), results);
+        }
+      }
+      tokenResults.add(new VerificationResult<>("TokenTransferVerification", VerificationStatus.OK, "",
+              transferResults));
+      results.add(new VerificationResult<>(rule, VerificationStatus.OK, "", tokenResults));
     }
-    results.add(new VerificationResult<>("TokenTransferVerification", VerificationStatus.OK, "",
-            transferResults));
 
     return new VerificationResult<>("TokenVerification", VerificationStatus.OK, "", results);
   }
