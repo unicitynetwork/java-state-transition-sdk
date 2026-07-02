@@ -3,8 +3,10 @@ package org.unicitylabs.sdk.api;
 import org.unicitylabs.sdk.api.jsonrpc.JsonRpcHttpTransport;
 import org.unicitylabs.sdk.util.HexConverter;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -31,15 +33,44 @@ public class JsonRpcAggregatorClient implements AggregatorClient {
 
 
   /**
-   * Create aggregator client for destination url with api key.
+   * Create aggregator client for destination url with api key. When an api key is supplied the
+   * url must be {@code https}, so the key is never sent over plaintext.
    *
    * @param url    destination url
    * @param apiKey api key
    *
+   * @throws IllegalArgumentException if an api key is supplied for a non-https url
    */
   public JsonRpcAggregatorClient(String url, String apiKey) {
-    this.transport = new JsonRpcHttpTransport(Objects.requireNonNull(url, "url cannot be null"));
+    this(url, apiKey, false);
+  }
+
+  /**
+   * Create aggregator client for destination url with api key.
+   *
+   * @param url    destination url
+   * @param apiKey api key
+   * @param allowInsecureTransport when {@code true}, permit sending the api key over a non-https
+   *     url (intended for local development and testing only)
+   *
+   * @throws IllegalArgumentException if an api key is supplied for a non-https url and
+   *     {@code allowInsecureTransport} is {@code false}
+   */
+  public JsonRpcAggregatorClient(String url, String apiKey, boolean allowInsecureTransport) {
+    Objects.requireNonNull(url, "url cannot be null");
+
+    if (apiKey != null && !allowInsecureTransport && !JsonRpcAggregatorClient.isHttps(url)) {
+      throw new IllegalArgumentException(
+              "API key must not be sent over plaintext HTTP; use an https url.");
+    }
+
+    this.transport = new JsonRpcHttpTransport(url);
     this.apiKey = apiKey;
+  }
+
+  private static boolean isHttps(String url) {
+    String scheme = URI.create(url).getScheme();
+    return scheme != null && scheme.toLowerCase(Locale.ROOT).equals("https");
   }
 
   /**

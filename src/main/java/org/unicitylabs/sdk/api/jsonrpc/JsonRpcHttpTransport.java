@@ -26,7 +26,10 @@ public class JsonRpcHttpTransport {
    */
   public JsonRpcHttpTransport(String url) {
     this.url = url;
-    this.httpClient = new OkHttpClient();
+    this.httpClient = new OkHttpClient.Builder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build();
   }
 
   /**
