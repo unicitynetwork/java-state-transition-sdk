@@ -5,8 +5,11 @@ import okhttp3.*;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -14,9 +17,13 @@ import java.util.concurrent.CompletableFuture;
  */
 public class JsonRpcHttpTransport {
 
+  /** Default maximum response body size in bytes. */
+  public static final int DEFAULT_MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
+
   private static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
 
   private final String url;
+  private final int maxResponseBytes;
   private final OkHttpClient httpClient;
 
   /**
@@ -25,7 +32,18 @@ public class JsonRpcHttpTransport {
    * @param url service URL
    */
   public JsonRpcHttpTransport(String url) {
+    this(url, JsonRpcHttpTransport.DEFAULT_MAX_RESPONSE_BYTES);
+  }
+
+  /**
+   * JSON-RPC HTTP service constructor.
+   *
+   * @param url service URL
+   * @param maxResponseBytes maximum response body size in bytes
+   */
+  public JsonRpcHttpTransport(String url, int maxResponseBytes) {
     this.url = url;
+    this.maxResponseBytes = maxResponseBytes;
     this.httpClient = new OkHttpClient.Builder()
             .followRedirects(false)
             .followSslRedirects(false)
@@ -64,13 +82,14 @@ public class JsonRpcHttpTransport {
     CompletableFuture<T> future = new CompletableFuture<>();
 
     try {
+      JsonRpcRequest rpcRequest = new JsonRpcRequest(method, params);
+      UUID requestId = rpcRequest.getId();
+
       Request.Builder requestBuilder = new Request.Builder()
               .url(this.url)
               .post(
                       RequestBody.create(
-                              UnicityObjectMapper.JSON.writeValueAsString(
-                                      new JsonRpcRequest(method, params)
-                              ),
+                              UnicityObjectMapper.JSON.writeValueAsString(rpcRequest),
                               JsonRpcHttpTransport.MEDIA_TYPE_JSON)
               );
 
@@ -89,32 +108,36 @@ public class JsonRpcHttpTransport {
         @Override
         public void onResponse(Call call, Response response) {
           try (ResponseBody body = response.body()) {
+            String bodyString = JsonRpcHttpTransport.this.readBounded(body);
+
             if (!response.isSuccessful()) {
-              String error = body != null ? body.string() : "";
-              future.completeExceptionally(new JsonRpcNetworkException(response.code(), error));
+              future.completeExceptionally(
+                      new JsonRpcNetworkException(response.code(), bodyString));
               return;
             }
 
             JsonRpcResponse<T> data = UnicityObjectMapper.JSON.readValue(
-                    body != null ? body.string() : "",
+                    bodyString,
                     UnicityObjectMapper.JSON.getTypeFactory()
                             .constructParametricType(JsonRpcResponse.class, resultType)
             );
 
+            if (!requestId.equals(data.getId())) {
+              future.completeExceptionally(new IllegalArgumentException(
+                      "JSON-RPC response id mismatch: expected " + requestId + ", got "
+                              + data.getId() + "."));
+              return;
+            }
+
             if (data.getError() != null) {
-              future.completeExceptionally(
-                      new JsonRpcNetworkException(
-                              data.getError().getCode(),
-                              data.getError().getMessage()
-                      )
-              );
+              future.completeExceptionally(new JsonRpcNetworkException(
+                      data.getError().getCode(), data.getError().getMessage()));
               return;
             }
 
             future.complete(data.getResult());
           } catch (Exception e) {
-            future.completeExceptionally(
-                    new RuntimeException("Failed to parse JSON-RPC response", e));
+            future.completeExceptionally(e);
           }
         }
       });
@@ -123,5 +146,25 @@ public class JsonRpcHttpTransport {
     }
 
     return future;
+  }
+
+  /**
+   * Read the response body as a string, rejecting bodies larger than the configured limit before
+   * buffering the whole payload.
+   */
+  private String readBounded(ResponseBody body) throws IOException {
+    if (body == null) {
+      return "";
+    }
+
+    try (InputStream in = body.byteStream()) {
+      // Read one byte past the limit: if that many bytes are available the body is too large.
+      byte[] bytes = in.readNBytes(this.maxResponseBytes + 1);
+      if (bytes.length > this.maxResponseBytes) {
+        throw new IOException("JSON-RPC response exceeds the maximum allowed size.");
+      }
+
+      return new String(bytes, StandardCharsets.UTF_8);
+    }
   }
 }
