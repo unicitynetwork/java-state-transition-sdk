@@ -14,9 +14,11 @@ import org.unicitylabs.sdk.payment.SplitTokenRequest;
 import org.unicitylabs.sdk.payment.TokenSplit;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
+import org.unicitylabs.sdk.payment.asset.PaymentAssetCollection;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
+import org.unicitylabs.sdk.transaction.StateMask;
 import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
@@ -24,13 +26,14 @@ import org.unicitylabs.sdk.utils.TokenUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 /**
  * End-to-end functional test for the token split flow: mint a source token, split it, burn the
- * source, mint the split output token with the resulting justification, and verify the split
- * output through {@link Token#verify}.
+ * source with the manifest attached, mint the split outputs with the resulting justifications,
+ * and verify each output through {@link Token#verify}.
  */
 public class SplitBuilderTest {
 
@@ -47,10 +50,8 @@ public class SplitBuilderTest {
     SigningService signingService = SigningService.generate();
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);
 
-    Set<Asset> assets = Set.of(
-            new Asset(new AssetId("ASSET_1".getBytes(StandardCharsets.UTF_8)), BigInteger.valueOf(500)),
-            new Asset(new AssetId("ASSET_2".getBytes(StandardCharsets.UTF_8)), BigInteger.valueOf(500))
-    );
+    Asset asset1 = new Asset(new AssetId("ASSET_1".getBytes(StandardCharsets.UTF_8)), BigInteger.valueOf(500));
+    Asset asset2 = new Asset(new AssetId("ASSET_2".getBytes(StandardCharsets.UTF_8)), BigInteger.valueOf(500));
 
     Token sourceToken = TokenUtils.mintToken(
             client,
@@ -58,14 +59,17 @@ public class SplitBuilderTest {
             predicateVerifier,
             mintJustificationVerifier,
             ownerPredicate,
-            new TestPaymentData(assets).encode()
+            new TestPaymentData(PaymentAssetCollection.create(asset1, asset2)).encode()
     );
 
-    SplitResult split = TokenSplit.split(
-            sourceToken,
-            TestPaymentData::decode,
-            List.of(SplitTokenRequest.create(ownerPredicate, assets))
+    List<SplitTokenRequest> requests = List.of(
+            SplitTokenRequest.create(ownerPredicate,
+                    new TestPaymentData(PaymentAssetCollection.create(asset1))),
+            SplitTokenRequest.create(ownerPredicate,
+                    new TestPaymentData(PaymentAssetCollection.create(asset2)))
     );
+
+    SplitResult split = TokenSplit.split(sourceToken, TestPaymentData::decode, requests);
 
     Token burnToken = TokenUtils.transferToken(
             client,
@@ -76,69 +80,118 @@ public class SplitBuilderTest {
             SignaturePredicateUnlockScript.create(split.getBurnTransaction(), signingService)
     );
 
-    SplitToken splitResult = split.getTokens().get(0);
-    SplitMintJustification justification = SplitMintJustification.create(
-            burnToken,
-            splitResult.getProofs()
-    );
+    List<Token> mintedTokens = new ArrayList<>();
+    for (SplitToken splitToken : split.getTokens()) {
+      SplitMintJustification justification = SplitMintJustification.create(
+              burnToken, splitToken.getProofs());
 
-    Token splitToken = TokenUtils.mintToken(
-            client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
-            splitResult.getRecipient(),
-            new TestPaymentData(assets).encode(),
-            splitResult.getNetworkId(),
-            splitResult.getTokenType(),
-            splitResult.getSalt(),
-            justification.toCbor()
-    );
+      Token minted = TokenUtils.mintToken(
+              client,
+              trustBase,
+              predicateVerifier,
+              mintJustificationVerifier,
+              splitToken.getRecipient(),
+              splitToken.getPaymentData().encode(),
+              splitToken.getNetworkId(),
+              splitToken.getTokenType(),
+              splitToken.getSalt(),
+              justification.toCbor()
+      );
 
-    Assertions.assertEquals(
-            VerificationStatus.OK,
-            splitToken.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus()
-    );
+      Assertions.assertEquals(
+              VerificationStatus.OK,
+              Token.fromCbor(minted.toCbor())
+                      .verify(trustBase, predicateVerifier, mintJustificationVerifier)
+                      .getStatus()
+      );
+      mintedTokens.add(minted);
+    }
 
-    // Split the split output again: verifying the second-generation token walks the whole
+    // Split the first output again: verifying the second-generation token walks the whole
     // provenance chain (split output -> burned split token -> burned source token) iteratively.
-    SplitResult secondSplit = TokenSplit.split(
-            splitToken,
-            TestPaymentData::decode,
-            List.of(SplitTokenRequest.create(ownerPredicate, assets))
+    Token firstOutput = mintedTokens.get(0);
+    List<SplitTokenRequest> secondRequests = List.of(
+            SplitTokenRequest.create(ownerPredicate,
+                    new TestPaymentData(PaymentAssetCollection.create(asset1)))
     );
+
+    SplitResult secondSplit = TokenSplit.split(firstOutput, TestPaymentData::decode, secondRequests);
 
     Token secondBurnToken = TokenUtils.transferToken(
             client,
             trustBase,
             predicateVerifier,
-            splitToken,
+            firstOutput,
             secondSplit.getBurnTransaction(),
             SignaturePredicateUnlockScript.create(secondSplit.getBurnTransaction(), signingService)
     );
 
-    SplitToken secondSplitResult = secondSplit.getTokens().get(0);
+    SplitToken secondSplitToken = secondSplit.getTokens().get(0);
     SplitMintJustification secondJustification = SplitMintJustification.create(
-            secondBurnToken,
-            secondSplitResult.getProofs()
-    );
+            secondBurnToken, secondSplitToken.getProofs());
 
-    Token secondSplitToken = TokenUtils.mintToken(
+    Token secondMinted = TokenUtils.mintToken(
             client,
             trustBase,
             predicateVerifier,
             mintJustificationVerifier,
-            secondSplitResult.getRecipient(),
-            new TestPaymentData(assets).encode(),
-            secondSplitResult.getNetworkId(),
-            secondSplitResult.getTokenType(),
-            secondSplitResult.getSalt(),
+            secondSplitToken.getRecipient(),
+            secondSplitToken.getPaymentData().encode(),
+            secondSplitToken.getNetworkId(),
+            secondSplitToken.getTokenType(),
+            secondSplitToken.getSalt(),
             secondJustification.toCbor()
     );
 
     Assertions.assertEquals(
             VerificationStatus.OK,
-            secondSplitToken.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus()
+            secondMinted.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus()
     );
+  }
+
+  @Test
+  public void rebuildsByteIdenticalBurnTransactionFromSuppliedStateMask() throws Exception {
+    TestAggregatorClient aggregatorClient = TestAggregatorClient.create();
+    RootTrustBase trustBase = aggregatorClient.getTrustBase();
+    StateTransitionClient client = new StateTransitionClient(aggregatorClient);
+    PredicateVerifierService predicateVerifier = PredicateVerifierService.create();
+
+    MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
+    mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
+
+    SigningService signingService = SigningService.generate();
+    SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);
+
+    Asset asset = new Asset(new AssetId("ASSET_1".getBytes(StandardCharsets.UTF_8)), BigInteger.valueOf(500));
+
+    Token token = TokenUtils.mintToken(
+            client,
+            trustBase,
+            predicateVerifier,
+            mintJustificationVerifier,
+            ownerPredicate,
+            new TestPaymentData(PaymentAssetCollection.create(asset)).encode()
+    );
+
+    // Identical requests across all calls; only the burn mask determines reproducibility.
+    List<SplitTokenRequest> requests = List.of(
+            SplitTokenRequest.create(ownerPredicate,
+                    new TestPaymentData(PaymentAssetCollection.create(asset)))
+    );
+    StateMask burnStateMask = StateMask.generate();
+
+    SplitResult first = TokenSplit.split(token, TestPaymentData::decode, requests, burnStateMask);
+    SplitResult second = TokenSplit.split(token, TestPaymentData::decode, requests, burnStateMask);
+    SplitResult defaulted = TokenSplit.split(token, TestPaymentData::decode, requests);
+
+    byte[] firstBurn = first.getBurnTransaction().toCbor();
+    Assertions.assertArrayEquals(firstBurn, second.getBurnTransaction().toCbor());
+    // The default stays random - omitting the mask must not become deterministic.
+    Assertions.assertFalse(Arrays.equals(firstBurn, defaulted.getBurnTransaction().toCbor()));
+
+    // A mask of the wrong length is a caller bug - the StateMask type rejects it at construction.
+    Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> StateMask.fromBytes(new byte[31]));
   }
 }

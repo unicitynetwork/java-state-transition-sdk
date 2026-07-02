@@ -1,89 +1,63 @@
 package org.unicitylabs.sdk.payment;
 
-import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.transaction.TokenSalt;
-import org.unicitylabs.sdk.transaction.TokenType;
 
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * Request to mint one new token as part of a token split.
+ * Request to mint one new token as part of a token split. Splitting preserves the source token
+ * type, so the output token type is not chosen here. The payment data carries both the output's
+ * assets and its self-encoding, so each output may embed its own token-type-specific payload
+ * alongside the asset allocation.
  */
 public class SplitTokenRequest {
 
   private final Predicate recipient;
-  private final TokenType tokenType;
-  private final Set<Asset> assets;
+  private final PaymentData paymentData;
   private final TokenSalt salt;
 
-  private SplitTokenRequest(Predicate recipient, TokenType tokenType, Set<Asset> assets, TokenSalt salt) {
+  private SplitTokenRequest(Predicate recipient, PaymentData paymentData, TokenSalt salt) {
     this.recipient = recipient;
-    this.tokenType = tokenType;
-    this.assets = Set.copyOf(assets);
+    this.paymentData = paymentData;
     this.salt = salt;
   }
 
   /**
-   * Create a split token request.
+   * Create a SplitTokenRequest.
    *
    * @param recipient predicate that will lock the new token
-   * @param assets assets the new token will receive
-   * @param tokenType token type for the new token
+   * @param paymentData payment data the new token will carry; its assets are allocated from the
+   *     source and its {@code encode()} produces the exact minted payload
    * @param salt salt for the new token
-   *
-   * @return split token request
+   * @return new request
    */
-  public static SplitTokenRequest create(
-          Predicate recipient,
-          Set<Asset> assets,
-          TokenType tokenType,
-          TokenSalt salt
-  ) {
+  public static SplitTokenRequest create(Predicate recipient, PaymentData paymentData,
+                                         TokenSalt salt) {
     Objects.requireNonNull(recipient, "Recipient cannot be null");
-    Objects.requireNonNull(assets, "Assets cannot be null");
-    Objects.requireNonNull(tokenType, "Token type cannot be null");
+    Objects.requireNonNull(paymentData, "Payment data cannot be null");
     Objects.requireNonNull(salt, "Salt cannot be null");
 
-    return new SplitTokenRequest(recipient, tokenType, assets, salt);
+    return new SplitTokenRequest(recipient, paymentData, salt);
   }
 
   /**
-   * Create a split token request with a random salt.
+   * Create a SplitTokenRequest with a random salt.
    *
    * @param recipient predicate that will lock the new token
-   * @param assets assets the new token will receive
-   * @param tokenType token type for the new token
-   *
-   * @return split token request
+   * @param paymentData payment data the new token will carry
+   * @return new request
    */
-  public static SplitTokenRequest create(Predicate recipient, Set<Asset> assets, TokenType tokenType) {
-    return SplitTokenRequest.create(recipient, assets, tokenType, TokenSalt.generate());
-  }
-
-  /**
-   * Create a split token request with a random token type and salt.
-   *
-   * @param recipient predicate that will lock the new token
-   * @param assets assets the new token will receive
-   *
-   * @return split token request
-   */
-  public static SplitTokenRequest create(Predicate recipient, Set<Asset> assets) {
-    return SplitTokenRequest.create(recipient, assets, TokenType.generate(), TokenSalt.generate());
+  public static SplitTokenRequest create(Predicate recipient, PaymentData paymentData) {
+    return SplitTokenRequest.create(recipient, paymentData, TokenSalt.generate());
   }
 
   public Predicate getRecipient() {
     return this.recipient;
   }
 
-  public TokenType getTokenType() {
-    return this.tokenType;
-  }
-
-  public Set<Asset> getAssets() {
-    return this.assets;
+  public PaymentData getPaymentData() {
+    return this.paymentData;
   }
 
   public TokenSalt getSalt() {

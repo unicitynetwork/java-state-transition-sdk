@@ -1,33 +1,40 @@
 package org.unicitylabs.sdk.payment;
 
-import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
+import org.unicitylabs.sdk.crypto.hash.DataHasher;
+import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.BurnPredicate;
-import org.unicitylabs.sdk.smt.MerkleTreePathVerificationResult;
 import org.unicitylabs.sdk.transaction.CertifiedMintTransaction;
+import org.unicitylabs.sdk.transaction.CertifiedTransferTransaction;
 import org.unicitylabs.sdk.transaction.Token;
-import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifier;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 
+/**
+ * Verifier for {@link SplitMintJustification} mint justifications. It reports the burned source
+ * token for caller verification, binds the burn to the split manifest, recomputes the output's
+ * leaf data, and verifies every output asset against its allocation proof — requiring each
+ * asset's reconstructed total to equal the source amount (value conservation).
+ */
 public class SplitMintJustificationVerifier implements MintJustificationVerifier {
+
+  private static final String RULE = "SplitMintJustificationVerifier";
+
   private final PaymentDataDeserializer decodePaymentData;
 
   public SplitMintJustificationVerifier(PaymentDataDeserializer decodePaymentData) {
-    this.decodePaymentData = Objects.requireNonNull(decodePaymentData, "decodePaymentData cannot be null");
+    this.decodePaymentData = Objects.requireNonNull(decodePaymentData,
+            "decodePaymentData cannot be null");
   }
 
   @Override
@@ -35,170 +42,120 @@ public class SplitMintJustificationVerifier implements MintJustificationVerifier
     return SplitMintJustification.CBOR_TAG;
   }
 
+  private static VerificationResult<VerificationStatus> fail(String message) {
+    return new VerificationResult<>(SplitMintJustificationVerifier.RULE, VerificationStatus.FAIL,
+            message);
+  }
+
   @Override
-  public VerificationResult<VerificationStatus> verify(CertifiedMintTransaction transaction, Consumer<Token> nestedTokenCollector) {
+  public VerificationResult<VerificationStatus> verify(CertifiedMintTransaction transaction,
+                                                       Consumer<Token> nestedTokenCollector) {
     Objects.requireNonNull(transaction, "transaction cannot be null");
     Objects.requireNonNull(nestedTokenCollector, "nestedTokenCollector cannot be null");
 
     byte[] justificationBytes = transaction.getJustification().orElse(null);
     if (justificationBytes == null) {
-      return new VerificationResult<>(
-              "SplitMintJustificationVerificationRule",
-              VerificationStatus.FAIL,
-              "Transaction has no justification."
-      );
+      return SplitMintJustificationVerifier.fail("Transaction has no justification.");
     }
 
     SplitMintJustification justification = SplitMintJustification.fromCbor(justificationBytes);
-    byte[] paymentDataBytes = transaction.getData().orElse(null);
-    PaymentData paymentData = paymentDataBytes != null ? this.decodePaymentData.decode(paymentDataBytes) : null;
 
-    if (paymentData == null || paymentData.getAssets() == null) {
-      return new VerificationResult<>(
-              "SplitMintJustificationVerificationRule",
-              VerificationStatus.FAIL,
-              "Assets data is missing."
-      );
-    }
-
-    NetworkId sourceNetworkId = justification.getToken().getGenesis().getNetworkId();
-    if (!transaction.getNetworkId().equals(sourceNetworkId)) {
-      return new VerificationResult<>(
-              "SplitMintJustificationVerificationRule",
-              VerificationStatus.FAIL,
+    if (!transaction.getNetworkId().equals(justification.getToken().getGenesis().getNetworkId())) {
+      return SplitMintJustificationVerifier.fail(
               String.format(
                       "Network identifier mismatch: mint is on %s, source token is on %s.",
                       transaction.getNetworkId(),
-                      sourceNetworkId
+                      justification.getToken().getGenesis().getNetworkId()
               )
       );
     }
 
     nestedTokenCollector.accept(justification.getToken());
 
-    Map<AssetId, Asset> assets = new HashMap<>();
-    for (Asset asset : paymentData.getAssets()) {
-      if (asset == null) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                "Asset data is missing."
-        );
-      }
+    List<CertifiedTransferTransaction> transfers = justification.getToken().getTransactions();
+    if (transfers.isEmpty()) {
+      return SplitMintJustificationVerifier.fail(
+              "Burned source token does not end in a certified transfer.");
+    }
+    CertifiedTransferTransaction burnTransaction = transfers.get(transfers.size() - 1);
 
-      AssetId assetId = asset.getId();
-      if (assets.putIfAbsent(assetId, asset) != null) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                String.format("Duplicate asset id %s found in asset data.", assetId)
-        );
-      }
+    byte[] manifestBytes = burnTransaction.getData().orElse(null);
+    if (manifestBytes == null) {
+      return SplitMintJustificationVerifier.fail("Burn transfer has no manifest.");
+    }
+    List<DataHash> roots = SplitManifest.fromCbor(manifestBytes).getRoots();
+
+    DataHash burnReason = new DataHasher(HashAlgorithm.SHA256).update(manifestBytes).digest();
+    EncodedPredicate expectedRecipient = EncodedPredicate.fromPredicate(
+            BurnPredicate.create(burnReason.getData()));
+    if (!expectedRecipient.equals(burnTransaction.getRecipient())) {
+      return SplitMintJustificationVerifier.fail(
+              "Burn transfer recipient does not match the manifest hash.");
     }
 
-    if (assets.size() != justification.getProofs().size()) {
-      return new VerificationResult<>(
-              "SplitMintJustificationVerificationRule",
-              VerificationStatus.FAIL,
-              "Total amount of assets differ in token and proofs."
+    if (!transaction.getTokenType().equals(justification.getToken().getType())) {
+      return SplitMintJustificationVerifier.fail(
+              "Output token type does not match the source token type.");
+    }
+
+    byte[] sourcePaymentBytes = justification.getToken().getGenesis().getData().orElse(null);
+    PaymentData sourceTokenPaymentData = sourcePaymentBytes != null
+            ? this.decodePaymentData.decode(sourcePaymentBytes)
+            : null;
+    if (sourceTokenPaymentData == null
+            || sourceTokenPaymentData.getAssets().size() != roots.size()) {
+      return SplitMintJustificationVerifier.fail(
+              "Manifest root count does not match the source asset count.");
+    }
+
+    byte[] paymentDataBytes = transaction.getData().orElse(null);
+    PaymentData paymentData = paymentDataBytes != null
+            ? this.decodePaymentData.decode(paymentDataBytes)
+            : null;
+    if (paymentData == null
+            || justification.getProofs().size() != paymentData.getAssets().size()) {
+      return SplitMintJustificationVerifier.fail(
+              "Allocation proof count does not match the output asset count.");
+    }
+
+    byte[] leafData = SplitMintJustification.calculateLeafData(
+            justification.getToken(),
+            transaction.getRecipient(),
+            transaction.getSalt(),
+            transaction.getTokenId(),
+            paymentDataBytes
     );
+
+    List<Asset> assets = paymentData.getAssets().toList();
+
+    Map<AssetId, DataHash> rootByAsset = new LinkedHashMap<>();
+    List<Asset> sourceAssets = sourceTokenPaymentData.getAssets().toList();
+    for (int i = 0; i < sourceAssets.size(); i++) {
+      rootByAsset.put(sourceAssets.get(i).getId(), roots.get(i));
     }
 
-    Set<AssetId> validatedAssets = new HashSet<>();
-    Transaction burnTokenLastTransaction = justification.getToken().getLatestTransaction();
-    DataHash root = justification.getProofs().get(0).getAggregationPath().getRootHash();
-    for (SplitAssetProof proof : justification.getProofs()) {
-      if (!validatedAssets.add(proof.getAssetId())) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                String.format("Duplicate split proof for asset id %s.", proof.getAssetId())
-        );
+    for (int i = 0; i < assets.size(); i++) {
+      Asset asset = assets.get(i);
+      Asset sourceAsset = sourceTokenPaymentData.getAssets().get(asset.getId());
+      DataHash root = rootByAsset.get(asset.getId());
+      if (sourceAsset == null || root == null) {
+        return SplitMintJustificationVerifier.fail(
+                String.format("Asset %s is absent from the source token.", asset.getId()));
       }
 
-      MerkleTreePathVerificationResult aggregationPathResult = proof.getAggregationPath()
-              .verify(proof.getAssetId().toBitString().toBigInteger());
-      if (!aggregationPathResult.isSuccessful()) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                String.format("Aggregation path verification failed for asset: %s", proof.getAssetId())
-        );
-      }
-
-      MerkleTreePathVerificationResult assetTreePathResult = proof.getAssetTreePath()
-              .verify(transaction.getTokenId().toBitString().toBigInteger());
-      if (!assetTreePathResult.isSuccessful()) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                String.format("Asset tree path verification failed for token:  %s", transaction.getTokenId())
-        );
-      }
-
-      if (!proof.getAggregationPath().getRootHash().equals(root)) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                "Current proof is not derived from the same asset tree as other proofs."
-        );
-      }
-
-      if (!Arrays.equals(
-              proof.getAssetTreePath().getRootHash().getImprint(),
-              proof.getAggregationPath().getSteps().get(0).getData().orElse(null)
-      )) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                "Asset tree root does not match aggregation path leaf."
-        );
-      }
-
-      Asset asset = assets.get(proof.getAssetId());
-
-      if (asset == null) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                String.format("Asset id %s not found in asset data.", proof.getAssetId())
-        );
-      }
-
-      BigInteger amount = asset.getValue();
-
-      if (!proof.getAssetTreePath().getSteps().get(0).getValue().equals(amount)) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                String.format("Asset amount for asset id %s does not match asset tree leaf.", proof.getAssetId())
-        );
-      }
-
-      EncodedPredicate expectedRecipient = EncodedPredicate.fromPredicate(
-              BurnPredicate.create(proof.getAggregationPath().getRootHash().getImprint())
+      boolean isProofValid = justification.getProofs().get(i).verify(
+              transaction.getTokenId().getBytes(),
+              leafData,
+              asset.getValue(),
+              root,
+              sourceAsset.getValue()
       );
-
-      if (!expectedRecipient.equals(burnTokenLastTransaction.getRecipient())) {
-        return new VerificationResult<>(
-                "SplitMintJustificationVerificationRule",
-                VerificationStatus.FAIL,
-                "Aggregation path root does not match burn predicate."
-        );
+      if (!isProofValid) {
+        return SplitMintJustificationVerifier.fail(
+                String.format("Allocation proof failed for asset %s.", asset.getId()));
       }
     }
 
-    if (validatedAssets.size() != assets.size()) {
-      return new VerificationResult<>(
-              "SplitMintJustificationVerificationRule",
-              VerificationStatus.FAIL,
-              "Some assets proofs are missing from the token."
-      );
-    }
-
-    return new VerificationResult<>(
-            "SplitMintJustificationVerificationRule",
-            VerificationStatus.OK
-    );
+    return new VerificationResult<>(SplitMintJustificationVerifier.RULE, VerificationStatus.OK);
   }
 }

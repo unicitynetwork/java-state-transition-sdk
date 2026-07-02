@@ -91,7 +91,7 @@ public class CertifiedMintTransaction implements Transaction {
   }
 
   @Override
-  public byte[] getStateMask() {
+  public StateMask getStateMask() {
     return this.transaction.getStateMask();
   }
 

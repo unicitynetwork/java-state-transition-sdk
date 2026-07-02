@@ -9,6 +9,7 @@ import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.transaction.StateMask;
 import org.unicitylabs.sdk.transaction.TokenId;
 import org.unicitylabs.sdk.transaction.TokenType;
 import org.unicitylabs.sdk.transaction.Transaction;
@@ -65,7 +66,7 @@ public final class CertifiedUnicityIdMintTransaction implements Transaction {
   }
 
   @Override
-  public byte[] getStateMask() {
+  public StateMask getStateMask() {
     return this.transaction.getStateMask();
   }
 

@@ -1,13 +1,13 @@
-package org.unicitylabs.sdk.smt.plain;
+package org.unicitylabs.sdk.smt.radixsum;
 
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 
 import java.math.BigInteger;
 
 /**
- * Sparse merkle tree branch structure.
+ * Radix sparse Merkle sum tree branch structure.
  */
-interface Branch {
+public interface Branch {
 
   /**
    * Get branch path from leaf to root.

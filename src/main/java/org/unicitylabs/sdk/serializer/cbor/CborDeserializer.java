@@ -76,9 +76,25 @@ public class CborDeserializer {
    * @return decoded integer
    */
   public static BigInteger decodeBigInteger(byte[] data) {
+    return CborDeserializer.decodeBigInteger(data, null);
+  }
+
+  /**
+   * Read a minimally encoded big-endian byte string from CBOR bytes as a non-negative big
+   * integer, bounded to at most {@code maxByteLength} bytes.
+   *
+   * @param data bytes
+   * @param maxByteLength maximum byte-string length, or {@code null} for no limit
+   * @return decoded integer
+   */
+  public static BigInteger decodeBigInteger(byte[] data, Integer maxByteLength) {
     byte[] bytes = CborDeserializer.decodeByteString(data);
     if (bytes.length > 0 && bytes[0] == 0) {
       throw new CborSerializationException("Integer byte string must be minimally encoded.");
+    }
+    if (maxByteLength != null && bytes.length > maxByteLength) {
+      throw new CborSerializationException(
+              String.format("Integer byte string must be at most %d bytes.", maxByteLength));
     }
 
     return BigIntegerConverter.decode(bytes);

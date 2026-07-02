@@ -18,7 +18,6 @@ import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierSer
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
-import java.security.SecureRandom;
 
 /**
  * Test helpers for minting and transferring certified tokens.
@@ -158,13 +157,10 @@ public class TokenUtils {
     Token token = Token.fromCbor(tokenBytes);
     Assertions.assertEquals(VerificationStatus.OK, token.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus());
 
-    byte[] x = new byte[32];
-    new SecureRandom().nextBytes(x);
-
     TransferTransaction transaction = TransferTransaction.create(
             token,
             recipient,
-            x,
+            StateMask.generate(),
             null
     );
 

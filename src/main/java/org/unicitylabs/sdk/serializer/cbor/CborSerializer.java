@@ -1,5 +1,8 @@
 package org.unicitylabs.sdk.serializer.cbor;
 
+import org.unicitylabs.sdk.util.BigIntegerConverter;
+
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +64,17 @@ public class CborSerializer {
     }
 
     return CborSerializer.encodeRawArray(input, input.length, CborMajorType.BYTE_STRING);
+  }
+
+  /**
+   * Encode a non-negative big integer as a minimally encoded big-endian CBOR byte string; zero
+   * encodes as an empty byte string.
+   *
+   * @param input non-negative integer
+   * @return bytes
+   */
+  public static byte[] encodeBigInteger(BigInteger input) {
+    return CborSerializer.encodeByteString(BigIntegerConverter.encode(input));
   }
 
   /**

@@ -43,7 +43,7 @@ public interface Transaction {
    *
    * @return randomness bytes
    */
-  byte[] getStateMask();
+  StateMask getStateMask();
 
   /**
    * Calculates the resulting state hash.

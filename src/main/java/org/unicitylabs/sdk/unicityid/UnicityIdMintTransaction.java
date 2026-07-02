@@ -13,6 +13,7 @@ import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
+import org.unicitylabs.sdk.transaction.StateMask;
 import org.unicitylabs.sdk.transaction.MintTransactionState;
 import org.unicitylabs.sdk.transaction.TokenId;
 import org.unicitylabs.sdk.transaction.TokenType;
@@ -134,8 +135,8 @@ public final class UnicityIdMintTransaction implements Transaction {
   }
 
   @Override
-  public byte[] getStateMask() {
-    return this.tokenId.getBytes();
+  public StateMask getStateMask() {
+    return StateMask.fromBytes(this.tokenId.getBytes());
   }
 
   /**
@@ -223,7 +224,7 @@ public final class UnicityIdMintTransaction implements Transaction {
             .update(
                     CborSerializer.encodeArray(
                             CborSerializer.encodeByteString(this.sourceStateHash.getImprint()),
-                            CborSerializer.encodeByteString(this.getStateMask())
+                            this.getStateMask().toCbor()
                     )
             )
             .digest();
