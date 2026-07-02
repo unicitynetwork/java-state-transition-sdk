@@ -21,6 +21,8 @@ import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.StateMask;
 import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
@@ -46,6 +48,8 @@ public class SplitBuilderTest {
 
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
     mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
+    VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
+            mintJustificationVerifier, new TokenIssuanceVerifierService());
 
     SigningService signingService = SigningService.generate();
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);
@@ -55,9 +59,7 @@ public class SplitBuilderTest {
 
     Token sourceToken = TokenUtils.mintToken(
             client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
+            context,
             ownerPredicate,
             new TestPaymentData(PaymentAssetCollection.create(asset1, asset2)).encode()
     );
@@ -73,8 +75,7 @@ public class SplitBuilderTest {
 
     Token burnToken = TokenUtils.transferToken(
             client,
-            trustBase,
-            predicateVerifier,
+            context,
             sourceToken,
             split.getBurnTransaction(),
             SignaturePredicateUnlockScript.create(split.getBurnTransaction(), signingService)
@@ -87,9 +88,7 @@ public class SplitBuilderTest {
 
       Token minted = TokenUtils.mintToken(
               client,
-              trustBase,
-              predicateVerifier,
-              mintJustificationVerifier,
+              context,
               splitToken.getRecipient(),
               splitToken.getPaymentData().encode(),
               splitToken.getNetworkId(),
@@ -101,7 +100,7 @@ public class SplitBuilderTest {
       Assertions.assertEquals(
               VerificationStatus.OK,
               Token.fromCbor(minted.toCbor())
-                      .verify(trustBase, predicateVerifier, mintJustificationVerifier)
+                      .verify(context)
                       .getStatus()
       );
       mintedTokens.add(minted);
@@ -119,8 +118,7 @@ public class SplitBuilderTest {
 
     Token secondBurnToken = TokenUtils.transferToken(
             client,
-            trustBase,
-            predicateVerifier,
+            context,
             firstOutput,
             secondSplit.getBurnTransaction(),
             SignaturePredicateUnlockScript.create(secondSplit.getBurnTransaction(), signingService)
@@ -132,9 +130,7 @@ public class SplitBuilderTest {
 
     Token secondMinted = TokenUtils.mintToken(
             client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
+            context,
             secondSplitToken.getRecipient(),
             secondSplitToken.getPaymentData().encode(),
             secondSplitToken.getNetworkId(),
@@ -145,7 +141,7 @@ public class SplitBuilderTest {
 
     Assertions.assertEquals(
             VerificationStatus.OK,
-            secondMinted.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus()
+            secondMinted.verify(context).getStatus()
     );
   }
 
@@ -158,6 +154,8 @@ public class SplitBuilderTest {
 
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
     mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
+    VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
+            mintJustificationVerifier, new TokenIssuanceVerifierService());
 
     SigningService signingService = SigningService.generate();
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);
@@ -166,9 +164,7 @@ public class SplitBuilderTest {
 
     Token token = TokenUtils.mintToken(
             client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
+            context,
             ownerPredicate,
             new TestPaymentData(PaymentAssetCollection.create(asset)).encode()
     );

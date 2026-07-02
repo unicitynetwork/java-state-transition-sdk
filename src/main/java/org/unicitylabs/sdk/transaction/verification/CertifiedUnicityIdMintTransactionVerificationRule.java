@@ -1,9 +1,7 @@
 package org.unicitylabs.sdk.transaction.verification;
 
-import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
-import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.unicityid.CertifiedUnicityIdMintTransaction;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
@@ -24,23 +22,21 @@ public class CertifiedUnicityIdMintTransactionVerificationRule {
   /**
    * Verify the certified unicity id mint transaction.
    *
-   * @param trustBase root trust base
-   * @param predicateVerifier predicate verifier
    * @param genesis certified unicity id mint transaction to verify
+   * @param context shared verification context (trust base + registries)
    * @param issuerPublicKey expected issuer public key, or {@code null} to skip the lock-script
    *     issuer check (e.g., when minting a fresh token where no external issuer is being asserted)
    *
    * @return verification result
    */
   public static VerificationResult<VerificationStatus> verify(
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
           CertifiedUnicityIdMintTransaction genesis,
+          VerificationContext context,
           byte[] issuerPublicKey
   ) {
     List<VerificationResult<?>> results = new ArrayList<>();
 
-    if (!genesis.getNetworkId().equals(trustBase.getNetworkId())) {
+    if (!genesis.getNetworkId().equals(context.getTrustBase().getNetworkId())) {
       results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule",
               VerificationStatus.FAIL));
       return new VerificationResult<>(
@@ -71,8 +67,8 @@ public class CertifiedUnicityIdMintTransactionVerificationRule {
     }
 
     VerificationResult<InclusionProofVerificationStatus> result = InclusionProofVerificationRule.verify(
-            trustBase,
-            predicateVerifier,
+            context.getTrustBase(),
+            context.getPredicateVerifier(),
             genesis.getInclusionProof(),
             genesis
     );

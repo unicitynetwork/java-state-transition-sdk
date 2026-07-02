@@ -19,6 +19,8 @@ import org.unicitylabs.sdk.transaction.TransferTransaction;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.utils.TokenUtils;
@@ -40,16 +42,16 @@ public class CertificationDataBindingTest {
     PredicateVerifierService predicateVerifier = PredicateVerifierService.create();
     MintJustificationVerifierService mintJustificationVerifier =
             new MintJustificationVerifierService();
+    VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
+            mintJustificationVerifier, new TokenIssuanceVerifierService());
 
     SigningService signingServiceA = SigningService.generate();
     SigningService signingServiceB = SigningService.generate();
     SignaturePredicate ownerA = SignaturePredicate.fromSigningService(signingServiceA);
     SignaturePredicate ownerB = SignaturePredicate.fromSigningService(signingServiceB);
 
-    Token tokenA = TokenUtils.mintToken(
-            client, trustBase, predicateVerifier, mintJustificationVerifier, ownerA);
-    Token tokenB = TokenUtils.mintToken(
-            client, trustBase, predicateVerifier, mintJustificationVerifier, ownerB);
+    Token tokenA = TokenUtils.mintToken(client, context, ownerA);
+    Token tokenB = TokenUtils.mintToken(client, context, ownerB);
 
     // Identical recipient, state mask and data → identical transaction hash across both sources.
     SignaturePredicate recipient = SignaturePredicate.fromSigningService(SigningService.generate());

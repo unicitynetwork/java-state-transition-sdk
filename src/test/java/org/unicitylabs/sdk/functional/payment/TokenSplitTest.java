@@ -21,6 +21,8 @@ import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 import java.math.BigInteger;
@@ -46,6 +48,8 @@ public class TokenSplitTest {
 
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
     mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
+    VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
+            mintJustificationVerifier, new TokenIssuanceVerifierService());
 
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(SigningService.generate());
 
@@ -54,9 +58,7 @@ public class TokenSplitTest {
 
     this.sourceToken = TokenUtils.mintToken(
             client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
+            context,
             ownerPredicate,
             new TestPaymentData(PaymentAssetCollection.create(this.asset1, this.asset2)).encode()
     );
