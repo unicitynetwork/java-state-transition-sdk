@@ -167,4 +167,121 @@ public class CborDeserializerTest {
             tag.getData()
     );
   }
+
+  @Test
+  void testReadRawCborStopsAtItemBoundary() {
+    // [1, [2], 3] - nested item must be read completely and end exactly at its boundary.
+    List<byte[]> data = CborDeserializer.decodeArray(HexConverter.decode("8301810203"));
+
+    Assertions.assertEquals(3, data.size());
+    Assertions.assertArrayEquals(HexConverter.decode("01"), data.get(0));
+    Assertions.assertArrayEquals(HexConverter.decode("8102"), data.get(1));
+    Assertions.assertArrayEquals(HexConverter.decode("03"), data.get(2));
+  }
+
+  @Test
+  void testReadDeeplyNestedCborWithoutStackOverflow() {
+    int depth = 100_000;
+    byte[] bytes = new byte[depth + 1];
+    java.util.Arrays.fill(bytes, 0, depth, (byte) 0x81);
+    bytes[depth] = 0x01;
+
+    Assertions.assertArrayEquals(bytes, CborDeserializer.decodeNullable(bytes, data -> data));
+  }
+
+  @Test
+  void testByteStringLengthOverflowIsRejected() {
+    // Byte string claiming length 2^32 + 5 followed by 5 bytes: a narrowing (int) cast would
+    // truncate the length to 5 and parse successfully instead of failing.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeByteString(
+                    HexConverter.decode("5b00000001000000050000000000"))
+    );
+
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeTextString(
+                    HexConverter.decode("7b00000001000000050000000000"))
+    );
+
+    // Byte string claiming Long.MAX_VALUE bytes.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeByteString(HexConverter.decode("5b7fffffffffffffff"))
+    );
+
+    // Byte string claiming 2^64 - 1 bytes (-1 as a signed long): a signed comparison would
+    // accept it and the narrowing cast would go negative.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeByteString(HexConverter.decode("5bffffffffffffffff"))
+    );
+  }
+
+  @Test
+  void testOversizedCollectionLengthIsRejected() {
+    // Array claiming 2^32 elements with no data.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeArray(HexConverter.decode("9b0000000100000000"))
+    );
+
+    // Array claiming 2^64 - 1 elements: must fail cleanly, not wrap a counter.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeArray(HexConverter.decode("9bffffffffffffffff"))
+    );
+
+    // Map claiming 2^32 entries with no data.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeMap(HexConverter.decode("bb0000000100000000"))
+    );
+
+    // Nested inside an otherwise valid item: [oversized array].
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeNullable(
+                    HexConverter.decode("819bffffffffffffffff"), data -> data)
+    );
+  }
+
+  @Test
+  void testLargeTagIsNotTruncated() {
+    // Tag 2^33 (does not fit in int): narrowing would silently decode it as 0.
+    CborTag tag = CborDeserializer.decodeTag(HexConverter.decode("db000000020000000001"));
+    Assertions.assertEquals(8589934592L, tag.getTag());
+  }
+
+  @Test
+  void testNumberNarrowingIsChecked() {
+    Assertions.assertEquals(
+            Integer.MAX_VALUE,
+            CborDeserializer.decodeUnsignedInteger(HexConverter.decode("1a7fffffff")).asInt()
+    );
+    // 2^31 does not fit in a signed int; unchecked narrowing would return Integer.MIN_VALUE.
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeUnsignedInteger(HexConverter.decode("1a80000000")).asInt()
+    );
+
+    Assertions.assertEquals(
+            Short.MAX_VALUE,
+            CborDeserializer.decodeUnsignedInteger(HexConverter.decode("197fff")).asShort()
+    );
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeUnsignedInteger(HexConverter.decode("198000")).asShort()
+    );
+
+    Assertions.assertEquals(
+            Byte.MAX_VALUE,
+            CborDeserializer.decodeUnsignedInteger(HexConverter.decode("187f")).asByte()
+    );
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeUnsignedInteger(HexConverter.decode("1880")).asByte()
+    );
+  }
 }
