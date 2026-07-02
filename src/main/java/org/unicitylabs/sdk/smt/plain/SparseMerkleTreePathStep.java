@@ -66,7 +66,7 @@ public class SparseMerkleTreePathStep {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
 
     return new SparseMerkleTreePathStep(
-            BigIntegerConverter.decode(CborDeserializer.decodeByteString(data.get(0))),
+            CborDeserializer.decodeBigInteger(data.get(0)),
             CborDeserializer.decodeNullable(data.get(1), CborDeserializer::decodeByteString)
     );
   }

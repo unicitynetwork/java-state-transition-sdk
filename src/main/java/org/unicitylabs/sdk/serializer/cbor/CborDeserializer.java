@@ -2,7 +2,9 @@ package org.unicitylabs.sdk.serializer.cbor;
 
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer.CborMap;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer.CborMap.Entry;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 
@@ -63,6 +65,23 @@ public class CborDeserializer {
     reader.assertExhausted();
 
     return result;
+  }
+
+  /**
+   * Read a minimally encoded big-endian byte string from CBOR bytes as a non-negative big
+   * integer. Rejects non-minimal encodings (leading zero byte); zero is encoded as an empty
+   * byte string.
+   *
+   * @param data bytes
+   * @return decoded integer
+   */
+  public static BigInteger decodeBigInteger(byte[] data) {
+    byte[] bytes = CborDeserializer.decodeByteString(data);
+    if (bytes.length > 0 && bytes[0] == 0) {
+      throw new CborSerializationException("Integer byte string must be minimally encoded.");
+    }
+
+    return BigIntegerConverter.decode(bytes);
   }
 
   /**

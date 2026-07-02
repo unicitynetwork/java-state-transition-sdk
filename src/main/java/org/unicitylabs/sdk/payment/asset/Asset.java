@@ -60,7 +60,7 @@ public final class Asset {
 
     return new Asset(
             AssetId.fromCbor(data.get(0)),
-            BigIntegerConverter.decode(CborDeserializer.decodeByteString(data.get(1)))
+            CborDeserializer.decodeBigInteger(data.get(1))
     );
   }
 

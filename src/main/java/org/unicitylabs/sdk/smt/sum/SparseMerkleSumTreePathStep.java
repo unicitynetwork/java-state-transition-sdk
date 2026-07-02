@@ -70,9 +70,9 @@ public class SparseMerkleSumTreePathStep {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
 
     return new SparseMerkleSumTreePathStep(
-            BigIntegerConverter.decode(CborDeserializer.decodeByteString(data.get(0))),
+            CborDeserializer.decodeBigInteger(data.get(0)),
             CborDeserializer.decodeNullable(data.get(1), CborDeserializer::decodeByteString),
-            BigIntegerConverter.decode(CborDeserializer.decodeByteString(data.get(2)))
+            CborDeserializer.decodeBigInteger(data.get(2))
     );
   }
 

@@ -255,6 +255,23 @@ public class CborDeserializerTest {
   }
 
   @Test
+  void testRejectsNonMinimalBigIntegerEncodings() {
+    // CBOR byte strings: 4105 = [0x05], 40 = [] (zero), 420005 = [0x00, 0x05] (non-minimal).
+    Assertions.assertEquals(
+            java.math.BigInteger.valueOf(5),
+            CborDeserializer.decodeBigInteger(HexConverter.decode("4105"))
+    );
+    Assertions.assertEquals(
+            java.math.BigInteger.ZERO,
+            CborDeserializer.decodeBigInteger(HexConverter.decode("40"))
+    );
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> CborDeserializer.decodeBigInteger(HexConverter.decode("420005"))
+    );
+  }
+
+  @Test
   void testNumberNarrowingIsChecked() {
     Assertions.assertEquals(
             Integer.MAX_VALUE,
