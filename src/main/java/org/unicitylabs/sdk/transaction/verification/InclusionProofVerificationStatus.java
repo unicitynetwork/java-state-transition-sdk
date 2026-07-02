@@ -8,6 +8,8 @@ public enum InclusionProofVerificationStatus {
   INVALID_TRUSTBASE,
   /** Certification data required for verification is missing. */
   MISSING_CERTIFICATION_DATA,
+  /** Certification lock script or source state hash does not match the reconstructed transaction. */
+  CERTIFICATION_DATA_MISMATCH,
   /** Transaction hash does not match the value referenced by the proof. */
   TRANSACTION_HASH_MISMATCH,
   /** Proof authentication failed. */
