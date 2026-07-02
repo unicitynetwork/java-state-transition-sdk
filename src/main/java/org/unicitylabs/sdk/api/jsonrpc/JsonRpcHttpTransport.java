@@ -4,6 +4,7 @@ package org.unicitylabs.sdk.api.jsonrpc;
 import okhttp3.*;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -158,13 +159,20 @@ public class JsonRpcHttpTransport {
     }
 
     try (InputStream in = body.byteStream()) {
-      // Read one byte past the limit: if that many bytes are available the body is too large.
-      byte[] bytes = in.readNBytes(this.maxResponseBytes + 1);
-      if (bytes.length > this.maxResponseBytes) {
-        throw new IOException("JSON-RPC response exceeds the maximum allowed size.");
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      byte[] buffer = new byte[8192];
+      int total = 0;
+      int read;
+      while ((read = in.read(buffer)) != -1) {
+        total += read;
+        if (total > this.maxResponseBytes) {
+          throw new IOException("JSON-RPC response exceeds the maximum allowed size.");
+        }
+        out.write(buffer, 0, read);
       }
 
-      return new String(bytes, StandardCharsets.UTF_8);
+      // ByteArrayOutputStream.toString(Charset) is post-API-31; construct the String directly.
+      return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
   }
 }

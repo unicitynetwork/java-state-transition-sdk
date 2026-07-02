@@ -68,7 +68,17 @@ public final class PaymentAssetCollection {
    * order of the raw id bytes, a shorter id ordered before a longer one that it is a prefix of.
    */
   private static int compareAssets(Asset a, Asset b) {
-    return Arrays.compareUnsigned(a.getId().getBytes(), b.getId().getBytes());
+    byte[] x = a.getId().getBytes();
+    byte[] y = b.getId().getBytes();
+    int length = Math.min(x.length, y.length);
+    for (int i = 0; i < length; i++) {
+      int diff = (x[i] & 0xFF) - (y[i] & 0xFF);
+      if (diff != 0) {
+        return diff;
+      }
+    }
+
+    return x.length - y.length;
   }
 
   private static PaymentAssetCollection fromList(List<Asset> assets) {
