@@ -3,6 +3,7 @@ package org.unicitylabs.sdk.api.bft;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.api.NetworkId;
+import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 
 public class RootTrustBaseTest {
 
@@ -24,4 +25,80 @@ public class RootTrustBaseTest {
     Assertions.assertEquals(4, trustBase.getSignatures().size());
   }
 
+  @Test
+  public void testParsesValidTrustBase() {
+    RootTrustBase trustBase = RootTrustBase.fromJson(trustBaseJson(
+            1, 1, "[{\"nodeId\":\"NODE\",\"sigKey\":\"0x02aa\",\"stake\":1}]"));
+
+    Assertions.assertEquals(1, trustBase.getVersion());
+    Assertions.assertEquals(1, trustBase.getQuorumThreshold());
+    Assertions.assertEquals(1, trustBase.getRootNodes().size());
+  }
+
+  @Test
+  public void testRejectsUnsupportedVersion() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(
+                    2, 1, "[{\"nodeId\":\"NODE\",\"sigKey\":\"0x02aa\",\"stake\":1}]")));
+  }
+
+  @Test
+  public void testRejectsEmptyRootNodeSet() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(1, 1, "[]")));
+  }
+
+  @Test
+  public void testRejectsNonPositiveQuorumThreshold() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(
+                    1, 0, "[{\"nodeId\":\"NODE\",\"sigKey\":\"0x02aa\",\"stake\":1}]")));
+  }
+
+  @Test
+  public void testRejectsQuorumThresholdExceedingRootNodeCount() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(
+                    1, 2, "[{\"nodeId\":\"NODE\",\"sigKey\":\"0x02aa\",\"stake\":1}]")));
+  }
+
+  @Test
+  public void testRejectsNonPositiveStake() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(
+                    1, 1, "[{\"nodeId\":\"NODE\",\"sigKey\":\"0x02aa\",\"stake\":0}]")));
+  }
+
+  @Test
+  public void testRejectsDuplicateNodeIds() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(
+                    1, 1,
+                    "[{\"nodeId\":\"NODE\",\"sigKey\":\"0x02aa\",\"stake\":1},"
+                            + "{\"nodeId\":\"NODE\",\"sigKey\":\"0x02bb\",\"stake\":1}]")));
+  }
+
+  @Test
+  public void testRejectsDuplicateSigningKeys() {
+    Assertions.assertThrows(
+            JsonSerializationException.class,
+            () -> RootTrustBase.fromJson(trustBaseJson(
+                    1, 1,
+                    "[{\"nodeId\":\"NODE_A\",\"sigKey\":\"0x02aa\",\"stake\":1},"
+                            + "{\"nodeId\":\"NODE_B\",\"sigKey\":\"0x02aa\",\"stake\":1}]")));
+  }
+
+  private static String trustBaseJson(long version, long quorumThreshold, String rootNodes) {
+    return String.format(
+            "{\"version\":%d,\"networkId\":3,\"epoch\":0,\"epochStartRound\":0,\"rootNodes\":%s,"
+                    + "\"quorumThreshold\":%d,\"stateHash\":\"\",\"changeRecordHash\":null,"
+                    + "\"previousEntryHash\":null,\"signatures\":{}}",
+            version, rootNodes, quorumThreshold);
+  }
 }

@@ -277,7 +277,7 @@ public class UnicitySeal {
     public boolean equals(Object o) {
       if (!(o instanceof SignatureEntry)) return false;
       SignatureEntry that = (SignatureEntry) o;
-      return Objects.equals(this.key, that.key) && Objects.deepEquals(this.signature, that.signature);
+      return Objects.equals(this.key, that.key);
     }
 
     @Override

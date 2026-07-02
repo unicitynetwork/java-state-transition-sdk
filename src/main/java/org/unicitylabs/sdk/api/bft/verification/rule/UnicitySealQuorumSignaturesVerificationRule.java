@@ -76,11 +76,7 @@ public class UnicitySealQuorumSignaturesVerificationRule {
           byte[] signature,
           byte[] hash
   ) {
-    NodeInfo node = trustBase.getRootNodes().stream()
-            .filter(n -> n.getNodeId().equals(nodeId))
-            .findFirst()
-            .orElse(null);
-
+    NodeInfo node = trustBase.getRootNode(nodeId);
     if (node == null) {
       return new VerificationResult<>(
               String.format("SignatureVerificationRule[%s]", nodeId),
