@@ -14,16 +14,24 @@ import java.util.Objects;
  */
 public class TokenType {
 
+  public static final int MIN_LENGTH = 1;
+  public static final int MAX_LENGTH = 64;
+
   private static final SecureRandom RANDOM = new SecureRandom();
   private final byte[] bytes;
 
   /**
    * Create a token type from byte array.
    *
-   * @param bytes token type bytes
+   * @param bytes token type bytes; must be between {@link #MIN_LENGTH} and {@link #MAX_LENGTH} bytes
    */
   public TokenType(byte[] bytes) {
     Objects.requireNonNull(bytes, "Token type cannot be null");
+    if (bytes.length < TokenType.MIN_LENGTH || bytes.length > TokenType.MAX_LENGTH) {
+      throw new IllegalArgumentException(
+              String.format("Token type must be between %d and %d bytes, got %d.",
+                      TokenType.MIN_LENGTH, TokenType.MAX_LENGTH, bytes.length));
+    }
 
     this.bytes = Arrays.copyOf(bytes, bytes.length);
   }
