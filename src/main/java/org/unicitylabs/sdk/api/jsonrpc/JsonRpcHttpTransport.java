@@ -65,7 +65,10 @@ public class JsonRpcHttpTransport {
 
   /**
    * JSON-RPC HTTP service constructor with a caller-supplied HTTP client, to share a single
-   * connection and thread pool across transports.
+   * connection and thread pool across transports. Redirect following is always disabled on the
+   * transport's client (via {@link OkHttpClient#newBuilder()}, which shares the supplied client's
+   * connection pool and dispatcher) so authentication headers are never replayed to a redirect
+   * target, regardless of the caller's redirect policy.
    *
    * @param url service URL
    * @param httpClient OkHttp client to use
@@ -73,7 +76,11 @@ public class JsonRpcHttpTransport {
    */
   public JsonRpcHttpTransport(String url, OkHttpClient httpClient, int maxResponseBytes) {
     this.url = Objects.requireNonNull(url, "url cannot be null");
-    this.httpClient = Objects.requireNonNull(httpClient, "httpClient cannot be null");
+    this.httpClient = Objects.requireNonNull(httpClient, "httpClient cannot be null")
+            .newBuilder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build();
     this.maxResponseBytes = maxResponseBytes;
   }
 

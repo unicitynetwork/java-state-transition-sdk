@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.api.jsonrpc;
 
+import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -51,5 +52,32 @@ public class JsonRpcHttpTransportTest {
     Assertions.assertEquals(1, server.getRequestCount());
     RecordedRequest request = server.takeRequest();
     Assertions.assertEquals("/", request.getPath());
+  }
+
+  @Test
+  public void normalizesCallerSuppliedClientToNotFollowRedirects() throws Exception {
+    server.enqueue(new MockResponse()
+            .setResponseCode(302)
+            .setHeader("Location", server.url("/redirected").toString()));
+    server.enqueue(new MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody("{\"jsonrpc\":\"2.0\",\"result\":\"OK\",\"id\":\"x\"}"));
+
+    OkHttpClient callerClient = new OkHttpClient.Builder()
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build();
+    JsonRpcHttpTransport transport = new JsonRpcHttpTransport(server.url("/").toString(), callerClient);
+
+    ExecutionException error = Assertions.assertThrows(
+            ExecutionException.class,
+            () -> transport.request("method", "params", String.class, Map.of())
+                    .get(5, TimeUnit.SECONDS));
+    Assertions.assertInstanceOf(JsonRpcNetworkException.class, error.getCause());
+    Assertions.assertEquals(302, ((JsonRpcNetworkException) error.getCause()).getStatus());
+
+    Assertions.assertEquals(1, server.getRequestCount());
+    Assertions.assertEquals("/", server.takeRequest().getPath());
   }
 }
