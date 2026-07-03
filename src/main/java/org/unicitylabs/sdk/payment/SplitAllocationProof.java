@@ -127,6 +127,11 @@ public final class SplitAllocationProof {
                 "Sibling depths must be strictly decreasing from the leaf to the root.");
       }
 
+      byte[] hash = CborDeserializer.decodeByteString(fields.get(1));
+      if (hash.length != HashAlgorithm.SHA256.getLength()) {
+        throw new CborSerializationException("Sibling hash must be a SHA-256 digest.");
+      }
+
       BigInteger sum = CborDeserializer.decodeBigInteger(fields.get(2), 32);
       if (sum.signum() <= 0) {
         throw new CborSerializationException("Sibling sum must be strictly positive.");
@@ -134,7 +139,7 @@ public final class SplitAllocationProof {
 
       siblings.add(new Sibling(
               depth,
-              new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(fields.get(1))),
+              new DataHash(HashAlgorithm.SHA256, hash),
               sum
       ));
     }
