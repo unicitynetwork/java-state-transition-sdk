@@ -153,16 +153,16 @@ public class JsonRpcHttpTransport {
                             .constructParametricType(JsonRpcResponse.class, resultType)
             );
 
+            if (data.getError() != null) {
+              future.completeExceptionally(new JsonRpcNetworkException(
+                      data.getError().getCode(), data.getError().getMessage()));
+              return;
+            }
+
             if (!requestId.equals(data.getId())) {
               future.completeExceptionally(new IllegalArgumentException(
                       "JSON-RPC response id mismatch: expected " + requestId + ", got "
                               + data.getId() + "."));
-              return;
-            }
-
-            if (data.getError() != null) {
-              future.completeExceptionally(new JsonRpcNetworkException(
-                      data.getError().getCode(), data.getError().getMessage()));
               return;
             }
 

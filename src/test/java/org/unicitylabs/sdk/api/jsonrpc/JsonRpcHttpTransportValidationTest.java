@@ -74,6 +74,16 @@ public class JsonRpcHttpTransportValidationTest {
   }
 
   @Test
+  public void surfacesServerErrorWithNullIdInsteadOfIdMismatch() {
+    server.enqueue(json(
+            "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error\"},"
+                    + "\"id\":null}"));
+    Throwable cause = causeOf(new JsonRpcHttpTransport(server.url("/").toString()));
+    Assertions.assertInstanceOf(JsonRpcNetworkException.class, cause);
+    Assertions.assertEquals(-32700, ((JsonRpcNetworkException) cause).getStatus());
+  }
+
+  @Test
   public void rejectsResponseWithNeitherResultNorError() {
     Throwable cause = requestWithEchoedId("{\"jsonrpc\":\"2.0\",\"id\":\"%s\"}");
     Assertions.assertTrue(cause.getMessage().contains("exactly one"), cause.getMessage());
