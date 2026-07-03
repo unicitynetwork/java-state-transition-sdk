@@ -76,6 +76,10 @@ public class JsonRpcHttpTransport {
    */
   public JsonRpcHttpTransport(String url, OkHttpClient httpClient, int maxResponseBytes) {
     this.url = Objects.requireNonNull(url, "url cannot be null");
+    if (maxResponseBytes <= 0) {
+      throw new IllegalArgumentException(
+              "maxResponseBytes must be positive, got " + maxResponseBytes + ".");
+    }
     this.httpClient = Objects.requireNonNull(httpClient, "httpClient cannot be null")
             .newBuilder()
             .followRedirects(false)
@@ -198,7 +202,7 @@ public class JsonRpcHttpTransport {
     try (InputStream in = body.byteStream()) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       byte[] buffer = new byte[8192];
-      int total = 0;
+      long total = 0;
       int read;
       while ((read = in.read(buffer)) != -1) {
         total += read;

@@ -105,6 +105,14 @@ public class JsonRpcHttpTransportValidationTest {
   }
 
   @Test
+  public void rejectsNonPositiveMaxResponseBytes() {
+    Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new JsonRpcHttpTransport(server.url("/").toString(), 0));
+    Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new JsonRpcHttpTransport(server.url("/").toString(), -1));
+  }
+
+  @Test
   public void rejectsOversizedResponse() {
     StringBuilder big = new StringBuilder("{\"jsonrpc\":\"2.0\",\"result\":\"");
     for (int i = 0; i < 5000; i++) {
