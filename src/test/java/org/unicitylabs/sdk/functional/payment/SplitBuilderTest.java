@@ -188,6 +188,6 @@ public class SplitBuilderTest {
     // A mask of the wrong length is a caller bug - the StateMask type rejects it at construction.
     Assertions.assertThrows(
             IllegalArgumentException.class,
-            () -> StateMask.fromBytes(new byte[31]));
+            () -> StateMask.fromBytes(new byte[StateMask.MIN_LENGTH - 1]));
   }
 }

@@ -9,13 +9,18 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * 32-byte random value mixed into a transfer's next state hash. Its randomness makes the next
- * state identifier unpredictable, preventing the Unicity Service from linking consecutive states
- * of the same token, and it MUST be sampled with at least 128 bits of min-entropy.
+ * Random value mixed into a transfer's next state hash. Its randomness makes the next state
+ * identifier unpredictable, preventing the Unicity Service from linking consecutive states of the
+ * same token. Per the yellowpaper the mask is variable length ({@code x <- {0,1}^l}) and MUST be
+ * sampled with at least 128 bits of min-entropy, so the minter chooses the length within
+ * {@code [{@link #MIN_LENGTH}, {@link #MAX_LENGTH}]} bytes; the upper bound keeps an untrusted token
+ * blob from carrying an arbitrarily large mask. {@link #generate()} samples {@link #LENGTH} bytes.
  */
 public class StateMask {
 
   public static final int LENGTH = 32;
+  public static final int MAX_LENGTH = 64;
+  public static final int MIN_LENGTH = 16;
 
   private static final SecureRandom RANDOM = new SecureRandom();
   private final byte[] bytes;
@@ -25,17 +30,20 @@ public class StateMask {
   }
 
   /**
-   * Wrap an existing 32-byte state mask.
+   * Wrap an existing state mask. The mask is variable length but must carry at least 128 bits of
+   * min-entropy and stay within the upper bound, so it must be between {@link StateMask#MIN_LENGTH}
+   * and {@link StateMask#MAX_LENGTH} bytes.
    *
-   * @param bytes state mask bytes; must be exactly 32 bytes
+   * @param bytes state mask bytes; must be 16 to 64 bytes
    *
    * @return state mask
    */
   public static StateMask fromBytes(byte[] bytes) {
     Objects.requireNonNull(bytes, "State mask cannot be null");
-    if (bytes.length != StateMask.LENGTH) {
+    if (bytes.length < StateMask.MIN_LENGTH || bytes.length > StateMask.MAX_LENGTH) {
       throw new IllegalArgumentException(
-              "State mask must be " + StateMask.LENGTH + " bytes long, got " + bytes.length);
+              "StateMask must be between " + StateMask.MIN_LENGTH + " and " + StateMask.MAX_LENGTH
+                      + " bytes, got " + bytes.length + ".");
     }
     return new StateMask(Arrays.copyOf(bytes, bytes.length));
   }
