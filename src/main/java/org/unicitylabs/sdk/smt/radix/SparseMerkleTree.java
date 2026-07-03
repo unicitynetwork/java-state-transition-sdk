@@ -7,6 +7,7 @@ import org.unicitylabs.sdk.smt.LeafOutOfBoundsException;
 import org.unicitylabs.sdk.util.BitString;
 
 import java.math.BigInteger;
+import java.util.Objects;
 
 /**
  * Sparse Merkle tree implementation.
@@ -30,14 +31,25 @@ public class SparseMerkleTree {
   /**
    * Add leaf to the tree at given path.
    *
-   * @param key path of the leaf
-   * @param data data of the leaf
+   * @param key path of the leaf; must be a 32-byte key
+   * @param data data of the leaf; must be 32 bytes
    * @throws BranchExistsException    if branch already exists at the path
    * @throws LeafOutOfBoundsException if leaf is out of bounds
-   * @throws IllegalArgumentException if path is less than 1
+   * @throws IllegalArgumentException if the key or data is not 32 bytes, or the path is less than 1
    */
   public synchronized void addLeaf(byte[] key, byte[] data)
           throws BranchExistsException, LeafOutOfBoundsException {
+    Objects.requireNonNull(key, "key cannot be null");
+    Objects.requireNonNull(data, "data cannot be null");
+
+    if (key.length != 32) {
+      throw new IllegalArgumentException("Key must be 32 bytes long.");
+    }
+
+    if (data.length != 32) {
+      throw new IllegalArgumentException("Data must be 32 bytes long.");
+    }
+
     BigInteger path = BitString.fromBytesReversedLSB(key).toBigInteger();
 
     if (path.compareTo(BigInteger.ONE) <= 0) {
