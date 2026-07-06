@@ -114,7 +114,7 @@ public class SparseMerkleSumTree {
     NodeBranch nodeBranch = (NodeBranch) branch;
 
     // if node branch is split in the middle
-    if (commonPath.getPath().compareTo(branch.getPath()) < 0) {
+    if (!commonPath.getPath().equals(branch.getPath())) {
       LeafBranch newBranch = new PendingLeafBranch(keyPath, key, data, value);
       return new PendingNodeBranch(commonPath.getPath(), commonPath.getLength(),
               isRight ? branch : newBranch, isRight ? newBranch : branch);
