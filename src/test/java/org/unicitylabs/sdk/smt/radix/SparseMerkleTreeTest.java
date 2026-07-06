@@ -44,4 +44,30 @@ public class SparseMerkleTreeTest {
       Assertions.assertTrue(certificate.verify(key, value, root.getHash()));
     }
   }
+
+  @Test
+  void everyLeafVerifiesThroughNonZeroRegions() throws Exception {
+    int[] firstBytes = {0b10010000, 0b00000000, 0b00010000, 0b10000000, 0b01100000, 0b00010100};
+    byte[][] keys = new byte[firstBytes.length][];
+    byte[][] values = new byte[firstBytes.length][];
+    SparseMerkleTree tree = new SparseMerkleTree(HashAlgorithm.SHA256);
+    for (int i = 0; i < firstBytes.length; i++) {
+      byte[] key = new byte[32];
+      key[0] = (byte) firstBytes[i];
+      byte[] value = new byte[32];
+      value[0] = (byte) (i + 1);
+      keys[i] = key;
+      values[i] = value;
+      tree.addLeaf(key, value);
+    }
+
+    FinalizedNodeBranch root = tree.calculateRoot();
+
+    for (int i = 0; i < keys.length; i++) {
+      InclusionCertificate certificate = InclusionCertificate.create(root, keys[i]);
+      StateId key = StateId.fromCbor(CborSerializer.encodeByteString(keys[i]));
+      DataHash value = new DataHash(HashAlgorithm.SHA256, values[i]);
+      Assertions.assertTrue(certificate.verify(key, value, root.getHash()));
+    }
+  }
 }
