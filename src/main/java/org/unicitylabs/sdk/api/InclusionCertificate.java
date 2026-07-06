@@ -5,6 +5,7 @@ import org.unicitylabs.sdk.crypto.hash.DataHasher;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.smt.radix.FinalizedBranch;
 import org.unicitylabs.sdk.smt.radix.FinalizedLeafBranch;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 import org.unicitylabs.sdk.smt.radix.FinalizedNodeBranch;
 import org.unicitylabs.sdk.util.BitString;
 import org.unicitylabs.sdk.util.HexConverter;
@@ -137,6 +138,7 @@ public class InclusionCertificate {
       hash = new DataHasher(HashAlgorithm.SHA256)
               .update(new byte[]{0x01})
               .update(LongConverter.encode(depth))
+              .update(SparseMerkleTreePathUtils.pathToRegion(keyPath, depth))
               .update(left)
               .update(right)
               .digest();

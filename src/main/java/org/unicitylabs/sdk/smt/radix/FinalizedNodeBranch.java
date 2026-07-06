@@ -3,6 +3,7 @@ package org.unicitylabs.sdk.smt.radix;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.DataHasher;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 import org.unicitylabs.sdk.util.LongConverter;
 
 import java.math.BigInteger;
@@ -72,6 +73,7 @@ public class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
     DataHash hash = new DataHasher(hashAlgorithm)
             .update(new byte[]{0x01})
             .update(LongConverter.encode(node.getDepth()))
+            .update(SparseMerkleTreePathUtils.pathToRegion(node.getPath(), node.getDepth()))
             .update(left.getHash().getData())
             .update(right.getHash().getData())
             .digest();

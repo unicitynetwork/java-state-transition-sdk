@@ -67,7 +67,7 @@ public class SparseMerkleSumTree {
     boolean isRight = path.testBit(0);
     Branch branch = isRight ? this.right : this.left;
     Branch result = branch != null
-            ? SparseMerkleSumTree.buildTree(branch, path, 0, key, data, value)
+            ? SparseMerkleSumTree.buildTree(branch, path, key, data, value)
             : new PendingLeafBranch(path, key, data, value);
 
     if (isRight) {
@@ -91,14 +91,13 @@ public class SparseMerkleSumTree {
     return SparseMerkleSumTreeRootNode.create(left, right, this.hashAlgorithm);
   }
 
-  private static Branch buildTree(Branch branch, BigInteger remainingPath, int depth, byte[] key,
-                                  byte[] data, BigInteger value)
+  private static Branch buildTree(Branch branch, BigInteger keyPath, byte[] key, byte[] data,
+                                  BigInteger value)
           throws BranchExistsException, LeafOutOfBoundsException {
-    CommonPath commonPath = CommonPath.create(remainingPath, branch.getPath());
-    int commonPathLength = commonPath.getLength();
-    boolean isRight = remainingPath.shiftRight(commonPathLength).testBit(0);
+    CommonPath commonPath = CommonPath.create(keyPath, branch.getPath());
+    boolean isRight = keyPath.shiftRight(commonPath.getLength()).testBit(0);
 
-    if (commonPath.getPath().equals(remainingPath)) {
+    if (commonPath.getPath().equals(keyPath)) {
       throw new BranchExistsException();
     }
 
@@ -107,42 +106,28 @@ public class SparseMerkleSumTree {
         throw new LeafOutOfBoundsException();
       }
 
-      LeafBranch leafBranch = (LeafBranch) branch;
-
-      LeafBranch oldBranch = new PendingLeafBranch(
-              branch.getPath().shiftRight(commonPathLength), leafBranch.getKey(),
-              leafBranch.getData(), leafBranch.getValue());
-      LeafBranch newBranch = new PendingLeafBranch(
-              remainingPath.shiftRight(commonPathLength), key, data, value);
-      return new PendingNodeBranch(commonPath.getPath(), depth + commonPathLength,
-              isRight ? oldBranch : newBranch, isRight ? newBranch : oldBranch);
+      LeafBranch newBranch = new PendingLeafBranch(keyPath, key, data, value);
+      return new PendingNodeBranch(commonPath.getPath(), commonPath.getLength(),
+              isRight ? branch : newBranch, isRight ? newBranch : branch);
     }
 
     NodeBranch nodeBranch = (NodeBranch) branch;
 
     // if node branch is split in the middle
     if (commonPath.getPath().compareTo(branch.getPath()) < 0) {
-      LeafBranch newBranch = new PendingLeafBranch(
-              remainingPath.shiftRight(commonPathLength), key, data, value);
-      NodeBranch oldBranch = new PendingNodeBranch(
-              branch.getPath().shiftRight(commonPathLength), nodeBranch.getDepth(),
-              nodeBranch.getLeft(), nodeBranch.getRight());
-      return new PendingNodeBranch(commonPath.getPath(), depth + commonPathLength,
-              isRight ? oldBranch : newBranch, isRight ? newBranch : oldBranch);
+      LeafBranch newBranch = new PendingLeafBranch(keyPath, key, data, value);
+      return new PendingNodeBranch(commonPath.getPath(), commonPath.getLength(),
+              isRight ? branch : newBranch, isRight ? newBranch : branch);
     }
 
     if (isRight) {
       return new PendingNodeBranch(nodeBranch.getPath(), nodeBranch.getDepth(),
               nodeBranch.getLeft(),
-              SparseMerkleSumTree.buildTree(nodeBranch.getRight(),
-                      remainingPath.shiftRight(commonPathLength), depth + commonPathLength, key,
-                      data, value));
+              SparseMerkleSumTree.buildTree(nodeBranch.getRight(), keyPath, key, data, value));
     }
 
     return new PendingNodeBranch(nodeBranch.getPath(), nodeBranch.getDepth(),
-            SparseMerkleSumTree.buildTree(nodeBranch.getLeft(),
-                    remainingPath.shiftRight(commonPathLength), depth + commonPathLength, key,
-                    data, value),
+            SparseMerkleSumTree.buildTree(nodeBranch.getLeft(), keyPath, key, data, value),
             nodeBranch.getRight());
   }
 }
