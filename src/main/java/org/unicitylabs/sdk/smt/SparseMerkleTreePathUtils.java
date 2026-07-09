@@ -90,6 +90,6 @@ public final class SparseMerkleTreePathUtils {
     }
     int byteIndex = depth / 8;
     int bitInByte = depth % 8;
-    return (data[byteIndex] >> (7 - bitInByte)) & 1;
+    return ((data[byteIndex] & 0xff) >> (7 - bitInByte)) & 1;
   }
 }

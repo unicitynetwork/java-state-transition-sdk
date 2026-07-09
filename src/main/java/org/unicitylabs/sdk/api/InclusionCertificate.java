@@ -28,6 +28,10 @@ public class InclusionCertificate {
 
   public static InclusionCertificate create(SparseMerkleTreeRootNode root, byte[] key) {
     Objects.requireNonNull(root, "root cannot be null");
+    Objects.requireNonNull(key, "key cannot be null");
+    if (key.length != 32) {
+      throw new IllegalArgumentException("Key must be 32 bytes long.");
+    }
 
     ArrayList<DataHash> siblings = new ArrayList<>();
     byte[] bitmap = new byte[InclusionCertificate.BITMAP_SIZE];
