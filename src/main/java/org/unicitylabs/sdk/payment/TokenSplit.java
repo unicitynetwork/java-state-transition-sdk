@@ -9,8 +9,7 @@ import org.unicitylabs.sdk.payment.asset.AssetId;
 import org.unicitylabs.sdk.payment.asset.PaymentAssetCollection;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.BurnPredicate;
-import org.unicitylabs.sdk.smt.BranchExistsException;
-import org.unicitylabs.sdk.smt.LeafOutOfBoundsException;
+import org.unicitylabs.sdk.smt.LeafExistsException;
 import org.unicitylabs.sdk.smt.radixsum.SparseMerkleSumTree;
 import org.unicitylabs.sdk.smt.radixsum.SparseMerkleSumTreeRootNode;
 import org.unicitylabs.sdk.transaction.StateMask;
@@ -43,14 +42,13 @@ public class TokenSplit {
    * @param paymentDataDeserializer decoder for the source token's payment data
    * @param requests per-output mint requests; each carries its own payment data
    * @return burn predicate, burn transaction and split tokens ready to mint
-   * @throws LeafOutOfBoundsException if a leaf path is invalid for merkle tree insertion
-   * @throws BranchExistsException if duplicate branches are inserted into a merkle tree
+   * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests
-  ) throws LeafOutOfBoundsException, BranchExistsException {
+  ) throws LeafExistsException {
     return TokenSplit.split(token, paymentDataDeserializer, requests, StateMask.generate());
   }
 
@@ -64,15 +62,14 @@ public class TokenSplit {
    *     (re-buildable) split supply a deterministically derived mask so the identical burn
    *     transaction can be reconstructed after a failure
    * @return burn predicate, burn transaction and split tokens ready to mint
-   * @throws LeafOutOfBoundsException if a leaf path is invalid for merkle tree insertion
-   * @throws BranchExistsException if duplicate branches are inserted into a merkle tree
+   * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests,
           StateMask burnStateMask
-  ) throws LeafOutOfBoundsException, BranchExistsException {
+  ) throws LeafExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(paymentDataDeserializer, "Payment data deserializer cannot be null");
     Objects.requireNonNull(requests, "Requests cannot be null");

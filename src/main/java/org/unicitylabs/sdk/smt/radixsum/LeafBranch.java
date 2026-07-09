@@ -5,7 +5,7 @@ import java.math.BigInteger;
 /**
  * Leaf branch in a radix sparse Merkle sum tree.
  */
-public interface LeafBranch extends Branch {
+interface LeafBranch extends Branch {
 
   /**
    * Get the 32-byte leaf key.

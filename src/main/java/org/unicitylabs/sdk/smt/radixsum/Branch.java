@@ -2,19 +2,25 @@ package org.unicitylabs.sdk.smt.radixsum;
 
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 
-import java.math.BigInteger;
-
 /**
  * Radix sparse Merkle sum tree branch structure.
  */
-public interface Branch {
+interface Branch {
 
   /**
-   * Get branch path from leaf to root.
+   * Get the absolute bifurcation depth of this branch.
    *
-   * @return path
+   * @return depth
    */
-  BigInteger getPath();
+  int getDepth();
+
+  /**
+   * Depth at which {@code key} diverges from this branch, capped at the branch's own depth.
+   *
+   * @param key key being inserted
+   * @return common-prefix depth
+   */
+  int calculateSplitDepth(byte[] key);
 
   /**
    * Finalize current branch.

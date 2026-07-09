@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.api.bft.ShardId;
@@ -16,8 +15,8 @@ import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
-import org.unicitylabs.sdk.smt.radix.FinalizedNodeBranch;
 import org.unicitylabs.sdk.smt.radix.SparseMerkleTree;
+import org.unicitylabs.sdk.smt.radix.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
@@ -51,7 +50,7 @@ public class InclusionProofTest {
     SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
     smt.addLeaf(stateId.getData(), certificationData.getTransactionHash().getData());
 
-    FinalizedNodeBranch root = smt.calculateRoot();
+    SparseMerkleTreeRootNode root = smt.calculateRoot();
     inclusionCertificate = InclusionCertificate.create(root, stateId.getData());
     // Reuse user signing service as unicity certificate signing service.
     trustBase = RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey());

@@ -6,17 +6,17 @@ import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 import org.unicitylabs.sdk.util.LongConverter;
 
-import java.math.BigInteger;
+import java.util.Arrays;
 
-public class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
-  private final BigInteger path;
+class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
+  private final byte[] path;
   private final int depth;
   private final FinalizedBranch left;
   private final FinalizedBranch right;
   private final DataHash hash;
 
   private FinalizedNodeBranch(
-          BigInteger path,
+          byte[] path,
           int depth,
           FinalizedBranch left,
           FinalizedBranch right,
@@ -30,13 +30,18 @@ public class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
   }
 
   @Override
-  public BigInteger getPath() {
-    return this.path;
+  public byte[] getPath() {
+    return Arrays.copyOf(this.path, this.path.length);
   }
 
   @Override
   public int getDepth() {
     return this.depth;
+  }
+
+  @Override
+  public int calculateSplitDepth(byte[] key) {
+    return SparseMerkleTreePathUtils.commonPrefixLength(key, this.path, this.depth);
   }
 
   @Override
@@ -73,12 +78,22 @@ public class FinalizedNodeBranch implements NodeBranch, FinalizedBranch {
     DataHash hash = new DataHasher(hashAlgorithm)
             .update(new byte[]{0x01})
             .update(LongConverter.encode(node.getDepth()))
-            .update(SparseMerkleTreePathUtils.pathToRegion(node.getPath(), node.getDepth()))
+            .update(node.getPath())
             .update(left.getHash().getData())
             .update(right.getHash().getData())
             .digest();
 
     return new FinalizedNodeBranch(node.getPath(), node.getDepth(), left, right, hash);
+  }
+
+  @Override
+  public PendingNodeBranch withLeftBranch(Branch left) {
+    return new PendingNodeBranch(this.path, this.depth, left, this.right);
+  }
+
+  @Override
+  public PendingNodeBranch withRightBranch(Branch right) {
+    return new PendingNodeBranch(this.path, this.depth, this.left, right);
   }
 
   @Override
