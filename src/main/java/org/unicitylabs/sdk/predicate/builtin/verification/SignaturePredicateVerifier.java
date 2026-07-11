@@ -3,11 +3,11 @@ package org.unicitylabs.sdk.predicate.builtin.verification;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.DataHasher;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
-import org.unicitylabs.sdk.crypto.secp256k1.Signature;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.BuiltInPredicateType;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
+import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
@@ -32,8 +32,11 @@ public class SignaturePredicateVerifier implements BuiltInPredicateVerifier {
   @Override
   public VerificationResult<VerificationStatus> verify(EncodedPredicate encodedPredicate,
                                                        DataHash sourceStateHash,
-                                                       DataHash transactionHash, byte[] unlockScript) {
+                                                       DataHash transactionHash,
+                                                       byte[] unlockScriptBytes) {
     SignaturePredicate predicate = SignaturePredicate.fromPredicate(encodedPredicate);
+    SignaturePredicateUnlockScript unlockScript =
+            SignaturePredicateUnlockScript.decode(unlockScriptBytes);
 
     boolean result = SigningService.verifyWithPublicKey(
             new DataHasher(HashAlgorithm.SHA256)
@@ -44,7 +47,7 @@ public class SignaturePredicateVerifier implements BuiltInPredicateVerifier {
                             )
                     )
                     .digest(),
-            Signature.decode(unlockScript).getBytes(),
+            unlockScript.getSignature(),
             predicate.getPublicKey()
     );
 

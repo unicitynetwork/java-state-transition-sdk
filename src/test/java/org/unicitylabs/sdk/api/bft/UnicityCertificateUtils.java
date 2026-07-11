@@ -95,7 +95,7 @@ public class UnicityCertificateUtils {
                                     "NODE",
                                     signingService.sign(
                                             new DataHasher(HashAlgorithm.SHA256).update(seal.toCbor()).digest()
-                                    ).encode()
+                                    )
                             )
                     )
             )
