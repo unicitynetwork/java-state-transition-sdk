@@ -35,7 +35,7 @@ public class SignatureRecoveryTest {
 
     // Verify signature with known public key
     byte[] publicKey = signingService.getPublicKey();
-    assertTrue(SigningService.verifyWithPublicKey(hash, signature.getBytes(), publicKey));
+    assertTrue(SigningService.verify(hash, signature.getBytes(), publicKey));
   }
 
   @Test
@@ -55,7 +55,7 @@ public class SignatureRecoveryTest {
     Signature signature = signingService.sign(hash);
 
     // Verify signature using recovered public key
-    assertTrue(SigningService.verifySignatureWithRecoveredPublicKey(hash, signature),
+    assertTrue(SigningService.verifyWithRecoveredPublicKey(hash, signature),
             "Signature verification with recovered public key should succeed");
   }
 
@@ -82,7 +82,7 @@ public class SignatureRecoveryTest {
     DataHash transactionHash = DataHash.fromImprint(HexConverter.decode(transactionHashHex));
 
     // Verify using recovered public key
-    assertTrue(SigningService.verifySignatureWithRecoveredPublicKey(transactionHash, signature),
+    assertTrue(SigningService.verifyWithRecoveredPublicKey(transactionHash, signature),
             "Should verify with recovered public key");
   }
 }

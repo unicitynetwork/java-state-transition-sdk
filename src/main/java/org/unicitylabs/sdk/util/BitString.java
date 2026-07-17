@@ -30,45 +30,6 @@ public class BitString {
   }
 
   /**
-   * Creates a BitString for LSB-first tree routing with reversed byte order. BigInteger bit 0 is
-   * bit 0 (LSB) of data[0], matching getBitAtDepth LSB convention.
-   *
-   * @param data input bytes
-   * @return BitString
-   */
-  public static BitString fromBytesReversedLSB(byte[] data) {
-    byte[] reversed = new byte[data.length];
-    for (int i = 0; i < data.length; i++) {
-      reversed[i] = data[data.length - 1 - i];
-    }
-    return new BitString(reversed);
-  }
-
-  /**
-   * Creates a BitString for MSB-first tree routing with reversed byte order. BigInteger bit 0 is
-   * bit 7 (MSB) of data[0], matching getBitAtDepth MSB convention.
-   *
-   * @param data input bytes
-   * @return BitString
-   */
-  public static BitString fromBytesReversedMSB(byte[] data) {
-    byte[] reversed = new byte[data.length];
-    for (int i = 0; i < data.length; i++) {
-      int b = data[data.length - 1 - i] & 0xFF;
-      int bitReversed = ((b & 0x80) >> 7)
-              | ((b & 0x40) >> 5)
-              | ((b & 0x20) >> 3)
-              | ((b & 0x10) >> 1)
-              | ((b & 0x08) << 1)
-              | ((b & 0x04) << 3)
-              | ((b & 0x02) << 5)
-              | ((b & 0x01) << 7);
-      reversed[i] = (byte) bitReversed;
-    }
-    return new BitString(reversed);
-  }
-
-  /**
    * Converts BitString to BigInteger by adding a leading byte 1 to input byte array. This is to
    * ensure that the BigInteger will retain the leading zero bits.
    *

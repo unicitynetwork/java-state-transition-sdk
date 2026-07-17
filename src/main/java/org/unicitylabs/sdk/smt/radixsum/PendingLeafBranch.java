@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.smt.radixsum;
 
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -8,22 +9,27 @@ import java.util.Arrays;
 /**
  * Pending leaf in a radix sparse Merkle sum tree, awaiting hashing.
  */
-public class PendingLeafBranch implements LeafBranch {
-  private final BigInteger path;
+class PendingLeafBranch implements LeafBranch {
   private final byte[] key;
   private final byte[] data;
   private final BigInteger value;
+  private final int depth;
 
-  PendingLeafBranch(BigInteger path, byte[] key, byte[] data, BigInteger value) {
-    this.path = path;
-    this.key = Arrays.copyOf(key, key.length);
-    this.data = Arrays.copyOf(data, data.length);
+  public PendingLeafBranch(byte[] key, byte[] data, BigInteger value) {
+    this.key = key;
+    this.data = data;
     this.value = value;
+    this.depth = key.length * 8;
   }
 
   @Override
-  public BigInteger getPath() {
-    return this.path;
+  public int getDepth() {
+    return this.depth;
+  }
+
+  @Override
+  public int calculateSplitDepth(byte[] key) {
+    return SparseMerkleTreePathUtils.commonPrefixLength(key, this.key, this.depth);
   }
 
   @Override

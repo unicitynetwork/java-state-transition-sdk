@@ -3,14 +3,14 @@ package org.unicitylabs.sdk.smt.radixsum;
 /**
  * Node branch in a radix sparse Merkle sum tree.
  */
-public interface NodeBranch extends Branch {
+interface NodeBranch extends Branch {
 
   /**
-   * Get the absolute bifurcation depth of this node.
+   * Get the node's committed region: its {@code depth}-bit key prefix with the suffix zeroed.
    *
-   * @return depth
+   * @return region
    */
-  int getDepth();
+  byte[] getPath();
 
   /**
    * Get left branch.
@@ -25,4 +25,21 @@ public interface NodeBranch extends Branch {
    * @return right branch
    */
   Branch getRight();
+
+  /**
+   * Derive a pending node with {@code left} as its left child, reusing this node's committed region.
+   *
+   * @param left replacement left child
+   * @return new pending node
+   */
+  PendingNodeBranch withLeftBranch(Branch left);
+
+  /**
+   * Derive a pending node with {@code right} as its right child, reusing this node's committed
+   * region.
+   *
+   * @param right replacement right child
+   * @return new pending node
+   */
+  PendingNodeBranch withRightBranch(Branch right);
 }

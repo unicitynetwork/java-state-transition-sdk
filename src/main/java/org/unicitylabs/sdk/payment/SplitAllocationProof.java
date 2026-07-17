@@ -6,18 +6,12 @@ import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
-import org.unicitylabs.sdk.smt.radixsum.FinalizedBranch;
-import org.unicitylabs.sdk.smt.radixsum.FinalizedLeafBranch;
-import org.unicitylabs.sdk.smt.radixsum.FinalizedNodeBranch;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 import org.unicitylabs.sdk.smt.radixsum.SparseMerkleSumTreeRootNode;
 import org.unicitylabs.sdk.util.BigIntegerConverter;
-import org.unicitylabs.sdk.util.BitString;
-import org.unicitylabs.sdk.util.HexConverter;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -65,37 +59,11 @@ public final class SplitAllocationProof {
       throw new IllegalArgumentException("Key must be 32 bytes long.");
     }
 
-    BigInteger keyPath = BitString.fromBytesReversedLSB(key).toBigInteger();
     List<Sibling> siblings = new ArrayList<>();
-
-    boolean isRight = keyPath.testBit(0);
-    FinalizedBranch sibling = isRight ? root.getLeft() : root.getRight();
-    FinalizedBranch node = isRight ? root.getRight() : root.getLeft();
-    if (sibling != null) {
-      siblings.add(new Sibling(0, sibling.getHash(), sibling.getValue()));
+    for (SparseMerkleSumTreeRootNode.Sibling sibling : root.getPath(key)) {
+      siblings.add(new Sibling(sibling.getDepth(), sibling.getHash(), sibling.getValue()));
     }
 
-    while (node instanceof FinalizedNodeBranch) {
-      FinalizedNodeBranch branch = (FinalizedNodeBranch) node;
-      isRight = keyPath.testBit(branch.getDepth());
-      sibling = isRight ? branch.getLeft() : branch.getRight();
-      node = isRight ? branch.getRight() : branch.getLeft();
-      if (sibling != null) {
-        siblings.add(new Sibling(branch.getDepth(), sibling.getHash(), sibling.getValue()));
-      }
-    }
-
-    if (!(node instanceof FinalizedLeafBranch)) {
-      throw new IllegalArgumentException(
-              "Could not construct split allocation proof: invalid path.");
-    }
-
-    if (!Arrays.equals(((FinalizedLeafBranch) node).getKey(), key)) {
-      throw new IllegalArgumentException(
-              String.format("Leaf not found for key: %s", HexConverter.encode(key)));
-    }
-
-    Collections.reverse(siblings);
     return new SplitAllocationProof(siblings);
   }
 
@@ -170,8 +138,6 @@ public final class SplitAllocationProof {
       throw new IllegalArgumentException("Data must be 32 bytes long.");
     }
 
-    BigInteger keyPath = BitString.fromBytesReversedLSB(key).toBigInteger();
-
     DataHash hash = new DataHasher(HashAlgorithm.SHA256)
             .update(new byte[]{0x10})
             .update(key)
@@ -186,7 +152,7 @@ public final class SplitAllocationProof {
         throw new ArithmeticException("Reconstructed sum overflows 256 bits.");
       }
 
-      boolean isRight = keyPath.testBit(sibling.depth);
+      boolean isRight = SparseMerkleTreePathUtils.getBitAtDepth(key, sibling.depth) == 1;
       DataHash leftHash = isRight ? sibling.hash : hash;
       BigInteger leftValue = isRight ? sibling.sum : sum;
       DataHash rightHash = isRight ? hash : sibling.hash;
