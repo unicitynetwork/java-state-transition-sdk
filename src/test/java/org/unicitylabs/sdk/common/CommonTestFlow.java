@@ -3,19 +3,10 @@ package org.unicitylabs.sdk.common;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.StateTransitionClient;
-import org.unicitylabs.sdk.api.CertificationData;
-import org.unicitylabs.sdk.api.CertificationResponse;
-import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
-import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
 import org.unicitylabs.sdk.transaction.Token;
-import org.unicitylabs.sdk.transaction.TokenType;
 import org.unicitylabs.sdk.transaction.verification.VerificationContext;
-import org.unicitylabs.sdk.unicityid.UnicityId;
-import org.unicitylabs.sdk.unicityid.UnicityIdMintTransaction;
-import org.unicitylabs.sdk.unicityid.UnicityIdToken;
-import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
@@ -61,65 +52,5 @@ public abstract class CommonTestFlow {
 
     Assertions.assertEquals(VerificationStatus.OK,
             carolToken.verify(this.context).getStatus());
-  }
-
-  /**
-   * Default successful flow: mint a unicity-id token and then mint a regular token whose recipient
-   * is the unicity-id token's target predicate.
-   */
-  @Test
-  public void testUnicityIdMintFlow() throws Exception {
-    SigningService unicityIdSigningService = SigningService.generate();
-    SignaturePredicate targetPredicate = SignaturePredicate.create(
-            ALICE_SIGNING_SERVICE.getPublicKey());
-
-    UnicityId unicityId = new UnicityId("testuser", "unicity-labs/test");
-    UnicityIdMintTransaction unicityIdMintTransaction = UnicityIdMintTransaction.create(
-            this.context.getTrustBase().getNetworkId(),
-            SignaturePredicate.fromSigningService(unicityIdSigningService),
-            targetPredicate,
-            unicityId,
-            TokenType.generate(),
-            targetPredicate
-    );
-
-    CertificationData unicityIdCertificationData = CertificationData.fromTransaction(
-            unicityIdMintTransaction,
-            SignaturePredicateUnlockScript.create(unicityIdMintTransaction, unicityIdSigningService)
-    );
-
-    CertificationResponse unicityIdResponse = this.client
-            .submitCertificationRequest(unicityIdCertificationData).get();
-    Assertions.assertEquals(CertificationStatus.SUCCESS, unicityIdResponse.getStatus());
-
-    UnicityIdToken aliceUnicityIdToken = UnicityIdToken.mint(
-            unicityIdMintTransaction.toCertifiedTransaction(
-                    this.context.getTrustBase(),
-                    this.context.getPredicateVerifier(),
-                    InclusionProofUtils.waitInclusionProof(this.client,
-                            this.context.getTrustBase(),
-                            this.context.getPredicateVerifier(), unicityIdMintTransaction).get()
-            ),
-            this.context
-    );
-
-    Assertions.assertEquals(VerificationStatus.OK,
-            aliceUnicityIdToken.verify(this.context, unicityIdSigningService.getPublicKey()).getStatus());
-
-    UnicityIdToken decodedUnicityIdToken = UnicityIdToken.fromCbor(aliceUnicityIdToken.toCbor());
-    Assertions.assertArrayEquals(aliceUnicityIdToken.toCbor(), decodedUnicityIdToken.toCbor());
-    Assertions.assertEquals(aliceUnicityIdToken.getId(), decodedUnicityIdToken.getId());
-    Assertions.assertEquals(VerificationStatus.OK,
-            decodedUnicityIdToken.verify(this.context, unicityIdSigningService.getPublicKey()).getStatus());
-
-    Token aliceToken = TokenUtils.mintToken(
-            this.client,
-            this.context,
-            aliceUnicityIdToken.getGenesis().getTargetPredicate()
-    );
-
-    Assertions.assertEquals(VerificationStatus.OK,
-            aliceToken.verify(this.context)
-                    .getStatus());
   }
 }

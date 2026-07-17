@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.payment.SplitAllocationProof;
+import org.unicitylabs.sdk.smt.LeafExistsException;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -67,6 +68,15 @@ public class SparseMerkleSumTreeTest {
     SplitAllocationProof proof = SplitAllocationProof.create(root, leaf.key);
     Assertions.assertFalse(proof.verify(
             leaf.key, leaf.data, leaf.value.add(BigInteger.ONE), root.getHash(), leaf.value));
+  }
+
+  @Test
+  public void rejectsDuplicateKey() throws Exception {
+    Leaf leaf = LEAVES.get(0);
+    SparseMerkleSumTree tree = build(List.of(leaf));
+    LeafExistsException exception = Assertions.assertThrows(LeafExistsException.class,
+            () -> tree.addLeaf(leaf.key, leaf.data, leaf.value));
+    Assertions.assertEquals("Leaf already exists.", exception.getMessage());
   }
 
   @Test

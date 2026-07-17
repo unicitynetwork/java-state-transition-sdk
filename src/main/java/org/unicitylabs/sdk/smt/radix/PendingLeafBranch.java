@@ -1,25 +1,30 @@
 package org.unicitylabs.sdk.smt.radix;
 
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class PendingLeafBranch implements LeafBranch {
-  private final BigInteger path;
+class PendingLeafBranch implements LeafBranch {
   private final byte[] key;
   private final byte[] value;
+  private final int depth;
 
-  public PendingLeafBranch(BigInteger path, byte[] key, byte[] value) {
-    this.path = path;
-    this.key = Arrays.copyOf(key, key.length);
-    this.value = Arrays.copyOf(value, value.length);
+  public PendingLeafBranch(byte[] key, byte[] value) {
+    this.key = key;
+    this.value = value;
+    this.depth = key.length * 8;
   }
 
   @Override
-  public BigInteger getPath() {
-    return this.path;
+  public int getDepth() {
+    return this.depth;
+  }
+
+  @Override
+  public int calculateSplitDepth(byte[] key) {
+    return SparseMerkleTreePathUtils.commonPrefixLength(key, this.key, this.depth);
   }
 
   @Override
@@ -44,11 +49,11 @@ public class PendingLeafBranch implements LeafBranch {
     }
 
     PendingLeafBranch that = (PendingLeafBranch) o;
-    return Objects.equals(this.path, that.path) && Objects.deepEquals(this.value, that.value);
+    return Arrays.equals(this.key, that.key) && Arrays.equals(this.value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.path, Arrays.hashCode(this.value));
+    return Objects.hash(Arrays.hashCode(this.key), Arrays.hashCode(this.value));
   }
 }

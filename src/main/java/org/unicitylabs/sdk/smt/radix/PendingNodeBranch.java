@@ -1,16 +1,17 @@
 package org.unicitylabs.sdk.smt.radix;
 
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
 
-import java.math.BigInteger;
+import java.util.Arrays;
 
-public class PendingNodeBranch implements NodeBranch {
-  private final BigInteger path;
+class PendingNodeBranch implements NodeBranch {
+  private final byte[] path;
   private final int depth;
   private final Branch left;
   private final Branch right;
 
-  public PendingNodeBranch(BigInteger path, int depth, Branch left, Branch right) {
+  public PendingNodeBranch(byte[] path, int depth, Branch left, Branch right) {
     this.path = path;
     this.depth = depth;
     this.left = left;
@@ -18,13 +19,18 @@ public class PendingNodeBranch implements NodeBranch {
   }
 
   @Override
-  public BigInteger getPath() {
-    return this.path;
+  public byte[] getPath() {
+    return Arrays.copyOf(this.path, this.path.length);
   }
 
   @Override
   public int getDepth() {
     return this.depth;
+  }
+
+  @Override
+  public int calculateSplitDepth(byte[] key) {
+    return SparseMerkleTreePathUtils.commonPrefixLength(key, this.path, this.depth);
   }
 
   @Override
@@ -35,6 +41,16 @@ public class PendingNodeBranch implements NodeBranch {
   @Override
   public Branch getRight() {
     return this.right;
+  }
+
+  @Override
+  public PendingNodeBranch withLeftBranch(Branch left) {
+    return new PendingNodeBranch(this.path, this.depth, left, this.right);
+  }
+
+  @Override
+  public PendingNodeBranch withRightBranch(Branch right) {
+    return new PendingNodeBranch(this.path, this.depth, this.left, right);
   }
 
   @Override

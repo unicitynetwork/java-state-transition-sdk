@@ -146,30 +146,30 @@ public class SigningService {
    * @return true if successful
    */
   public boolean verify(DataHash hash, Signature signature) {
-    return verifyWithPublicKey(hash, signature.getBytes(), this.publicKey);
+    return SigningService.verifyWithPublicKey(hash, signature, this.publicKey);
   }
 
   /**
-   * Verify signature with public key.
+   * Verify secp256k1 signature against the given public key.
    *
    * @param hash      data hash
-   * @param signature signature bytes
+   * @param signature compact signature bytes
    * @param publicKey public key
    * @return true if successful
    */
-  public static boolean verifyWithPublicKey(DataHash hash, byte[] signature, byte[] publicKey) {
-    return SigningService.verifyWithPublicKey(hash.getData(), signature, publicKey);
+  public static boolean verify(DataHash hash, byte[] signature, byte[] publicKey) {
+    return SigningService.verify(hash.getData(), signature, publicKey);
   }
 
   /**
-   * Verify signature with public key and data hash bytes.
+   * Verify secp256k1 signature against the given public key and data hash bytes.
    *
    * @param hash      hash bytes
-   * @param signature signature bytes
+   * @param signature compact signature bytes
    * @param publicKey public key
    * @return true if successful
    */
-  public static boolean verifyWithPublicKey(byte[] hash, byte[] signature, byte[] publicKey) {
+  public static boolean verify(byte[] hash, byte[] signature, byte[] publicKey) {
     ECPoint pubPoint = EC_SPEC.getCurve().decodePoint(publicKey);
     ECPublicKeyParameters pubKey = new ECPublicKeyParameters(pubPoint, EC_DOMAIN_PARAMETERS);
 
@@ -181,6 +181,25 @@ public class SigningService {
     BigInteger s = new BigInteger(1, Arrays.copyOfRange(signature, 32, 64));
 
     return verifier.verifySignature(hash, r, s);
+  }
+
+  /**
+   * Verify a recoverable signature against an expected public key. Unlike {@link #verify(DataHash,
+   * byte[], byte[])}, this binds the signature's recovery byte: the public key is recovered from
+   * the signature and must equal {@code publicKey}, so a tampered recovery byte fails verification.
+   *
+   * @param hash      data hash
+   * @param signature recoverable signature
+   * @param publicKey expected compressed public key
+   * @return true if the signature verifies and the recovered public key matches {@code publicKey}
+   */
+  public static boolean verifyWithPublicKey(DataHash hash, Signature signature, byte[] publicKey) {
+    byte[] recoveredPublicKey = SigningService.recoverPublicKey(hash, signature);
+    if (recoveredPublicKey == null || !Arrays.equals(publicKey, recoveredPublicKey)) {
+      return false;
+    }
+
+    return SigningService.verify(hash, signature.getBytes(), publicKey);
   }
 
 
@@ -261,22 +280,43 @@ public class SigningService {
   }
 
   /**
-   * Verify signature with recovered public key - extract public key from signature.
+   * Recover the public key from the signature's recovery byte and verify the signature against
+   * {@code hash}. The recovered key defines the signer's identity; no expected key is supplied.
    *
    * @param hash      data hash
-   * @param signature signature
+   * @param signature recoverable signature
    * @return true if successful
    */
-  public static boolean verifySignatureWithRecoveredPublicKey(DataHash hash, Signature signature) {
-    // Extract r and s from signature
-    BigInteger r = new BigInteger(1, Arrays.copyOfRange(signature.getBytes(), 0, 32));
-    BigInteger s = new BigInteger(1, Arrays.copyOfRange(signature.getBytes(), 32, 64));
-
-    ECPoint recovered = recoverFromSignature(signature.getRecovery(), r, s, hash.getData());
-    if (recovered == null || !recovered.isValid()) {
+  public static boolean verifyWithRecoveredPublicKey(DataHash hash, Signature signature) {
+    byte[] recoveredPublicKey = SigningService.recoverPublicKey(hash, signature);
+    if (recoveredPublicKey == null) {
       return false;
     }
 
-    return verifyWithPublicKey(hash, signature.getBytes(), recovered.getEncoded(true));
+    return SigningService.verify(hash, signature.getBytes(), recoveredPublicKey);
+  }
+
+  /**
+   * Recover the compressed public key that produced {@code signature} over {@code hash}, using the
+   * signature's recovery byte.
+   *
+   * @param hash      data hash
+   * @param signature recoverable signature
+   * @return recovered compressed public key, or {@code null} if the signature is not recoverable
+   */
+  private static byte[] recoverPublicKey(DataHash hash, Signature signature) {
+    try {
+      BigInteger r = new BigInteger(1, Arrays.copyOfRange(signature.getBytes(), 0, 32));
+      BigInteger s = new BigInteger(1, Arrays.copyOfRange(signature.getBytes(), 32, 64));
+
+      ECPoint recovered = recoverFromSignature(signature.getRecovery(), r, s, hash.getData());
+      if (recovered == null || !recovered.isValid()) {
+        return null;
+      }
+
+      return recovered.getEncoded(true);
+    } catch (Exception e) {
+      return null;
+    }
   }
 }
