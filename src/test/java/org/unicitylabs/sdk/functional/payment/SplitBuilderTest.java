@@ -49,7 +49,7 @@ public class SplitBuilderTest {
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
     mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
     VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
-            mintJustificationVerifier, new TokenIssuanceVerifierService());
+            mintJustificationVerifier, new TokenIssuanceVerifierService(false));
 
     SigningService signingService = SigningService.generate();
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);
@@ -155,7 +155,7 @@ public class SplitBuilderTest {
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
     mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
     VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
-            mintJustificationVerifier, new TokenIssuanceVerifierService());
+            mintJustificationVerifier, new TokenIssuanceVerifierService(false));
 
     SigningService signingService = SigningService.generate();
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(signingService);

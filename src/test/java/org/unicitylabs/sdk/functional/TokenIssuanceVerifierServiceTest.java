@@ -46,7 +46,7 @@ public class TokenIssuanceVerifierServiceTest {
             this.trustBase,
             this.predicateVerifier,
             new MintJustificationVerifierService(),
-            new TokenIssuanceVerifierService());
+            new TokenIssuanceVerifierService(false));
     this.token = TokenUtils.mintToken(
             client,
             context,
@@ -73,17 +73,17 @@ public class TokenIssuanceVerifierServiceTest {
   }
 
   @Test
-  public void acceptsUnregisteredTokenTypeByDefault() {
+  public void rejectsUnregisteredTokenTypeByDefault() {
     Assertions.assertEquals(
-            VerificationStatus.OK,
+            VerificationStatus.FAIL,
             new TokenIssuanceVerifierService().verify(this.genesis).getStatus());
   }
 
   @Test
-  public void rejectsUnregisteredTokenTypeWhenFailClosed() {
+  public void acceptsUnregisteredTokenTypeWhenFailOpen() {
     Assertions.assertEquals(
-            VerificationStatus.FAIL,
-            new TokenIssuanceVerifierService(true).verify(this.genesis).getStatus());
+            VerificationStatus.OK,
+            new TokenIssuanceVerifierService(false).verify(this.genesis).getStatus());
   }
 
   @Test

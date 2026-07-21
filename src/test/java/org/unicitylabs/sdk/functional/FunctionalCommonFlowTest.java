@@ -17,6 +17,6 @@ public class FunctionalCommonFlowTest extends CommonTestFlow {
     this.client = new StateTransitionClient(aggregatorClient);
     this.context = new VerificationContext(aggregatorClient.getTrustBase(),
             PredicateVerifierService.create(), new MintJustificationVerifierService(),
-            new TokenIssuanceVerifierService());
+            new TokenIssuanceVerifierService(false));
   }
 }

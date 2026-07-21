@@ -42,7 +42,7 @@ public class TokenE2ETest extends CommonTestFlow {
       this.context = new VerificationContext(
               RootTrustBase.fromJson(new String(stream.readAllBytes())),
               PredicateVerifierService.create(), new MintJustificationVerifierService(),
-              new TokenIssuanceVerifierService());
+              new TokenIssuanceVerifierService(false));
     }
   }
 

@@ -12,8 +12,8 @@ import java.util.Objects;
 
 /**
  * Registry that dispatches token verification to the right {@link TokenIssuanceVerifier} based on
- * the token's type. A token type with no registered verifier is accepted, unless
- * {@code rejectUnregisteredTypes} is set, in which case it is rejected.
+ * the token's type. A token type with no registered verifier is rejected by default, and only
+ * accepted when {@code rejectUnregisteredTypes} is explicitly set to {@code false}.
  */
 public class TokenIssuanceVerifierService {
 
@@ -21,10 +21,10 @@ public class TokenIssuanceVerifierService {
   private final boolean rejectUnregisteredTypes;
 
   /**
-   * Create a token issuance verifier registry that accepts unregistered token types.
+   * Create a token issuance verifier registry that rejects unregistered token types.
    */
   public TokenIssuanceVerifierService() {
-    this(false);
+    this(true);
   }
 
   /**

@@ -43,7 +43,7 @@ public class CertificationDataBindingTest {
     MintJustificationVerifierService mintJustificationVerifier =
             new MintJustificationVerifierService();
     VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
-            mintJustificationVerifier, new TokenIssuanceVerifierService());
+            mintJustificationVerifier, new TokenIssuanceVerifierService(false));
 
     SigningService signingServiceA = SigningService.generate();
     SigningService signingServiceB = SigningService.generate();

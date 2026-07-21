@@ -10,6 +10,9 @@ import java.util.Objects;
  * single root of trust, the predicate verifier, and the mint-justification and token-issuance
  * registries. It holds no mutable state, so a nested (e.g. burned source) token is always
  * verified under the same root of trust and registries as the outer token.
+ *
+ * <p>All verifiers must be supplied explicitly: a defaulted token-issuance verifier would be an
+ * empty fail-closed registry that rejects every token, so there is no sensible default.
  */
 public final class VerificationContext {
 
@@ -39,17 +42,6 @@ public final class VerificationContext {
             "mintJustificationVerifier cannot be null");
     this.tokenIssuanceVerifier = Objects.requireNonNull(tokenIssuanceVerifier,
             "tokenIssuanceVerifier cannot be null");
-  }
-
-  /**
-   * Create a verification context with the default predicate verifier and empty
-   * mint-justification and token-issuance registries.
-   *
-   * @param trustBase root trust base for the network
-   */
-  public VerificationContext(RootTrustBase trustBase) {
-    this(trustBase, PredicateVerifierService.create(), new MintJustificationVerifierService(),
-            new TokenIssuanceVerifierService());
   }
 
   /**
