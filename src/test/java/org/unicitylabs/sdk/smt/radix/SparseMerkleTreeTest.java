@@ -11,14 +11,17 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 public class SparseMerkleTreeTest {
 
   @Test
-  void addLeafRejectsNon32ByteKeyOrData() {
+  void addLeafRejectsNon32ByteKeyButAcceptsAnyData() throws Exception {
     SparseMerkleTree tree = new SparseMerkleTree(HashAlgorithm.SHA256);
     Assertions.assertThrows(IllegalArgumentException.class,
             () -> tree.addLeaf(new byte[31], new byte[32]));
-    Assertions.assertThrows(IllegalArgumentException.class,
-            () -> tree.addLeaf(new byte[32], new byte[31]));
     Assertions.assertThrows(NullPointerException.class,
             () -> tree.addLeaf(null, new byte[32]));
+
+    Assertions.assertDoesNotThrow(() -> tree.addLeaf(new byte[32], new byte[31]));
+    byte[] otherKey = new byte[32];
+    otherKey[0] = 1;
+    Assertions.assertDoesNotThrow(() -> tree.addLeaf(otherKey, new byte[100]));
   }
 
   @Test

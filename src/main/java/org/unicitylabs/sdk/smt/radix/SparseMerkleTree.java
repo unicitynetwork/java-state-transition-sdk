@@ -30,9 +30,9 @@ public class SparseMerkleTree {
    * Add leaf to the tree at given path.
    *
    * @param key path of the leaf; must be a 32-byte key
-   * @param data data of the leaf; must be 32 bytes
+   * @param data data of the leaf; arbitrary-length byte string
    * @throws LeafExistsException if a leaf already exists for the key
-   * @throws IllegalArgumentException if the key or data is not 32 bytes
+   * @throws IllegalArgumentException if the key is not 32 bytes
    */
   public synchronized void addLeaf(byte[] key, byte[] data) throws LeafExistsException {
     Objects.requireNonNull(key, "key cannot be null");
@@ -40,10 +40,6 @@ public class SparseMerkleTree {
 
     if (key.length != 32) {
       throw new IllegalArgumentException("Key must be 32 bytes long.");
-    }
-
-    if (data.length != 32) {
-      throw new IllegalArgumentException("Data must be 32 bytes long.");
     }
 
     key = Arrays.copyOf(key, key.length);
