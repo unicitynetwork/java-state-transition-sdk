@@ -29,6 +29,11 @@ public class JsonRpcResponse<T> {
       throw new IllegalArgumentException("Invalid JSON-RPC version: " + version);
     }
 
+    if ((result == null) == (error == null)) {
+      throw new IllegalArgumentException(
+              "JSON-RPC response must contain exactly one of result or error.");
+    }
+
     this.version = version;
     this.result = result;
     this.error = error;

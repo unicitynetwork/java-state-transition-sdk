@@ -7,9 +7,7 @@ public enum BuiltInPredicateType {
   /** Predicate that locks state to a public key. */
   SIGNATURE(0x01),
   /** Predicate that marks state as unspendable (burned). */
-  BURN(0x02),
-  /** Predicate that references a Unicity identifier. */
-  UNICITY_ID(0x100);
+  BURN(0x02);
 
   private final int id;
 

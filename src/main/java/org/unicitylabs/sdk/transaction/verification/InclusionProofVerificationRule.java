@@ -59,6 +59,12 @@ public class InclusionProofVerificationRule {
               InclusionProofVerificationStatus.TRANSACTION_HASH_MISMATCH);
     }
 
+    if (!certificationData.getLockScript().equals(transaction.getLockScript())
+            || !certificationData.getSourceStateHash().equals(transaction.getSourceStateHash())) {
+      return new VerificationResult<>("InclusionProofVerificationRule",
+              InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH);
+    }
+
     StateId stateId = StateId.fromTransaction(transaction);
     if (!inclusionProof.getInclusionCertificate().verify(stateId, certificationData.getTransactionHash(), new DataHash(HashAlgorithm.SHA256, inclusionProof.getUnicityCertificate().getInputRecord().getHash()))) {
       return new VerificationResult<>("InclusionProofVerificationRule",

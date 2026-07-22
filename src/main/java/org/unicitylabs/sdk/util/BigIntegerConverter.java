@@ -41,6 +41,26 @@ public class BigIntegerConverter {
   }
 
   /**
+   * Encode BigInteger to a fixed-width big-endian byte array, left-padded with zeroes.
+   *
+   * @param value BigInteger
+   * @param length output length in bytes
+   * @return bytes of exactly {@code length} bytes
+   * @throws IllegalArgumentException if the value does not fit in {@code length} bytes
+   */
+  public static byte[] encode(BigInteger value, int length) {
+    byte[] minimal = BigIntegerConverter.encode(value);
+    if (minimal.length > length) {
+      throw new IllegalArgumentException(
+              String.format("Value does not fit in %d bytes.", length));
+    }
+
+    byte[] result = new byte[length];
+    System.arraycopy(minimal, 0, result, length - minimal.length, minimal.length);
+    return result;
+  }
+
+  /**
    * Encode BigInteger to bytes.
    *
    * @param value BigInteger

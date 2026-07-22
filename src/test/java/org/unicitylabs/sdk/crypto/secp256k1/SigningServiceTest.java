@@ -54,7 +54,7 @@ public class SigningServiceTest {
     Signature signature = service.sign(hash);
 
     // Verify with public key
-    boolean isValid = SigningService.verifyWithPublicKey(hash, signature.getBytes(), publicKey);
+    boolean isValid = SigningService.verify(hash, signature.getBytes(), publicKey);
 
     assertTrue(isValid);
   }

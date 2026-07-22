@@ -6,6 +6,8 @@ import org.unicitylabs.sdk.TestAggregatorClient;
 import org.unicitylabs.sdk.common.CommonTestFlow;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 
 public class FunctionalCommonFlowTest extends CommonTestFlow {
 
@@ -13,8 +15,8 @@ public class FunctionalCommonFlowTest extends CommonTestFlow {
   void setUp() {
     TestAggregatorClient aggregatorClient = TestAggregatorClient.create();
     this.client = new StateTransitionClient(aggregatorClient);
-    this.trustBase = aggregatorClient.getTrustBase();
-    this.predicateVerifier = PredicateVerifierService.create();
-    this.mintJustificationVerifier = new MintJustificationVerifierService();
+    this.context = new VerificationContext(aggregatorClient.getTrustBase(),
+            PredicateVerifierService.create(), new MintJustificationVerifierService(),
+            new TokenIssuanceVerifierService(false));
   }
 }

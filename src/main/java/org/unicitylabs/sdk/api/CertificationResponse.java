@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
@@ -9,6 +10,7 @@ import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 /**
  * Submit commitment response.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CertificationResponse {
 
   private final CertificationStatus status;

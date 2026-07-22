@@ -2,7 +2,6 @@ package org.unicitylabs.sdk.payment.asset;
 
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
-import org.unicitylabs.sdk.util.BigIntegerConverter;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -13,6 +12,8 @@ import java.util.Objects;
  */
 public final class Asset {
 
+  private static final BigInteger VALUE_LIMIT = BigInteger.ONE.shiftLeft(256);
+
   private final BigInteger value;
   private final AssetId id;
 
@@ -20,14 +21,14 @@ public final class Asset {
    * Create a new asset with the given ID and value.
    *
    * @param id asset ID
-   * @param value asset value
+   * @param value asset value in the range {@code [1, 2^256)}
    */
   public Asset(AssetId id, BigInteger value) {
     this.id = Objects.requireNonNull(id, "Asset ID cannot be null");
     this.value = Objects.requireNonNull(value, "Asset value cannot be null");
 
-    if (this.value.compareTo(BigInteger.ZERO) < 0) {
-      throw new IllegalArgumentException("Asset value cannot be negative");
+    if (this.value.signum() <= 0 || this.value.compareTo(Asset.VALUE_LIMIT) >= 0) {
+      throw new IllegalArgumentException("Asset value must be a positive 256-bit integer.");
     }
   }
 
@@ -60,7 +61,7 @@ public final class Asset {
 
     return new Asset(
             AssetId.fromCbor(data.get(0)),
-            BigIntegerConverter.decode(CborDeserializer.decodeByteString(data.get(1)))
+            CborDeserializer.decodeBigInteger(data.get(1), 32)
     );
   }
 
@@ -72,7 +73,7 @@ public final class Asset {
   public byte[] toCbor() {
     return CborSerializer.encodeArray(
             this.id.toCbor(),
-            CborSerializer.encodeByteString(BigIntegerConverter.encode(this.value))
+            CborSerializer.encodeBigInteger(this.value)
     );
   }
 

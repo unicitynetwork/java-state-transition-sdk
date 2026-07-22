@@ -70,8 +70,13 @@ public class Signature {
       throw new IllegalArgumentException("Invalid signature bytes. Expected 65 bytes.");
     }
 
-    byte[] bytes = Arrays.copyOf(input, 64);
     int recovery = input[64] & 0xFF; // Ensure recovery is unsigned
+    if (recovery > 3) {
+      throw new IllegalArgumentException(
+              String.format("Invalid signature recovery id: %d.", recovery));
+    }
+
+    byte[] bytes = Arrays.copyOf(input, 64);
     return new Signature(bytes, recovery);
   }
 

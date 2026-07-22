@@ -2,16 +2,19 @@ package org.unicitylabs.sdk.transaction.verification;
 
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.transaction.CertifiedMintTransaction;
+import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Dispatcher for {@link MintJustificationVerifier} implementations. Verifiers are registered
- * by their CBOR tag; on {@link #verify(CertifiedMintTransaction)} the service reads the tag of
- * the mint transaction's justification and routes the verification to the matching verifier.
+ * by their CBOR tag; on {@link #verify(CertifiedMintTransaction, Consumer)} the service reads
+ * the tag of the mint transaction's justification and routes the verification to the matching
+ * verifier.
  *
  * <p>Mint transactions with no justification are accepted as OK without further checks.
  */
@@ -40,11 +43,14 @@ public class MintJustificationVerifierService {
    * Verify the mint justification carried by the given transaction.
    *
    * @param transaction certified mint transaction to verify
+   * @param nestedTokenCollector collector receiving tokens embedded in the justification that the
+   *     caller must verify
    *
    * @return verification result; OK if the transaction has no justification, otherwise the result
    *     of the verifier registered for the justification's CBOR tag
    */
-  public VerificationResult<VerificationStatus> verify(CertifiedMintTransaction transaction) {
+  public VerificationResult<VerificationStatus> verify(CertifiedMintTransaction transaction,
+                                                       Consumer<Token> nestedTokenCollector) {
     byte[] bytes = transaction.getJustification().orElse(null);
     if (bytes == null) {
       return new VerificationResult<>("MintJustificationVerification", VerificationStatus.OK);
@@ -60,7 +66,7 @@ public class MintJustificationVerifierService {
       );
     }
 
-    VerificationResult<VerificationStatus> result = verifier.verify(transaction, this);
+    VerificationResult<VerificationStatus> result = verifier.verify(transaction, nestedTokenCollector);
     if (result.getStatus() != VerificationStatus.OK) {
       return new VerificationResult<>("MintJustificationVerification", VerificationStatus.FAIL, String.format("Verification failed for tag %s", tag.getTag()), result);
     }

@@ -7,8 +7,8 @@ import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
-import org.unicitylabs.sdk.smt.radix.FinalizedNodeBranch;
 import org.unicitylabs.sdk.smt.radix.SparseMerkleTree;
+import org.unicitylabs.sdk.smt.radix.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
@@ -84,7 +84,7 @@ public class TestAggregatorClient implements AggregatorClient {
 
   @Override
   public CompletableFuture<InclusionProofResponse> getInclusionProof(StateId stateId) {
-    FinalizedNodeBranch root = this.sparseMerkleTree.calculateRoot();
+    SparseMerkleTreeRootNode root = this.sparseMerkleTree.calculateRoot();
 
     if (!requests.containsKey(stateId)) {
       return CompletableFuture.completedFuture(InclusionProofFixture.createResponse(null, null, root.getHash(), this.signingService));

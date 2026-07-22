@@ -1,19 +1,18 @@
 package org.unicitylabs.sdk.transaction.verification;
 
 import org.unicitylabs.sdk.api.CertificationData;
-import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.MintSigningService;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
-import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.CertifiedMintTransaction;
+import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Verification rule set for certified mint transactions.
@@ -29,22 +28,21 @@ public class CertifiedMintTransactionVerificationRule {
   /**
    * Verify a certified mint transaction.
    *
-   * @param trustBase root trust base
-   * @param predicateVerifier predicate verifier
-   * @param mintJustificationVerifier mint justification verifier
    * @param transaction certified mint transaction to verify
+   * @param context shared verification context (trust base + registries)
+   * @param nestedTokenCollector collector receiving tokens embedded in the mint justification that
+   *     the caller must verify
    *
    * @return verification result with child results for each validation step
    */
   public static VerificationResult<VerificationStatus> verify(
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
-          CertifiedMintTransaction transaction
+          CertifiedMintTransaction transaction,
+          VerificationContext context,
+          Consumer<Token> nestedTokenCollector
   ) {
     List<VerificationResult<?>> results = new ArrayList<>();
 
-    if (!transaction.getNetworkId().equals(trustBase.getNetworkId())) {
+    if (!transaction.getNetworkId().equals(context.getTrustBase().getNetworkId())) {
       results.add(new VerificationResult<>("MintNetworkMatchesTrustBaseRule", VerificationStatus.FAIL));
       return new VerificationResult<>("CertifiedMintTransactionVerificationRule",
               VerificationStatus.FAIL, "Mint network does not match trust base.", results);
@@ -69,15 +67,26 @@ public class CertifiedMintTransactionVerificationRule {
               VerificationStatus.FAIL, "Invalid lock script", results);
     }
 
-    result = InclusionProofVerificationRule.verify(trustBase, predicateVerifier,
-            transaction.getInclusionProof(), transaction);
+    result = InclusionProofVerificationRule.verify(context.getTrustBase(),
+            context.getPredicateVerifier(), transaction.getInclusionProof(), transaction);
     results.add(result);
     if (result.getStatus() != InclusionProofVerificationStatus.OK) {
       return new VerificationResult<>("CertifiedMintTransactionVerificationRule",
               VerificationStatus.FAIL, "Inclusion proof verification failed", results);
     }
 
-    result = mintJustificationVerifier.verify(transaction);
+    result = context.getTokenIssuanceVerifier().verify(transaction);
+    results.add(result);
+    if (result.getStatus() != VerificationStatus.OK) {
+      return new VerificationResult<>(
+              "CertifiedMintTransactionVerificationRule",
+              VerificationStatus.FAIL,
+              "Invalid token issuance",
+              results
+      );
+    }
+
+    result = context.getMintJustificationVerifier().verify(transaction, nestedTokenCollector);
     results.add(result);
     if (result.getStatus() != VerificationStatus.OK) {
       return new VerificationResult<>(

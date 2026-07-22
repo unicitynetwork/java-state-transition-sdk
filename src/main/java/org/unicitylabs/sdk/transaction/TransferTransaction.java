@@ -27,14 +27,14 @@ public class TransferTransaction implements Transaction {
   private final DataHash sourceStateHash;
   private final EncodedPredicate lockScript;
   private final EncodedPredicate recipient;
-  private final byte[] stateMask;
+  private final StateMask stateMask;
   private final byte[] data;
 
   private TransferTransaction(
           DataHash sourceStateHash,
           EncodedPredicate lockScript,
           EncodedPredicate recipient,
-          byte[] stateMask,
+          StateMask stateMask,
           byte[] data
   ) {
     this.sourceStateHash = sourceStateHash;
@@ -70,8 +70,8 @@ public class TransferTransaction implements Transaction {
   }
 
   @Override
-  public byte[] getStateMask() {
-    return Arrays.copyOf(this.stateMask, this.stateMask.length);
+  public StateMask getStateMask() {
+    return this.stateMask;
   }
 
   /**
@@ -84,7 +84,7 @@ public class TransferTransaction implements Transaction {
    * @return created transfer transaction
    */
   public static TransferTransaction create(Token token, Predicate recipient,
-                                           byte[] stateMask, byte[] data) {
+                                           StateMask stateMask, byte[] data) {
     Transaction transaction = token.getLatestTransaction();
 
     return new TransferTransaction(
@@ -118,7 +118,7 @@ public class TransferTransaction implements Transaction {
     return TransferTransaction.create(
             token,
             EncodedPredicate.fromCbor(data.get(1)),
-            CborDeserializer.decodeByteString(data.get(2)),
+            StateMask.fromCbor(data.get(2)),
             CborDeserializer.decodeNullable(data.get(3), CborDeserializer::decodeByteString)
     );
   }
@@ -129,7 +129,7 @@ public class TransferTransaction implements Transaction {
             .update(
                     CborSerializer.encodeArray(
                             CborSerializer.encodeByteString(this.sourceStateHash.getImprint()),
-                            CborSerializer.encodeByteString(this.stateMask)
+                            this.stateMask.toCbor()
                     )
             )
             .digest();
@@ -149,7 +149,7 @@ public class TransferTransaction implements Transaction {
             CborSerializer.encodeArray(
                     CborSerializer.encodeUnsignedInteger(TransferTransaction.VERSION),
                     EncodedPredicate.fromPredicate(this.recipient).toCbor(),
-                    CborSerializer.encodeByteString(this.stateMask),
+                    this.stateMask.toCbor(),
                     CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString)
             )
     );
@@ -180,7 +180,7 @@ public class TransferTransaction implements Transaction {
   public String toString() {
     return String.format(
             "TransferTransaction{sourceStateHash=%s, lockScript=%s, recipient=%s, stateMask=%s, data=%s}",
-            this.sourceStateHash, this.lockScript, this.recipient, HexConverter.encode(this.stateMask),
+            this.sourceStateHash, this.lockScript, this.recipient, this.stateMask,
             HexConverter.encode(this.data));
   }
 }

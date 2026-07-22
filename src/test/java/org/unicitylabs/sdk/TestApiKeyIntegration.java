@@ -33,8 +33,9 @@ public class TestApiKeyIntegration {
     mockServer.setExpectedApiKey(TEST_API_KEY);
     mockServer.start();
 
+    // Mock server serves plain HTTP; allow the key over it for this local test only.
     clientWithApiKey = new JsonRpcAggregatorClient(
-            mockServer.getUrl(), TEST_API_KEY);
+            mockServer.getUrl(), TEST_API_KEY, true);
     clientWithoutApiKey = new JsonRpcAggregatorClient(mockServer.getUrl());
 
     SigningService signingService = new SigningService(

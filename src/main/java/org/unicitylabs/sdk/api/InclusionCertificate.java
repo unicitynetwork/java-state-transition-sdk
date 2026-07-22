@@ -3,14 +3,11 @@ package org.unicitylabs.sdk.api;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.DataHasher;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
-import org.unicitylabs.sdk.smt.radix.FinalizedBranch;
-import org.unicitylabs.sdk.smt.radix.FinalizedLeafBranch;
-import org.unicitylabs.sdk.smt.radix.FinalizedNodeBranch;
-import org.unicitylabs.sdk.util.BitString;
+import org.unicitylabs.sdk.smt.SparseMerkleTreePathUtils;
+import org.unicitylabs.sdk.smt.radix.SparseMerkleTreeRootNode;
 import org.unicitylabs.sdk.util.HexConverter;
 import org.unicitylabs.sdk.util.LongConverter;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,35 +26,23 @@ public class InclusionCertificate {
     this.siblings = siblings;
   }
 
-  public static InclusionCertificate create(FinalizedNodeBranch root, byte[] key) {
-    FinalizedBranch node = root;
+  public static InclusionCertificate create(SparseMerkleTreeRootNode root, byte[] key) {
+    Objects.requireNonNull(root, "root cannot be null");
+    Objects.requireNonNull(key, "key cannot be null");
+    if (key.length != 32) {
+      throw new IllegalArgumentException("Key must be 32 bytes long.");
+    }
 
     ArrayList<DataHash> siblings = new ArrayList<>();
     byte[] bitmap = new byte[InclusionCertificate.BITMAP_SIZE];
-    BigInteger keyPath = BitString.fromBytesReversedLSB(key).toBigInteger();
 
-    while (node != null) {
-      if (node instanceof FinalizedLeafBranch) {
-        FinalizedLeafBranch leaf = (FinalizedLeafBranch) node;
-        if (!Arrays.equals(leaf.getKey(), key)) {
-          throw new RuntimeException(String.format("Leaf not found for key: %s", HexConverter.encode(key)));
-        }
-
-        return new InclusionCertificate(bitmap, siblings);
-      }
-
-      FinalizedNodeBranch nodeBranch = (FinalizedNodeBranch) node;
-      boolean isRight = keyPath.testBit(nodeBranch.getDepth());
-      FinalizedBranch sibling = isRight ? nodeBranch.getLeft() : nodeBranch.getRight();
-      if (sibling != null) {
-        bitmap[nodeBranch.getDepth() / 8] |= (byte) (1 << nodeBranch.getDepth() % 8);
-        siblings.add(sibling.getHash());
-      }
-
-      node = isRight ? nodeBranch.getRight() : nodeBranch.getLeft();
+    for (SparseMerkleTreeRootNode.Sibling sibling : root.getPath(key)) {
+      int depth = sibling.getDepth();
+      bitmap[depth >> 3] |= (byte) (0x80 >> (depth & 7));
+      siblings.add(sibling.getHash());
     }
 
-    throw new RuntimeException("Could not construct inclusion certificate: Invalid path");
+    return new InclusionCertificate(bitmap, siblings);
   }
 
   public static InclusionCertificate decode(byte[] bytes) {
@@ -113,12 +98,9 @@ public class InclusionCertificate {
             .update(value)
             .digest();
 
-    BigInteger keyPath = BitString.fromBytesReversedLSB(key).toBigInteger();
-    BigInteger bitmapPath = BitString.fromBytesReversedLSB(this.bitmap).toBigInteger();
-
     int position = this.siblings.size();
     for (int depth = InclusionCertificate.MAX_DEPTH; depth >= 0; depth--) {
-      if (!bitmapPath.testBit(depth)) continue;
+      if (SparseMerkleTreePathUtils.getBitAtDepth(this.bitmap, depth) == 0) continue;
 
       position -= 1;
       if (position < 0) return false;
@@ -126,7 +108,7 @@ public class InclusionCertificate {
       DataHash sibling = this.siblings.get(position);
 
       byte[] left, right;
-      if (keyPath.testBit(depth)) {
+      if (SparseMerkleTreePathUtils.getBitAtDepth(key, depth) == 1) {
         left = sibling.getData();
         right = hash.getData();
       } else {
@@ -137,6 +119,7 @@ public class InclusionCertificate {
       hash = new DataHasher(HashAlgorithm.SHA256)
               .update(new byte[]{0x01})
               .update(LongConverter.encode(depth))
+              .update(SparseMerkleTreePathUtils.regionFromKey(key, depth))
               .update(left)
               .update(right)
               .digest();

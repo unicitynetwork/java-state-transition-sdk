@@ -2,7 +2,9 @@ package org.unicitylabs.sdk.serializer.cbor;
 
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer.CborMap;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer.CborMap.Entry;
+import org.unicitylabs.sdk.util.BigIntegerConverter;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Function;
 
@@ -43,12 +45,12 @@ public class CborDeserializer {
    * @param data bytes
    * @return unsigned number
    */
-  public static CborNumber decodeUnsignedInteger(byte[] data) {
+  public static CborUnsignedLong decodeUnsignedInteger(byte[] data) {
     CborReader reader = new CborReader(data);
-    long value = reader.readLength(CborMajorType.UNSIGNED_INTEGER);
+    CborUnsignedLong value = reader.readLength(CborMajorType.UNSIGNED_INTEGER);
     reader.assertExhausted();
 
-    return new CborNumber(value);
+    return value;
   }
 
   /**
@@ -59,10 +61,43 @@ public class CborDeserializer {
    */
   public static byte[] decodeByteString(byte[] data) {
     CborReader reader = new CborReader(data);
-    byte[] result = reader.read((int) reader.readLength(CborMajorType.BYTE_STRING));
+    byte[] result = reader.read(reader.readLength(CborMajorType.BYTE_STRING).asListSize());
     reader.assertExhausted();
 
     return result;
+  }
+
+  /**
+   * Read a minimally encoded big-endian byte string from CBOR bytes as a non-negative big
+   * integer. Rejects non-minimal encodings (leading zero byte); zero is encoded as an empty
+   * byte string.
+   *
+   * @param data bytes
+   * @return decoded integer
+   */
+  public static BigInteger decodeBigInteger(byte[] data) {
+    return CborDeserializer.decodeBigInteger(data, null);
+  }
+
+  /**
+   * Read a minimally encoded big-endian byte string from CBOR bytes as a non-negative big
+   * integer, bounded to at most {@code maxByteLength} bytes.
+   *
+   * @param data bytes
+   * @param maxByteLength maximum byte-string length, or {@code null} for no limit
+   * @return decoded integer
+   */
+  public static BigInteger decodeBigInteger(byte[] data, Integer maxByteLength) {
+    byte[] bytes = CborDeserializer.decodeByteString(data);
+    if (bytes.length > 0 && bytes[0] == 0) {
+      throw new CborSerializationException("Integer byte string must be minimally encoded.");
+    }
+    if (maxByteLength != null && bytes.length > maxByteLength) {
+      throw new CborSerializationException(
+              String.format("Integer byte string must be at most %d bytes.", maxByteLength));
+    }
+
+    return BigIntegerConverter.decode(bytes);
   }
 
   /**
@@ -73,7 +108,7 @@ public class CborDeserializer {
    */
   public static String decodeTextString(byte[] data) {
     CborReader reader = new CborReader(data);
-    byte[] bytes = reader.read((int) reader.readLength(CborMajorType.TEXT_STRING));
+    byte[] bytes = reader.read(reader.readLength(CborMajorType.TEXT_STRING).asListSize());
     reader.assertExhausted();
 
     return new String(bytes);
@@ -87,7 +122,7 @@ public class CborDeserializer {
    */
   public static List<byte[]> decodeArray(byte[] data) {
     CborReader reader = new CborReader(data);
-    long length = reader.readLength(CborMajorType.ARRAY);
+    int length = reader.readLength(CborMajorType.ARRAY).asListSize();
 
     ArrayList<byte[]> result = new ArrayList<>();
     for (int i = 0; i < length; i++) {
@@ -125,7 +160,7 @@ public class CborDeserializer {
    */
   public static Set<CborMap.Entry> decodeMap(byte[] data) {
     CborReader reader = new CborReader(data);
-    long length = (int) reader.readLength(CborMajorType.MAP);
+    int length = reader.readLength(CborMajorType.MAP).asListSize();
 
     Set<Entry> result = new LinkedHashSet<>();
     Entry previous = null;
@@ -157,7 +192,7 @@ public class CborDeserializer {
    */
   public static CborTag decodeTag(byte[] data) {
     CborReader reader = new CborReader(data);
-    long tag = (int) reader.readLength(CborMajorType.TAG);
+    long tag = reader.readLength(CborMajorType.TAG).asLong();
     byte[] inner = reader.readRawCbor();
     reader.assertExhausted();
 
@@ -212,18 +247,18 @@ public class CborDeserializer {
     }
 
     public byte[] read(int length) {
-      try {
-        if ((this.position + length) > this.data.length) {
-          throw new CborSerializationException("Premature end of data.");
-        }
+      if (length > this.data.length - this.position) {
+        throw new CborSerializationException("Premature end of data.");
+      }
 
+      try {
         return Arrays.copyOfRange(this.data, this.position, this.position + length);
       } finally {
         this.position += length;
       }
     }
 
-    public long readLength(CborMajorType majorType) {
+    public CborUnsignedLong readLength(CborMajorType majorType) {
       byte initialByte = this.readByte();
 
       CborMajorType parsedMajorType = CborMajorType.fromType(
@@ -236,7 +271,7 @@ public class CborDeserializer {
       byte additionalInformation = (byte) (initialByte
               & CborDeserializer.ADDITIONAL_INFORMATION_MASK);
       if (Byte.compareUnsigned(additionalInformation, (byte) 24) < 0) {
-        return additionalInformation;
+        return new CborUnsignedLong(additionalInformation);
       }
 
       switch (majorType) {
@@ -272,39 +307,42 @@ public class CborDeserializer {
                 length, Long.toUnsignedString(t)));
       }
 
-      return t;
+      return new CborUnsignedLong(t);
     }
 
     public byte[] readRawCbor() {
-      if (this.position >= this.data.length) {
-        throw new CborSerializationException("Premature end of data.");
-      }
-
-      CborMajorType majorType = CborMajorType.fromType(
-              this.data[this.position] & CborDeserializer.MAJOR_TYPE_MASK);
       int position = this.position;
-      int length = (int) this.readLength(majorType);
-      switch (majorType) {
-        case BYTE_STRING:
-        case TEXT_STRING:
-          this.read(length);
-          break;
-        case ARRAY:
-          for (int i = 0; i < length; i++) {
-            this.readRawCbor();
-          }
-          break;
-        case MAP:
-          for (int i = 0; i < length; i++) {
-            this.readRawCbor();
-            this.readRawCbor();
-          }
-          break;
-        case TAG:
-          this.readRawCbor();
-          break;
-        default:
-          break;
+
+      long remaining = 1;
+      while (remaining > 0) {
+        remaining--;
+
+        if (this.position >= this.data.length) {
+          throw new CborSerializationException("Premature end of data.");
+        }
+
+        CborMajorType majorType = CborMajorType.fromType(
+                this.data[this.position] & CborDeserializer.MAJOR_TYPE_MASK);
+        CborUnsignedLong length = this.readLength(majorType);
+        switch (majorType) {
+          case BYTE_STRING:
+          case TEXT_STRING:
+            this.read(length.asListSize());
+            break;
+          case ARRAY:
+            // asInt bounds each count and every header consumes input, so the counter cannot
+            // overflow; undersupplied counts fail with premature end of data as items are read.
+            remaining += length.asListSize();
+            break;
+          case MAP:
+            remaining += length.asListSize() * 2L;
+            break;
+          case TAG:
+            remaining += 1;
+            break;
+          default:
+            break;
+        }
       }
 
       return Arrays.copyOfRange(this.data, position, this.position);
@@ -346,59 +384,82 @@ public class CborDeserializer {
   /**
    * CBOR number implementation.
    */
-  public static class CborNumber {
+  public static class CborUnsignedLong {
 
     private final long value;
 
-    private CborNumber(long value) {
+    private CborUnsignedLong(long value) {
       this.value = value;
     }
 
     /**
-     * Get number as long.
+     * Get the raw unsigned value as a {@code long}. Values at or above {@code 2^63} are returned
+     * as a negative long with the same bit pattern; use {@link Long#compareUnsigned} to compare
+     * them.
      *
-     * @return number
+     * @return value
      */
     public long asLong() {
       return this.value;
     }
 
     /**
-     * Get number as int, throw error if does not fit.
+     * Get the value as an unsigned 32-bit integer, throwing if it exceeds {@code 0xFFFFFFFF}.
+     * Values above {@link Integer#MAX_VALUE} are returned with the same bit pattern (a negative
+     * {@code int}); mask with {@code & 0xFFFFFFFFL} to recover the unsigned value.
      *
-     * @return number
+     * @return value
      */
     public int asInt() {
       if (Long.compareUnsigned(this.value, 0xFFFFFFFFL) > 0) {
-        throw new ArithmeticException("Value too large");
+        throw new CborSerializationException("Value too large");
       }
       return (int) this.value;
     }
 
     /**
-     * Get number as byte, throw error if does not fit.
+     * Get the value as an unsigned 16-bit integer, throwing if it exceeds {@code 0xFFFF}. Values
+     * above {@link Short#MAX_VALUE} are returned with the same bit pattern (a negative
+     * {@code short}); mask with {@code & 0xFFFF} to recover the unsigned value.
      *
-     * @return number
+     * @return value
+     */
+    public short asShort() {
+      if (Long.compareUnsigned(this.value, 0xFFFFL) > 0) {
+        throw new CborSerializationException("Value too large");
+      }
+
+      return (short) this.value;
+    }
+
+    /**
+     * Get the value as an unsigned 8-bit integer, throwing if it exceeds {@code 0xFF}. Values
+     * above {@link Byte#MAX_VALUE} are returned with the same bit pattern (a negative
+     * {@code byte}); mask with {@code & 0xFF} to recover the unsigned value.
+     *
+     * @return value
      */
     public byte asByte() {
       if (Long.compareUnsigned(this.value, 0xFFL) > 0) {
-        throw new ArithmeticException("Value too large");
+        throw new CborSerializationException("Value too large");
       }
 
       return (byte) this.value;
     }
 
     /**
-     * Get number as short, throw error if does not fit.
+     * Get the value as a non-negative {@code int} bounded to {@link Integer#MAX_VALUE}, suitable
+     * for a collection size, byte-string length or index. Throws if the value would not fit in a
+     * valid Java array size.
      *
-     * @return number
+     * @return value
      */
-    public short asShort() {
-      if (Long.compareUnsigned(this.value, 0xFFFFL) > 0) {
-        throw new ArithmeticException("Value too large");
+    public int asListSize() {
+      if (Long.compareUnsigned(this.value, Integer.MAX_VALUE) > 0) {
+        throw new CborSerializationException("Value too large");
       }
 
-      return (short) this.value;
+      return (int) this.value;
     }
   }
 }

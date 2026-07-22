@@ -10,6 +10,8 @@ import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.common.CommonTestFlow;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,9 +39,10 @@ public class TokenE2ETest extends CommonTestFlow {
     this.client = new StateTransitionClient(this.aggregatorClient);
     try (InputStream stream = getClass().getResourceAsStream("/trust-base.json")) {
       assertNotNull(stream, "trust-base.json not found");
-      this.trustBase = RootTrustBase.fromJson(new String(stream.readAllBytes()));
-      this.predicateVerifier = PredicateVerifierService.create();
-      this.mintJustificationVerifier = new MintJustificationVerifierService();
+      this.context = new VerificationContext(
+              RootTrustBase.fromJson(new String(stream.readAllBytes())),
+              PredicateVerifierService.create(), new MintJustificationVerifierService(),
+              new TokenIssuanceVerifierService(false));
     }
   }
 

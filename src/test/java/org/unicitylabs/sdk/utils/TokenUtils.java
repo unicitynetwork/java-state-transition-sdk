@@ -6,19 +6,15 @@ import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.api.CertificationResponse;
 import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.api.NetworkId;
-import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.predicate.UnlockScript;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicateUnlockScript;
-import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
-import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.transaction.*;
-import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
-import java.security.SecureRandom;
 
 /**
  * Test helpers for minting and transferring certified tokens.
@@ -27,74 +23,58 @@ public class TokenUtils {
 
   public static Token mintToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           Predicate recipient
   ) throws Exception {
-    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
-            recipient, (byte[]) null);
+    return TokenUtils.mintToken(client, context, recipient, (byte[]) null);
   }
 
   public static Token mintToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           Predicate recipient,
           byte[] data
   ) throws Exception {
-    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
-            recipient, data, NetworkId.LOCAL);
+    return TokenUtils.mintToken(client, context, recipient, data, NetworkId.LOCAL);
   }
 
   public static Token mintToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           Predicate recipient,
           byte[] data,
           NetworkId networkId
   ) throws Exception {
-    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
-            recipient, data, networkId, TokenType.generate());
+    return TokenUtils.mintToken(client, context, recipient, data, networkId, TokenType.generate());
   }
 
   public static Token mintToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           Predicate recipient,
           byte[] data,
           NetworkId networkId,
           TokenType tokenType
   ) throws Exception {
-    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
-            recipient, data, networkId, tokenType, TokenSalt.generate());
+    return TokenUtils.mintToken(client, context, recipient, data, networkId, tokenType,
+            TokenSalt.generate());
   }
 
   public static Token mintToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           Predicate recipient,
           byte[] data,
           NetworkId networkId,
           TokenType tokenType,
           TokenSalt salt
   ) throws Exception {
-    return TokenUtils.mintToken(client, trustBase, predicateVerifier, mintJustificationVerifier,
-            recipient, data, networkId, tokenType, salt, null);
+    return TokenUtils.mintToken(client, context, recipient, data, networkId, tokenType, salt, null);
   }
 
   public static Token mintToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           Predicate recipient,
           byte[] data,
           NetworkId networkId,
@@ -120,14 +100,14 @@ public class TokenUtils {
     }
 
     return Token.mint(
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
             transaction.toCertifiedTransaction(
-                    trustBase,
-                    predicateVerifier,
-                    InclusionProofUtils.waitInclusionProof(client, trustBase, predicateVerifier, transaction).get()
-            )
+                    context.getTrustBase(),
+                    context.getPredicateVerifier(),
+                    InclusionProofUtils.waitInclusionProof(
+                            client, context.getTrustBase(), context.getPredicateVerifier(),
+                            transaction).get()
+            ),
+            context
     );
   }
 
@@ -136,8 +116,7 @@ public class TokenUtils {
    * Deserialize token, build transfer transaction and submit certified transfer.
    *
    * @param client state transition client
-   * @param trustBase trust base
-   * @param predicateVerifier predicate verifier
+   * @param context verification context
    * @param tokenBytes serialized token bytes
    * @param recipient recipient address
    * @param signingService sender signing service
@@ -148,30 +127,24 @@ public class TokenUtils {
    */
   public static Token transferToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
-          MintJustificationVerifierService mintJustificationVerifier,
+          VerificationContext context,
           byte[] tokenBytes,
           Predicate recipient,
           SigningService signingService
   ) throws Exception {
     Token token = Token.fromCbor(tokenBytes);
-    Assertions.assertEquals(VerificationStatus.OK, token.verify(trustBase, predicateVerifier, mintJustificationVerifier).getStatus());
-
-    byte[] x = new byte[32];
-    new SecureRandom().nextBytes(x);
+    Assertions.assertEquals(VerificationStatus.OK, token.verify(context).getStatus());
 
     TransferTransaction transaction = TransferTransaction.create(
             token,
             recipient,
-            x,
+            StateMask.generate(),
             null
     );
 
     return TokenUtils.transferToken(
             client,
-            trustBase,
-            predicateVerifier,
+            context,
             token,
             transaction,
             SignaturePredicateUnlockScript.create(transaction, signingService)
@@ -182,8 +155,7 @@ public class TokenUtils {
    * Submit a prepared transfer transaction and return resulting transferred token.
    *
    * @param client state transition client
-   * @param trustBase trust base
-   * @param predicateVerifier predicate verifier
+   * @param context verification context
    * @param token source token
    * @param transaction transfer transaction
    * @param unlockScript unlock script for transaction
@@ -194,8 +166,7 @@ public class TokenUtils {
    */
   public static Token transferToken(
           StateTransitionClient client,
-          RootTrustBase trustBase,
-          PredicateVerifierService predicateVerifier,
+          VerificationContext context,
           Token token,
           TransferTransaction transaction,
           UnlockScript unlockScript
@@ -210,18 +181,14 @@ public class TokenUtils {
     }
 
     return token.transfer(
-            trustBase,
-            predicateVerifier,
             transaction.toCertifiedTransaction(
-                    trustBase,
-                    predicateVerifier,
+                    context.getTrustBase(),
+                    context.getPredicateVerifier(),
                     InclusionProofUtils.waitInclusionProof(
-                            client,
-                            trustBase,
-                            predicateVerifier,
-                            transaction
-                    ).get()
-            )
+                            client, context.getTrustBase(), context.getPredicateVerifier(),
+                            transaction).get()
+            ),
+            context
     );
   }
 

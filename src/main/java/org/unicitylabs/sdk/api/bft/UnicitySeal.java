@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.api.bft;
 
 import org.unicitylabs.sdk.api.NetworkId;
+import org.unicitylabs.sdk.crypto.secp256k1.Signature;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer.CborTag;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
@@ -162,7 +163,7 @@ public class UnicitySeal {
             CborDeserializer.decodeMap(data.get(7)).stream()
                     .map(entry -> new SignatureEntry(
                             CborDeserializer.decodeTextString(entry.getKey()),
-                            CborDeserializer.decodeByteString(entry.getValue())
+                            Signature.fromCbor(entry.getValue())
                     ))
                     .collect(Collectors.toSet())
     );
@@ -191,7 +192,7 @@ public class UnicitySeal {
                                             signatures.stream()
                                                     .map(entry -> new CborMap.Entry(
                                                                     CborSerializer.encodeTextString(entry.getKey()),
-                                                                    CborSerializer.encodeByteString(entry.getSignature())
+                                                                    entry.getSignature().toCbor()
                                                             )
                                                     )
                                                     .collect(Collectors.toSet())
@@ -258,9 +259,9 @@ public class UnicitySeal {
 
   public static final class SignatureEntry {
     private final String key;
-    private final byte[] signature;
+    private final Signature signature;
 
-    SignatureEntry(String key, byte[] signature) {
+    SignatureEntry(String key, Signature signature) {
       this.key = key;
       this.signature = signature;
     }
@@ -269,15 +270,15 @@ public class UnicitySeal {
       return this.key;
     }
 
-    public byte[] getSignature() {
-      return Arrays.copyOf(this.signature, this.signature.length);
+    public Signature getSignature() {
+      return this.signature;
     }
 
     @Override
     public boolean equals(Object o) {
       if (!(o instanceof SignatureEntry)) return false;
       SignatureEntry that = (SignatureEntry) o;
-      return Objects.equals(this.key, that.key) && Objects.deepEquals(this.signature, that.signature);
+      return Objects.equals(this.key, that.key);
     }
 
     @Override
@@ -287,7 +288,7 @@ public class UnicitySeal {
 
     @Override
     public String toString() {
-      return String.format("SignatureEntry{key=%s, signature=%s}", this.key, HexConverter.encode(this.signature));
+      return String.format("SignatureEntry{key=%s, signature=%s}", this.key, this.signature);
     }
   }
 }

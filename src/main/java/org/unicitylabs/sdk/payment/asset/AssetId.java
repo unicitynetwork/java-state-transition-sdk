@@ -12,15 +12,25 @@ import java.util.Objects;
  * Unique identifier of an asset.
  */
 public class AssetId {
+  public static final int MIN_LENGTH = 1;
+  public static final int MAX_LENGTH = 128;
+
   private final byte[] bytes;
 
   /**
    * Create asset id from bytes.
    *
-   * @param bytes asset id bytes
+   * @param bytes asset id bytes; must be between {@link #MIN_LENGTH} and {@link #MAX_LENGTH}
+   *     bytes long
    */
   public AssetId(byte[] bytes) {
     Objects.requireNonNull(bytes, "Asset id cannot be null");
+
+    if (bytes.length < AssetId.MIN_LENGTH || bytes.length > AssetId.MAX_LENGTH) {
+      throw new IllegalArgumentException(
+              String.format("AssetId must be between %d and %d bytes long, got %d.",
+                      AssetId.MIN_LENGTH, AssetId.MAX_LENGTH, bytes.length));
+    }
 
     this.bytes = Arrays.copyOf(bytes, bytes.length);
   }

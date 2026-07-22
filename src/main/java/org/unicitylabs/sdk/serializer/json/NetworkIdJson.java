@@ -67,7 +67,12 @@ public class NetworkIdJson {
      */
     @Override
     public NetworkId deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-      return NetworkId.fromId(p.getShortValue());
+      int id = p.getIntValue();
+      if (id < 1 || id > 0xFFFF) {
+        throw new IllegalArgumentException(
+                "Network identifier out of allowed 16-bit unsigned range: " + id + ".");
+      }
+      return NetworkId.fromId((short) id);
     }
   }
 }

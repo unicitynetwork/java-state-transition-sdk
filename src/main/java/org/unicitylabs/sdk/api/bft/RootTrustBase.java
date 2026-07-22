@@ -8,8 +8,12 @@ import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.serializer.UnicityObjectMapper;
 import org.unicitylabs.sdk.serializer.json.JsonSerializationException;
 import org.unicitylabs.sdk.serializer.json.LongAsStringSerializer;
+import org.unicitylabs.sdk.util.HexConverter;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -20,11 +24,12 @@ import java.util.stream.Collectors;
  */
 public class RootTrustBase {
 
-  private final long version;
+  private static final long VERSION = 1;
+
   private final NetworkId networkId;
   private final long epoch;
   private final long epochStartRound;
-  private final Set<NodeInfo> rootNodes;
+  private final Map<String, NodeInfo> rootNodes;
   private final long quorumThreshold;
   private final byte[] stateHash;
   private final byte[] changeRecordHash;
@@ -37,18 +42,46 @@ public class RootTrustBase {
           @JsonProperty("networkId") NetworkId networkId,
           @JsonProperty("epoch") long epoch,
           @JsonProperty("epochStartRound") long epochStartRound,
-          @JsonProperty("rootNodes") Set<NodeInfo> rootNodes,
+          @JsonProperty("rootNodes") List<NodeInfo> rootNodes,
           @JsonProperty("quorumThreshold") long quorumThreshold,
           @JsonProperty("stateHash") byte[] stateHash,
           @JsonProperty("changeRecordHash") byte[] changeRecordHash,
           @JsonProperty("previousEntryHash") byte[] previousEntryHash,
           @JsonProperty("signatures") Map<String, byte[]> signatures
   ) {
-    this.version = version;
+    if (version != RootTrustBase.VERSION) {
+      throw new IllegalArgumentException(
+              String.format("Unsupported RootTrustBase version: %s", version));
+    }
+
+    Objects.requireNonNull(rootNodes, "rootNodes cannot be null");
+
+    Map<String, NodeInfo> nodes = new LinkedHashMap<>();
+    Set<String> signingKeys = new HashSet<>();
+    for (NodeInfo node : rootNodes) {
+      Objects.requireNonNull(node, "Trust base node cannot be null");
+      if (nodes.putIfAbsent(node.getNodeId(), node) != null) {
+        throw new IllegalArgumentException(
+                String.format("Duplicate trust base node id: %s", node.getNodeId()));
+      }
+      if (!signingKeys.add(HexConverter.encode(node.getSigningKey()))) {
+        throw new IllegalArgumentException("Duplicate trust base signing key.");
+      }
+    }
+
+    if (nodes.isEmpty()) {
+      throw new IllegalArgumentException("Trust base must contain at least one root node.");
+    }
+
+    if (quorumThreshold < 1 || quorumThreshold > nodes.size()) {
+      throw new IllegalArgumentException(
+              "Trust base quorum threshold must be between 1 and the root node count.");
+    }
+
     this.networkId = networkId;
     this.epoch = epoch;
     this.epochStartRound = epochStartRound;
-    this.rootNodes = Set.copyOf(rootNodes);
+    this.rootNodes = nodes;
     this.quorumThreshold = quorumThreshold;
     this.stateHash = Arrays.copyOf(stateHash, stateHash.length);
     this.changeRecordHash = changeRecordHash == null
@@ -71,7 +104,7 @@ public class RootTrustBase {
    */
   @JsonSerialize(using = LongAsStringSerializer.class)
   public long getVersion() {
-    return this.version;
+    return RootTrustBase.VERSION;
   }
 
   /**
@@ -109,7 +142,17 @@ public class RootTrustBase {
    * @return root nodes
    */
   public Set<NodeInfo> getRootNodes() {
-    return this.rootNodes;
+    return Set.copyOf(this.rootNodes.values());
+  }
+
+  /**
+   * Get root node by node id.
+   *
+   * @param nodeId node id
+   * @return node info, or {@code null} when no node with the given id exists
+   */
+  public NodeInfo getRootNode(String nodeId) {
+    return this.rootNodes.get(nodeId);
   }
 
   /**
@@ -210,6 +253,12 @@ public class RootTrustBase {
             @JsonProperty("sigKey") byte[] signingKey,
             @JsonProperty("stake") long stakedAmount
     ) {
+      Objects.requireNonNull(nodeId, "Node id cannot be null");
+      Objects.requireNonNull(signingKey, "Node signing key cannot be null");
+      if (stakedAmount <= 0) {
+        throw new IllegalArgumentException("Each trust base root node must have positive stake.");
+      }
+
       this.nodeId = nodeId;
       this.signingKey = Arrays.copyOf(signingKey, signingKey.length);
       this.stakedAmount = stakedAmount;

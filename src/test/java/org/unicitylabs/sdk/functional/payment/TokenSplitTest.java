@@ -10,22 +10,27 @@ import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.payment.SplitMintJustificationVerifier;
 import org.unicitylabs.sdk.payment.SplitTokenRequest;
+import org.unicitylabs.sdk.payment.TokenAssetCountMismatchException;
+import org.unicitylabs.sdk.payment.TokenAssetMissingException;
+import org.unicitylabs.sdk.payment.TokenAssetValueMismatchException;
 import org.unicitylabs.sdk.payment.TokenSplit;
 import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.payment.asset.AssetId;
+import org.unicitylabs.sdk.payment.asset.PaymentAssetCollection;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
+import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
+import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.utils.TokenUtils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 /**
- * Unit tests for the precondition (IAE) branches of {@link TokenSplit#split}.
+ * Unit tests for the precondition branches of {@link TokenSplit#split}.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TokenSplitTest {
@@ -42,8 +47,9 @@ public class TokenSplitTest {
     PredicateVerifierService predicateVerifier = PredicateVerifierService.create();
 
     MintJustificationVerifierService mintJustificationVerifier = new MintJustificationVerifierService();
-    mintJustificationVerifier.register(new SplitMintJustificationVerifier(
-            trustBase, predicateVerifier, TestPaymentData::decode));
+    mintJustificationVerifier.register(new SplitMintJustificationVerifier(TestPaymentData::decode));
+    VerificationContext context = new VerificationContext(trustBase, predicateVerifier,
+            mintJustificationVerifier, new TokenIssuanceVerifierService(false));
 
     SignaturePredicate ownerPredicate = SignaturePredicate.fromSigningService(SigningService.generate());
 
@@ -52,24 +58,22 @@ public class TokenSplitTest {
 
     this.sourceToken = TokenUtils.mintToken(
             client,
-            trustBase,
-            predicateVerifier,
-            mintJustificationVerifier,
+            context,
             ownerPredicate,
-            new TestPaymentData(Set.of(this.asset1, this.asset2)).encode()
+            new TestPaymentData(PaymentAssetCollection.create(this.asset1, this.asset2)).encode()
     );
   }
 
   @Test
   public void splitFailsWhenAssetCountsDiffer() {
-    IllegalArgumentException exception = Assertions.assertThrows(
-            IllegalArgumentException.class,
+    TokenAssetCountMismatchException exception = Assertions.assertThrows(
+            TokenAssetCountMismatchException.class,
             () -> TokenSplit.split(
                     this.sourceToken,
                     TestPaymentData::decode,
                     List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
-                            Set.of(this.asset1)
+                            new TestPaymentData(PaymentAssetCollection.create(this.asset1))
                     ))
             )
     );
@@ -77,15 +81,37 @@ public class TokenSplitTest {
   }
 
   @Test
-  public void splitFailsWhenAssetTreeAmountIsLess() {
-    IllegalArgumentException exception = Assertions.assertThrows(
-            IllegalArgumentException.class,
+  public void splitFailsWhenAssetIsMissingFromSource() {
+    Asset unknownAsset = new Asset(
+            new AssetId("ASSET_3".getBytes(StandardCharsets.UTF_8)), BigInteger.valueOf(400));
+
+    TokenAssetMissingException exception = Assertions.assertThrows(
+            TokenAssetMissingException.class,
             () -> TokenSplit.split(
                     this.sourceToken,
                     TestPaymentData::decode,
                     List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
-                            Set.of(this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(400)))
+                            new TestPaymentData(PaymentAssetCollection.create(this.asset1, unknownAsset))
+                    ))
+            )
+    );
+    Assertions.assertEquals(
+            String.format("Token did not contain asset %s.", unknownAsset.getId()),
+            exception.getMessage());
+  }
+
+  @Test
+  public void splitFailsWhenAssetTreeAmountIsLess() {
+    TokenAssetValueMismatchException exception = Assertions.assertThrows(
+            TokenAssetValueMismatchException.class,
+            () -> TokenSplit.split(
+                    this.sourceToken,
+                    TestPaymentData::decode,
+                    List.of(SplitTokenRequest.create(
+                            SignaturePredicate.fromSigningService(SigningService.generate()),
+                            new TestPaymentData(PaymentAssetCollection.create(
+                                    this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(400))))
                     ))
             )
     );
@@ -95,14 +121,15 @@ public class TokenSplitTest {
 
   @Test
   public void splitFailsWhenAssetTreeAmountIsMore() {
-    IllegalArgumentException exception = Assertions.assertThrows(
-            IllegalArgumentException.class,
+    TokenAssetValueMismatchException exception = Assertions.assertThrows(
+            TokenAssetValueMismatchException.class,
             () -> TokenSplit.split(
                     this.sourceToken,
                     TestPaymentData::decode,
                     List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
-                            Set.of(this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(1500)))
+                            new TestPaymentData(PaymentAssetCollection.create(
+                                    this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(1500))))
                     ))
             )
     );

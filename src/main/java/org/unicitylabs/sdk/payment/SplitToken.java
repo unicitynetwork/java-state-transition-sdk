@@ -1,16 +1,16 @@
 package org.unicitylabs.sdk.payment;
 
 import org.unicitylabs.sdk.api.NetworkId;
-import org.unicitylabs.sdk.payment.asset.Asset;
 import org.unicitylabs.sdk.predicate.Predicate;
 import org.unicitylabs.sdk.transaction.TokenSalt;
 import org.unicitylabs.sdk.transaction.TokenType;
 
 import java.util.List;
-import java.util.Set;
 
 /**
- * Realized split output: all data needed to mint the new token.
+ * Realized split output: everything needed to mint the new token. Mint it with exactly
+ * {@code getPaymentData().encode()} as the auxiliary payload - those are the bytes bound by the
+ * split allocation proofs.
  */
 public class SplitToken {
 
@@ -18,22 +18,22 @@ public class SplitToken {
   private final Predicate recipient;
   private final TokenType tokenType;
   private final TokenSalt salt;
-  private final Set<Asset> assets;
-  private final List<SplitAssetProof> proofs;
+  private final PaymentData paymentData;
+  private final List<SplitAllocationProof> proofs;
 
   SplitToken(
           NetworkId networkId,
           Predicate recipient,
           TokenType tokenType,
           TokenSalt salt,
-          Set<Asset> assets,
-          List<SplitAssetProof> proofs
+          PaymentData paymentData,
+          List<SplitAllocationProof> proofs
   ) {
     this.networkId = networkId;
     this.recipient = recipient;
     this.tokenType = tokenType;
     this.salt = salt;
-    this.assets = Set.copyOf(assets);
+    this.paymentData = paymentData;
     this.proofs = List.copyOf(proofs);
   }
 
@@ -53,11 +53,11 @@ public class SplitToken {
     return this.salt;
   }
 
-  public Set<Asset> getAssets() {
-    return this.assets;
+  public PaymentData getPaymentData() {
+    return this.paymentData;
   }
 
-  public List<SplitAssetProof> getProofs() {
+  public List<SplitAllocationProof> getProofs() {
     return this.proofs;
   }
 }

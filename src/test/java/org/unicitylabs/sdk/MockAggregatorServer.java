@@ -1,13 +1,11 @@
 package org.unicitylabs.sdk;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -77,7 +75,14 @@ public class MockAggregatorServer {
         }
       }
 
-      String method = extractJsonRpcMethod(request);
+      JsonNode jsonRequest = "POST".equals(request.getMethod())
+              ? objectMapper.readTree(request.getBody().readUtf8())
+              : null;
+      String method = jsonRequest != null && jsonRequest.has("method")
+              ? jsonRequest.get("method").asText() : null;
+      // Echo the request id back, as a JSON-RPC 2.0 server must.
+      String id = jsonRequest != null && jsonRequest.has("id")
+              ? jsonRequest.get("id").asText() : UUID.randomUUID().toString();
 
       if (protectedMethods.contains(method) && expectedApiKey != null && !hasValidApiKey(request)) {
         return new MockResponse()
@@ -86,7 +91,7 @@ public class MockAggregatorServer {
                 .setBody("Unauthorized");
       }
 
-      return generateSuccessResponse(method);
+      return generateSuccessResponse(method, id);
 
     } catch (Exception e) {
       return new MockResponse()
@@ -104,17 +109,8 @@ public class MockAggregatorServer {
     return false;
   }
 
-  private @Nullable String extractJsonRpcMethod(RecordedRequest request) throws JsonProcessingException {
-    if (!"POST".equals(request.getMethod())) {
-      return null;
-    }
-    JsonNode jsonRequest = objectMapper.readTree(request.getBody().readUtf8());
-    return jsonRequest.has("method") ? jsonRequest.get("method").asText() : null;
-  }
-
-  private MockResponse generateSuccessResponse(String method) {
+  private MockResponse generateSuccessResponse(String method, String id) {
     String responseBody;
-    String id = UUID.randomUUID().toString();
 
     switch (method != null ? method : "") {
       case "certification_request":

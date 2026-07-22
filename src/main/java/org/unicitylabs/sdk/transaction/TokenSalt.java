@@ -10,11 +10,16 @@ import java.util.Objects;
 
 
 /**
- * 32-byte salt mixed with a network identifier to derive a {@link TokenId}.
+ * Variable-length salt mixed with a network identifier to derive a {@link TokenId}. The minter
+ * chooses the length within {@code [{@link #MIN_LENGTH}, {@link #MAX_LENGTH}]} bytes: at least 128
+ * bits of entropy, and an upper bound so untrusted token blobs cannot carry an arbitrarily large
+ * salt.
  */
 public class TokenSalt {
 
   public static final int LENGTH = 32;
+  public static final int MAX_LENGTH = 64;
+  public static final int MIN_LENGTH = 16;
 
   private static final SecureRandom RANDOM = new SecureRandom();
   private final byte[] bytes;
@@ -24,17 +29,20 @@ public class TokenSalt {
   }
 
   /**
-   * Wrap an existing 32-byte salt.
+   * Wrap an existing salt. The salt is variable-length but must carry at least 128 bits of entropy
+   * and stay within the upper bound, so it must be between {@link TokenSalt#MIN_LENGTH} and
+   * {@link TokenSalt#MAX_LENGTH} bytes.
    *
-   * @param bytes salt bytes; must be exactly 32 bytes
+   * @param bytes salt bytes; must be 16 to 64 bytes
    *
    * @return token salt
    */
   public static TokenSalt fromBytes(byte[] bytes) {
     Objects.requireNonNull(bytes, "Token salt cannot be null");
-    if (bytes.length != TokenSalt.LENGTH) {
+    if (bytes.length < TokenSalt.MIN_LENGTH || bytes.length > TokenSalt.MAX_LENGTH) {
       throw new IllegalArgumentException(
-              "Token salt must be " + TokenSalt.LENGTH + " bytes long, got " + bytes.length);
+              "TokenSalt must be between " + TokenSalt.MIN_LENGTH + " and " + TokenSalt.MAX_LENGTH
+                      + " bytes, got " + bytes.length + ".");
     }
     return new TokenSalt(Arrays.copyOf(bytes, bytes.length));
   }
