@@ -21,7 +21,7 @@ import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.util.HexConverter;
-import org.unicitylabs.sdk.utils.RequestTimeout;
+import org.unicitylabs.sdk.utils.ExpiresAt;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
@@ -42,10 +42,9 @@ public class InclusionProofTest {
             HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
 
 
-    transaction = MintTransaction.create(
-            NetworkId.LOCAL,
-            SignaturePredicate.fromSigningService(signingService)
-    , RequestTimeout.requestTimeout());
+    transaction = MintTransaction.builder(NetworkId.LOCAL, SignaturePredicate.fromSigningService(signingService))
+            .expiresAt(ExpiresAt.expiresAt())
+            .build();
 
     certificationData = CertificationData.fromMintTransaction(transaction);
     stateId = StateId.fromCertificationData(certificationData);
@@ -128,7 +127,7 @@ public class InclusionProofTest {
                     DataHash.fromImprint(
                             HexConverter.decode("00000000000000000000000000000000000000000000000000000000000000000001")
                     ),
-                    this.certificationData.getTimeout(),
+                    this.certificationData.getExpiresAt().orElse(null),
                     this.certificationData.getUnlockScript()
             ),
             REFERENCE_TIME,
@@ -155,7 +154,7 @@ public class InclusionProofTest {
                     this.certificationData.getLockScript(),
                     this.certificationData.getSourceStateHash(),
                     this.certificationData.getTransactionHash(),
-                    this.certificationData.getTimeout(),
+                    this.certificationData.getExpiresAt().orElse(null),
                     SignaturePredicateUnlockScript.create(
                             this.transaction,
                             new SigningService(SigningService.generatePrivateKey())
@@ -229,7 +228,7 @@ public class InclusionProofTest {
                     this.predicateVerifier,
                     inclusionProof,
                     this.transaction,
-                    this.transaction.getTimeout()
+                    this.transaction.getExpiresAt().orElse(null)
             ).getStatus()
     );
   }

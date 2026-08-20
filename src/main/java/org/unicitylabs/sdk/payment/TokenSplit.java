@@ -35,23 +35,23 @@ public class TokenSplit {
   private TokenSplit() {
   }
 
-  /** Split using the aggregation service's default timeout and a random burn state mask. */
+  /** Split with a service-assigned burn deadline and a random burn state mask. */
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests
   ) throws LeafExistsException {
-    return split(token, paymentDataDeserializer, requests, 0, StateMask.generate());
+    return split(token, paymentDataDeserializer, requests, StateMask.generate(), null);
   }
 
-  /** Split using the aggregation service's default timeout and the supplied burn state mask. */
+  /** Split with a service-assigned burn deadline and the supplied burn state mask. */
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests,
           StateMask burnStateMask
   ) throws LeafExistsException {
-    return split(token, paymentDataDeserializer, requests, 0, burnStateMask);
+    return split(token, paymentDataDeserializer, requests, burnStateMask, null);
   }
 
   /**
@@ -60,7 +60,8 @@ public class TokenSplit {
    * @param token source token to split (the token being burned)
    * @param paymentDataDeserializer decoder for the source token's payment data
    * @param requests per-output mint requests; each carries its own payment data
-   * @param burnTimeout exclusive certification request timeout of the burn transaction
+   * @param burnExpiresAt exclusive request deadline of the burn transaction, may be null to let
+   *     the Unicity Service assign one
    * @return burn predicate, burn transaction and split tokens ready to mint
    * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
@@ -68,10 +69,10 @@ public class TokenSplit {
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests,
-          long burnTimeout
+          Long burnExpiresAt
   ) throws LeafExistsException {
-    return TokenSplit.split(token, paymentDataDeserializer, requests, burnTimeout,
-            StateMask.generate());
+    return TokenSplit.split(token, paymentDataDeserializer, requests, StateMask.generate(),
+            burnExpiresAt);
   }
 
   /**
@@ -80,10 +81,11 @@ public class TokenSplit {
    * @param token source token to split (the token being burned)
    * @param paymentDataDeserializer decoder for the source token's payment data
    * @param requests per-output mint requests; each carries its own payment data
-   * @param burnTimeout exclusive certification request timeout of the burn transaction
    * @param burnStateMask state mask for the burn transaction; callers needing a crash-resumable
    *     (re-buildable) split supply a deterministically derived mask so the identical burn
    *     transaction can be reconstructed after a failure
+   * @param burnExpiresAt exclusive request deadline of the burn transaction, may be null to let
+   *     the Unicity Service assign one
    * @return burn predicate, burn transaction and split tokens ready to mint
    * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
@@ -91,8 +93,8 @@ public class TokenSplit {
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests,
-          long burnTimeout,
-          StateMask burnStateMask
+          StateMask burnStateMask,
+          Long burnExpiresAt
   ) throws LeafExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(paymentDataDeserializer, "Payment data deserializer cannot be null");
@@ -164,8 +166,8 @@ public class TokenSplit {
             token,
             burnPredicate,
             burnStateMask,
-            burnTimeout,
-            manifestBytes
+            manifestBytes,
+            burnExpiresAt
     );
 
     List<SplitToken> tokens = new ArrayList<>(requestsByTokenId.size());

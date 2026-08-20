@@ -22,13 +22,14 @@ import java.util.Optional;
  */
 public class TransferTransaction implements Transaction {
   public static final long CBOR_TAG = 39045;
-  private static final int LEGACY_VERSION = 1;
-  private static final int TIMEOUT_VERSION = 2;
+  /** The only accepted wire version. One version, one element count. */
+  public static final int VERSION = 2;
+  private static final int FIELD_COUNT = 5;
 
   private final DataHash sourceStateHash;
   private final EncodedPredicate lockScript;
   private final EncodedPredicate recipient;
-  private final long timeout;
+  private final Long expiresAt;
   private final StateMask stateMask;
   private final byte[] data;
 
@@ -36,22 +37,17 @@ public class TransferTransaction implements Transaction {
           DataHash sourceStateHash,
           EncodedPredicate lockScript,
           EncodedPredicate recipient,
-          long timeout,
+          Long expiresAt,
           StateMask stateMask,
           byte[] data
   ) {
     this.sourceStateHash = sourceStateHash;
     this.lockScript = lockScript;
     this.recipient = recipient;
-    this.timeout = timeout;
+    this.expiresAt = expiresAt;
     this.stateMask = stateMask;
     this.data = data;
   }
-
-  public int getVersion() {
-    return this.timeout == 0 ? LEGACY_VERSION : TIMEOUT_VERSION;
-  }
-
 
   @Override
   public Optional<byte[]> getData() {
@@ -79,8 +75,8 @@ public class TransferTransaction implements Transaction {
   }
 
   @Override
-  public long getTimeout() {
-    return this.timeout;
+  public Optional<Long> getExpiresAt() {
+    return Optional.ofNullable(this.expiresAt);
   }
 
   /**
@@ -89,28 +85,37 @@ public class TransferTransaction implements Transaction {
    * @param token token whose latest transaction is used as the source
    * @param recipient recipient predicate
    * @param stateMask transaction randomness component
-   * @param timeout exclusive timeout of the certification request
    * @param data transfer payload
+   * @param expiresAt exclusive request deadline, may be null to let the service assign one
    * @return created transfer transaction
    */
   public static TransferTransaction create(Token token, Predicate recipient,
-                                           StateMask stateMask, long timeout, byte[] data) {
+                                           StateMask stateMask, byte[] data, Long expiresAt) {
     Transaction transaction = token.getLatestTransaction();
 
     return new TransferTransaction(
             transaction.calculateStateHash(),
             transaction.getRecipient(),
             EncodedPredicate.fromPredicate(recipient),
-            timeout,
+            expiresAt,
             stateMask,
             data
     );
   }
 
-  /** Creates a legacy transfer whose timeout is assigned by the aggregation service. */
+  /**
+   * Creates a transfer whose deadline is assigned by the Unicity Service, which requires no local
+   * clock.
+   *
+   * @param token token whose latest transaction is used as the source
+   * @param recipient recipient predicate
+   * @param stateMask transaction randomness component
+   * @param data transfer payload
+   * @return created transfer transaction
+   */
   public static TransferTransaction create(Token token, Predicate recipient,
                                            StateMask stateMask, byte[] data) {
-    return create(token, recipient, stateMask, 0, data);
+    return create(token, recipient, stateMask, data, null);
   }
 
   /**
@@ -125,12 +130,10 @@ public class TransferTransaction implements Transaction {
     if (tag.getTag() != TransferTransaction.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData());
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), FIELD_COUNT);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    boolean hasTimeout = version == TIMEOUT_VERSION;
-    if ((version != LEGACY_VERSION && version != TIMEOUT_VERSION)
-            || data.size() != (hasTimeout ? 5 : 4)) {
+    if (version != VERSION) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
@@ -138,8 +141,9 @@ public class TransferTransaction implements Transaction {
             token,
             EncodedPredicate.fromCbor(data.get(1)),
             StateMask.fromCbor(data.get(2)),
-            hasTimeout ? CborDeserializer.decodeUnsignedInteger(data.get(4)).asLong() : 0,
-            CborDeserializer.decodeNullable(data.get(3), CborDeserializer::decodeByteString)
+            CborDeserializer.decodeNullable(data.get(3), CborDeserializer::decodeByteString),
+            CborDeserializer.decodeNullable(
+                    data.get(4), value -> CborDeserializer.decodeUnsignedInteger(value).asLong())
     );
   }
 
@@ -164,17 +168,14 @@ public class TransferTransaction implements Transaction {
 
   @Override
   public byte[] toCbor() {
-    byte[] payload = this.timeout == 0
-            ? CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(LEGACY_VERSION),
-                    EncodedPredicate.fromPredicate(this.recipient).toCbor(), this.stateMask.toCbor(),
-                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString))
-            : CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(TIMEOUT_VERSION),
-                    EncodedPredicate.fromPredicate(this.recipient).toCbor(), this.stateMask.toCbor(),
-                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString),
-                    CborSerializer.encodeUnsignedInteger(this.timeout));
     return CborSerializer.encodeTag(
             TransferTransaction.CBOR_TAG,
-            payload
+            CborSerializer.encodeArray(
+                    CborSerializer.encodeUnsignedInteger(VERSION),
+                    EncodedPredicate.fromPredicate(this.recipient).toCbor(),
+                    this.stateMask.toCbor(),
+                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString),
+                    CborSerializer.encodeNullable(this.expiresAt, CborSerializer::encodeUnsignedInteger))
     );
   }
 
@@ -202,8 +203,8 @@ public class TransferTransaction implements Transaction {
   @Override
   public String toString() {
     return String.format(
-            "TransferTransaction{sourceStateHash=%s, lockScript=%s, recipient=%s, timeout=%s, stateMask=%s, data=%s}",
-            this.sourceStateHash, this.lockScript, this.recipient, this.timeout, this.stateMask,
+            "TransferTransaction{sourceStateHash=%s, lockScript=%s, recipient=%s, expiresAt=%s, stateMask=%s, data=%s}",
+            this.sourceStateHash, this.lockScript, this.recipient, this.expiresAt, this.stateMask,
             HexConverter.encode(this.data));
   }
 }

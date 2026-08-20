@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.unicitylabs.sdk.utils.RequestTimeout;
+import org.unicitylabs.sdk.utils.ExpiresAt;
 
 public class TestApiKeyIntegration {
 
@@ -42,10 +42,9 @@ public class TestApiKeyIntegration {
     SigningService signingService = new SigningService(
             HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
 
-    MintTransaction transaction = MintTransaction.create(
-            NetworkId.LOCAL,
-            SignaturePredicate.fromSigningService(signingService)
-    , RequestTimeout.requestTimeout());
+    MintTransaction transaction = MintTransaction.builder(NetworkId.LOCAL, SignaturePredicate.fromSigningService(signingService))
+            .expiresAt(ExpiresAt.expiresAt())
+            .build();
     certificationData = CertificationData.fromMintTransaction(transaction);
   }
 

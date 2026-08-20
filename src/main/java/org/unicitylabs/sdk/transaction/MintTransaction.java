@@ -31,8 +31,9 @@ import java.util.Optional;
  */
 public class MintTransaction implements Transaction {
   public static final long CBOR_TAG = 39041;
-  private static final int LEGACY_VERSION = 1;
-  private static final int TIMEOUT_VERSION = 2;
+  /** The only accepted wire version. One version, one element count. */
+  public static final int VERSION = 2;
+  private static final int FIELD_COUNT = 8;
 
   private final MintTransactionState sourceStateHash;
   private final EncodedPredicate lockScript;
@@ -41,7 +42,7 @@ public class MintTransaction implements Transaction {
   private final TokenSalt salt;
   private final TokenType tokenType;
   private final TokenId tokenId;
-  private final long timeout;
+  private final Long expiresAt;
   private final byte[] justification;
   private final byte[] data;
 
@@ -53,7 +54,7 @@ public class MintTransaction implements Transaction {
           TokenSalt salt,
           TokenType tokenType,
           TokenId tokenId,
-          long timeout,
+          Long expiresAt,
           byte[] justification,
           byte[] data
   ) {
@@ -64,18 +65,14 @@ public class MintTransaction implements Transaction {
     this.salt = salt;
     this.tokenType = tokenType;
     this.tokenId = tokenId;
-    this.timeout = timeout;
+    this.expiresAt = expiresAt;
     this.justification = justification;
     this.data = data;
   }
 
   @Override
-  public long getTimeout() {
-    return this.timeout;
-  }
-
-  public int getVersion() {
-    return this.timeout == 0 ? LEGACY_VERSION : TIMEOUT_VERSION;
+  public Optional<Long> getExpiresAt() {
+    return Optional.ofNullable(this.expiresAt);
   }
 
 
@@ -150,241 +147,125 @@ public class MintTransaction implements Transaction {
   }
 
   /**
-   * Create a mint transaction.
+   * Start building a mint transaction.
    *
    * @param networkId network identifier
    * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param data payload bytes, may be null
-   * @param tokenType token type identifier
-   * @param salt mint-transaction salt
-   * @param justification mint justification bytes, may be null
    *
-   * @return mint transaction
+   * @return mint transaction builder
    */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          byte[] data,
-          TokenType tokenType,
-          TokenSalt salt,
-          byte[] justification
-  ) {
-    Objects.requireNonNull(networkId, "Network id cannot be null");
-    Objects.requireNonNull(recipient, "Recipient cannot be null");
-    Objects.requireNonNull(tokenType, "Token type cannot be null");
-    Objects.requireNonNull(salt, "Salt cannot be null");
-
-    TokenId tokenId = TokenId.fromSalt(networkId, salt);
-    SigningService signingService = MintSigningService.create(tokenId);
-    return new MintTransaction(
-            MintTransactionState.create(tokenId),
-            EncodedPredicate.fromPredicate(SignaturePredicate.fromSigningService(signingService)),
-            networkId,
-            EncodedPredicate.fromPredicate(recipient),
-            salt,
-            tokenType,
-            tokenId,
-            timeout,
-            justification != null ? Arrays.copyOf(justification, justification.length) : null,
-            data != null ? Arrays.copyOf(data, data.length) : null
-    );
-  }
-
-  /** Creates a legacy transaction whose timeout is assigned by the aggregation service. */
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
-                                       TokenType tokenType, TokenSalt salt, byte[] justification) {
-    return create(networkId, recipient, 0, data, tokenType, salt, justification);
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
-                                       TokenType tokenType, TokenSalt salt) {
-    return create(networkId, recipient, data, tokenType, salt, null);
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
-                                       TokenType tokenType) {
-    return create(networkId, recipient, data, tokenType, TokenSalt.generate());
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
-                                       TokenSalt salt) {
-    return create(networkId, recipient, data, TokenType.generate(), salt);
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient,
-                                       TokenType tokenType, TokenSalt salt) {
-    return create(networkId, recipient, (byte[]) null, tokenType, salt);
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data) {
-    return create(networkId, recipient, data, TokenType.generate());
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, TokenType tokenType) {
-    return create(networkId, recipient, (byte[]) null, tokenType);
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, TokenSalt salt) {
-    return create(networkId, recipient, TokenType.generate(), salt);
-  }
-
-  public static MintTransaction create(NetworkId networkId, Predicate recipient) {
-    return create(networkId, recipient, (byte[]) null);
+  public static Builder builder(NetworkId networkId, Predicate recipient) {
+    return new Builder(networkId, recipient);
   }
 
   /**
-   * Create a mint transaction without a justification.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param data payload bytes, may be null
-   * @param tokenType token type identifier
-   * @param salt mint-transaction salt
-   *
-   * @return mint transaction
+   * Builds a {@link MintTransaction}. The network id and recipient are required and are supplied
+   * to {@link MintTransaction#builder}; everything else is optional and named, so adding a further
+   * optional field later does not disturb existing call sites.
    */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          byte[] data,
-          TokenType tokenType,
-          TokenSalt salt
-  ) {
-    return MintTransaction.create(networkId, recipient, timeout, data, tokenType, salt, null);
-  }
+  public static final class Builder {
 
-  /**
-   * Create a mint transaction with a fresh random salt.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param data payload bytes, may be null
-   * @param tokenType token type identifier
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          byte[] data,
-          TokenType tokenType
-  ) {
-    return MintTransaction.create(networkId, recipient, timeout, data, tokenType,
-            TokenSalt.generate());
-  }
+    private final NetworkId networkId;
+    private final Predicate recipient;
+    private TokenType tokenType;
+    private TokenSalt salt;
+    private byte[] data;
+    private byte[] justification;
+    private Long expiresAt;
 
-  /**
-   * Create a mint transaction with a generated token type.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param data payload bytes, may be null
-   * @param salt mint-transaction salt
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          byte[] data,
-          TokenSalt salt
-  ) {
-    return MintTransaction.create(networkId, recipient, timeout, data, TokenType.generate(), salt);
-  }
+    private Builder(NetworkId networkId, Predicate recipient) {
+      this.networkId = Objects.requireNonNull(networkId, "Network id cannot be null");
+      this.recipient = Objects.requireNonNull(recipient, "Recipient cannot be null");
+    }
 
-  /**
-   * Create a mint transaction with no data.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param tokenType token type identifier
-   * @param salt mint-transaction salt
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          TokenType tokenType,
-          TokenSalt salt
-  ) {
-    return MintTransaction.create(networkId, recipient, timeout, (byte[]) null, tokenType, salt);
-  }
+    /**
+     * Sets the token type. Defaults to a freshly generated type.
+     *
+     * @param tokenType token type identifier
+     *
+     * @return this builder
+     */
+    public Builder tokenType(TokenType tokenType) {
+      this.tokenType = tokenType;
+      return this;
+    }
 
-  /**
-   * Create a mint transaction with a generated token type and salt.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param data payload bytes, may be null
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, long timeout,
-                                       byte[] data) {
-    return MintTransaction.create(networkId, recipient, timeout, data, TokenType.generate());
-  }
+    /**
+     * Sets the mint-transaction salt. Defaults to a freshly generated salt.
+     *
+     * @param salt mint-transaction salt
+     *
+     * @return this builder
+     */
+    public Builder salt(TokenSalt salt) {
+      this.salt = salt;
+      return this;
+    }
 
-  /**
-   * Create a mint transaction with no data and a generated salt.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param tokenType token type identifier
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          TokenType tokenType
-  ) {
-    return MintTransaction.create(networkId, recipient, timeout, (byte[]) null, tokenType);
-  }
+    /**
+     * Sets the payload bytes.
+     *
+     * @param data payload bytes, may be null
+     *
+     * @return this builder
+     */
+    public Builder data(byte[] data) {
+      this.data = data != null ? Arrays.copyOf(data, data.length) : null;
+      return this;
+    }
 
-  /**
-   * Create a mint transaction with no data and a generated token type.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   * @param salt mint-transaction salt
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(
-          NetworkId networkId,
-          Predicate recipient,
-          long timeout,
-          TokenSalt salt
-  ) {
-    return MintTransaction.create(networkId, recipient, timeout, TokenType.generate(), salt);
-  }
+    /**
+     * Sets the mint justification bytes.
+     *
+     * @param justification mint justification bytes, may be null
+     *
+     * @return this builder
+     */
+    public Builder justification(byte[] justification) {
+      this.justification =
+              justification != null ? Arrays.copyOf(justification, justification.length) : null;
+      return this;
+    }
 
-  /**
-   * Create a mint transaction with no data, generated token type and salt.
-   *
-   * @param networkId network identifier
-   * @param recipient recipient predicate
-   * @param timeout exclusive timeout of the certification request
-   *
-   * @return mint transaction
-   */
-  public static MintTransaction create(NetworkId networkId, Predicate recipient, long timeout) {
-    return MintTransaction.create(networkId, recipient, timeout, (byte[]) null);
+    /**
+     * Sets the exclusive certification request deadline, in Unix seconds.
+     *
+     * <p>Leave it unset, or pass null, to let the Unicity Service assign a deadline from consensus
+     * time. That requires no local clock, and the assigned value is not recorded in the token.
+     *
+     * @param expiresAt exclusive request deadline, may be null
+     *
+     * @return this builder
+     */
+    public Builder expiresAt(Long expiresAt) {
+      this.expiresAt = expiresAt;
+      return this;
+    }
+
+    /**
+     * Builds the mint transaction, deriving the token id, lock script and mint state.
+     *
+     * @return mint transaction
+     */
+    public MintTransaction build() {
+      TokenType type = this.tokenType != null ? this.tokenType : TokenType.generate();
+      TokenSalt mintSalt = this.salt != null ? this.salt : TokenSalt.generate();
+
+      TokenId tokenId = TokenId.fromSalt(this.networkId, mintSalt);
+      SigningService signingService = MintSigningService.create(tokenId);
+      return new MintTransaction(
+              MintTransactionState.create(tokenId),
+              EncodedPredicate.fromPredicate(SignaturePredicate.fromSigningService(signingService)),
+              this.networkId,
+              EncodedPredicate.fromPredicate(this.recipient),
+              mintSalt,
+              type,
+              tokenId,
+              this.expiresAt,
+              this.justification,
+              this.data
+      );
+    }
   }
 
   /**
@@ -399,24 +280,27 @@ public class MintTransaction implements Transaction {
     if (tag.getTag() != MintTransaction.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData());
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), FIELD_COUNT);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    boolean hasTimeout = version == TIMEOUT_VERSION;
-    if ((version != LEGACY_VERSION && version != TIMEOUT_VERSION)
-            || data.size() != (hasTimeout ? 8 : 7)) {
+    if (version != VERSION) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
-    return MintTransaction.create(
-            NetworkId.fromId(CborDeserializer.decodeUnsignedInteger(data.get(1)).asShort()),
-            EncodedPredicate.fromCbor(data.get(2)),
-            hasTimeout ? CborDeserializer.decodeUnsignedInteger(data.get(7)).asLong() : 0,
-            CborDeserializer.decodeNullable(data.get(6), CborDeserializer::decodeByteString),
-            TokenType.fromCbor(data.get(4)),
-            TokenSalt.fromCbor(data.get(3)),
-            CborDeserializer.decodeNullable(data.get(5), CborDeserializer::decodeByteString)
-    );
+    return MintTransaction
+            .builder(
+                    NetworkId.fromId(CborDeserializer.decodeUnsignedInteger(data.get(1)).asShort()),
+                    EncodedPredicate.fromCbor(data.get(2)))
+            .salt(TokenSalt.fromCbor(data.get(3)))
+            .tokenType(TokenType.fromCbor(data.get(4)))
+            .justification(
+                    CborDeserializer.decodeNullable(data.get(5), CborDeserializer::decodeByteString))
+            .data(CborDeserializer.decodeNullable(data.get(6), CborDeserializer::decodeByteString))
+            .expiresAt(
+                    CborDeserializer.decodeNullable(
+                            data.get(7),
+                            value -> CborDeserializer.decodeUnsignedInteger(value).asLong()))
+            .build();
   }
 
   /**
@@ -453,23 +337,17 @@ public class MintTransaction implements Transaction {
    */
   @Override
   public byte[] toCbor() {
-    byte[] payload = this.timeout == 0
-            ? CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(LEGACY_VERSION),
-                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()), this.recipient.toCbor(),
-                    this.salt.toCbor(), this.tokenType.toCbor(),
-                    CborSerializer.encodeNullable(this.justification, CborSerializer::encodeByteString),
-                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString))
-            : CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(TIMEOUT_VERSION),
-                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()), this.recipient.toCbor(),
-                    this.salt.toCbor(), this.tokenType.toCbor(),
-                    CborSerializer.encodeNullable(this.justification, CborSerializer::encodeByteString),
-                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString),
-                    CborSerializer.encodeUnsignedInteger(this.timeout));
     return CborSerializer.encodeTag(
             MintTransaction.CBOR_TAG,
-            payload
+            CborSerializer.encodeArray(
+                    CborSerializer.encodeUnsignedInteger(VERSION),
+                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()),
+                    this.recipient.toCbor(),
+                    this.salt.toCbor(),
+                    this.tokenType.toCbor(),
+                    CborSerializer.encodeNullable(this.justification, CborSerializer::encodeByteString),
+                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString),
+                    CborSerializer.encodeNullable(this.expiresAt, CborSerializer::encodeUnsignedInteger))
     );
   }
 
@@ -494,8 +372,8 @@ public class MintTransaction implements Transaction {
   @Override
   public String toString() {
     return String.format(
-            "MintTransaction{sourceStateHash=%s, lockScript=%s, networkId=%s, recipient=%s, salt=%s, tokenType=%s, tokenId=%s, timeout=%s, data=%s}",
+            "MintTransaction{sourceStateHash=%s, lockScript=%s, networkId=%s, recipient=%s, salt=%s, tokenType=%s, tokenId=%s, expiresAt=%s, data=%s}",
             this.sourceStateHash, this.lockScript, this.networkId, this.recipient, this.salt,
-            this.tokenType, this.tokenId, this.timeout, HexConverter.encode(this.data));
+            this.tokenType, this.tokenId, this.expiresAt, HexConverter.encode(this.data));
   }
 }

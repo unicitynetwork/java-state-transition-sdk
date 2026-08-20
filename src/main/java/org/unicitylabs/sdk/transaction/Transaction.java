@@ -46,12 +46,13 @@ public interface Transaction {
   StateMask getStateMask();
 
   /**
-   * Explicit exclusive timeout of the certification request, or zero for the service default.
-   * Explicit values are committed by the v2 transaction encoding.
+   * Exclusive certification request deadline in Unix seconds, or empty when the Unicity Service
+   * assigns one from consensus time. It occupies a fixed position in the encoding and is committed
+   * by the transaction hash either way.
    *
-   * @return request timeout
+   * @return request deadline
    */
-  long getTimeout();
+  Optional<Long> getExpiresAt();
 
   /**
    * Calculates the resulting state hash.

@@ -31,7 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.unicitylabs.sdk.utils.RequestTimeout;
+import org.unicitylabs.sdk.utils.ExpiresAt;
 
 /**
  * End-to-end functional test for the token split flow: mint a source token, split it, burn the
@@ -72,7 +72,7 @@ public class SplitBuilderTest {
                     new TestPaymentData(PaymentAssetCollection.create(asset2)))
     );
 
-    SplitResult split = TokenSplit.split(sourceToken, TestPaymentData::decode, requests, RequestTimeout.requestTimeout());
+    SplitResult split = TokenSplit.split(sourceToken, TestPaymentData::decode, requests, StateMask.generate(), ExpiresAt.expiresAt());
 
     Token burnToken = TokenUtils.transferToken(
             client,
@@ -115,7 +115,7 @@ public class SplitBuilderTest {
                     new TestPaymentData(PaymentAssetCollection.create(asset1)))
     );
 
-    SplitResult secondSplit = TokenSplit.split(firstOutput, TestPaymentData::decode, secondRequests, RequestTimeout.requestTimeout());
+    SplitResult secondSplit = TokenSplit.split(firstOutput, TestPaymentData::decode, secondRequests, StateMask.generate(), ExpiresAt.expiresAt());
 
     Token secondBurnToken = TokenUtils.transferToken(
             client,
@@ -177,9 +177,9 @@ public class SplitBuilderTest {
     );
     StateMask burnStateMask = StateMask.generate();
 
-    SplitResult first = TokenSplit.split(token, TestPaymentData::decode, requests, RequestTimeout.requestTimeout(), burnStateMask);
-    SplitResult second = TokenSplit.split(token, TestPaymentData::decode, requests, RequestTimeout.requestTimeout(), burnStateMask);
-    SplitResult defaulted = TokenSplit.split(token, TestPaymentData::decode, requests, RequestTimeout.requestTimeout());
+    SplitResult first = TokenSplit.split(token, TestPaymentData::decode, requests, burnStateMask, ExpiresAt.expiresAt());
+    SplitResult second = TokenSplit.split(token, TestPaymentData::decode, requests, burnStateMask, ExpiresAt.expiresAt());
+    SplitResult defaulted = TokenSplit.split(token, TestPaymentData::decode, requests, StateMask.generate(), ExpiresAt.expiresAt());
 
     byte[] firstBurn = first.getBurnTransaction().toCbor();
     Assertions.assertArrayEquals(firstBurn, second.getBurnTransaction().toCbor());

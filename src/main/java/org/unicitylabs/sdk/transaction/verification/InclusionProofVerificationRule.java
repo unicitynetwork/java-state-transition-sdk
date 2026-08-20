@@ -63,13 +63,15 @@ public class InclusionProofVerificationRule {
 
     if (!certificationData.getLockScript().equals(transaction.getLockScript())
             || !certificationData.getSourceStateHash().equals(transaction.getSourceStateHash())
-            || certificationData.getTimeout() != transaction.getTimeout()) {
+            || !certificationData.getExpiresAt().equals(transaction.getExpiresAt())) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH);
     }
 
-    // The request was admissible only in a round strictly before its timeout.
-    if (transaction.getTimeout() != 0 && referenceTime >= transaction.getTimeout()) {
+    // The request was admissible only in a round strictly before its deadline. A request that
+    // carried no deadline was admitted under a service-assigned one, which is not recorded and is
+    // not re-checked here.
+    if (transaction.getExpiresAt().isPresent() && referenceTime >= transaction.getExpiresAt().get()) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.REQUEST_EXPIRED);
     }

@@ -82,14 +82,12 @@ public class TokenUtils {
           TokenSalt salt,
           byte[] justification
   ) throws Exception {
-    MintTransaction transaction = MintTransaction.create(
-            networkId,
-            recipient,
-            data,
-            tokenType,
-            salt,
-            justification
-    );
+    MintTransaction transaction = MintTransaction.builder(networkId, recipient)
+            .tokenType(tokenType)
+            .salt(salt)
+            .data(data)
+            .justification(justification)
+            .build();
 
     CertificationData certificationData = CertificationData.fromMintTransaction(transaction);
 
@@ -135,12 +133,7 @@ public class TokenUtils {
     Token token = Token.fromCbor(tokenBytes);
     Assertions.assertEquals(VerificationStatus.OK, token.verify(context).getStatus());
 
-    TransferTransaction transaction = TransferTransaction.create(
-            token,
-            recipient,
-            StateMask.generate(),
-            null
-    );
+    TransferTransaction transaction = TransferTransaction.create(token, recipient, StateMask.generate(), null);
 
     return TokenUtils.transferToken(
             client,

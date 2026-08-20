@@ -108,8 +108,8 @@ public class CertifiedMintTransaction implements Transaction {
   }
 
   @Override
-  public long getTimeout() {
-    return this.transaction.getTimeout();
+  public Optional<Long> getExpiresAt() {
+    return this.transaction.getExpiresAt();
   }
 
   /**

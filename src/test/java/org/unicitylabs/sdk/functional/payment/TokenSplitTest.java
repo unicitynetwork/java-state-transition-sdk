@@ -19,6 +19,7 @@ import org.unicitylabs.sdk.payment.asset.AssetId;
 import org.unicitylabs.sdk.payment.asset.PaymentAssetCollection;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
+import org.unicitylabs.sdk.transaction.StateMask;
 import org.unicitylabs.sdk.transaction.Token;
 import org.unicitylabs.sdk.transaction.verification.MintJustificationVerifierService;
 import org.unicitylabs.sdk.transaction.verification.TokenIssuanceVerifierService;
@@ -28,7 +29,7 @@ import org.unicitylabs.sdk.utils.TokenUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.unicitylabs.sdk.utils.RequestTimeout;
+import org.unicitylabs.sdk.utils.ExpiresAt;
 
 /**
  * Unit tests for the precondition branches of {@link TokenSplit#split}.
@@ -69,14 +70,10 @@ public class TokenSplitTest {
   public void splitFailsWhenAssetCountsDiffer() {
     TokenAssetCountMismatchException exception = Assertions.assertThrows(
             TokenAssetCountMismatchException.class,
-            () -> TokenSplit.split(
-                    this.sourceToken,
-                    TestPaymentData::decode,
-                    List.of(SplitTokenRequest.create(
+            () -> TokenSplit.split(this.sourceToken, TestPaymentData::decode, List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
                             new TestPaymentData(PaymentAssetCollection.create(this.asset1))
-                    ))
-            , RequestTimeout.requestTimeout())
+                    )), StateMask.generate(), ExpiresAt.expiresAt())
     );
     Assertions.assertEquals("Token and split tokens asset counts differ.", exception.getMessage());
   }
@@ -88,14 +85,10 @@ public class TokenSplitTest {
 
     TokenAssetMissingException exception = Assertions.assertThrows(
             TokenAssetMissingException.class,
-            () -> TokenSplit.split(
-                    this.sourceToken,
-                    TestPaymentData::decode,
-                    List.of(SplitTokenRequest.create(
+            () -> TokenSplit.split(this.sourceToken, TestPaymentData::decode, List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
                             new TestPaymentData(PaymentAssetCollection.create(this.asset1, unknownAsset))
-                    ))
-            , RequestTimeout.requestTimeout())
+                    )), StateMask.generate(), ExpiresAt.expiresAt())
     );
     Assertions.assertEquals(
             String.format("Token did not contain asset %s.", unknownAsset.getId()),
@@ -106,15 +99,11 @@ public class TokenSplitTest {
   public void splitFailsWhenAssetTreeAmountIsLess() {
     TokenAssetValueMismatchException exception = Assertions.assertThrows(
             TokenAssetValueMismatchException.class,
-            () -> TokenSplit.split(
-                    this.sourceToken,
-                    TestPaymentData::decode,
-                    List.of(SplitTokenRequest.create(
+            () -> TokenSplit.split(this.sourceToken, TestPaymentData::decode, List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
                             new TestPaymentData(PaymentAssetCollection.create(
                                     this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(400))))
-                    ))
-            , RequestTimeout.requestTimeout())
+                    )), StateMask.generate(), ExpiresAt.expiresAt())
     );
     Assertions.assertEquals("Token contained 500 AssetId{bytes=41535345545f32} assets, but tree has 400",
             exception.getMessage());
@@ -124,15 +113,11 @@ public class TokenSplitTest {
   public void splitFailsWhenAssetTreeAmountIsMore() {
     TokenAssetValueMismatchException exception = Assertions.assertThrows(
             TokenAssetValueMismatchException.class,
-            () -> TokenSplit.split(
-                    this.sourceToken,
-                    TestPaymentData::decode,
-                    List.of(SplitTokenRequest.create(
+            () -> TokenSplit.split(this.sourceToken, TestPaymentData::decode, List.of(SplitTokenRequest.create(
                             SignaturePredicate.fromSigningService(SigningService.generate()),
                             new TestPaymentData(PaymentAssetCollection.create(
                                     this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(1500))))
-                    ))
-            , RequestTimeout.requestTimeout())
+                    )), StateMask.generate(), ExpiresAt.expiresAt())
     );
     Assertions.assertEquals("Token contained 500 AssetId{bytes=41535345545f32} assets, but tree has 1500",
             exception.getMessage());
