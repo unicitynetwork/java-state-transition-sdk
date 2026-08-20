@@ -28,6 +28,7 @@ import org.unicitylabs.sdk.utils.TokenUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.unicitylabs.sdk.utils.RequestTimeout;
 
 /**
  * Unit tests for the precondition branches of {@link TokenSplit#split}.
@@ -75,7 +76,7 @@ public class TokenSplitTest {
                             SignaturePredicate.fromSigningService(SigningService.generate()),
                             new TestPaymentData(PaymentAssetCollection.create(this.asset1))
                     ))
-            )
+            , RequestTimeout.requestTimeout())
     );
     Assertions.assertEquals("Token and split tokens asset counts differ.", exception.getMessage());
   }
@@ -94,7 +95,7 @@ public class TokenSplitTest {
                             SignaturePredicate.fromSigningService(SigningService.generate()),
                             new TestPaymentData(PaymentAssetCollection.create(this.asset1, unknownAsset))
                     ))
-            )
+            , RequestTimeout.requestTimeout())
     );
     Assertions.assertEquals(
             String.format("Token did not contain asset %s.", unknownAsset.getId()),
@@ -113,7 +114,7 @@ public class TokenSplitTest {
                             new TestPaymentData(PaymentAssetCollection.create(
                                     this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(400))))
                     ))
-            )
+            , RequestTimeout.requestTimeout())
     );
     Assertions.assertEquals("Token contained 500 AssetId{bytes=41535345545f32} assets, but tree has 400",
             exception.getMessage());
@@ -131,7 +132,7 @@ public class TokenSplitTest {
                             new TestPaymentData(PaymentAssetCollection.create(
                                     this.asset1, new Asset(this.asset2.getId(), BigInteger.valueOf(1500))))
                     ))
-            )
+            , RequestTimeout.requestTimeout())
     );
     Assertions.assertEquals("Token contained 500 AssetId{bytes=41535345545f32} assets, but tree has 1500",
             exception.getMessage());

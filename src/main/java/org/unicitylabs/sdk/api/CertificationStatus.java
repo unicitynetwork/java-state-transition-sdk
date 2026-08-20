@@ -54,6 +54,11 @@ public final class CertificationStatus {
    * The certification request failed because request was sent to invalid shard.
    */
   public static final CertificationStatus INVALID_SHARD = new CertificationStatus("INVALID_SHARD");
+  /**
+   * The round's reference time had already reached the request's timeout.
+   */
+  public static final CertificationStatus REQUEST_EXPIRED =
+      new CertificationStatus("REQUEST_EXPIRED");
 
   private static final CertificationStatus[] VALUES = {
       SUCCESS,
@@ -64,7 +69,8 @@ public final class CertificationStatus {
       INVALID_SOURCE_STATE_HASH_FORMAT,
       INVALID_TRANSACTION_HASH_FORMAT,
       UNSUPPORTED_ALGORITHM,
-      INVALID_SHARD
+      INVALID_SHARD,
+      REQUEST_EXPIRED
   };
 
   private final String value;

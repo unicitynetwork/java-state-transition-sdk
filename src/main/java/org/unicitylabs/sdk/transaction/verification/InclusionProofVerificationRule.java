@@ -62,9 +62,16 @@ public class InclusionProofVerificationRule {
     }
 
     if (!certificationData.getLockScript().equals(transaction.getLockScript())
-            || !certificationData.getSourceStateHash().equals(transaction.getSourceStateHash())) {
+            || !certificationData.getSourceStateHash().equals(transaction.getSourceStateHash())
+            || certificationData.getTimeout() != transaction.getTimeout()) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH);
+    }
+
+    // The request was admissible only in a round strictly before its timeout.
+    if (referenceTime >= transaction.getTimeout()) {
+      return new VerificationResult<>("InclusionProofVerificationRule",
+              InclusionProofVerificationStatus.REQUEST_EXPIRED);
     }
 
     StateId stateId = StateId.fromTransaction(transaction);

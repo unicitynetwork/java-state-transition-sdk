@@ -21,6 +21,7 @@ import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
 import org.unicitylabs.sdk.util.HexConverter;
+import org.unicitylabs.sdk.utils.RequestTimeout;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
@@ -44,7 +45,7 @@ public class InclusionProofTest {
     transaction = MintTransaction.create(
             NetworkId.LOCAL,
             SignaturePredicate.fromSigningService(signingService)
-    );
+    , RequestTimeout.requestTimeout());
 
     certificationData = CertificationData.fromMintTransaction(transaction);
     stateId = StateId.fromCertificationData(certificationData);
@@ -127,6 +128,7 @@ public class InclusionProofTest {
                     DataHash.fromImprint(
                             HexConverter.decode("00000000000000000000000000000000000000000000000000000000000000000001")
                     ),
+                    this.certificationData.getTimeout(),
                     this.certificationData.getUnlockScript()
             ),
             REFERENCE_TIME,
@@ -153,6 +155,7 @@ public class InclusionProofTest {
                     this.certificationData.getLockScript(),
                     this.certificationData.getSourceStateHash(),
                     this.certificationData.getTransactionHash(),
+                    this.certificationData.getTimeout(),
                     SignaturePredicateUnlockScript.create(
                             this.transaction,
                             new SigningService(SigningService.generatePrivateKey())
@@ -206,6 +209,27 @@ public class InclusionProofTest {
                     inclusionProof,
                     this.transaction,
                     REFERENCE_TIME
+            ).getStatus()
+    );
+  }
+
+  @Test
+  public void testVerificationFailsWhenReferenceTimeReachesTheTimeout() {
+    InclusionProof inclusionProof = new InclusionProof(
+            this.certificationData,
+            REFERENCE_TIME,
+            this.inclusionCertificate,
+            this.unicityCertificate
+    );
+
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.REQUEST_EXPIRED,
+            InclusionProofVerificationRule.verify(
+                    this.trustBase,
+                    this.predicateVerifier,
+                    inclusionProof,
+                    this.transaction,
+                    this.transaction.getTimeout()
             ).getStatus()
     );
   }

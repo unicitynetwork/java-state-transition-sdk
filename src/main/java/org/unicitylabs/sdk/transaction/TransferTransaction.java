@@ -27,6 +27,7 @@ public class TransferTransaction implements Transaction {
   private final DataHash sourceStateHash;
   private final EncodedPredicate lockScript;
   private final EncodedPredicate recipient;
+  private final long timeout;
   private final StateMask stateMask;
   private final byte[] data;
 
@@ -34,12 +35,14 @@ public class TransferTransaction implements Transaction {
           DataHash sourceStateHash,
           EncodedPredicate lockScript,
           EncodedPredicate recipient,
+          long timeout,
           StateMask stateMask,
           byte[] data
   ) {
     this.sourceStateHash = sourceStateHash;
     this.lockScript = lockScript;
     this.recipient = recipient;
+    this.timeout = timeout;
     this.stateMask = stateMask;
     this.data = data;
   }
@@ -74,23 +77,30 @@ public class TransferTransaction implements Transaction {
     return this.stateMask;
   }
 
+  @Override
+  public long getTimeout() {
+    return this.timeout;
+  }
+
   /**
    * Creates a transfer transaction from the latest state of the provided token.
    *
    * @param token token whose latest transaction is used as the source
    * @param recipient recipient predicate
    * @param stateMask transaction randomness component
+   * @param timeout exclusive timeout of the certification request
    * @param data transfer payload
    * @return created transfer transaction
    */
   public static TransferTransaction create(Token token, Predicate recipient,
-                                           StateMask stateMask, byte[] data) {
+                                           StateMask stateMask, long timeout, byte[] data) {
     Transaction transaction = token.getLatestTransaction();
 
     return new TransferTransaction(
             transaction.calculateStateHash(),
             transaction.getRecipient(),
             EncodedPredicate.fromPredicate(recipient),
+            timeout,
             stateMask,
             data
     );
@@ -108,7 +118,7 @@ public class TransferTransaction implements Transaction {
     if (tag.getTag() != TransferTransaction.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 4);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 5);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
     if (version != TransferTransaction.VERSION) {
@@ -119,6 +129,7 @@ public class TransferTransaction implements Transaction {
             token,
             EncodedPredicate.fromCbor(data.get(1)),
             StateMask.fromCbor(data.get(2)),
+            CborDeserializer.decodeUnsignedInteger(data.get(4)).asLong(),
             CborDeserializer.decodeNullable(data.get(3), CborDeserializer::decodeByteString)
     );
   }
@@ -150,7 +161,8 @@ public class TransferTransaction implements Transaction {
                     CborSerializer.encodeUnsignedInteger(TransferTransaction.VERSION),
                     EncodedPredicate.fromPredicate(this.recipient).toCbor(),
                     this.stateMask.toCbor(),
-                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString)
+                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString),
+                    CborSerializer.encodeUnsignedInteger(this.timeout)
             )
     );
   }
@@ -179,8 +191,8 @@ public class TransferTransaction implements Transaction {
   @Override
   public String toString() {
     return String.format(
-            "TransferTransaction{sourceStateHash=%s, lockScript=%s, recipient=%s, stateMask=%s, data=%s}",
-            this.sourceStateHash, this.lockScript, this.recipient, this.stateMask,
+            "TransferTransaction{sourceStateHash=%s, lockScript=%s, recipient=%s, timeout=%s, stateMask=%s, data=%s}",
+            this.sourceStateHash, this.lockScript, this.recipient, this.timeout, this.stateMask,
             HexConverter.encode(this.data));
   }
 }

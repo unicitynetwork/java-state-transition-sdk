@@ -107,6 +107,11 @@ public class CertifiedMintTransaction implements Transaction {
     return this.inclusionProof;
   }
 
+  @Override
+  public long getTimeout() {
+    return this.transaction.getTimeout();
+  }
+
   /**
    * Get the reference time this transition was validated under.
    *

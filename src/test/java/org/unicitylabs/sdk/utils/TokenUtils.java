@@ -85,6 +85,7 @@ public class TokenUtils {
     MintTransaction transaction = MintTransaction.create(
             networkId,
             recipient,
+            RequestTimeout.requestTimeout(),
             data,
             tokenType,
             salt,
@@ -139,6 +140,7 @@ public class TokenUtils {
             token,
             recipient,
             StateMask.generate(),
+            RequestTimeout.requestTimeout(),
             null
     );
 

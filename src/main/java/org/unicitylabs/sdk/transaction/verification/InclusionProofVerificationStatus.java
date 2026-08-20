@@ -14,6 +14,8 @@ public enum InclusionProofVerificationStatus {
   TRANSACTION_HASH_MISMATCH,
   /** The inclusion proof does not carry the reference time its leaf value was built from. */
   MISSING_REFERENCE_TIME,
+  /** The round's reference time had already reached the request's timeout. */
+  REQUEST_EXPIRED,
   /** Proof authentication failed. */
   NOT_AUTHENTICATED,
   /** Proof path is not included in the committed tree state. */

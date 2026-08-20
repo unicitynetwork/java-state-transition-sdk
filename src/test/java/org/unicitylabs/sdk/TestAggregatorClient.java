@@ -78,6 +78,11 @@ public class TestAggregatorClient implements AggregatorClient {
         return CompletableFuture.completedFuture(CertificationResponse.create(CertificationStatus.SIGNATURE_VERIFICATION_FAILED));
       }
 
+      if (this.referenceTime >= certificationData.getTimeout()) {
+        return CompletableFuture.completedFuture(
+                CertificationResponse.create(CertificationStatus.REQUEST_EXPIRED));
+      }
+
       if (!this.requests.containsKey(stateId)) {
         DataHash leafValue = LeafValue.calculate(certificationData.getTransactionHash(),
                 this.referenceTime);

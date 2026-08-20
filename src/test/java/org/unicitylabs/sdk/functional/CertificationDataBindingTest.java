@@ -24,6 +24,7 @@ import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.utils.TokenUtils;
+import org.unicitylabs.sdk.utils.RequestTimeout;
 
 /**
  * M-03: the inclusion-proof rule must bind the certification lock script and source state hash to
@@ -57,8 +58,8 @@ public class CertificationDataBindingTest {
     SignaturePredicate recipient = SignaturePredicate.fromSigningService(SigningService.generate());
     StateMask stateMask = StateMask.generate();
 
-    TransferTransaction transferA = TransferTransaction.create(tokenA, recipient, stateMask, null);
-    TransferTransaction transferB = TransferTransaction.create(tokenB, recipient, stateMask, null);
+    TransferTransaction transferA = TransferTransaction.create(tokenA, recipient, stateMask, RequestTimeout.requestTimeout(), null);
+    TransferTransaction transferB = TransferTransaction.create(tokenB, recipient, stateMask, RequestTimeout.requestTimeout(), null);
 
     Assertions.assertEquals(
             transferA.calculateTransactionHash(), transferB.calculateTransactionHash(),

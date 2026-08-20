@@ -41,15 +41,18 @@ public class TokenSplit {
    * @param token source token to split (the token being burned)
    * @param paymentDataDeserializer decoder for the source token's payment data
    * @param requests per-output mint requests; each carries its own payment data
+   * @param burnTimeout exclusive certification request timeout of the burn transaction
    * @return burn predicate, burn transaction and split tokens ready to mint
    * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
-          List<SplitTokenRequest> requests
+          List<SplitTokenRequest> requests,
+          long burnTimeout
   ) throws LeafExistsException {
-    return TokenSplit.split(token, paymentDataDeserializer, requests, StateMask.generate());
+    return TokenSplit.split(token, paymentDataDeserializer, requests, burnTimeout,
+            StateMask.generate());
   }
 
   /**
@@ -58,6 +61,7 @@ public class TokenSplit {
    * @param token source token to split (the token being burned)
    * @param paymentDataDeserializer decoder for the source token's payment data
    * @param requests per-output mint requests; each carries its own payment data
+   * @param burnTimeout exclusive certification request timeout of the burn transaction
    * @param burnStateMask state mask for the burn transaction; callers needing a crash-resumable
    *     (re-buildable) split supply a deterministically derived mask so the identical burn
    *     transaction can be reconstructed after a failure
@@ -68,6 +72,7 @@ public class TokenSplit {
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests,
+          long burnTimeout,
           StateMask burnStateMask
   ) throws LeafExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
@@ -140,6 +145,7 @@ public class TokenSplit {
             token,
             burnPredicate,
             burnStateMask,
+            burnTimeout,
             manifestBytes
     );
 

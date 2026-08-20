@@ -28,17 +28,20 @@ public class CertificationData {
   private final EncodedPredicate lockScript;
   private final DataHash sourceStateHash;
   private final DataHash transactionHash;
+  private final long timeout;
   private final byte[] unlockScript;
 
   CertificationData(
           EncodedPredicate lockScript,
           DataHash sourceStateHash,
           DataHash transactionHash,
+          long timeout,
           byte[] unlockScript
   ) {
     this.lockScript = lockScript;
     this.sourceStateHash = sourceStateHash;
     this.transactionHash = transactionHash;
+    this.timeout = timeout;
     this.unlockScript = Arrays.copyOf(unlockScript, unlockScript.length);
   }
 
@@ -74,6 +77,15 @@ public class CertificationData {
   }
 
   /**
+   * Get the exclusive timeout of the certification request.
+   *
+   * @return request timeout
+   */
+  public long getTimeout() {
+    return this.timeout;
+  }
+
+  /**
    * Get unlock script used for certification.
    *
    * @return unlock script bytes
@@ -93,7 +105,7 @@ public class CertificationData {
     if (tag.getTag() != CertificationData.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 5);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 6);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
     if (version != CertificationData.VERSION) {
@@ -104,7 +116,8 @@ public class CertificationData {
             EncodedPredicate.fromCbor(data.get(1)),
             new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(data.get(2))),
             new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(data.get(3))),
-            CborDeserializer.decodeByteString(data.get(4))
+            CborDeserializer.decodeUnsignedInteger(data.get(4)).asLong(),
+            CborDeserializer.decodeByteString(data.get(5))
     );
   }
 
@@ -157,6 +170,7 @@ public class CertificationData {
             transaction.getLockScript(),
             transaction.getSourceStateHash(),
             transaction.calculateTransactionHash(),
+            transaction.getTimeout(),
             unlockScript
     );
   }
@@ -174,6 +188,7 @@ public class CertificationData {
                     this.lockScript.toCbor(),
                     CborSerializer.encodeByteString(this.sourceStateHash.getData()),
                     CborSerializer.encodeByteString(this.transactionHash.getData()),
+                    CborSerializer.encodeUnsignedInteger(this.timeout),
                     CborSerializer.encodeByteString(this.unlockScript)
             )
     );
@@ -188,19 +203,21 @@ public class CertificationData {
     return Objects.equals(this.lockScript, that.lockScript)
             && Objects.equals(this.sourceStateHash, that.sourceStateHash)
             && Objects.equals(this.transactionHash, that.transactionHash)
+            && this.timeout == that.timeout
             && Arrays.equals(this.unlockScript, that.unlockScript);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.lockScript, this.sourceStateHash, this.transactionHash, Arrays.hashCode(this.unlockScript));
+    return Objects.hash(this.lockScript, this.sourceStateHash, this.transactionHash, this.timeout,
+            Arrays.hashCode(this.unlockScript));
   }
 
   @Override
   public String toString() {
     return String.format(
-            "CertificationData{lockScript=%s, sourceStateHash=%s, transactionHash=%s, unlockScript=%s}",
-            this.lockScript, this.sourceStateHash, this.transactionHash,
+            "CertificationData{lockScript=%s, sourceStateHash=%s, transactionHash=%s, timeout=%s, unlockScript=%s}",
+            this.lockScript, this.sourceStateHash, this.transactionHash, this.timeout,
             HexConverter.encode(this.unlockScript));
   }
 }
