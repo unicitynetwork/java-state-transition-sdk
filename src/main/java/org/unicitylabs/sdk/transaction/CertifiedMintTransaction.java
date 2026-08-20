@@ -129,10 +129,15 @@ public class CertifiedMintTransaction implements Transaction {
    */
   public static CertifiedMintTransaction fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
+    InclusionProof proof = InclusionProof.fromCbor(data.get(2));
+    long referenceTime = CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong();
+    if (!proof.getReferenceTime().isPresent() || referenceTime != proof.getReferenceTime().get()) {
+      throw new IllegalArgumentException("Certified mint transaction reference time mismatch");
+    }
     return new CertifiedMintTransaction(
             MintTransaction.fromCbor(data.get(0)),
-            CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong(),
-            InclusionProof.fromCbor(data.get(2)));
+            referenceTime,
+            proof);
   }
 
   /**
@@ -191,10 +196,8 @@ public class CertifiedMintTransaction implements Transaction {
 
   @Override
   public byte[] toCbor() {
-    return CborSerializer.encodeArray(
-            this.transaction.toCbor(),
-            CborSerializer.encodeUnsignedInteger(this.referenceTime),
-            this.inclusionProof.toCbor());
+    return CborSerializer.encodeArray(this.transaction.toCbor(),
+            CborSerializer.encodeUnsignedInteger(this.referenceTime), this.inclusionProof.toCbor());
   }
 
   @Override

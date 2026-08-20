@@ -244,7 +244,7 @@ public class InclusionProofTest {
     );
 
     Assertions.assertEquals(
-            InclusionProofVerificationStatus.PATH_INVALID,
+            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME,
             InclusionProofVerificationRule.verify(
                     this.trustBase,
                     this.predicateVerifier,

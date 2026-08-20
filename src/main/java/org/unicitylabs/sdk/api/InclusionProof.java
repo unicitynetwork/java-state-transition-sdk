@@ -36,7 +36,7 @@ public class InclusionProof {
   }
 
   public int getVersion() {
-    return InclusionProof.VERSION;
+    return VERSION;
   }
 
   /**
@@ -94,14 +94,14 @@ public class InclusionProof {
     List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 5);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    if (version != InclusionProof.VERSION) {
+    if (version != VERSION) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
     return new InclusionProof(
             CborDeserializer.decodeNullable(data.get(1), CertificationData::fromCbor),
-            CborDeserializer.decodeNullable(data.get(2),
-                    (referenceTime) -> CborDeserializer.decodeUnsignedInteger(referenceTime).asLong()),
+            CborDeserializer.decodeNullable(data.get(2), value ->
+                    CborDeserializer.decodeUnsignedInteger(value).asLong()),
             CborDeserializer.decodeNullable(data.get(3), (inclusionCertificate) ->
                     InclusionCertificate.decode(CborDeserializer.decodeByteString(inclusionCertificate))
             ),
@@ -115,18 +115,15 @@ public class InclusionProof {
    * @return CBOR bytes
    */
   public byte[] toCbor() {
+    byte[] payload = CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(VERSION),
+            CborSerializer.encodeNullable(this.certificationData, CertificationData::toCbor),
+            CborSerializer.encodeNullable(this.referenceTime,
+                    CborSerializer::encodeUnsignedInteger),
+            CborSerializer.encodeNullable(this.inclusionCertificate, certificate ->
+                    CborSerializer.encodeByteString(certificate.encode())), this.unicityCertificate.toCbor());
     return CborSerializer.encodeTag(
             InclusionProof.CBOR_TAG,
-            CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(InclusionProof.VERSION),
-                    CborSerializer.encodeNullable(this.certificationData, CertificationData::toCbor),
-                    CborSerializer.encodeNullable(this.referenceTime,
-                            CborSerializer::encodeUnsignedInteger),
-                    CborSerializer.encodeNullable(this.inclusionCertificate, (inclusionCertificate) ->
-                            CborSerializer.encodeByteString(inclusionCertificate.encode())
-                    ),
-                    this.unicityCertificate.toCbor()
-            )
+            payload
     );
   }
 

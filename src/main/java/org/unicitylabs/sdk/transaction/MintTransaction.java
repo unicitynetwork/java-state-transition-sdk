@@ -31,7 +31,8 @@ import java.util.Optional;
  */
 public class MintTransaction implements Transaction {
   public static final long CBOR_TAG = 39041;
-  private static final int VERSION = 1;
+  private static final int LEGACY_VERSION = 1;
+  private static final int TIMEOUT_VERSION = 2;
 
   private final MintTransactionState sourceStateHash;
   private final EncodedPredicate lockScript;
@@ -74,7 +75,7 @@ public class MintTransaction implements Transaction {
   }
 
   public int getVersion() {
-    return MintTransaction.VERSION;
+    return this.timeout == 0 ? LEGACY_VERSION : TIMEOUT_VERSION;
   }
 
 
@@ -189,6 +190,48 @@ public class MintTransaction implements Transaction {
             justification != null ? Arrays.copyOf(justification, justification.length) : null,
             data != null ? Arrays.copyOf(data, data.length) : null
     );
+  }
+
+  /** Creates a legacy transaction whose timeout is assigned by the aggregation service. */
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
+                                       TokenType tokenType, TokenSalt salt, byte[] justification) {
+    return create(networkId, recipient, 0, data, tokenType, salt, justification);
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
+                                       TokenType tokenType, TokenSalt salt) {
+    return create(networkId, recipient, data, tokenType, salt, null);
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
+                                       TokenType tokenType) {
+    return create(networkId, recipient, data, tokenType, TokenSalt.generate());
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data,
+                                       TokenSalt salt) {
+    return create(networkId, recipient, data, TokenType.generate(), salt);
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient,
+                                       TokenType tokenType, TokenSalt salt) {
+    return create(networkId, recipient, (byte[]) null, tokenType, salt);
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, byte[] data) {
+    return create(networkId, recipient, data, TokenType.generate());
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, TokenType tokenType) {
+    return create(networkId, recipient, (byte[]) null, tokenType);
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient, TokenSalt salt) {
+    return create(networkId, recipient, TokenType.generate(), salt);
+  }
+
+  public static MintTransaction create(NetworkId networkId, Predicate recipient) {
+    return create(networkId, recipient, (byte[]) null);
   }
 
   /**
@@ -356,17 +399,19 @@ public class MintTransaction implements Transaction {
     if (tag.getTag() != MintTransaction.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 8);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData());
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    if (version != MintTransaction.VERSION) {
+    boolean hasTimeout = version == TIMEOUT_VERSION;
+    if ((version != LEGACY_VERSION && version != TIMEOUT_VERSION)
+            || data.size() != (hasTimeout ? 8 : 7)) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
     return MintTransaction.create(
             NetworkId.fromId(CborDeserializer.decodeUnsignedInteger(data.get(1)).asShort()),
             EncodedPredicate.fromCbor(data.get(2)),
-            CborDeserializer.decodeUnsignedInteger(data.get(7)).asLong(),
+            hasTimeout ? CborDeserializer.decodeUnsignedInteger(data.get(7)).asLong() : 0,
             CborDeserializer.decodeNullable(data.get(6), CborDeserializer::decodeByteString),
             TokenType.fromCbor(data.get(4)),
             TokenSalt.fromCbor(data.get(3)),
@@ -408,18 +453,23 @@ public class MintTransaction implements Transaction {
    */
   @Override
   public byte[] toCbor() {
-    return CborSerializer.encodeTag(
-            MintTransaction.CBOR_TAG,
-            CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(MintTransaction.VERSION),
-                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()),
-                    this.recipient.toCbor(),
-                    this.salt.toCbor(),
-                    this.tokenType.toCbor(),
+    byte[] payload = this.timeout == 0
+            ? CborSerializer.encodeArray(
+                    CborSerializer.encodeUnsignedInteger(LEGACY_VERSION),
+                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()), this.recipient.toCbor(),
+                    this.salt.toCbor(), this.tokenType.toCbor(),
+                    CborSerializer.encodeNullable(this.justification, CborSerializer::encodeByteString),
+                    CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString))
+            : CborSerializer.encodeArray(
+                    CborSerializer.encodeUnsignedInteger(TIMEOUT_VERSION),
+                    CborSerializer.encodeUnsignedInteger(this.networkId.getId()), this.recipient.toCbor(),
+                    this.salt.toCbor(), this.tokenType.toCbor(),
                     CborSerializer.encodeNullable(this.justification, CborSerializer::encodeByteString),
                     CborSerializer.encodeNullable(this.data, CborSerializer::encodeByteString),
-                    CborSerializer.encodeUnsignedInteger(this.timeout)
-            )
+                    CborSerializer.encodeUnsignedInteger(this.timeout));
+    return CborSerializer.encodeTag(
+            MintTransaction.CBOR_TAG,
+            payload
     );
   }
 

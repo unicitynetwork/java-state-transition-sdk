@@ -9,6 +9,7 @@ import org.unicitylabs.sdk.api.CertificationStatus;
 import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.crypto.secp256k1.SigningService;
 import org.unicitylabs.sdk.predicate.builtin.SignaturePredicate;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.transaction.MintTransaction;
 import org.unicitylabs.sdk.transaction.TokenSalt;
 import org.unicitylabs.sdk.transaction.TokenType;
@@ -56,5 +57,31 @@ public class RequestTimeoutTest {
 
     Assertions.assertNotEquals(first.calculateTransactionHash(),
             second.calculateTransactionHash());
+  }
+
+  @Test
+  public void legacyCreateUsesServiceDefaultAndV1WireFormat() {
+    MintTransaction transaction = MintTransaction.create(NetworkId.LOCAL, this.recipient);
+    MintTransaction decoded = MintTransaction.fromCbor(transaction.toCbor());
+    CertificationData certificationData = CertificationData.fromMintTransaction(transaction);
+
+    Assertions.assertEquals(1, transaction.getVersion());
+    Assertions.assertEquals(0, transaction.getTimeout());
+    Assertions.assertArrayEquals(transaction.toCbor(), decoded.toCbor());
+    Assertions.assertEquals(1, certificationData.getVersion());
+    Assertions.assertEquals(0, certificationData.getTimeout());
+  }
+
+  @Test
+  public void versionMustMatchTheFieldCount() {
+    MintTransaction transaction = MintTransaction.create(NetworkId.LOCAL, this.recipient, 1_755_000_000L);
+    byte[] mismatched = transaction.toCbor();
+    Assertions.assertEquals(2, mismatched[4], "fixture version offset");
+    mismatched[4] = 1;
+
+    Assertions.assertThrows(
+            CborSerializationException.class,
+            () -> MintTransaction.fromCbor(mismatched)
+    );
   }
 }

@@ -93,11 +93,16 @@ public class CertifiedTransferTransaction implements Transaction {
    */
   public static CertifiedTransferTransaction fromCbor(byte[] bytes, Token token) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
+    InclusionProof proof = InclusionProof.fromCbor(data.get(2));
+    long referenceTime = CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong();
+    if (!proof.getReferenceTime().isPresent() || referenceTime != proof.getReferenceTime().get()) {
+      throw new IllegalArgumentException("Certified transfer transaction reference time mismatch");
+    }
 
     return new CertifiedTransferTransaction(
             TransferTransaction.fromCbor(data.get(0), token),
-            CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong(),
-            InclusionProof.fromCbor(data.get(2))
+            referenceTime,
+            proof
     );
   }
 
@@ -177,10 +182,8 @@ public class CertifiedTransferTransaction implements Transaction {
    */
   @Override
   public byte[] toCbor() {
-    return CborSerializer.encodeArray(
-            this.transaction.toCbor(),
-            CborSerializer.encodeUnsignedInteger(this.referenceTime),
-            this.inclusionProof.toCbor());
+    return CborSerializer.encodeArray(this.transaction.toCbor(),
+            CborSerializer.encodeUnsignedInteger(this.referenceTime), this.inclusionProof.toCbor());
   }
 
   @Override

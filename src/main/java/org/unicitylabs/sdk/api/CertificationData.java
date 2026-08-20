@@ -23,7 +23,8 @@ import java.util.Objects;
  */
 public class CertificationData {
   public static final long CBOR_TAG = 39031;
-  private static final int VERSION = 1;
+  private static final int LEGACY_VERSION = 1;
+  private static final int TIMEOUT_VERSION = 2;
 
   private final EncodedPredicate lockScript;
   private final DataHash sourceStateHash;
@@ -46,7 +47,7 @@ public class CertificationData {
   }
 
   public int getVersion() {
-    return CertificationData.VERSION;
+    return this.timeout == 0 ? LEGACY_VERSION : TIMEOUT_VERSION;
   }
 
   /**
@@ -105,10 +106,12 @@ public class CertificationData {
     if (tag.getTag() != CertificationData.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 6);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData());
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    if (version != CertificationData.VERSION) {
+    boolean hasTimeout = version == TIMEOUT_VERSION;
+    if ((version != LEGACY_VERSION && version != TIMEOUT_VERSION)
+            || data.size() != (hasTimeout ? 6 : 5)) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
@@ -116,8 +119,8 @@ public class CertificationData {
             EncodedPredicate.fromCbor(data.get(1)),
             new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(data.get(2))),
             new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(data.get(3))),
-            CborDeserializer.decodeUnsignedInteger(data.get(4)).asLong(),
-            CborDeserializer.decodeByteString(data.get(5))
+            hasTimeout ? CborDeserializer.decodeUnsignedInteger(data.get(4)).asLong() : 0,
+            CborDeserializer.decodeByteString(data.get(hasTimeout ? 5 : 4))
     );
   }
 
@@ -181,16 +184,19 @@ public class CertificationData {
    * @return CBOR bytes
    */
   public byte[] toCbor() {
-    return CborSerializer.encodeTag(
-            CertificationData.CBOR_TAG,
-            CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(CertificationData.VERSION),
-                    this.lockScript.toCbor(),
-                    CborSerializer.encodeByteString(this.sourceStateHash.getData()),
+    byte[] payload = this.timeout == 0
+            ? CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(LEGACY_VERSION),
+                    this.lockScript.toCbor(), CborSerializer.encodeByteString(this.sourceStateHash.getData()),
+                    CborSerializer.encodeByteString(this.transactionHash.getData()),
+                    CborSerializer.encodeByteString(this.unlockScript))
+            : CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(TIMEOUT_VERSION),
+                    this.lockScript.toCbor(), CborSerializer.encodeByteString(this.sourceStateHash.getData()),
                     CborSerializer.encodeByteString(this.transactionHash.getData()),
                     CborSerializer.encodeUnsignedInteger(this.timeout),
-                    CborSerializer.encodeByteString(this.unlockScript)
-            )
+                    CborSerializer.encodeByteString(this.unlockScript));
+    return CborSerializer.encodeTag(
+            CertificationData.CBOR_TAG,
+            payload
     );
   }
 

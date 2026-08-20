@@ -46,9 +46,8 @@ public interface Transaction {
   StateMask getStateMask();
 
   /**
-   * Exclusive timeout of the certification request. The Unicity Service admits the request only
-   * in a round whose reference time is below this value. It is part of the transaction encoding,
-   * so the transaction hash commits to it and the unlock script signs it.
+   * Explicit exclusive timeout of the certification request, or zero for the service default.
+   * Explicit values are committed by the v2 transaction encoding.
    *
    * @return request timeout
    */

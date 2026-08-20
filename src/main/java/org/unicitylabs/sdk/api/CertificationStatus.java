@@ -60,6 +60,10 @@ public final class CertificationStatus {
   public static final CertificationStatus REQUEST_EXPIRED =
       new CertificationStatus("REQUEST_EXPIRED");
 
+  /** The aggregation service has not obtained a consensus reference time yet. */
+  public static final CertificationStatus SERVICE_NOT_READY =
+      new CertificationStatus("SERVICE_NOT_READY");
+
   private static final CertificationStatus[] VALUES = {
       SUCCESS,
       STATE_ID_MISMATCH,
@@ -70,7 +74,8 @@ public final class CertificationStatus {
       INVALID_TRANSACTION_HASH_FORMAT,
       UNSUPPORTED_ALGORITHM,
       INVALID_SHARD,
-      REQUEST_EXPIRED
+      REQUEST_EXPIRED,
+      SERVICE_NOT_READY
   };
 
   private final String value;

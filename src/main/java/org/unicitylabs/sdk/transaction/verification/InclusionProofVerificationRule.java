@@ -69,9 +69,15 @@ public class InclusionProofVerificationRule {
     }
 
     // The request was admissible only in a round strictly before its timeout.
-    if (referenceTime >= transaction.getTimeout()) {
+    if (transaction.getTimeout() != 0 && referenceTime >= transaction.getTimeout()) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.REQUEST_EXPIRED);
+    }
+
+    if (!inclusionProof.getReferenceTime().isPresent()
+            || inclusionProof.getReferenceTime().get() != referenceTime) {
+      return new VerificationResult<>("InclusionProofVerificationRule",
+              InclusionProofVerificationStatus.MISSING_REFERENCE_TIME);
     }
 
     StateId stateId = StateId.fromTransaction(transaction);

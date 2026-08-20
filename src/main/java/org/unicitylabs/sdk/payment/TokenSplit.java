@@ -35,6 +35,25 @@ public class TokenSplit {
   private TokenSplit() {
   }
 
+  /** Split using the aggregation service's default timeout and a random burn state mask. */
+  public static SplitResult split(
+          Token token,
+          PaymentDataDeserializer paymentDataDeserializer,
+          List<SplitTokenRequest> requests
+  ) throws LeafExistsException {
+    return split(token, paymentDataDeserializer, requests, 0, StateMask.generate());
+  }
+
+  /** Split using the aggregation service's default timeout and the supplied burn state mask. */
+  public static SplitResult split(
+          Token token,
+          PaymentDataDeserializer paymentDataDeserializer,
+          List<SplitTokenRequest> requests,
+          StateMask burnStateMask
+  ) throws LeafExistsException {
+    return split(token, paymentDataDeserializer, requests, 0, burnStateMask);
+  }
+
   /**
    * Split a token into new outputs with a random burn state mask.
    *

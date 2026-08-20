@@ -127,15 +127,6 @@ The SDK follows a modular architecture under `org.unicitylabs.sdk`:
 All certificate and transaction verification is handled internally by the SDK, requiring only the
 trustbase as input from the user.
 
-Mint and transfer transactions carry an exclusive certification request timeout in Unix seconds.
-The Unicity Service admits a request only when the round reference time is strictly below that
-timeout. Because the timeout is part of the transaction encoding, the transaction hash commits to
-it and an expired request cannot be certified as the same transaction with a later deadline.
-
-Certified transactions also carry the reference time of the round in which their leaf was created.
-The leaf value is `SHA-256(CBOR([transactionHash, referenceTime]))`; verification uses that fixed
-time even when the inclusion proof is later refreshed against a newer append-only tree root.
-
 ## Contributing
 
 1. Fork the repository
@@ -198,3 +189,4 @@ For questions about the Unicity Labs, visit [unicity-labs.com](https://unicity-l
 - Uses Jackson for CBOR encoding
 - Uses Bouncy Castle for cryptographic operations
 - Uses OkHttp for Android-compatible HTTP operations
+
