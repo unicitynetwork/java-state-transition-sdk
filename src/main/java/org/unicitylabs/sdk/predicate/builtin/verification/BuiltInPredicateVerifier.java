@@ -22,11 +22,13 @@ public interface BuiltInPredicateVerifier {
    * Verifies that the provided unlock script satisfies the predicate in the current context.
    *
    * @param predicate the predicate to verify
+   * @param referenceTime reference time the transition was validated under
    * @param sourceStateHash hash of the source state
    * @param transactionHash hash of the transaction being validated
    * @param unlockScript unlock script bytes provided for the predicate
    * @return verification result with status and optional diagnostics
    */
-  VerificationResult<VerificationStatus> verify(EncodedPredicate predicate, DataHash sourceStateHash,
-                                                DataHash transactionHash, byte[] unlockScript);
+  VerificationResult<VerificationStatus> verify(EncodedPredicate predicate, long referenceTime,
+                                                DataHash sourceStateHash, DataHash transactionHash,
+                                                byte[] unlockScript);
 }

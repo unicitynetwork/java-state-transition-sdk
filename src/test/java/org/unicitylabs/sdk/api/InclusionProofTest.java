@@ -25,6 +25,8 @@ import org.unicitylabs.sdk.util.HexConverter;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class InclusionProofTest {
 
+  static final long REFERENCE_TIME = 1755000000L;
+
   MintTransaction transaction;
   PredicateVerifierService predicateVerifier;
   StateId stateId;
@@ -48,7 +50,8 @@ public class InclusionProofTest {
     stateId = StateId.fromCertificationData(certificationData);
 
     SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
-    smt.addLeaf(stateId.getData(), certificationData.getTransactionHash().getData());
+    smt.addLeaf(stateId.getData(),
+            LeafValue.calculate(certificationData.getTransactionHash(), REFERENCE_TIME).getData());
 
     SparseMerkleTreeRootNode root = smt.calculateRoot();
     inclusionCertificate = InclusionCertificate.create(root, stateId.getData());
@@ -62,6 +65,7 @@ public class InclusionProofTest {
   public void testCborSerialization() {
     InclusionProof inclusionProof = new InclusionProof(
             certificationData,
+            REFERENCE_TIME,
             inclusionCertificate,
             unicityCertificate
     );
@@ -74,6 +78,7 @@ public class InclusionProofTest {
     Assertions.assertThrows(NullPointerException.class,
             () -> new InclusionProof(
                     this.certificationData,
+                    REFERENCE_TIME,
                     this.inclusionCertificate,
                     null
             )
@@ -81,12 +86,14 @@ public class InclusionProofTest {
     Assertions.assertInstanceOf(InclusionProof.class,
             new InclusionProof(
                     this.certificationData,
+                    REFERENCE_TIME,
                     this.inclusionCertificate,
                     this.unicityCertificate
             )
     );
     Assertions.assertInstanceOf(InclusionProof.class,
             new InclusionProof(
+                    null,
                     null,
                     this.inclusionCertificate,
                     this.unicityCertificate
@@ -98,6 +105,7 @@ public class InclusionProofTest {
   public void testItVerifies() {
     InclusionProof inclusionProof = new InclusionProof(
             this.certificationData,
+            REFERENCE_TIME,
             this.inclusionCertificate,
             this.unicityCertificate
     );
@@ -107,7 +115,8 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction
+                    this.transaction,
+                    REFERENCE_TIME
             ).getStatus()
     );
 
@@ -120,6 +129,7 @@ public class InclusionProofTest {
                     ),
                     this.certificationData.getUnlockScript()
             ),
+            REFERENCE_TIME,
             this.inclusionCertificate,
             this.unicityCertificate
     );
@@ -130,7 +140,8 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     invalidTransactionHashInclusionProof,
-                    this.transaction
+                    this.transaction,
+                    REFERENCE_TIME
             ).getStatus()
     );
   }
@@ -147,6 +158,7 @@ public class InclusionProofTest {
                             new SigningService(SigningService.generatePrivateKey())
                     ).encode()
             ),
+            REFERENCE_TIME,
             this.inclusionCertificate,
             this.unicityCertificate
     );
@@ -157,7 +169,8 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     invalidInclusionProof,
-                    this.transaction
+                    this.transaction,
+                    REFERENCE_TIME
             ).getStatus()
     );
   }
@@ -180,6 +193,7 @@ public class InclusionProofTest {
 
     InclusionProof inclusionProof = new InclusionProof(
             this.certificationData,
+            REFERENCE_TIME,
             this.inclusionCertificate,
             mismatchingCertificate
     );
@@ -190,7 +204,29 @@ public class InclusionProofTest {
                     RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey()),
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction
+                    this.transaction,
+                    REFERENCE_TIME
+            ).getStatus()
+    );
+  }
+
+  @Test
+  public void testVerificationFailsWithWrongReferenceTime() {
+    InclusionProof inclusionProof = new InclusionProof(
+            this.certificationData,
+            REFERENCE_TIME,
+            this.inclusionCertificate,
+            this.unicityCertificate
+    );
+
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.PATH_INVALID,
+            InclusionProofVerificationRule.verify(
+                    this.trustBase,
+                    this.predicateVerifier,
+                    inclusionProof,
+                    this.transaction,
+                    REFERENCE_TIME + 1
             ).getStatus()
     );
   }
@@ -199,6 +235,7 @@ public class InclusionProofTest {
   public void testVerificationFailsWithInvalidTrustbase() {
     InclusionProof inclusionProof = new InclusionProof(
             this.certificationData,
+            REFERENCE_TIME,
             this.inclusionCertificate,
             this.unicityCertificate
     );
@@ -211,7 +248,8 @@ public class InclusionProofTest {
                     ),
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction
+                    this.transaction,
+                    REFERENCE_TIME
             ).getStatus()
     );
   }

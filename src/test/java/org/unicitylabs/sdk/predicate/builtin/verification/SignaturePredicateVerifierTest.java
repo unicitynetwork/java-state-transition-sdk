@@ -14,6 +14,8 @@ import org.unicitylabs.sdk.util.verification.VerificationStatus;
 
 public class SignaturePredicateVerifierTest {
 
+  static final long REFERENCE_TIME = 1755000000L;
+
   private final SignaturePredicateVerifier verifier = new SignaturePredicateVerifier();
   private final SigningService signingService = SigningService.generate();
   private final EncodedPredicate encodedPredicate = EncodedPredicate.fromPredicate(
@@ -42,7 +44,8 @@ public class SignaturePredicateVerifierTest {
 
     Assertions.assertEquals(
             VerificationStatus.OK,
-            this.verifier.verify(this.encodedPredicate, this.sourceStateHash, this.transactionHash,
+            this.verifier.verify(this.encodedPredicate, REFERENCE_TIME, this.sourceStateHash,
+                    this.transactionHash,
                     signature.encode()).getStatus());
   }
 
@@ -53,7 +56,8 @@ public class SignaturePredicateVerifierTest {
 
     Assertions.assertEquals(
             VerificationStatus.FAIL,
-            this.verifier.verify(this.encodedPredicate, this.sourceStateHash, this.transactionHash,
+            this.verifier.verify(this.encodedPredicate, REFERENCE_TIME, this.sourceStateHash,
+                    this.transactionHash,
                     tampered).getStatus());
   }
 
@@ -64,7 +68,8 @@ public class SignaturePredicateVerifierTest {
 
     Assertions.assertEquals(
             VerificationStatus.FAIL,
-            this.verifier.verify(this.encodedPredicate, this.sourceStateHash, this.transactionHash,
+            this.verifier.verify(this.encodedPredicate, REFERENCE_TIME, this.sourceStateHash,
+                    this.transactionHash,
                     tampered).getStatus());
   }
 }

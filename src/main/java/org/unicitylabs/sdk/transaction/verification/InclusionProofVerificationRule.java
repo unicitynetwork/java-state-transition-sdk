@@ -2,6 +2,7 @@ package org.unicitylabs.sdk.transaction.verification;
 
 import org.unicitylabs.sdk.api.CertificationData;
 import org.unicitylabs.sdk.api.InclusionProof;
+import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.verification.UnicityCertificateVerification;
@@ -34,13 +35,14 @@ public class InclusionProofVerificationRule {
    * @param predicateVerifier the service responsible for evaluating transaction predicates
    * @param inclusionProof the inclusion proof containing certification data and merkle tree path
    * @param transaction the transaction that is being verified against the proof
+   * @param referenceTime reference time the transition was validated under
    *
    * @return a {@code VerificationResult} object containing the {@code InclusionProofVerificationStatus}
    *         and additional details about the verification outcome
    */
   public static VerificationResult<InclusionProofVerificationStatus> verify(RootTrustBase trustBase,
                                                                             PredicateVerifierService predicateVerifier, InclusionProof inclusionProof,
-                                                                            Transaction transaction) {
+                                                                            Transaction transaction, long referenceTime) {
     if (inclusionProof.getInclusionCertificate() == null) {
       return new VerificationResult<>(
               "InclusionProofVerificationRule",
@@ -66,7 +68,12 @@ public class InclusionProofVerificationRule {
     }
 
     StateId stateId = StateId.fromTransaction(transaction);
-    if (!inclusionProof.getInclusionCertificate().verify(stateId, certificationData.getTransactionHash(), new DataHash(HashAlgorithm.SHA256, inclusionProof.getUnicityCertificate().getInputRecord().getHash()))) {
+    // The leaf value binds the reference time the transition was validated under. It is taken
+    // from the caller, not from the proof's own unicity certificate: the tree is append-only,
+    // so the proof may have been issued against a later root whose input record carries a
+    // later reference time.
+    DataHash leafValue = LeafValue.calculate(certificationData.getTransactionHash(), referenceTime);
+    if (!inclusionProof.getInclusionCertificate().verify(stateId, leafValue, new DataHash(HashAlgorithm.SHA256, inclusionProof.getUnicityCertificate().getInputRecord().getHash()))) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.PATH_INVALID);
     }
@@ -96,6 +103,7 @@ public class InclusionProofVerificationRule {
 
     result = predicateVerifier.verify(
             transaction.getLockScript(),
+            referenceTime,
             transaction.getSourceStateHash(),
             certificationData.getTransactionHash(),
             certificationData.getUnlockScript()

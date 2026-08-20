@@ -97,11 +97,18 @@ public class InclusionProofUtils {
 
     StateId stateId = StateId.fromTransaction(transaction);
     client.getInclusionProof(stateId).thenAccept(response -> {
-      VerificationResult<InclusionProofVerificationStatus> result = InclusionProofVerificationRule.verify(
-              trustBase, predicateVerifier, response.getInclusionProof(), transaction);
+      InclusionProof inclusionProof = response.getInclusionProof();
+      // An inclusion proof always carries the reference time its leaf value was built from;
+      // without it nothing has been certified for this state id yet.
+      VerificationResult<InclusionProofVerificationStatus> result = inclusionProof
+              .getReferenceTime()
+              .map(referenceTime -> InclusionProofVerificationRule.verify(
+                      trustBase, predicateVerifier, inclusionProof, transaction, referenceTime))
+              .orElseGet(() -> new VerificationResult<>("InclusionProofVerificationRule",
+                      InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING));
       switch (result.getStatus()) {
         case OK:
-          future.complete(response.getInclusionProof());
+          future.complete(inclusionProof);
           break;
         case INCLUSION_CERTIFICATE_MISSING:
           CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)

@@ -12,6 +12,8 @@ public enum InclusionProofVerificationStatus {
   CERTIFICATION_DATA_MISMATCH,
   /** Transaction hash does not match the value referenced by the proof. */
   TRANSACTION_HASH_MISMATCH,
+  /** The inclusion proof does not carry the reference time its leaf value was built from. */
+  MISSING_REFERENCE_TIME,
   /** Proof authentication failed. */
   NOT_AUTHENTICATED,
   /** Proof path is not included in the committed tree state. */

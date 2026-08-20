@@ -23,10 +23,13 @@ import java.util.Optional;
 public class CertifiedMintTransaction implements Transaction {
 
   private final MintTransaction transaction;
+  private final long referenceTime;
   private final InclusionProof inclusionProof;
 
-  private CertifiedMintTransaction(MintTransaction transaction, InclusionProof inclusionProof) {
+  private CertifiedMintTransaction(MintTransaction transaction, long referenceTime,
+                                   InclusionProof inclusionProof) {
     this.transaction = transaction;
+    this.referenceTime = referenceTime;
     this.inclusionProof = inclusionProof;
   }
 
@@ -105,15 +108,26 @@ public class CertifiedMintTransaction implements Transaction {
   }
 
   /**
+   * Get the reference time this transition was validated under.
+   *
+   * @return reference time
+   */
+  public long getReferenceTime() {
+    return this.referenceTime;
+  }
+
+  /**
    * Deserializes a certified mint transaction from CBOR.
    *
    * @param bytes CBOR-encoded certified mint transaction
    * @return decoded certified mint transaction
    */
   public static CertifiedMintTransaction fromCbor(byte[] bytes) {
-    List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
-    return new CertifiedMintTransaction(MintTransaction.fromCbor(data.get(0)),
-            InclusionProof.fromCbor(data.get(1)));
+    List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
+    return new CertifiedMintTransaction(
+            MintTransaction.fromCbor(data.get(0)),
+            CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong(),
+            InclusionProof.fromCbor(data.get(2)));
   }
 
   /**
@@ -137,17 +151,27 @@ public class CertifiedMintTransaction implements Transaction {
     Objects.requireNonNull(transaction, "transaction cannot be null");
     Objects.requireNonNull(inclusionProof, "inclusionProof cannot be null");
 
+    // The reference time is fixed here, at the moment the transaction is bound to its first
+    // proof. Later verifiers use the carried value: a proof fetched later may be issued
+    // against a later root and would then carry a different input record time.
+    long referenceTime = inclusionProof.getReferenceTime()
+            .orElseThrow(() -> new VerificationException(
+                    "Inclusion proof verification failed",
+                    new VerificationResult<>("InclusionProofVerificationRule",
+                            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME)));
+
     VerificationResult<InclusionProofVerificationStatus> result = InclusionProofVerificationRule.verify(
             trustBase,
             predicateVerifier,
             inclusionProof,
-            transaction
+            transaction,
+            referenceTime
     );
     if (result.getStatus() != InclusionProofVerificationStatus.OK) {
       throw new VerificationException("Inclusion proof verification failed", result);
     }
 
-    return new CertifiedMintTransaction(transaction, inclusionProof);
+    return new CertifiedMintTransaction(transaction, referenceTime, inclusionProof);
   }
 
   @Override
@@ -162,12 +186,15 @@ public class CertifiedMintTransaction implements Transaction {
 
   @Override
   public byte[] toCbor() {
-    return CborSerializer.encodeArray(this.transaction.toCbor(), this.inclusionProof.toCbor());
+    return CborSerializer.encodeArray(
+            this.transaction.toCbor(),
+            CborSerializer.encodeUnsignedInteger(this.referenceTime),
+            this.inclusionProof.toCbor());
   }
 
   @Override
   public String toString() {
-    return String.format("CertifiedMintTransaction{transaction=%s, inclusionProof=%s}",
-            this.transaction, this.inclusionProof);
+    return String.format("CertifiedMintTransaction{transaction=%s, referenceTime=%s, inclusionProof=%s}",
+            this.transaction, this.referenceTime, this.inclusionProof);
   }
 }

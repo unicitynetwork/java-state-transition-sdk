@@ -31,7 +31,8 @@ public class CertifiedTransferTransactionVerificationRule {
     ArrayList<VerificationResult<?>> results = new ArrayList<VerificationResult<?>>();
 
     VerificationResult<?> result = InclusionProofVerificationRule.verify(context.getTrustBase(),
-            context.getPredicateVerifier(), transaction.getInclusionProof(), transaction);
+            context.getPredicateVerifier(), transaction.getInclusionProof(), transaction,
+            transaction.getReferenceTime());
     results.add(result);
     if (result.getStatus() != InclusionProofVerificationStatus.OK) {
       return new VerificationResult<>("CertifiedTransferTransactionVerificationRule",

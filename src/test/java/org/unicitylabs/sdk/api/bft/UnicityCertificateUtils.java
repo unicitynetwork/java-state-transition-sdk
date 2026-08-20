@@ -18,8 +18,16 @@ public class UnicityCertificateUtils {
           SigningService signingService,
           DataHash rootHash
   ) {
+    return generateCertificate(signingService, rootHash, 0);
+  }
+
+  public static UnicityCertificate generateCertificate(
+          SigningService signingService,
+          DataHash rootHash,
+          long timestamp
+  ) {
     return generateCertificate(signingService, rootHash,
-            ShardId.decode(new byte[]{(byte) 0b10000000}));
+            ShardId.decode(new byte[]{(byte) 0b10000000}), timestamp);
   }
 
   public static UnicityCertificate generateCertificate(
@@ -27,13 +35,22 @@ public class UnicityCertificateUtils {
           DataHash rootHash,
           ShardId shardId
   ) {
+    return generateCertificate(signingService, rootHash, shardId, 0);
+  }
+
+  public static UnicityCertificate generateCertificate(
+          SigningService signingService,
+          DataHash rootHash,
+          ShardId shardId,
+          long timestamp
+  ) {
     InputRecord inputRecord = new InputRecord(
             0,
             0,
             null,
             rootHash.getData(),
             new byte[10],
-            0,
+            timestamp,
             new byte[10],
             0,
             new byte[10]
@@ -83,7 +100,7 @@ public class UnicityCertificateUtils {
     );
 
     return new UnicityCertificate(
-            new InputRecord(0, 0, null, rootHash.getData(), new byte[10], 0,
+            new InputRecord(0, 0, null, rootHash.getData(), new byte[10], timestamp,
                     new byte[10], 0, new byte[10]),
             technicalRecordHash,
             shardConfigurationHash,

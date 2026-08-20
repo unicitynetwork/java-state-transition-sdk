@@ -22,13 +22,16 @@ import java.util.Optional;
 public class CertifiedTransferTransaction implements Transaction {
 
   private final TransferTransaction transaction;
+  private final long referenceTime;
   private final InclusionProof inclusionProof;
 
   private CertifiedTransferTransaction(
           TransferTransaction transaction,
+          long referenceTime,
           InclusionProof inclusionProof
   ) {
     this.transaction = transaction;
+    this.referenceTime = referenceTime;
     this.inclusionProof = inclusionProof;
   }
 
@@ -67,6 +70,15 @@ public class CertifiedTransferTransaction implements Transaction {
   }
 
   /**
+   * Get the reference time this transition was validated under.
+   *
+   * @return reference time
+   */
+  public long getReferenceTime() {
+    return this.referenceTime;
+  }
+
+  /**
    * Deserialize a certified transfer transaction from CBOR bytes.
    *
    * @param bytes CBOR encoded certified transfer transaction
@@ -75,11 +87,12 @@ public class CertifiedTransferTransaction implements Transaction {
    * @return certified transfer transaction
    */
   public static CertifiedTransferTransaction fromCbor(byte[] bytes, Token token) {
-    List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
+    List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
 
     return new CertifiedTransferTransaction(
             TransferTransaction.fromCbor(data.get(0), token),
-            InclusionProof.fromCbor(data.get(1))
+            CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong(),
+            InclusionProof.fromCbor(data.get(2))
     );
   }
 
@@ -109,17 +122,27 @@ public class CertifiedTransferTransaction implements Transaction {
     Objects.requireNonNull(transaction, "transaction cannot be null");
     Objects.requireNonNull(inclusionProof, "inclusionProof cannot be null");
 
+    // The reference time is fixed here, at the moment the transaction is bound to its first
+    // proof. Later verifiers use the carried value: a proof fetched later may be issued
+    // against a later root and would then carry a different input record time.
+    long referenceTime = inclusionProof.getReferenceTime()
+            .orElseThrow(() -> new VerificationException(
+                    "Inclusion proof verification failed",
+                    new VerificationResult<>("InclusionProofVerificationRule",
+                            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME)));
+
     VerificationResult<InclusionProofVerificationStatus> result = InclusionProofVerificationRule.verify(
             trustBase,
             predicateVerifier,
             inclusionProof,
-            transaction
+            transaction,
+            referenceTime
     );
     if (result.getStatus() != InclusionProofVerificationStatus.OK) {
       throw new VerificationException("Inclusion proof verification failed", result);
     }
 
-    return new CertifiedTransferTransaction(transaction, inclusionProof);
+    return new CertifiedTransferTransaction(transaction, referenceTime, inclusionProof);
   }
 
   /**
@@ -149,12 +172,15 @@ public class CertifiedTransferTransaction implements Transaction {
    */
   @Override
   public byte[] toCbor() {
-    return CborSerializer.encodeArray(this.transaction.toCbor(), this.inclusionProof.toCbor());
+    return CborSerializer.encodeArray(
+            this.transaction.toCbor(),
+            CborSerializer.encodeUnsignedInteger(this.referenceTime),
+            this.inclusionProof.toCbor());
   }
 
   @Override
   public String toString() {
-    return String.format("CertifiedTransferTransaction{transaction=%s, inclusionProof=%s}",
-            this.transaction, this.inclusionProof);
+    return String.format("CertifiedTransferTransaction{transaction=%s, referenceTime=%s, inclusionProof=%s}",
+            this.transaction, this.referenceTime, this.inclusionProof);
   }
 }

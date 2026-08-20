@@ -31,6 +31,7 @@ public class SignaturePredicateVerifier implements BuiltInPredicateVerifier {
 
   @Override
   public VerificationResult<VerificationStatus> verify(EncodedPredicate encodedPredicate,
+                                                       long referenceTime,
                                                        DataHash sourceStateHash,
                                                        DataHash transactionHash,
                                                        byte[] unlockScriptBytes) {
