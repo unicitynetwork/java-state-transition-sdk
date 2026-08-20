@@ -8,6 +8,7 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Represents a proof of inclusion or non-inclusion in a sparse merkle tree.
@@ -98,13 +99,30 @@ public class InclusionProof {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
+    CertificationData certificationData =
+            CborDeserializer.decodeNullable(data.get(1), CertificationData::fromCbor);
+    Long referenceTime = CborDeserializer.decodeNullable(data.get(2), value ->
+            CborDeserializer.decodeUnsignedInteger(value).asLong());
+    InclusionCertificate inclusionCertificate =
+            CborDeserializer.decodeNullable(data.get(3), (certificate) ->
+                    InclusionCertificate.decode(CborDeserializer.decodeByteString(certificate)));
+
+    // A proof either establishes a leaf or reports that there is none yet. A partially present
+    // proof is neither, and would let a caller reach a leaf check with a reference time nothing
+    // certified.
+    long present = Stream.of(certificationData, referenceTime, inclusionCertificate)
+            .filter(Objects::nonNull)
+            .count();
+    if (present != 0 && present != 3) {
+      throw new CborSerializationException(
+              "InclusionProof must carry certification data, reference time and inclusion "
+                      + "certificate together, or none of them.");
+    }
+
     return new InclusionProof(
-            CborDeserializer.decodeNullable(data.get(1), CertificationData::fromCbor),
-            CborDeserializer.decodeNullable(data.get(2), value ->
-                    CborDeserializer.decodeUnsignedInteger(value).asLong()),
-            CborDeserializer.decodeNullable(data.get(3), (inclusionCertificate) ->
-                    InclusionCertificate.decode(CborDeserializer.decodeByteString(inclusionCertificate))
-            ),
+            certificationData,
+            referenceTime,
+            inclusionCertificate,
             UnicityCertificate.fromCbor(data.get(4))
     );
   }

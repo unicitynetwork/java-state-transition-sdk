@@ -12,6 +12,7 @@ import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
+import java.util.Optional;
 
 /**
  * This class provides the functionality to verify an inclusion proof against a given trust base
@@ -76,10 +77,10 @@ public class InclusionProofVerificationRule {
               InclusionProofVerificationStatus.REQUEST_EXPIRED);
     }
 
-    if (!inclusionProof.getReferenceTime().isPresent()
-            || inclusionProof.getReferenceTime().get() != referenceTime) {
+    // An absent reference time on the proof also fails this comparison.
+    if (!inclusionProof.getReferenceTime().equals(Optional.of(referenceTime))) {
       return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.MISSING_REFERENCE_TIME);
+              InclusionProofVerificationStatus.REFERENCE_TIME_MISMATCH);
     }
 
     StateId stateId = StateId.fromTransaction(transaction);

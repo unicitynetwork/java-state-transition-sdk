@@ -6,6 +6,7 @@ import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
@@ -95,8 +96,9 @@ public class CertifiedTransferTransaction implements Transaction {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
     InclusionProof proof = InclusionProof.fromCbor(data.get(2));
     long referenceTime = CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong();
-    if (!proof.getReferenceTime().isPresent() || referenceTime != proof.getReferenceTime().get()) {
-      throw new IllegalArgumentException("Certified transfer transaction reference time mismatch");
+    // An absent reference time on the proof also fails this comparison.
+    if (!proof.getReferenceTime().equals(Optional.of(referenceTime))) {
+      throw new CborSerializationException("Certified transfer transaction reference time mismatch");
     }
 
     return new CertifiedTransferTransaction(

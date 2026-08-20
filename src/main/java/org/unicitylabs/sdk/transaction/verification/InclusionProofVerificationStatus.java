@@ -14,6 +14,8 @@ public enum InclusionProofVerificationStatus {
   TRANSACTION_HASH_MISMATCH,
   /** The inclusion proof does not carry the reference time its leaf value was built from. */
   MISSING_REFERENCE_TIME,
+  /** The inclusion proof's reference time differs from the one the transition carries. */
+  REFERENCE_TIME_MISMATCH,
   /** The round's reference time had already reached the request's timeout. */
   REQUEST_EXPIRED,
   /** Proof authentication failed. */

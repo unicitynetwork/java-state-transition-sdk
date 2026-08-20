@@ -8,6 +8,7 @@ import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.api.bft.ShardId;
 import org.unicitylabs.sdk.api.bft.UnicityCertificate;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.api.bft.UnicityCertificateUtils;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
@@ -71,6 +72,27 @@ public class InclusionProofTest {
     );
 
     Assertions.assertEquals(inclusionProof, InclusionProof.fromCbor(inclusionProof.toCbor()));
+  }
+
+  /**
+   * A proof either establishes a leaf or reports that there is none yet. The aggregators emit all
+   * three leaf fields together or none of them, so a partially present proof is a protocol
+   * violation and is rejected at decode rather than surfacing as an empty Optional downstream.
+   */
+  @Test
+  public void rejectsAPartiallyPresentProof() {
+    InclusionProof[] partial = {
+        new InclusionProof(certificationData, REFERENCE_TIME, null, unicityCertificate),
+        new InclusionProof(certificationData, null, inclusionCertificate, unicityCertificate),
+        new InclusionProof(null, REFERENCE_TIME, inclusionCertificate, unicityCertificate),
+        new InclusionProof(null, null, inclusionCertificate, unicityCertificate),
+    };
+
+    for (InclusionProof proof : partial) {
+      byte[] encoded = proof.toCbor();
+      Assertions.assertThrows(
+              CborSerializationException.class, () -> InclusionProof.fromCbor(encoded));
+    }
   }
 
   @Test
@@ -243,7 +265,7 @@ public class InclusionProofTest {
     );
 
     Assertions.assertEquals(
-            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME,
+            InclusionProofVerificationStatus.REFERENCE_TIME_MISMATCH,
             InclusionProofVerificationRule.verify(
                     this.trustBase,
                     this.predicateVerifier,
