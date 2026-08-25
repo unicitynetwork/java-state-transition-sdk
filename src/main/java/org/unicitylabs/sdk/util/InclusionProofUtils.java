@@ -99,13 +99,13 @@ public class InclusionProofUtils {
     client.getInclusionProof(stateId).thenAccept(response -> {
       InclusionProof inclusionProof = response.getInclusionProof();
       VerificationResult<InclusionProofVerificationStatus> result;
-      if (!inclusionProof.getReferenceTime().isPresent()) {
-        result = new VerificationResult<>("InclusionProofVerificationRule",
-                InclusionProofVerificationStatus.MISSING_REFERENCE_TIME);
-      } else if (!inclusionProof.getCertificationData().isPresent()
+      if (!inclusionProof.getCertificationData().isPresent()
               || inclusionProof.getInclusionCertificate() == null) {
         result = new VerificationResult<>("InclusionProofVerificationRule",
                 InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING);
+      } else if (!inclusionProof.getReferenceTime().isPresent()) {
+        result = new VerificationResult<>("InclusionProofVerificationRule",
+                InclusionProofVerificationStatus.MISSING_REFERENCE_TIME);
       } else {
         long referenceTime = inclusionProof.getReferenceTime().get();
         result = InclusionProofVerificationRule.verify(
