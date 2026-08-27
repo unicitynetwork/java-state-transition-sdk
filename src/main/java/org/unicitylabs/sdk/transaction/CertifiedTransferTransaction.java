@@ -79,7 +79,7 @@ public class CertifiedTransferTransaction implements Transaction {
    * @return reference time in Unix seconds
    */
   public long getReferenceTime() {
-    return this.inclusionProof.getReferenceTime().orElseThrow(IllegalStateException::new);
+    return this.inclusionProof.getReferenceTime();
   }
 
   /**
@@ -93,10 +93,6 @@ public class CertifiedTransferTransaction implements Transaction {
   public static CertifiedTransferTransaction fromCbor(byte[] bytes, Token token) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
     InclusionProof proof = InclusionProof.fromCbor(data.get(1));
-    if (!proof.getReferenceTime().isPresent()) {
-      throw new CborSerializationException(
-              "Certified transfer transaction carries an inclusion proof with no certified leaf");
-    }
 
     return new CertifiedTransferTransaction(
             TransferTransaction.fromCbor(data.get(0), token),

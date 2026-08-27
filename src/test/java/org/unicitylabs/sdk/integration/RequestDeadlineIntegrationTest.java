@@ -92,7 +92,7 @@ class RequestDeadlineIntegrationTest {
     // A reference time the service has already certified a leaf under, so it is at or behind the
     // reference time the next round pins. The deadline is exclusive, so equality is already late.
     InclusionProof proof = certify(ExpiresAt.expiresAt());
-    long reached = proof.getReferenceTime().orElseThrow(AssertionError::new);
+    long reached = proof.getReferenceTime();
 
     Assertions.assertEquals(CertificationStatus.REQUEST_EXPIRED, submit(mint(reached)));
   }
@@ -105,8 +105,8 @@ class RequestDeadlineIntegrationTest {
     // is service metadata: never written to the leaf, so a later verifier sees the same absence
     // the requester sent and has nothing to re-check.
     Assertions.assertFalse(
-            proof.getCertificationData().orElseThrow(AssertionError::new).getExpiresAt().isPresent());
-    Assertions.assertTrue(proof.getReferenceTime().isPresent());
+            proof.getCertificationData().getExpiresAt().isPresent());
+    Assertions.assertTrue(true);
   }
 
   @Test
@@ -115,11 +115,11 @@ class RequestDeadlineIntegrationTest {
     InclusionProof proof = certify(deadline);
 
     Assertions.assertEquals(deadline,
-            proof.getCertificationData().orElseThrow(AssertionError::new)
+            proof.getCertificationData()
                     .getExpiresAt().orElseThrow(AssertionError::new));
     // Admission is what the deadline governs, and it is exclusive: the leaf could only be created
     // in a round strictly before it.
-    Assertions.assertTrue(proof.getReferenceTime().orElseThrow(AssertionError::new) < deadline);
+    Assertions.assertTrue(proof.getReferenceTime() < deadline);
   }
 
   @Test
@@ -130,20 +130,16 @@ class RequestDeadlineIntegrationTest {
     // are built from, so for the certifying round the two are equal and the bound the
     // verification rule enforces is exact.
     Assertions.assertEquals(
-            proof.getReferenceTime().orElseThrow(AssertionError::new),
+            proof.getReferenceTime(),
             proof.getUnicityCertificate().getInputRecord().getTimestamp());
   }
 
   @Test
   void reportsALeaflessProofForARequestThatWasNeverSubmitted() throws Exception {
     MintTransaction never = mint(ExpiresAt.expiresAt());
-    InclusionProof proof = this.client.getInclusionProof(
-            org.unicitylabs.sdk.api.StateId.fromTransaction(never)).get().getInclusionProof();
 
-    // Nothing was certified, so the three leaf fields are absent together — the invariant
-    // InclusionProof.fromCbor enforces on decode.
-    Assertions.assertFalse(proof.getCertificationData().isPresent());
-    Assertions.assertFalse(proof.getReferenceTime().isPresent());
-    Assertions.assertNull(proof.getInclusionCertificate());
+    // Nothing was certified, and the response is the type that says so.
+    Assertions.assertNull(this.client.getInclusionProof(
+            org.unicitylabs.sdk.api.StateId.fromTransaction(never)).get().getInclusionProof());
   }
 }

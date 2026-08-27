@@ -19,15 +19,22 @@ public class InclusionProof {
 
   private final InclusionCertificate inclusionCertificate;
   private final CertificationData certificationData;
-  private final Long referenceTime;
+  private final long referenceTime;
   private final UnicityCertificate unicityCertificate;
 
+  /**
+   * An InclusionProof describes a certified leaf, so every field is present. The aggregator's
+   * answer for a state it has not certified yet is not an InclusionProof at all — see
+   * {@link InclusionProofResponse}, which is the type that can express it.
+   */
   InclusionProof(
           CertificationData certificationData,
-          Long referenceTime,
+          long referenceTime,
           InclusionCertificate inclusionCertificate,
           UnicityCertificate unicityCertificate
   ) {
+    Objects.requireNonNull(certificationData, "Certification data cannot be null.");
+    Objects.requireNonNull(inclusionCertificate, "Inclusion certificate cannot be null.");
     Objects.requireNonNull(unicityCertificate, "Unicity certificate cannot be null.");
 
     this.inclusionCertificate = inclusionCertificate;
@@ -59,26 +66,25 @@ public class InclusionProof {
   }
 
   /**
-   * Get certification data on inclusion proof, null on non inclusion proof.
+   * Get certification data of the certified leaf.
    *
-   * @return authenticator
+   * @return certification data
    */
-  public Optional<CertificationData> getCertificationData() {
-    return Optional.ofNullable(this.certificationData);
+  public CertificationData getCertificationData() {
+    return this.certificationData;
   }
 
   /**
-   * Get the reference time of the round the certified leaf was created in, empty on a
-   * non-inclusion proof.
+   * Get the reference time of the round the certified leaf was created in, in Unix seconds.
    *
-   * <p>It cannot be recovered from the certificate chain: an aggregator serves proofs against
-   * the current certified root, whose input record time is that of the latest round rather
-   * than the one the leaf was created under.
+   * <p>It cannot be recovered from the certificate chain: an aggregator serves proofs against the
+   * current certified root, whose input record time is that of the latest round rather than the
+   * one the leaf was created under.
    *
    * @return reference time
    */
-  public Optional<Long> getReferenceTime() {
-    return Optional.ofNullable(this.referenceTime);
+  public long getReferenceTime() {
+    return this.referenceTime;
   }
 
   /**
@@ -88,6 +94,26 @@ public class InclusionProof {
    * @return inclusion proof
    */
   public static InclusionProof fromCbor(byte[] bytes) {
+    InclusionProof inclusionProof = decodeOrAbsent(bytes);
+    if (inclusionProof == null) {
+      throw new CborSerializationException(
+              "Expected a certified leaf, but the inclusion proof reports none.");
+    }
+
+    return inclusionProof;
+  }
+
+  /**
+   * Decode the wire form, which expresses either a certified leaf or the absence of one.
+   *
+   * <p>The three leaf fields travel together: all present once the request has been included in a
+   * certified round, all absent while it is still pending. Anything in between is rejected here,
+   * so nothing downstream has to consider a half-formed proof.
+   *
+   * @param bytes CBOR bytes
+   * @return the proof, or null when no leaf is certified yet
+   */
+  static InclusionProof decodeOrAbsent(byte[] bytes) {
     CborDeserializer.CborTag tag = CborDeserializer.decodeTag(bytes);
     if (tag.getTag() != InclusionProof.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
@@ -107,13 +133,13 @@ public class InclusionProof {
             CborDeserializer.decodeNullable(data.get(3), (certificate) ->
                     InclusionCertificate.decode(CborDeserializer.decodeByteString(certificate)));
 
-    // A proof either establishes a leaf or reports that there is none yet. A partially present
-    // proof is neither, and would let a caller reach a leaf check with a reference time nothing
-    // certified.
     long present = Stream.of(certificationData, referenceTime, inclusionCertificate)
             .filter(Objects::nonNull)
             .count();
-    if (present != 0 && present != 3) {
+    if (present == 0) {
+      return null;
+    }
+    if (present != 3) {
       throw new CborSerializationException(
               "InclusionProof must carry certification data, reference time and inclusion "
                       + "certificate together, or none of them.");
@@ -128,17 +154,33 @@ public class InclusionProof {
   }
 
   /**
+   * Encode the wire form for a state with no certified leaf.
+   *
+   * @param unicityCertificate certificate of the round the answer was served against
+   * @return CBOR bytes
+   */
+  static byte[] encodeNoCertifiedLeaf(UnicityCertificate unicityCertificate) {
+    return CborSerializer.encodeTag(
+            InclusionProof.CBOR_TAG,
+            CborSerializer.encodeArray(
+                    CborSerializer.encodeUnsignedInteger(VERSION),
+                    CborSerializer.encodeNull(),
+                    CborSerializer.encodeNull(),
+                    CborSerializer.encodeNull(),
+                    unicityCertificate.toCbor()));
+  }
+
+  /**
    * Serialize inclusion proof to CBOR bytes.
    *
    * @return CBOR bytes
    */
   public byte[] toCbor() {
     byte[] payload = CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(VERSION),
-            CborSerializer.encodeNullable(this.certificationData, CertificationData::toCbor),
-            CborSerializer.encodeNullable(this.referenceTime,
-                    CborSerializer::encodeUnsignedInteger),
-            CborSerializer.encodeNullable(this.inclusionCertificate, certificate ->
-                    CborSerializer.encodeByteString(certificate.encode())), this.unicityCertificate.toCbor());
+            this.certificationData.toCbor(),
+            CborSerializer.encodeUnsignedInteger(this.referenceTime),
+            CborSerializer.encodeByteString(this.inclusionCertificate.encode()),
+            this.unicityCertificate.toCbor());
     return CborSerializer.encodeTag(
             InclusionProof.CBOR_TAG,
             payload

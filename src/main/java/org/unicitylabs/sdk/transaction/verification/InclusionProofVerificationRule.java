@@ -43,36 +43,8 @@ public class InclusionProofVerificationRule {
   public static VerificationResult<InclusionProofVerificationStatus> verify(RootTrustBase trustBase,
                                                                             PredicateVerifierService predicateVerifier, InclusionProof inclusionProof,
                                                                             Transaction transaction) {
-    CertificationData certificationData = inclusionProof.getCertificationData().orElse(null);
-    Long referenceTimeOrNull = inclusionProof.getReferenceTime().orElse(null);
-    InclusionCertificate inclusionCertificate = inclusionProof.getInclusionCertificate();
-
-    // No leaf at all: not certified yet, the one status callers poll through.
-    if (certificationData == null && referenceTimeOrNull == null && inclusionCertificate == null) {
-      return new VerificationResult<>(
-              "InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING
-      );
-    }
-
-    // A partially present proof is neither a leaf nor its absence. fromCbor rejects one off the
-    // wire, so these are reachable only from a hand-built proof.
-    if (certificationData == null) {
-      return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.MISSING_CERTIFICATION_DATA);
-    }
-
-    if (referenceTimeOrNull == null) {
-      return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.MISSING_REFERENCE_TIME);
-    }
-
-    if (inclusionCertificate == null) {
-      return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.INCOMPLETE_INCLUSION_PROOF);
-    }
-
-    long referenceTime = referenceTimeOrNull;
+    CertificationData certificationData = inclusionProof.getCertificationData();
+    long referenceTime = inclusionProof.getReferenceTime();
 
     if (!certificationData.getTransactionHash().equals(transaction.calculateTransactionHash())) {
       return new VerificationResult<>("InclusionProofVerificationRule",

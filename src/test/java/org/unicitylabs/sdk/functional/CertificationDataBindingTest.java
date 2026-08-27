@@ -77,7 +77,7 @@ public class CertificationDataBindingTest {
     InclusionProof proofA = InclusionProofUtils.waitInclusionProof(
             client, trustBase, predicateVerifier, transferA).get();
 
-    long referenceTime = proofA.getReferenceTime().orElseThrow();
+    long referenceTime = proofA.getReferenceTime();
 
     // A's certification data verifies against A...
     Assertions.assertEquals(

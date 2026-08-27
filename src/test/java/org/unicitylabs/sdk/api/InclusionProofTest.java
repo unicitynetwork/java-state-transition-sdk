@@ -1,5 +1,6 @@
 package org.unicitylabs.sdk.api;
 
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,9 @@ import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.api.bft.ShardId;
 import org.unicitylabs.sdk.api.bft.UnicityCertificate;
+import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.api.bft.UnicityCertificateUtils;
 import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.crypto.hash.HashAlgorithm;
@@ -84,18 +87,39 @@ public class InclusionProofTest {
    */
   @Test
   public void rejectsAPartiallyPresentProof() {
-    InclusionProof[] partial = {
-        new InclusionProof(certificationData, REFERENCE_TIME, null, unicityCertificate),
-        new InclusionProof(certificationData, null, inclusionCertificate, unicityCertificate),
-        new InclusionProof(null, REFERENCE_TIME, inclusionCertificate, unicityCertificate),
-        new InclusionProof(null, null, inclusionCertificate, unicityCertificate),
+    byte[] complete = new InclusionProof(certificationData, REFERENCE_TIME, inclusionCertificate,
+            unicityCertificate).toCbor();
+    List<byte[]> fields = CborDeserializer.decodeArray(
+            CborDeserializer.decodeTag(complete).getData(), 5);
+    byte[] nul = CborSerializer.encodeNull();
+
+    byte[][][] partial = {
+        {fields.get(1), fields.get(2), nul},
+        {fields.get(1), nul, fields.get(3)},
+        {nul, fields.get(2), fields.get(3)},
+        {nul, nul, fields.get(3)},
     };
 
-    for (InclusionProof proof : partial) {
-      byte[] encoded = proof.toCbor();
+    for (byte[][] combination : partial) {
+      byte[] encoded = CborSerializer.encodeTag(
+              InclusionProof.CBOR_TAG,
+              CborSerializer.encodeArray(fields.get(0), combination[0], combination[1],
+                      combination[2], fields.get(4)));
+
       Assertions.assertThrows(
-              CborSerializationException.class, () -> InclusionProof.fromCbor(encoded));
+              CborSerializationException.class,
+              () -> InclusionProof.fromCbor(encoded));
     }
+  }
+
+  // The wire form also expresses "no leaf yet". That is not an InclusionProof — the response is
+  // the type that carries it, and asking for a proof anyway is an error rather than a null.
+  @Test
+  public void decodesTheAbsentFormAsAnAbsence() {
+    byte[] encoded = InclusionProof.encodeNoCertifiedLeaf(unicityCertificate);
+
+    Assertions.assertNull(InclusionProof.decodeOrAbsent(encoded));
+    Assertions.assertThrows(CborSerializationException.class, () -> InclusionProof.fromCbor(encoded));
   }
 
   @Test
@@ -112,14 +136,6 @@ public class InclusionProofTest {
             new InclusionProof(
                     this.certificationData,
                     REFERENCE_TIME,
-                    this.inclusionCertificate,
-                    this.unicityCertificate
-            )
-    );
-    Assertions.assertInstanceOf(InclusionProof.class,
-            new InclusionProof(
-                    null,
-                    null,
                     this.inclusionCertificate,
                     this.unicityCertificate
             )
@@ -296,58 +312,6 @@ public class InclusionProofTest {
     );
   }
 
-  // A proof with some leaf fields but not others establishes neither a leaf nor its absence.
-  // fromCbor rejects one off the wire, so these are reachable only hand-built, and each has to
-  // name what is missing rather than pass for "not certified yet" and leave a caller polling to
-  // its own deadline.
-  @Test
-  public void testPartiallyPresentProofReportsWhatIsMissing() {
-    Assertions.assertEquals(
-            InclusionProofVerificationStatus.MISSING_CERTIFICATION_DATA,
-            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
-                    new InclusionProof(null, REFERENCE_TIME, this.inclusionCertificate,
-                            this.unicityCertificate),
-                    this.transaction).getStatus()
-    );
-
-    Assertions.assertEquals(
-            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME,
-            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
-                    new InclusionProof(this.certificationData, null, this.inclusionCertificate,
-                            this.unicityCertificate),
-                    this.transaction).getStatus()
-    );
-
-    Assertions.assertEquals(
-            InclusionProofVerificationStatus.INCOMPLETE_INCLUSION_PROOF,
-            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
-                    new InclusionProof(this.certificationData, REFERENCE_TIME, null,
-                            this.unicityCertificate),
-                    this.transaction).getStatus()
-    );
-  }
-
-  // What the aggregator returns for a state it has not certified yet: all three leaf fields
-  // absent together. The one status a caller polls through.
-  @Test
-  public void testProofWithNoLeafReportsPending() {
-    Assertions.assertEquals(
-            InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING,
-            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
-                    new InclusionProof(null, null, null, this.unicityCertificate),
-                    this.transaction).getStatus()
-    );
-  }
-
-  // Documents a gap the bound above does NOT close, so it stays visible and this test fails
-  // loudly if it is ever closed.
-  //
-  // The bound is one-sided, and the useful direction is the other one. A service that receives a
-  // request after its deadline can insert the leaf now and write a pre-deadline reference time
-  // into it: the expiry check passes because that value is below the deadline, the bound passes
-  // because the certifying round is later still, and the SMT path authenticates the value the
-  // service chose rather than when it chose it. Closing this needs signed evidence of the
-  // creation round, which an inclusion proof does not carry.
   @Test
   public void testAcceptsALeafBackDatedByADishonestService() throws Exception {
     long deadline = REFERENCE_TIME;

@@ -117,7 +117,7 @@ public class CertifiedMintTransaction implements Transaction {
    * @return reference time in Unix seconds
    */
   public long getReferenceTime() {
-    return this.inclusionProof.getReferenceTime().orElseThrow(IllegalStateException::new);
+    return this.inclusionProof.getReferenceTime();
   }
 
   /**
@@ -129,10 +129,6 @@ public class CertifiedMintTransaction implements Transaction {
   public static CertifiedMintTransaction fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
     InclusionProof proof = InclusionProof.fromCbor(data.get(1));
-    if (!proof.getReferenceTime().isPresent()) {
-      throw new CborSerializationException(
-              "Certified mint transaction carries an inclusion proof with no certified leaf");
-    }
     return new CertifiedMintTransaction(MintTransaction.fromCbor(data.get(0)), proof);
   }
 

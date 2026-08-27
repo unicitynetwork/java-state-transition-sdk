@@ -6,19 +6,10 @@ package org.unicitylabs.sdk.transaction.verification;
 public enum InclusionProofVerificationStatus {
   /** The provided trust base is invalid or cannot be used for verification. */
   INVALID_TRUSTBASE,
-  /** Certification data required for verification is missing. */
-  MISSING_CERTIFICATION_DATA,
-  /**
-   * The proof carries some leaf fields but not others, so it establishes neither a leaf nor the
-   * absence of one.
-   */
-  INCOMPLETE_INCLUSION_PROOF,
   /** Certification lock script or source state hash does not match the reconstructed transaction. */
   CERTIFICATION_DATA_MISMATCH,
   /** Transaction hash does not match the value referenced by the proof. */
   TRANSACTION_HASH_MISMATCH,
-  /** The inclusion proof does not carry the reference time its leaf value was built from. */
-  MISSING_REFERENCE_TIME,
   /** The round's reference time had already reached the request's timeout. */
   /**
    * The leaf claims a reference time later than the round that certified it, which no honest
@@ -31,7 +22,6 @@ public enum InclusionProofVerificationStatus {
   /** Proof path is not included in the committed tree state. */
   PATH_NOT_INCLUDED,
 
-  INCLUSION_CERTIFICATE_MISSING,
   /** Proof path structure or hashes are invalid. */
   PATH_INVALID,
   /** Shard id of the unicity certificate does not match the transaction state id. */
