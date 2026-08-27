@@ -36,6 +36,19 @@ public class TestAggregatorClient implements AggregatorClient {
     this.predicateVerifier = PredicateVerifierService.create();
   }
 
+  /**
+   * Pin the round clock this client certifies under.
+   *
+   * <p>The default reads the wall clock, which is right for an ordinary test and wrong for one
+   * that generates a fixture: a byte-reproducible artifact needs every input fixed, and the
+   * reference time reaches both the leaf value and the certificate.
+   *
+   * @param referenceTime reference time a round starting now would pin, in Unix seconds
+   */
+  public void setReferenceTime(long referenceTime) {
+    this.referenceTime = referenceTime;
+  }
+
   public RootTrustBase getTrustBase() {
     return this.trustBase;
   }
