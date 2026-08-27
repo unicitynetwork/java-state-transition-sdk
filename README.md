@@ -189,3 +189,4 @@ For questions about the Unicity Labs, visit [unicity-labs.com](https://unicity-l
 - Uses Jackson for CBOR encoding
 - Uses Bouncy Castle for cryptographic operations
 - Uses OkHttp for Android-compatible HTTP operations
+

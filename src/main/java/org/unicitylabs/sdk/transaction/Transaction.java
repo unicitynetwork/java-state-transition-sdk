@@ -46,6 +46,15 @@ public interface Transaction {
   StateMask getStateMask();
 
   /**
+   * Exclusive certification request deadline in Unix seconds, or empty when the Unicity Service
+   * assigns one from consensus time. It occupies a fixed position in the encoding and is committed
+   * by the transaction hash either way.
+   *
+   * @return request deadline
+   */
+  Optional<Long> getExpiresAt();
+
+  /**
    * Calculates the resulting state hash.
    *
    * @return state hash

@@ -1,7 +1,9 @@
 package org.unicitylabs.sdk.transaction.verification;
 
 import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.InclusionCertificate;
 import org.unicitylabs.sdk.api.InclusionProof;
+import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.StateId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.verification.UnicityCertificateVerification;
@@ -41,18 +43,8 @@ public class InclusionProofVerificationRule {
   public static VerificationResult<InclusionProofVerificationStatus> verify(RootTrustBase trustBase,
                                                                             PredicateVerifierService predicateVerifier, InclusionProof inclusionProof,
                                                                             Transaction transaction) {
-    if (inclusionProof.getInclusionCertificate() == null) {
-      return new VerificationResult<>(
-              "InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING
-      );
-    }
-
-    CertificationData certificationData = inclusionProof.getCertificationData().orElse(null);
-    if (certificationData == null) {
-      return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.MISSING_CERTIFICATION_DATA);
-    }
+    CertificationData certificationData = inclusionProof.getCertificationData();
+    long referenceTime = inclusionProof.getReferenceTime();
 
     if (!certificationData.getTransactionHash().equals(transaction.calculateTransactionHash())) {
       return new VerificationResult<>("InclusionProofVerificationRule",
@@ -60,13 +52,33 @@ public class InclusionProofVerificationRule {
     }
 
     if (!certificationData.getLockScript().equals(transaction.getLockScript())
-            || !certificationData.getSourceStateHash().equals(transaction.getSourceStateHash())) {
+            || !certificationData.getSourceStateHash().equals(transaction.getSourceStateHash())
+            || !certificationData.getExpiresAt().equals(transaction.getExpiresAt())) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH);
     }
 
+    // Admissible only in a round strictly below the deadline; both sides are Unix seconds of
+    // consensus time. Unsigned: a CBOR uint at or above 2^63 arrives as a negative long, and a
+    // signed comparison would wave an expired request through.
+    if (transaction.getExpiresAt().isPresent()
+            && Long.compareUnsigned(referenceTime, transaction.getExpiresAt().get()) >= 0) {
+      return new VerificationResult<>("InclusionProofVerificationRule",
+              InclusionProofVerificationStatus.REQUEST_EXPIRED);
+    }
+
+    // A leaf cannot postdate the round that certified it, and consensus signs that timestamp.
+    // One-sided: it does not detect back-dating. See aggregator-go#186.
+    if (Long.compareUnsigned(
+            referenceTime,
+            inclusionProof.getUnicityCertificate().getInputRecord().getTimestamp()) > 0) {
+      return new VerificationResult<>("InclusionProofVerificationRule",
+              InclusionProofVerificationStatus.REFERENCE_TIME_AFTER_ROUND);
+    }
+
     StateId stateId = StateId.fromTransaction(transaction);
-    if (!inclusionProof.getInclusionCertificate().verify(stateId, certificationData.getTransactionHash(), new DataHash(HashAlgorithm.SHA256, inclusionProof.getUnicityCertificate().getInputRecord().getHash()))) {
+    DataHash leafValue = LeafValue.calculate(certificationData.getTransactionHash(), referenceTime);
+    if (!inclusionProof.getInclusionCertificate().verify(stateId, leafValue, new DataHash(HashAlgorithm.SHA256, inclusionProof.getUnicityCertificate().getInputRecord().getHash()))) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.PATH_INVALID);
     }
@@ -96,6 +108,7 @@ public class InclusionProofVerificationRule {
 
     result = predicateVerifier.verify(
             transaction.getLockScript(),
+            referenceTime,
             transaction.getSourceStateHash(),
             certificationData.getTransactionHash(),
             certificationData.getUnlockScript()

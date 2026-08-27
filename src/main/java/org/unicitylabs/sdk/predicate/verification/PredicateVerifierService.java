@@ -55,6 +55,7 @@ public class PredicateVerifierService {
    * Verifies a predicate by dispatching to a verifier registered for its engine.
    *
    * @param predicate predicate to verify
+   * @param referenceTime reference time the transition was validated under
    * @param sourceStateHash hash of the source state
    * @param transactionHash hash of the transaction being verified
    * @param unlockScript unlock script bytes
@@ -63,6 +64,7 @@ public class PredicateVerifierService {
    */
   public VerificationResult<VerificationStatus> verify(
           EncodedPredicate predicate,
+          long referenceTime,
           DataHash sourceStateHash,
           DataHash transactionHash,
           byte[] unlockScript
@@ -73,6 +75,6 @@ public class PredicateVerifierService {
               "No verifier registered for predicate engine: " + predicate.getEngine());
     }
 
-    return verifier.verify(predicate, sourceStateHash, transactionHash, unlockScript);
+    return verifier.verify(predicate, referenceTime, sourceStateHash, transactionHash, unlockScript);
   }
 }

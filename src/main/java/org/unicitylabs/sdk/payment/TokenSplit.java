@@ -35,21 +35,44 @@ public class TokenSplit {
   private TokenSplit() {
   }
 
+  /** Split with a service-assigned burn deadline and a random burn state mask. */
+  public static SplitResult split(
+          Token token,
+          PaymentDataDeserializer paymentDataDeserializer,
+          List<SplitTokenRequest> requests
+  ) throws LeafExistsException {
+    return split(token, paymentDataDeserializer, requests, StateMask.generate(), null);
+  }
+
+  /** Split with a service-assigned burn deadline and the supplied burn state mask. */
+  public static SplitResult split(
+          Token token,
+          PaymentDataDeserializer paymentDataDeserializer,
+          List<SplitTokenRequest> requests,
+          StateMask burnStateMask
+  ) throws LeafExistsException {
+    return split(token, paymentDataDeserializer, requests, burnStateMask, null);
+  }
+
   /**
    * Split a token into new outputs with a random burn state mask.
    *
    * @param token source token to split (the token being burned)
    * @param paymentDataDeserializer decoder for the source token's payment data
    * @param requests per-output mint requests; each carries its own payment data
+   * @param burnExpiresAt exclusive request deadline of the burn transaction, may be null to let
+   *     the Unicity Service assign one
    * @return burn predicate, burn transaction and split tokens ready to mint
    * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
   public static SplitResult split(
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
-          List<SplitTokenRequest> requests
+          List<SplitTokenRequest> requests,
+          Long burnExpiresAt
   ) throws LeafExistsException {
-    return TokenSplit.split(token, paymentDataDeserializer, requests, StateMask.generate());
+    return TokenSplit.split(token, paymentDataDeserializer, requests, StateMask.generate(),
+            burnExpiresAt);
   }
 
   /**
@@ -61,6 +84,8 @@ public class TokenSplit {
    * @param burnStateMask state mask for the burn transaction; callers needing a crash-resumable
    *     (re-buildable) split supply a deterministically derived mask so the identical burn
    *     transaction can be reconstructed after a failure
+   * @param burnExpiresAt exclusive request deadline of the burn transaction, may be null to let
+   *     the Unicity Service assign one
    * @return burn predicate, burn transaction and split tokens ready to mint
    * @throws LeafExistsException if duplicate leaves are inserted into a merkle tree
    */
@@ -68,7 +93,8 @@ public class TokenSplit {
           Token token,
           PaymentDataDeserializer paymentDataDeserializer,
           List<SplitTokenRequest> requests,
-          StateMask burnStateMask
+          StateMask burnStateMask,
+          Long burnExpiresAt
   ) throws LeafExistsException {
     Objects.requireNonNull(token, "Token cannot be null");
     Objects.requireNonNull(paymentDataDeserializer, "Payment data deserializer cannot be null");
@@ -140,7 +166,8 @@ public class TokenSplit {
             token,
             burnPredicate,
             burnStateMask,
-            manifestBytes
+            manifestBytes,
+            burnExpiresAt
     );
 
     List<SplitToken> tokens = new ArrayList<>(requestsByTokenId.size());

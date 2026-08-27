@@ -17,33 +17,39 @@ import org.unicitylabs.sdk.util.HexConverter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Certification data.
  */
 public class CertificationData {
   public static final long CBOR_TAG = 39031;
-  private static final int VERSION = 1;
+  /** The only accepted wire version. One version, one element count. */
+  public static final int VERSION = 2;
+  private static final int FIELD_COUNT = 6;
 
   private final EncodedPredicate lockScript;
   private final DataHash sourceStateHash;
   private final DataHash transactionHash;
+  private final Long expiresAt;
   private final byte[] unlockScript;
 
   CertificationData(
           EncodedPredicate lockScript,
           DataHash sourceStateHash,
           DataHash transactionHash,
+          Long expiresAt,
           byte[] unlockScript
   ) {
     this.lockScript = lockScript;
     this.sourceStateHash = sourceStateHash;
     this.transactionHash = transactionHash;
+    this.expiresAt = expiresAt;
     this.unlockScript = Arrays.copyOf(unlockScript, unlockScript.length);
   }
 
   public int getVersion() {
-    return CertificationData.VERSION;
+    return VERSION;
   }
 
   /**
@@ -74,6 +80,15 @@ public class CertificationData {
   }
 
   /**
+   * Get the exclusive certification request deadline in Unix seconds.
+   *
+   * @return request deadline, empty when the Unicity Service assigns one
+   */
+  public Optional<Long> getExpiresAt() {
+    return Optional.ofNullable(this.expiresAt);
+  }
+
+  /**
    * Get unlock script used for certification.
    *
    * @return unlock script bytes
@@ -93,10 +108,10 @@ public class CertificationData {
     if (tag.getTag() != CertificationData.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 5);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), FIELD_COUNT);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    if (version != CertificationData.VERSION) {
+    if (version != VERSION) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
@@ -104,7 +119,9 @@ public class CertificationData {
             EncodedPredicate.fromCbor(data.get(1)),
             new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(data.get(2))),
             new DataHash(HashAlgorithm.SHA256, CborDeserializer.decodeByteString(data.get(3))),
-            CborDeserializer.decodeByteString(data.get(4))
+            CborDeserializer.decodeNullable(
+                    data.get(4), value -> CborDeserializer.decodeUnsignedInteger(value).asLong()),
+            CborDeserializer.decodeByteString(data.get(5))
     );
   }
 
@@ -157,6 +174,7 @@ public class CertificationData {
             transaction.getLockScript(),
             transaction.getSourceStateHash(),
             transaction.calculateTransactionHash(),
+            transaction.getExpiresAt().orElse(null),
             unlockScript
     );
   }
@@ -170,12 +188,12 @@ public class CertificationData {
     return CborSerializer.encodeTag(
             CertificationData.CBOR_TAG,
             CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(CertificationData.VERSION),
+                    CborSerializer.encodeUnsignedInteger(VERSION),
                     this.lockScript.toCbor(),
                     CborSerializer.encodeByteString(this.sourceStateHash.getData()),
                     CborSerializer.encodeByteString(this.transactionHash.getData()),
-                    CborSerializer.encodeByteString(this.unlockScript)
-            )
+                    CborSerializer.encodeNullable(this.expiresAt, CborSerializer::encodeUnsignedInteger),
+                    CborSerializer.encodeByteString(this.unlockScript))
     );
   }
 
@@ -188,19 +206,21 @@ public class CertificationData {
     return Objects.equals(this.lockScript, that.lockScript)
             && Objects.equals(this.sourceStateHash, that.sourceStateHash)
             && Objects.equals(this.transactionHash, that.transactionHash)
+            && Objects.equals(this.expiresAt, that.expiresAt)
             && Arrays.equals(this.unlockScript, that.unlockScript);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.lockScript, this.sourceStateHash, this.transactionHash, Arrays.hashCode(this.unlockScript));
+    return Objects.hash(this.lockScript, this.sourceStateHash, this.transactionHash, this.expiresAt,
+            Arrays.hashCode(this.unlockScript));
   }
 
   @Override
   public String toString() {
     return String.format(
-            "CertificationData{lockScript=%s, sourceStateHash=%s, transactionHash=%s, unlockScript=%s}",
-            this.lockScript, this.sourceStateHash, this.transactionHash,
+            "CertificationData{lockScript=%s, sourceStateHash=%s, transactionHash=%s, expiresAt=%s, unlockScript=%s}",
+            this.lockScript, this.sourceStateHash, this.transactionHash, this.expiresAt,
             HexConverter.encode(this.unlockScript));
   }
 }

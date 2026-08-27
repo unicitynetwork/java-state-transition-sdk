@@ -6,6 +6,7 @@ import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
@@ -66,20 +67,38 @@ public class CertifiedTransferTransaction implements Transaction {
     return this.inclusionProof;
   }
 
+  @Override
+  public Optional<Long> getExpiresAt() {
+    return this.transaction.getExpiresAt();
+  }
+  /**
+   * Get the reference time of the round the leaf was created in, in Unix seconds.
+   *
+   * <p>Read from the proof, which is the authenticated source for it.
+   *
+   * @return reference time in Unix seconds
+   */
+  public long getReferenceTime() {
+    return this.inclusionProof.getReferenceTime();
+  }
+
   /**
    * Deserialize a certified transfer transaction from CBOR bytes.
    *
    * @param bytes CBOR encoded certified transfer transaction
-   * @param token token providing the source state for the deserialized transfer
+   * @param sourceStateHash hash of the state the transfer spends
+   * @param lockScript lock script the transfer unlocks
    *
    * @return certified transfer transaction
    */
-  public static CertifiedTransferTransaction fromCbor(byte[] bytes, Token token) {
+  public static CertifiedTransferTransaction fromCbor(byte[] bytes, DataHash sourceStateHash,
+          EncodedPredicate lockScript) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
+    InclusionProof proof = InclusionProof.fromCbor(data.get(1));
 
     return new CertifiedTransferTransaction(
-            TransferTransaction.fromCbor(data.get(0), token),
-            InclusionProof.fromCbor(data.get(1))
+            TransferTransaction.fromCbor(data.get(0), sourceStateHash, lockScript),
+            proof
     );
   }
 
@@ -154,7 +173,7 @@ public class CertifiedTransferTransaction implements Transaction {
 
   @Override
   public String toString() {
-    return String.format("CertifiedTransferTransaction{transaction=%s, inclusionProof=%s}",
-            this.transaction, this.inclusionProof);
+    return String.format("CertifiedTransferTransaction{transaction=%s, referenceTime=%s, inclusionProof=%s}",
+            this.transaction, this.getReferenceTime(), this.inclusionProof);
   }
 }

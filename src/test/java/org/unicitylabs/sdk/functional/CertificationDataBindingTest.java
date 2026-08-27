@@ -24,6 +24,7 @@ import org.unicitylabs.sdk.transaction.verification.VerificationContext;
 import org.unicitylabs.sdk.util.InclusionProofUtils;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.utils.TokenUtils;
+import org.unicitylabs.sdk.utils.ExpiresAt;
 
 /**
  * M-03: the inclusion-proof rule must bind the certification lock script and source state hash to
@@ -57,8 +58,8 @@ public class CertificationDataBindingTest {
     SignaturePredicate recipient = SignaturePredicate.fromSigningService(SigningService.generate());
     StateMask stateMask = StateMask.generate();
 
-    TransferTransaction transferA = TransferTransaction.create(tokenA, recipient, stateMask, null);
-    TransferTransaction transferB = TransferTransaction.create(tokenB, recipient, stateMask, null);
+    TransferTransaction transferA = TransferTransaction.create(tokenA, recipient, stateMask, null, ExpiresAt.expiresAt());
+    TransferTransaction transferB = TransferTransaction.create(tokenB, recipient, stateMask, null, ExpiresAt.expiresAt());
 
     Assertions.assertEquals(
             transferA.calculateTransactionHash(), transferB.calculateTransactionHash(),
@@ -76,11 +77,12 @@ public class CertificationDataBindingTest {
     InclusionProof proofA = InclusionProofUtils.waitInclusionProof(
             client, trustBase, predicateVerifier, transferA).get();
 
+    long referenceTime = proofA.getReferenceTime();
+
     // A's certification data verifies against A...
     Assertions.assertEquals(
             InclusionProofVerificationStatus.OK,
-            InclusionProofVerificationRule.verify(trustBase, predicateVerifier, proofA, transferA)
-                    .getStatus());
+            InclusionProofVerificationRule.verify(trustBase, predicateVerifier, proofA, transferA).getStatus());
 
     // ...but must be rejected when substituted onto B, which shares the transaction hash but has a
     // different lock script and source state hash.

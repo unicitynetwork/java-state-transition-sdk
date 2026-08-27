@@ -62,8 +62,10 @@ public class DefaultBuiltInPredicateVerifier implements PredicateVerifier {
 
   @Override
   public VerificationResult<VerificationStatus> verify(EncodedPredicate predicate,
+                                                       long referenceTime,
                                                        DataHash sourceStateHash,
-                                                       DataHash transactionHash, byte[] unlockScript) {
+                                                       DataHash transactionHash,
+                                                       byte[] unlockScript) {
     BuiltInPredicateType type = BuiltInPredicateType.fromId(
             CborDeserializer.decodeUnsignedInteger(predicate.encodeCode()).asInt());
 
@@ -72,6 +74,6 @@ public class DefaultBuiltInPredicateVerifier implements PredicateVerifier {
       throw new IllegalArgumentException("No verifier registered for predicate type: " + type);
     }
 
-    return verifier.verify(predicate, sourceStateHash, transactionHash, unlockScript);
+    return verifier.verify(predicate, referenceTime, sourceStateHash, transactionHash, unlockScript);
   }
 }

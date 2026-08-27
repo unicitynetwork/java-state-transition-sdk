@@ -7,6 +7,7 @@ import org.unicitylabs.sdk.crypto.hash.DataHash;
 import org.unicitylabs.sdk.predicate.EncodedPredicate;
 import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.serializer.cbor.CborDeserializer;
+import org.unicitylabs.sdk.serializer.cbor.CborSerializationException;
 import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationRule;
 import org.unicitylabs.sdk.transaction.verification.InclusionProofVerificationStatus;
@@ -104,6 +105,21 @@ public class CertifiedMintTransaction implements Transaction {
     return this.inclusionProof;
   }
 
+  @Override
+  public Optional<Long> getExpiresAt() {
+    return this.transaction.getExpiresAt();
+  }
+  /**
+   * Get the reference time of the round the leaf was created in, in Unix seconds.
+   *
+   * <p>Read from the proof, which is the authenticated source for it.
+   *
+   * @return reference time in Unix seconds
+   */
+  public long getReferenceTime() {
+    return this.inclusionProof.getReferenceTime();
+  }
+
   /**
    * Deserializes a certified mint transaction from CBOR.
    *
@@ -112,8 +128,8 @@ public class CertifiedMintTransaction implements Transaction {
    */
   public static CertifiedMintTransaction fromCbor(byte[] bytes) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
-    return new CertifiedMintTransaction(MintTransaction.fromCbor(data.get(0)),
-            InclusionProof.fromCbor(data.get(1)));
+    InclusionProof proof = InclusionProof.fromCbor(data.get(1));
+    return new CertifiedMintTransaction(MintTransaction.fromCbor(data.get(0)), proof);
   }
 
   /**
@@ -167,7 +183,7 @@ public class CertifiedMintTransaction implements Transaction {
 
   @Override
   public String toString() {
-    return String.format("CertifiedMintTransaction{transaction=%s, inclusionProof=%s}",
-            this.transaction, this.inclusionProof);
+    return String.format("CertifiedMintTransaction{transaction=%s, referenceTime=%s, inclusionProof=%s}",
+            this.transaction, this.getReferenceTime(), this.inclusionProof);
   }
 }

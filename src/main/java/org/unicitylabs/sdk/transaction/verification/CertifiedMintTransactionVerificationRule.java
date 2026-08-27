@@ -53,10 +53,7 @@ public class CertifiedMintTransactionVerificationRule {
     EncodedPredicate expectedLockScript = EncodedPredicate.fromPredicate(SignaturePredicate.fromSigningService(signingService));
     VerificationResult<?> result = expectedLockScript
             .equals(
-                    transaction.getInclusionProof()
-                            .getCertificationData()
-                            .map(CertificationData::getLockScript)
-                            .orElse(null)
+                    transaction.getInclusionProof().getCertificationData().getLockScript()
             )
             ? new VerificationResult<>("IsLockScriptValidVerificationRule", VerificationStatus.OK)
             : new VerificationResult<>("IsLockScriptValidVerificationRule", VerificationStatus.FAIL);

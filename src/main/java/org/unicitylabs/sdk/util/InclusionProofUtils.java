@@ -97,22 +97,24 @@ public class InclusionProofUtils {
 
     StateId stateId = StateId.fromTransaction(transaction);
     client.getInclusionProof(stateId).thenAccept(response -> {
-      VerificationResult<InclusionProofVerificationStatus> result = InclusionProofVerificationRule.verify(
-              trustBase, predicateVerifier, response.getInclusionProof(), transaction);
-      switch (result.getStatus()) {
-        case OK:
-          future.complete(response.getInclusionProof());
-          break;
-        case INCLUSION_CERTIFICATE_MISSING:
-          CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
-                  .execute(() -> checkInclusionProof(client, trustBase, predicateVerifier, transaction,
-                          future, startTime,
-                          timeoutMillis,
-                          intervalMillis));
-          break;
-        default:
-          future.completeExceptionally(
-                  new VerificationException("Inclusion proof verification failed", result));
+      InclusionProof inclusionProof = response.getInclusionProof();
+      // The aggregator has not certified this state yet. The response type is what says so; by the
+      // time a proof exists it is complete, so there is nothing else to poll through.
+      if (inclusionProof == null) {
+        CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
+                .execute(() -> checkInclusionProof(client, trustBase, predicateVerifier, transaction,
+                        future, startTime, timeoutMillis, intervalMillis));
+        return;
+      }
+
+      VerificationResult<InclusionProofVerificationStatus> result =
+              InclusionProofVerificationRule.verify(
+                      trustBase, predicateVerifier, inclusionProof, transaction);
+      if (result.getStatus() == InclusionProofVerificationStatus.OK) {
+        future.complete(inclusionProof);
+      } else {
+        future.completeExceptionally(
+                new VerificationException("Inclusion proof verification failed", result));
       }
     }).exceptionally(e -> {
       future.completeExceptionally(e);

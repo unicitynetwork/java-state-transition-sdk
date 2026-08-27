@@ -14,26 +14,36 @@ import java.util.Optional;
  */
 public class InclusionProof {
   public static final long CBOR_TAG = 39033;
-  private static final int VERSION = 1;
+  static final int VERSION = 1;
 
   private final InclusionCertificate inclusionCertificate;
   private final CertificationData certificationData;
+  private final long referenceTime;
   private final UnicityCertificate unicityCertificate;
 
+  /**
+   * An InclusionProof describes a certified leaf, so every field is present. The aggregator's
+   * answer for a state it has not certified yet is not an InclusionProof at all — see
+   * {@link InclusionProofResponse}, which is the type that can express it.
+   */
   InclusionProof(
           CertificationData certificationData,
+          long referenceTime,
           InclusionCertificate inclusionCertificate,
           UnicityCertificate unicityCertificate
   ) {
+    Objects.requireNonNull(certificationData, "Certification data cannot be null.");
+    Objects.requireNonNull(inclusionCertificate, "Inclusion certificate cannot be null.");
     Objects.requireNonNull(unicityCertificate, "Unicity certificate cannot be null.");
 
     this.inclusionCertificate = inclusionCertificate;
     this.certificationData = certificationData;
+    this.referenceTime = referenceTime;
     this.unicityCertificate = unicityCertificate;
   }
 
   public int getVersion() {
-    return InclusionProof.VERSION;
+    return VERSION;
   }
 
   /**
@@ -55,12 +65,25 @@ public class InclusionProof {
   }
 
   /**
-   * Get certification data on inclusion proof, null on non inclusion proof.
+   * Get certification data of the certified leaf.
    *
-   * @return authenticator
+   * @return certification data
    */
-  public Optional<CertificationData> getCertificationData() {
-    return Optional.ofNullable(this.certificationData);
+  public CertificationData getCertificationData() {
+    return this.certificationData;
+  }
+
+  /**
+   * Get the reference time of the round the certified leaf was created in, in Unix seconds.
+   *
+   * <p>It cannot be recovered from the certificate chain: an aggregator serves proofs against the
+   * current certified root, whose input record time is that of the latest round rather than the
+   * one the leaf was created under.
+   *
+   * @return reference time
+   */
+  public long getReferenceTime() {
+    return this.referenceTime;
   }
 
   /**
@@ -74,19 +97,30 @@ public class InclusionProof {
     if (tag.getTag() != InclusionProof.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
     }
-    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 4);
+    List<byte[]> data = CborDeserializer.decodeArray(tag.getData(), 5);
 
     int version = CborDeserializer.decodeUnsignedInteger(data.get(0)).asInt();
-    if (version != InclusionProof.VERSION) {
+    if (version != VERSION) {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
+    CertificationData certificationData =
+            CborDeserializer.decodeNullable(data.get(1), CertificationData::fromCbor);
+    Long referenceTime = CborDeserializer.decodeNullable(data.get(2), value ->
+            CborDeserializer.decodeUnsignedInteger(value).asLong());
+    InclusionCertificate inclusionCertificate =
+            CborDeserializer.decodeNullable(data.get(3), (certificate) ->
+                    InclusionCertificate.decode(CborDeserializer.decodeByteString(certificate)));
+    if (certificationData == null || referenceTime == null || inclusionCertificate == null) {
+      throw new CborSerializationException(
+              "Expected a certified leaf, but the inclusion proof describes none.");
+    }
+
     return new InclusionProof(
-            CborDeserializer.decodeNullable(data.get(1), CertificationData::fromCbor),
-            CborDeserializer.decodeNullable(data.get(2), (inclusionCertificate) ->
-                    InclusionCertificate.decode(CborDeserializer.decodeByteString(inclusionCertificate))
-            ),
-            UnicityCertificate.fromCbor(data.get(3))
+            certificationData,
+            referenceTime,
+            inclusionCertificate,
+            UnicityCertificate.fromCbor(data.get(4))
     );
   }
 
@@ -96,16 +130,14 @@ public class InclusionProof {
    * @return CBOR bytes
    */
   public byte[] toCbor() {
+    byte[] payload = CborSerializer.encodeArray(CborSerializer.encodeUnsignedInteger(VERSION),
+            this.certificationData.toCbor(),
+            CborSerializer.encodeUnsignedInteger(this.referenceTime),
+            CborSerializer.encodeByteString(this.inclusionCertificate.encode()),
+            this.unicityCertificate.toCbor());
     return CborSerializer.encodeTag(
             InclusionProof.CBOR_TAG,
-            CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(InclusionProof.VERSION),
-                    CborSerializer.encodeNullable(this.certificationData, CertificationData::toCbor),
-                    CborSerializer.encodeNullable(this.inclusionCertificate, (inclusionCertificate) ->
-                            CborSerializer.encodeByteString(inclusionCertificate.encode())
-                    ),
-                    this.unicityCertificate.toCbor()
-            )
+            payload
     );
   }
 
@@ -115,20 +147,21 @@ public class InclusionProof {
       return false;
     }
     InclusionProof that = (InclusionProof) o;
-    return Objects.equals(this.inclusionCertificate, that.inclusionCertificate) && Objects.equals(this.certificationData, that.certificationData) && Objects.equals(this.unicityCertificate, that.unicityCertificate);
+    return Objects.equals(this.inclusionCertificate, that.inclusionCertificate) && Objects.equals(this.certificationData, that.certificationData) && Objects.equals(this.referenceTime, that.referenceTime) && Objects.equals(this.unicityCertificate, that.unicityCertificate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.inclusionCertificate, this.certificationData, this.unicityCertificate);
+    return Objects.hash(this.inclusionCertificate, this.certificationData, this.referenceTime, this.unicityCertificate);
   }
 
   @Override
   public String toString() {
     return String.format(
-            "InclusionProof{certificationData=%s, inclusionCertificate=%s, unicityCertificate=%s}",
-            this.inclusionCertificate,
+            "InclusionProof{certificationData=%s, referenceTime=%s, inclusionCertificate=%s, unicityCertificate=%s}",
             this.certificationData,
+            this.referenceTime,
+            this.inclusionCertificate,
             this.unicityCertificate
     );
   }

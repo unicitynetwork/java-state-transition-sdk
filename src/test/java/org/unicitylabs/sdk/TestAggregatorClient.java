@@ -20,7 +20,14 @@ public class TestAggregatorClient implements AggregatorClient {
   private final PredicateVerifierService predicateVerifier;
   private final SparseMerkleTree sparseMerkleTree;
   private final HashMap<StateId, CertificationData> requests = new HashMap<>();
+  private final HashMap<StateId, Long> referenceTimes = new HashMap<>();
   private final SigningService signingService;
+  /**
+   * Reference time of the current round. Every accepted request is its own round here, so a
+   * proof served later is anchored to a certificate whose input record time is past the one
+   * the leaf was built from, exactly as it is against a live aggregator.
+   */
+  private long referenceTime = System.currentTimeMillis() / 1000;
 
   private TestAggregatorClient(SparseMerkleTree smt, SigningService signingService) {
     this.sparseMerkleTree = smt;
@@ -28,6 +35,7 @@ public class TestAggregatorClient implements AggregatorClient {
     this.trustBase = RootTrustBaseUtils.generateRootTrustBase(this.signingService.getPublicKey());
     this.predicateVerifier = PredicateVerifierService.create();
   }
+
 
   public RootTrustBase getTrustBase() {
     return this.trustBase;
@@ -61,6 +69,7 @@ public class TestAggregatorClient implements AggregatorClient {
 
       VerificationResult<VerificationStatus> result = this.predicateVerifier.verify(
               certificationData.getLockScript(),
+              this.referenceTime,
               certificationData.getSourceStateHash(),
               certificationData.getTransactionHash(),
               certificationData.getUnlockScript()
@@ -70,10 +79,19 @@ public class TestAggregatorClient implements AggregatorClient {
         return CompletableFuture.completedFuture(CertificationResponse.create(CertificationStatus.SIGNATURE_VERIFICATION_FAILED));
       }
 
+      if (certificationData.getExpiresAt().isPresent()
+              && this.referenceTime >= certificationData.getExpiresAt().get()) {
+        return CompletableFuture.completedFuture(
+                CertificationResponse.create(CertificationStatus.REQUEST_EXPIRED));
+      }
+
       if (!this.requests.containsKey(stateId)) {
-        DataHash leafValue = certificationData.getTransactionHash();
+        DataHash leafValue =
+            LeafValue.calculate(certificationData.getTransactionHash(), this.referenceTime);
         this.sparseMerkleTree.addLeaf(stateId.getData(), leafValue.getData());
         this.requests.put(stateId, certificationData);
+        this.referenceTimes.put(stateId, this.referenceTime);
+        this.referenceTime += 1;
       }
 
       return CompletableFuture.completedFuture(CertificationResponse.create(CertificationStatus.SUCCESS));
@@ -87,7 +105,8 @@ public class TestAggregatorClient implements AggregatorClient {
     SparseMerkleTreeRootNode root = this.sparseMerkleTree.calculateRoot();
 
     if (!requests.containsKey(stateId)) {
-      return CompletableFuture.completedFuture(InclusionProofFixture.createResponse(null, null, root.getHash(), this.signingService));
+      return CompletableFuture.completedFuture(InclusionProofFixture.createPendingResponse(
+              root.getHash(), this.signingService, this.referenceTime));
     }
 
     CertificationData certificationData = requests.get(stateId);
@@ -95,9 +114,11 @@ public class TestAggregatorClient implements AggregatorClient {
     return CompletableFuture.completedFuture(
             InclusionProofFixture.createResponse(
                     certificationData,
+                    this.referenceTimes.get(stateId),
                     InclusionCertificate.create(root, stateId.getData()),
                     root.getHash(),
-                    this.signingService
+                    this.signingService,
+                    this.referenceTime
             )
     );
   }
