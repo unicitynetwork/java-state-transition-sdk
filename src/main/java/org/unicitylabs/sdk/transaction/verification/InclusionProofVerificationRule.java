@@ -44,13 +44,10 @@ public class InclusionProofVerificationRule {
                                                                             PredicateVerifierService predicateVerifier, InclusionProof inclusionProof,
                                                                             Transaction transaction) {
     CertificationData certificationData = inclusionProof.getCertificationData().orElse(null);
-    // The reference time comes from the proof, which is the only party that can state it; the
-    // leaf value binds this exact value, so the SMT path below authenticates it.
     Long referenceTimeOrNull = inclusionProof.getReferenceTime().orElse(null);
     InclusionCertificate inclusionCertificate = inclusionProof.getInclusionCertificate();
 
-    // A proof reporting no leaf at all is the aggregator's "not certified yet", and the only
-    // status callers poll through.
+    // No leaf at all: not certified yet, the one status callers poll through.
     if (certificationData == null && referenceTimeOrNull == null && inclusionCertificate == null) {
       return new VerificationResult<>(
               "InclusionProofVerificationRule",
@@ -58,11 +55,8 @@ public class InclusionProofVerificationRule {
       );
     }
 
-    // Anything in between establishes neither a leaf nor its absence. InclusionProof.fromCbor
-    // rejects such a proof outright, so this is reachable only from one built by hand — a
-    // non-conforming service behind a custom client, or a stripping proxy. Each case names what
-    // is missing: folding them into the pending status would leave the caller polling to its own
-    // deadline and blaming the timeout.
+    // A partially present proof is neither a leaf nor its absence. fromCbor rejects one off the
+    // wire, so these are reachable only from a hand-built proof.
     if (certificationData == null) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.MISSING_CERTIFICATION_DATA);
@@ -92,38 +86,17 @@ public class InclusionProofVerificationRule {
               InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH);
     }
 
-    // The request was admissible only in a round strictly before its deadline. A request that
-    // carried no deadline was admitted under a service-assigned one, which is not recorded and is
-    // not re-checked here.
-    //
-    // Both sides are Unix seconds, and both are consensus time rather than any caller's clock:
-    // the reference time is the round's own timestamp from the BFT seal, so a deadline set from a
-    // local clock is compared against the root chain's and the two can differ by seconds.
-    //
-    // Compared unsigned. The wire carries these as CBOR unsigned integers, and one at or above
-    // 2^63 arrives here as a negative long with the same bit pattern (see
-    // CborDeserializer.CborUnsignedLong.asLong). A signed comparison would read such a reference
-    // time as less than every deadline and wave an expired request straight through, while the
-    // leaf value — which is computed from the same bits — still verifies.
+    // Admissible only in a round strictly below the deadline; both sides are Unix seconds of
+    // consensus time. Unsigned: a CBOR uint at or above 2^63 arrives as a negative long, and a
+    // signed comparison would wave an expired request through.
     if (transaction.getExpiresAt().isPresent()
             && Long.compareUnsigned(referenceTime, transaction.getExpiresAt().get()) >= 0) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.REQUEST_EXPIRED);
     }
 
-    // A leaf cannot postdate the round that certified it. Consensus signs the round's timestamp,
-    // which is that round's own reference time, so this is a free signed upper bound; the tree is
-    // append-only, so a proof re-fetched later is certified by a later round and the bound only
-    // loosens.
-    //
-    // It bounds the reference time in one direction only, and the useful direction is the other
-    // one. Nothing here establishes when the leaf was actually created: a service that receives a
-    // request after its deadline T can insert the leaf now and write referenceTime = T - 1 into
-    // it, and both that value and this round's later timestamp satisfy every check in this rule.
-    // Enforcing a deadline against a dishonest service needs signed evidence of the creation
-    // round, which an inclusion proof does not carry. What this rule can establish is that the
-    // leaf is internally consistent and that an honest service admitted the request in time.
-    // Unsigned, for the same reason as the deadline comparison above.
+    // A leaf cannot postdate the round that certified it, and consensus signs that timestamp.
+    // One-sided: it does not detect back-dating. See aggregator-go#186.
     if (Long.compareUnsigned(
             referenceTime,
             inclusionProof.getUnicityCertificate().getInputRecord().getTimestamp()) > 0) {

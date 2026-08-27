@@ -11,15 +11,9 @@ public final class ExpiresAt {
   /**
    * Validate an exclusive request deadline at the boundary that accepts it.
    *
-   * <p>Without this the range errors surface much later and far from the mistake: a negative value
-   * encodes nowhere and fails inside the CBOR serializer while the transaction hash is being
-   * computed, and zero encodes fine but produces a request that is expired by construction, since
-   * every reference time is at or past it.
-   *
-   * <p>The accepted range is 1 to {@link Long#MAX_VALUE}. The wire format is a CBOR unsigned
-   * integer and so admits values up to 2^64-1, but one at or above 2^63 arrives as a negative long
-   * and is rejected here rather than silently reinterpreted. No real deadline comes near that:
-   * 2^63 Unix seconds is roughly 292 billion years away.
+   * <p>Zero encodes fine but is expired by construction, since every reference time is at or past
+   * it. The accepted range is 1 to {@link Long#MAX_VALUE}; the wire admits up to 2^64-1, but a
+   * value at or above 2^63 arrives as a negative long and is rejected rather than reinterpreted.
    *
    * @param expiresAt deadline in Unix seconds, or null to let the service assign one
    * @return the validated deadline, unchanged

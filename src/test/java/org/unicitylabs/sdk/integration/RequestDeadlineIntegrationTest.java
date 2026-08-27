@@ -23,12 +23,8 @@ import org.unicitylabs.sdk.utils.ExpiresAt;
  * Request-deadline behaviour against a real aggregator.
  *
  * <p>The unit suite covers the same ground against {@link org.unicitylabs.sdk.TestAggregatorClient},
- * which derives leaf values with the very code under test; only a real service can tell whether
- * the SDK and the aggregator still agree. Mirrors the TypeScript SDK's
- * tests/integration/RequestDeadlineTest.ts case for case.
- *
- * <p>Tagged {@code integration} and excluded from the ordinary {@code test} task, because it needs
- * a working Docker daemon. Run with {@code ./gradlew integrationTest}.
+ * which derives leaf values with the code under test; only a real service can tell whether the two
+ * still agree. Run with {@code ./gradlew integrationTest}.
  */
 @Tag("integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

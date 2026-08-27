@@ -25,20 +25,12 @@ import org.unicitylabs.sdk.util.verification.VerificationStatus;
 /**
  * Cross-implementation check: a token minted by the published TypeScript SDK, verified here.
  *
- * <p>The two SDKs share every format that reaches the aggregator, and their golden
- * CertificationData vectors are byte-identical — those vectors stayed green throughout a period
- * when neither SDK could read the other's tokens, because Token and the certified transactions
- * inside it are not part of what they cover. Only carrying a real token across the language
- * boundary exercises the container formats and the verification semantics that read them.
+ * <p>The golden CertificationData vectors both SDKs carry cover what reaches the aggregator, not
+ * Token or the certified transactions inside it — they stayed green while neither SDK could read
+ * the other's tokens. Carrying a real token across the boundary is what covers those.
  *
- * <p>The token is minted against the same aggregator this suite starts, by the npm artifact rather
- * than the TypeScript repo's source tree — the bytes a consumer installs. Nothing is committed, so
- * there is no vector to go stale and no question of who regenerates it.
- *
- * <p>The node step shells out to the docker CLI rather than going through Testcontainers.
- * Testcontainers already requires that CLI for ComposeContainer, so this adds no dependency, and
- * a one-shot container that fails reports its own output here instead of an opaque "did not start
- * correctly".
+ * <p>Minted against the aggregator this suite starts, by the npm artifact rather than the other
+ * repo's source tree, so nothing is committed and no vector can go stale.
  */
 @Tag("integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

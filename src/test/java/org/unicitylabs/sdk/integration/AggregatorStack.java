@@ -19,15 +19,12 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 
 /**
- * The aggregator stack the integration suite runs against, started by Testcontainers.
+ * The aggregator stack the integration suite runs against: a BFT root node, mongodb, redis and a
+ * pinned aggregator build, from the same compose file the TypeScript SDK uses.
  *
- * <p>The suite owns the service it talks to: a BFT root node, mongodb, redis and a pinned
- * aggregator build, from the same compose file the TypeScript SDK uses. Nothing external is
- * involved, the chain starts empty on every run, and the aggregator is published on an ephemeral
- * port so concurrent runs cannot collide.
- *
- * <p>There is deliberately no way to point the suite at an aggregator it did not start. A run that
- * could be aimed elsewhere would not be exercising the compose file it exists to test.
+ * <p>The chain starts empty on every run and the aggregator takes an ephemeral port, so concurrent
+ * runs cannot collide. There is deliberately no way to point the suite at a stack it did not
+ * start.
  */
 public final class AggregatorStack implements AutoCloseable {
 

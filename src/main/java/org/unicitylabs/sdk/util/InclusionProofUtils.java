@@ -98,11 +98,8 @@ public class InclusionProofUtils {
     StateId stateId = StateId.fromTransaction(transaction);
     client.getInclusionProof(stateId).thenAccept(response -> {
       InclusionProof inclusionProof = response.getInclusionProof();
-      // Every proof goes through the rule. It reports INCLUSION_CERTIFICATE_MISSING only for a
-      // proof carrying no leaf at all, which is the aggregator's "not certified yet" and the one
-      // answer worth polling through; a proof that is present but structurally impossible names
-      // what is missing instead of reading as pending and hiding the cause behind this loop's own
-      // timeout.
+      // The rule reports INCLUSION_CERTIFICATE_MISSING only for a proof with no leaf at all;
+      // anything partial names what is missing rather than reading as pending.
       VerificationResult<InclusionProofVerificationStatus> result =
               InclusionProofVerificationRule.verify(
                       trustBase, predicateVerifier, inclusionProof, transaction);
