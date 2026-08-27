@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
@@ -40,10 +41,14 @@ public final class AggregatorStack implements AutoCloseable {
 
   private final ComposeContainer environment;
   private final String url;
+  private final int port;
+  private final String networkName;
 
-  private AggregatorStack(ComposeContainer environment, String url) {
+  private AggregatorStack(ComposeContainer environment, String url, int port, String networkName) {
     this.environment = environment;
     this.url = url;
+    this.port = port;
+    this.networkName = networkName;
   }
 
   /**
@@ -65,7 +70,9 @@ public final class AggregatorStack implements AutoCloseable {
     Files.createDirectories(DATA_DIR.resolve("genesis"));
     Files.createDirectories(DATA_DIR.resolve("genesis-root"));
 
+    String project = "stsdk" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     ComposeContainer environment = new ComposeContainer(
+            project,
             new File(COMPOSE_DIR.resolve("docker-compose.yml").toString()))
             // Containerised compose rather than a local CLI: the build does not need docker on
             // its PATH, only a reachable daemon.
@@ -79,11 +86,15 @@ public final class AggregatorStack implements AutoCloseable {
             .withStartupTimeout(STARTUP);
     environment.start();
 
-    String url = "http://" + environment.getServiceHost("aggregator", AGGREGATOR_PORT) + ":"
-            + environment.getServicePort("aggregator", AGGREGATOR_PORT);
+    int port = environment.getServicePort("aggregator", AGGREGATOR_PORT);
+    String url = "http://" + environment.getServiceHost("aggregator", AGGREGATOR_PORT) + ":" + port;
     waitForCertification(url);
 
-    return new AggregatorStack(environment, url);
+    String containerId = environment.getContainerByServiceName("aggregator")
+            .orElseThrow(() -> new IllegalStateException("no aggregator service in the stack"))
+            .getContainerId();
+
+    return new AggregatorStack(environment, url, port, networkOf(containerId));
   }
 
   /**
@@ -96,6 +107,40 @@ public final class AggregatorStack implements AutoCloseable {
   }
 
   /**
+   * Get the host port the aggregator is published on.
+   *
+   * @return host port
+   */
+  public int getPort() {
+    return this.port;
+  }
+
+  /**
+   * Get the name of the network the stack's services share.
+   *
+   * <p>A container that needs to talk to the aggregator joins this and addresses it as
+   * {@code aggregator:3000}, which needs no published port and no host-gateway assumption.
+   *
+   * <p>Read off the running container rather than derived from the compose project name: how
+   * Testcontainers names the network it creates is its business, and guessing it produced a name
+   * that did not exist.
+   *
+   * @return docker network name
+   */
+  public String getNetworkName() {
+    return this.networkName;
+  }
+
+  /**
+   * Get the path of the trust base the BFT root node generated for this run.
+   *
+   * @return trust base path
+   */
+  public Path getTrustBasePath() {
+    return DATA_DIR.resolve("genesis").resolve("trust-base.json");
+  }
+
+  /**
    * Read the trust base the BFT root node generated for this run.
    *
    * @return trust base
@@ -103,8 +148,7 @@ public final class AggregatorStack implements AutoCloseable {
    */
   public RootTrustBase getTrustBase() throws IOException {
     return RootTrustBase.fromJson(new String(
-            Files.readAllBytes(DATA_DIR.resolve("genesis").resolve("trust-base.json")),
-            StandardCharsets.UTF_8));
+            Files.readAllBytes(getTrustBasePath()), StandardCharsets.UTF_8));
   }
 
   @Override
@@ -115,6 +159,33 @@ public final class AggregatorStack implements AutoCloseable {
     } catch (IOException e) {
       // Best effort: the next start deletes it again before generating genesis.
     }
+  }
+
+  /**
+   * Ask docker which network a container is attached to.
+   *
+   * @param containerId container to inspect
+   * @return the single network name
+   * @throws IOException if docker cannot be run
+   * @throws InterruptedException if the wait is interrupted
+   */
+  private static String networkOf(String containerId) throws IOException, InterruptedException {
+    Process process = new ProcessBuilder(
+            "docker", "inspect", "-f",
+            "{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{end}}", containerId)
+            .redirectErrorStream(true)
+            .start();
+    String name;
+    try (java.io.BufferedReader reader = new java.io.BufferedReader(
+            new java.io.InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+      name = reader.readLine();
+    }
+    process.waitFor(30, TimeUnit.SECONDS);
+    if (name == null || name.trim().isEmpty()) {
+      throw new IllegalStateException("could not read the network of container " + containerId);
+    }
+
+    return name.trim();
   }
 
   private static void waitForCertification(String url) throws InterruptedException {
