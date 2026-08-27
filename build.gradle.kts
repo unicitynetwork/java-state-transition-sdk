@@ -11,7 +11,7 @@ group = "org.unicitylabs"
 version = if (project.hasProperty("version")) {
     project.property("version").toString()
 } else {
-    "1.1-SNAPSHOT"
+    "3.0-SNAPSHOT"
 }
 
 repositories {
