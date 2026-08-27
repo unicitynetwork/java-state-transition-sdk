@@ -86,16 +86,18 @@ public class CertifiedTransferTransaction implements Transaction {
    * Deserialize a certified transfer transaction from CBOR bytes.
    *
    * @param bytes CBOR encoded certified transfer transaction
-   * @param token token providing the source state for the deserialized transfer
+   * @param sourceStateHash hash of the state the transfer spends
+   * @param lockScript lock script the transfer unlocks
    *
    * @return certified transfer transaction
    */
-  public static CertifiedTransferTransaction fromCbor(byte[] bytes, Token token) {
+  public static CertifiedTransferTransaction fromCbor(byte[] bytes, DataHash sourceStateHash,
+          EncodedPredicate lockScript) {
     List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
     InclusionProof proof = InclusionProof.fromCbor(data.get(1));
 
     return new CertifiedTransferTransaction(
-            TransferTransaction.fromCbor(data.get(0), token),
+            TransferTransaction.fromCbor(data.get(0), sourceStateHash, lockScript),
             proof
     );
   }

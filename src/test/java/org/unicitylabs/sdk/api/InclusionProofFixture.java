@@ -12,17 +12,16 @@ public class InclusionProofFixture {
     UnicityCertificate unicityCertificate = UnicityCertificateUtils.generateCertificate(
             signingService, root, certificateTimestamp);
 
-    return new InclusionProofResponse(
+    return InclusionProofResponse.certified(
             1L,
             new InclusionProof(certificationData, referenceTime, inclusionCertificate,
-                    unicityCertificate),
-            unicityCertificate);
+                    unicityCertificate));
   }
 
   /** The answer for a state the aggregator has not certified yet. */
   public static InclusionProofResponse createPendingResponse(DataHash root,
           SigningService signingService, long certificateTimestamp) {
-    return new InclusionProofResponse(1L, null,
+    return InclusionProofResponse.notCertified(1L,
             UnicityCertificateUtils.generateCertificate(signingService, root, certificateTimestamp));
   }
 }

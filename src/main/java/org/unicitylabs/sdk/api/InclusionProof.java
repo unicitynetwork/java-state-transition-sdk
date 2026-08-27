@@ -8,14 +8,13 @@ import org.unicitylabs.sdk.serializer.cbor.CborSerializer;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * Represents a proof of inclusion or non-inclusion in a sparse merkle tree.
  */
 public class InclusionProof {
   public static final long CBOR_TAG = 39033;
-  private static final int VERSION = 1;
+  static final int VERSION = 1;
 
   private final InclusionCertificate inclusionCertificate;
   private final CertificationData certificationData;
@@ -94,26 +93,6 @@ public class InclusionProof {
    * @return inclusion proof
    */
   public static InclusionProof fromCbor(byte[] bytes) {
-    InclusionProof inclusionProof = decodeOrAbsent(bytes);
-    if (inclusionProof == null) {
-      throw new CborSerializationException(
-              "Expected a certified leaf, but the inclusion proof reports none.");
-    }
-
-    return inclusionProof;
-  }
-
-  /**
-   * Decode the wire form, which expresses either a certified leaf or the absence of one.
-   *
-   * <p>The three leaf fields travel together: all present once the request has been included in a
-   * certified round, all absent while it is still pending. Anything in between is rejected here,
-   * so nothing downstream has to consider a half-formed proof.
-   *
-   * @param bytes CBOR bytes
-   * @return the proof, or null when no leaf is certified yet
-   */
-  static InclusionProof decodeOrAbsent(byte[] bytes) {
     CborDeserializer.CborTag tag = CborDeserializer.decodeTag(bytes);
     if (tag.getTag() != InclusionProof.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
@@ -132,17 +111,9 @@ public class InclusionProof {
     InclusionCertificate inclusionCertificate =
             CborDeserializer.decodeNullable(data.get(3), (certificate) ->
                     InclusionCertificate.decode(CborDeserializer.decodeByteString(certificate)));
-
-    long present = Stream.of(certificationData, referenceTime, inclusionCertificate)
-            .filter(Objects::nonNull)
-            .count();
-    if (present == 0) {
-      return null;
-    }
-    if (present != 3) {
+    if (certificationData == null || referenceTime == null || inclusionCertificate == null) {
       throw new CborSerializationException(
-              "InclusionProof must carry certification data, reference time and inclusion "
-                      + "certificate together, or none of them.");
+              "Expected a certified leaf, but the inclusion proof describes none.");
     }
 
     return new InclusionProof(
@@ -151,23 +122,6 @@ public class InclusionProof {
             inclusionCertificate,
             UnicityCertificate.fromCbor(data.get(4))
     );
-  }
-
-  /**
-   * Encode the wire form for a state with no certified leaf.
-   *
-   * @param unicityCertificate certificate of the round the answer was served against
-   * @return CBOR bytes
-   */
-  static byte[] encodeNoCertifiedLeaf(UnicityCertificate unicityCertificate) {
-    return CborSerializer.encodeTag(
-            InclusionProof.CBOR_TAG,
-            CborSerializer.encodeArray(
-                    CborSerializer.encodeUnsignedInteger(VERSION),
-                    CborSerializer.encodeNull(),
-                    CborSerializer.encodeNull(),
-                    CborSerializer.encodeNull(),
-                    unicityCertificate.toCbor()));
   }
 
   /**

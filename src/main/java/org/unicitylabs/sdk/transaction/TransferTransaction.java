@@ -121,11 +121,18 @@ public class TransferTransaction implements Transaction {
   /**
    * Deserializes a transfer transaction from CBOR bytes.
    *
+   * <p>The state being spent and the lock script over it are chain context rather than part of the
+   * encoded transfer, so the caller supplies them. Both are checked against the certification data
+   * during verification, so a wrong value fails there rather than yielding a transaction that looks
+   * valid.
+   *
    * @param bytes CBOR-encoded transfer transaction
-   * @param token token providing the source state for the deserialized transfer
+   * @param sourceStateHash hash of the state the transaction spends
+   * @param lockScript lock script the transaction unlocks
    * @return decoded transfer transaction
    */
-  public static TransferTransaction fromCbor(byte[] bytes, Token token) {
+  public static TransferTransaction fromCbor(byte[] bytes, DataHash sourceStateHash,
+          EncodedPredicate lockScript) {
     CborDeserializer.CborTag tag = CborDeserializer.decodeTag(bytes);
     if (tag.getTag() != TransferTransaction.CBOR_TAG) {
       throw new CborSerializationException(String.format("Invalid CBOR tag: %s", tag.getTag()));
@@ -137,13 +144,14 @@ public class TransferTransaction implements Transaction {
       throw new CborSerializationException(String.format("Unsupported version: %s", version));
     }
 
-    return TransferTransaction.create(
-            token,
+    return new TransferTransaction(
+            sourceStateHash,
+            lockScript,
             EncodedPredicate.fromCbor(data.get(1)),
-            StateMask.fromCbor(data.get(2)),
-            CborDeserializer.decodeNullable(data.get(3), CborDeserializer::decodeByteString),
             CborDeserializer.decodeNullable(
-                    data.get(4), value -> CborDeserializer.decodeUnsignedInteger(value).asLong())
+                    data.get(4), value -> CborDeserializer.decodeUnsignedInteger(value).asLong()),
+            StateMask.fromCbor(data.get(2)),
+            CborDeserializer.decodeNullable(data.get(3), CborDeserializer::decodeByteString)
     );
   }
 

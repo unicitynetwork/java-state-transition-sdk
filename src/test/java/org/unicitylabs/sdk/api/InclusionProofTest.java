@@ -116,9 +116,9 @@ public class InclusionProofTest {
   // the type that carries it, and asking for a proof anyway is an error rather than a null.
   @Test
   public void decodesTheAbsentFormAsAnAbsence() {
-    byte[] encoded = InclusionProof.encodeNoCertifiedLeaf(unicityCertificate);
+    byte[] encoded = CborDeserializer.decodeArray(
+            InclusionProofResponse.notCertified(1L, unicityCertificate).toCbor(), 2).get(1);
 
-    Assertions.assertNull(InclusionProof.decodeOrAbsent(encoded));
     Assertions.assertThrows(CborSerializationException.class, () -> InclusionProof.fromCbor(encoded));
   }
 

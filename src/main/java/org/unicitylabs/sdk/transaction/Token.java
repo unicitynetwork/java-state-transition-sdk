@@ -114,9 +114,16 @@ public final class Token {
     CertifiedMintTransaction genesis = CertifiedMintTransaction.fromCbor(data.get(1));
     List<byte[]> transactionsCbor = CborDeserializer.decodeArray(data.get(2));
 
+    // Each transfer spends the state the previous one produced. Deriving that here, rather than
+    // handing the decoder a half-built token to read it back off, is what makes the chain
+    // explicit — and lets a Token be constructed once, from a finished list.
     List<CertifiedTransferTransaction> transactions = new ArrayList<>();
+    Transaction previous = genesis;
     for (byte[] transaction : transactionsCbor) {
-      transactions.add(CertifiedTransferTransaction.fromCbor(transaction, new Token(genesis, transactions)));
+      CertifiedTransferTransaction decoded = CertifiedTransferTransaction.fromCbor(
+              transaction, previous.calculateStateHash(), previous.getRecipient());
+      transactions.add(decoded);
+      previous = decoded;
     }
 
     return new Token(genesis, transactions);
