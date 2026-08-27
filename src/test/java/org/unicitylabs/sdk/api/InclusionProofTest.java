@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.unicitylabs.sdk.api.NetworkId;
 import org.unicitylabs.sdk.api.bft.RootTrustBase;
 import org.unicitylabs.sdk.api.bft.RootTrustBaseUtils;
 import org.unicitylabs.sdk.api.bft.ShardId;
@@ -36,6 +37,7 @@ public class InclusionProofTest {
   CertificationData certificationData;
   RootTrustBase trustBase;
   UnicityCertificate unicityCertificate;
+  DataHash rootHash;
 
   @BeforeAll
   public void createMerkleTreePath() throws Exception {
@@ -55,6 +57,7 @@ public class InclusionProofTest {
             LeafValue.calculate(certificationData.getTransactionHash(), REFERENCE_TIME).getData());
 
     SparseMerkleTreeRootNode root = smt.calculateRoot();
+    rootHash = root.getHash();
     inclusionCertificate = InclusionCertificate.create(root, stateId.getData());
     // Reuse user signing service as unicity certificate signing service.
     trustBase = RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey());
@@ -137,8 +140,7 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction,
-                    REFERENCE_TIME
+                    this.transaction
             ).getStatus()
     );
 
@@ -163,8 +165,7 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     invalidTransactionHashInclusionProof,
-                    this.transaction,
-                    REFERENCE_TIME
+                    this.transaction
             ).getStatus()
     );
   }
@@ -193,8 +194,7 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     invalidInclusionProof,
-                    this.transaction,
-                    REFERENCE_TIME
+                    this.transaction
             ).getStatus()
     );
   }
@@ -228,19 +228,36 @@ public class InclusionProofTest {
                     RootTrustBaseUtils.generateRootTrustBase(signingService.getPublicKey()),
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction,
-                    REFERENCE_TIME
+                    this.transaction
             ).getStatus()
     );
   }
 
   @Test
-  public void testVerificationFailsWhenReferenceTimeReachesTheTimeout() {
+  public void testVerificationFailsWhenReferenceTimeReachesTheTimeout() throws Exception {
+    // A leaf whose deadline the round it was created in had already reached. The deadline is
+    // exclusive, so equality is already too late.
+    SigningService signingService = new SigningService(
+            HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
+    MintTransaction expired = MintTransaction.builder(
+                    NetworkId.LOCAL, SignaturePredicate.fromSigningService(signingService))
+            .salt(this.transaction.getSalt())
+            .tokenType(this.transaction.getTokenType())
+            .expiresAt(REFERENCE_TIME)
+            .build();
+    CertificationData expiredData = CertificationData.fromMintTransaction(expired);
+    StateId expiredStateId = StateId.fromCertificationData(expiredData);
+
+    SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
+    smt.addLeaf(expiredStateId.getData(),
+            LeafValue.calculate(expiredData.getTransactionHash(), REFERENCE_TIME).getData());
+    SparseMerkleTreeRootNode root = smt.calculateRoot();
+
     InclusionProof inclusionProof = new InclusionProof(
-            this.certificationData,
+            expiredData,
             REFERENCE_TIME,
-            this.inclusionCertificate,
-            this.unicityCertificate
+            InclusionCertificate.create(root, expiredStateId.getData()),
+            UnicityCertificateUtils.generateCertificate(signingService, root.getHash())
     );
 
     Assertions.assertEquals(
@@ -249,30 +266,120 @@ public class InclusionProofTest {
                     this.trustBase,
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction,
-                    this.transaction.getExpiresAt().orElse(null)
+                    expired
             ).getStatus()
     );
   }
 
+  // A leaf cannot postdate the round that certified it, and consensus signs that round's
+  // timestamp, so a leaf claiming to be newer than its own round is an impossible pairing.
   @Test
-  public void testVerificationFailsWithWrongReferenceTime() {
+  public void testVerificationFailsWhenLeafPostdatesItsCertifyingRound() {
+    SigningService signingService = new SigningService(
+            HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
     InclusionProof inclusionProof = new InclusionProof(
             this.certificationData,
             REFERENCE_TIME,
             this.inclusionCertificate,
-            this.unicityCertificate
+            UnicityCertificateUtils.generateCertificate(
+                    signingService, this.rootHash, REFERENCE_TIME - 1)
     );
 
     Assertions.assertEquals(
-            InclusionProofVerificationStatus.REFERENCE_TIME_MISMATCH,
+            InclusionProofVerificationStatus.REFERENCE_TIME_AFTER_ROUND,
             InclusionProofVerificationRule.verify(
                     this.trustBase,
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction,
-                    REFERENCE_TIME + 1
+                    this.transaction
             ).getStatus()
+    );
+  }
+
+  // A proof with some leaf fields but not others establishes neither a leaf nor its absence.
+  // fromCbor rejects one off the wire, so these are reachable only hand-built, and each has to
+  // name what is missing rather than pass for "not certified yet" and leave a caller polling to
+  // its own deadline.
+  @Test
+  public void testPartiallyPresentProofReportsWhatIsMissing() {
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.MISSING_CERTIFICATION_DATA,
+            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
+                    new InclusionProof(null, REFERENCE_TIME, this.inclusionCertificate,
+                            this.unicityCertificate),
+                    this.transaction).getStatus()
+    );
+
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME,
+            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
+                    new InclusionProof(this.certificationData, null, this.inclusionCertificate,
+                            this.unicityCertificate),
+                    this.transaction).getStatus()
+    );
+
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.INCOMPLETE_INCLUSION_PROOF,
+            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
+                    new InclusionProof(this.certificationData, REFERENCE_TIME, null,
+                            this.unicityCertificate),
+                    this.transaction).getStatus()
+    );
+  }
+
+  // What the aggregator returns for a state it has not certified yet: all three leaf fields
+  // absent together. The one status a caller polls through.
+  @Test
+  public void testProofWithNoLeafReportsPending() {
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING,
+            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
+                    new InclusionProof(null, null, null, this.unicityCertificate),
+                    this.transaction).getStatus()
+    );
+  }
+
+  // Documents a gap the bound above does NOT close, so it stays visible and this test fails
+  // loudly if it is ever closed.
+  //
+  // The bound is one-sided, and the useful direction is the other one. A service that receives a
+  // request after its deadline can insert the leaf now and write a pre-deadline reference time
+  // into it: the expiry check passes because that value is below the deadline, the bound passes
+  // because the certifying round is later still, and the SMT path authenticates the value the
+  // service chose rather than when it chose it. Closing this needs signed evidence of the
+  // creation round, which an inclusion proof does not carry.
+  @Test
+  public void testAcceptsALeafBackDatedByADishonestService() throws Exception {
+    long deadline = REFERENCE_TIME;
+    long backDated = deadline - 1;
+    SigningService signingService = new SigningService(
+            HexConverter.decode("0000000000000000000000000000000000000000000000000000000000000001"));
+    MintTransaction late = MintTransaction.builder(
+                    NetworkId.LOCAL, SignaturePredicate.fromSigningService(signingService))
+            .salt(this.transaction.getSalt())
+            .tokenType(this.transaction.getTokenType())
+            .expiresAt(deadline)
+            .build();
+    CertificationData lateData = CertificationData.fromMintTransaction(late);
+    StateId lateStateId = StateId.fromCertificationData(lateData);
+
+    // Built now, but claiming to have been created before the deadline.
+    SparseMerkleTree smt = new SparseMerkleTree(HashAlgorithm.SHA256);
+    smt.addLeaf(lateStateId.getData(),
+            LeafValue.calculate(lateData.getTransactionHash(), backDated).getData());
+    SparseMerkleTreeRootNode root = smt.calculateRoot();
+
+    Assertions.assertEquals(
+            InclusionProofVerificationStatus.OK,
+            InclusionProofVerificationRule.verify(this.trustBase, this.predicateVerifier,
+                    new InclusionProof(
+                            lateData,
+                            backDated,
+                            InclusionCertificate.create(root, lateStateId.getData()),
+                            // A round certified long after the deadline had passed.
+                            UnicityCertificateUtils.generateCertificate(
+                                    signingService, root.getHash(), deadline + 4000)),
+                    late).getStatus()
     );
   }
 
@@ -293,8 +400,7 @@ public class InclusionProofTest {
                     ),
                     this.predicateVerifier,
                     inclusionProof,
-                    this.transaction,
-                    REFERENCE_TIME
+                    this.transaction
             ).getStatus()
     );
   }

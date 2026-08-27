@@ -68,8 +68,7 @@ public class CertifiedMintTransactionVerificationRule {
     }
 
     result = InclusionProofVerificationRule.verify(context.getTrustBase(),
-            context.getPredicateVerifier(), transaction.getInclusionProof(), transaction,
-            transaction.getReferenceTime());
+            context.getPredicateVerifier(), transaction.getInclusionProof(), transaction);
     results.add(result);
     if (result.getStatus() != InclusionProofVerificationStatus.OK) {
       return new VerificationResult<>("CertifiedMintTransactionVerificationRule",

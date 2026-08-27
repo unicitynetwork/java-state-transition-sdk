@@ -8,15 +8,23 @@ public enum InclusionProofVerificationStatus {
   INVALID_TRUSTBASE,
   /** Certification data required for verification is missing. */
   MISSING_CERTIFICATION_DATA,
+  /**
+   * The proof carries some leaf fields but not others, so it establishes neither a leaf nor the
+   * absence of one.
+   */
+  INCOMPLETE_INCLUSION_PROOF,
   /** Certification lock script or source state hash does not match the reconstructed transaction. */
   CERTIFICATION_DATA_MISMATCH,
   /** Transaction hash does not match the value referenced by the proof. */
   TRANSACTION_HASH_MISMATCH,
   /** The inclusion proof does not carry the reference time its leaf value was built from. */
   MISSING_REFERENCE_TIME,
-  /** The inclusion proof's reference time differs from the one the transition carries. */
-  REFERENCE_TIME_MISMATCH,
   /** The round's reference time had already reached the request's timeout. */
+  /**
+   * The leaf claims a reference time later than the round that certified it, which no honest
+   * service can produce.
+   */
+  REFERENCE_TIME_AFTER_ROUND,
   REQUEST_EXPIRED,
   /** Proof authentication failed. */
   NOT_AUTHENTICATED,

@@ -23,16 +23,13 @@ import java.util.Optional;
 public class CertifiedTransferTransaction implements Transaction {
 
   private final TransferTransaction transaction;
-  private final long referenceTime;
   private final InclusionProof inclusionProof;
 
   private CertifiedTransferTransaction(
           TransferTransaction transaction,
-          long referenceTime,
           InclusionProof inclusionProof
   ) {
     this.transaction = transaction;
-    this.referenceTime = referenceTime;
     this.inclusionProof = inclusionProof;
   }
 
@@ -74,14 +71,18 @@ public class CertifiedTransferTransaction implements Transaction {
   public Optional<Long> getExpiresAt() {
     return this.transaction.getExpiresAt();
   }
-
   /**
-   * Get the reference time this transition was validated under.
+   * Get the reference time of the round the leaf was created in, in Unix seconds.
    *
-   * @return reference time
+   * <p>Read from the inclusion proof rather than stored beside it: the service records the leaf's
+   * creation time on the record itself and serves that same value for every proof of the leaf, and
+   * the leaf value binds it, so the proof is the authenticated source for it.
+   *
+   * @return reference time in Unix seconds
    */
   public long getReferenceTime() {
-    return this.referenceTime;
+    // Non-null by construction: every factory below rejects a proof without one.
+    return this.inclusionProof.getReferenceTime().orElseThrow(IllegalStateException::new);
   }
 
   /**
@@ -93,17 +94,18 @@ public class CertifiedTransferTransaction implements Transaction {
    * @return certified transfer transaction
    */
   public static CertifiedTransferTransaction fromCbor(byte[] bytes, Token token) {
-    List<byte[]> data = CborDeserializer.decodeArray(bytes, 3);
-    InclusionProof proof = InclusionProof.fromCbor(data.get(2));
-    long referenceTime = CborDeserializer.decodeUnsignedInteger(data.get(1)).asLong();
-    // An absent reference time on the proof also fails this comparison.
-    if (!proof.getReferenceTime().equals(Optional.of(referenceTime))) {
-      throw new CborSerializationException("Certified transfer transaction reference time mismatch");
+    List<byte[]> data = CborDeserializer.decodeArray(bytes, 2);
+    InclusionProof proof = InclusionProof.fromCbor(data.get(1));
+    // A certified transaction is one bound to a leaf. A proof that reports no leaf cannot certify
+    // anything, and decoding it into one would hand every later verifier a transaction with no
+    // reference time.
+    if (!proof.getReferenceTime().isPresent()) {
+      throw new CborSerializationException(
+              "Certified transfer transaction carries an inclusion proof with no certified leaf");
     }
 
     return new CertifiedTransferTransaction(
             TransferTransaction.fromCbor(data.get(0), token),
-            referenceTime,
             proof
     );
   }
@@ -134,27 +136,17 @@ public class CertifiedTransferTransaction implements Transaction {
     Objects.requireNonNull(transaction, "transaction cannot be null");
     Objects.requireNonNull(inclusionProof, "inclusionProof cannot be null");
 
-    // The reference time is fixed here, at the moment the transaction is bound to its first
-    // proof. Later verifiers use the carried value: a proof fetched later may be issued
-    // against a later root and would then carry a different input record time.
-    long referenceTime = inclusionProof.getReferenceTime()
-            .orElseThrow(() -> new VerificationException(
-                    "Inclusion proof verification failed",
-                    new VerificationResult<>("InclusionProofVerificationRule",
-                            InclusionProofVerificationStatus.MISSING_REFERENCE_TIME)));
-
     VerificationResult<InclusionProofVerificationStatus> result = InclusionProofVerificationRule.verify(
             trustBase,
             predicateVerifier,
             inclusionProof,
-            transaction,
-            referenceTime
+            transaction
     );
     if (result.getStatus() != InclusionProofVerificationStatus.OK) {
       throw new VerificationException("Inclusion proof verification failed", result);
     }
 
-    return new CertifiedTransferTransaction(transaction, referenceTime, inclusionProof);
+    return new CertifiedTransferTransaction(transaction, inclusionProof);
   }
 
   /**
@@ -184,13 +176,12 @@ public class CertifiedTransferTransaction implements Transaction {
    */
   @Override
   public byte[] toCbor() {
-    return CborSerializer.encodeArray(this.transaction.toCbor(),
-            CborSerializer.encodeUnsignedInteger(this.referenceTime), this.inclusionProof.toCbor());
+    return CborSerializer.encodeArray(this.transaction.toCbor(), this.inclusionProof.toCbor());
   }
 
   @Override
   public String toString() {
     return String.format("CertifiedTransferTransaction{transaction=%s, referenceTime=%s, inclusionProof=%s}",
-            this.transaction, this.referenceTime, this.inclusionProof);
+            this.transaction, this.getReferenceTime(), this.inclusionProof);
   }
 }

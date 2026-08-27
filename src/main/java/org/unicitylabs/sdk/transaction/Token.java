@@ -20,7 +20,13 @@ import java.util.Objects;
  */
 public final class Token {
   public static final long CBOR_TAG = 39040;
-  private static final int VERSION = 1;
+  /**
+   * The only accepted wire version. Bumped with the certified-transaction element counts and the
+   * transaction encodings below them: without it a token written by an older SDK passes the
+   * version check here and then dies deeper down on a CBOR array-length error that never mentions
+   * versioning.
+   */
+  private static final int VERSION = 2;
 
   private final CertifiedMintTransaction genesis;
   private final List<CertifiedTransferTransaction> transactions;

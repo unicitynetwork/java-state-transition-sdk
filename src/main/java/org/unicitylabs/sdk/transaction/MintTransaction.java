@@ -65,7 +65,7 @@ public class MintTransaction implements Transaction {
     this.salt = salt;
     this.tokenType = tokenType;
     this.tokenId = tokenId;
-    this.expiresAt = expiresAt;
+    this.expiresAt = ExpiresAt.validate(expiresAt);
     this.justification = justification;
     this.data = data;
   }

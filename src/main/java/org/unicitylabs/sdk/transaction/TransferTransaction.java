@@ -44,7 +44,7 @@ public class TransferTransaction implements Transaction {
     this.sourceStateHash = sourceStateHash;
     this.lockScript = lockScript;
     this.recipient = recipient;
-    this.expiresAt = expiresAt;
+    this.expiresAt = ExpiresAt.validate(expiresAt);
     this.stateMask = stateMask;
     this.data = data;
   }
