@@ -83,15 +83,44 @@ public final class AggregatorStack implements AutoCloseable {
             .withStartupTimeout(STARTUP);
     environment.start();
 
-    int port = environment.getServicePort("aggregator", AGGREGATOR_PORT);
-    String url = "http://" + environment.getServiceHost("aggregator", AGGREGATOR_PORT) + ":" + port;
-    waitForCertification(url);
+    // Everything below can fail on a stack that is already up — readiness can time out, and the
+    // lookups can throw. Nothing holds the environment until the constructor runs, so close() can
+    // never be reached: without this, a failed startup leaves the whole stack and its genesis
+    // behind, and the next run tries to delete a directory that running containers have mounted.
+    try {
+      int port = environment.getServicePort("aggregator", AGGREGATOR_PORT);
+      String url = "http://" + environment.getServiceHost("aggregator", AGGREGATOR_PORT) + ":"
+              + port;
+      waitForCertification(url);
 
-    String containerId = environment.getContainerByServiceName("aggregator")
-            .orElseThrow(() -> new IllegalStateException("no aggregator service in the stack"))
-            .getContainerId();
+      String containerId = environment.getContainerByServiceName("aggregator")
+              .orElseThrow(() -> new IllegalStateException("no aggregator service in the stack"))
+              .getContainerId();
 
-    return new AggregatorStack(environment, url, port, networkOf(containerId));
+      return new AggregatorStack(environment, url, port, networkOf(containerId));
+    } catch (IOException | InterruptedException | RuntimeException e) {
+      stopQuietly(environment, e);
+      throw e;
+    }
+  }
+
+  /**
+   * Tear down a stack whose startup failed, without losing the failure that caused it.
+   *
+   * @param environment the stack to stop
+   * @param failure the failure being propagated, to attach any cleanup failure to
+   */
+  private static void stopQuietly(ComposeContainer environment, Exception failure) {
+    try {
+      environment.stop();
+    } catch (RuntimeException e) {
+      failure.addSuppressed(e);
+    }
+    try {
+      deleteRecursively(DATA_DIR);
+    } catch (IOException e) {
+      failure.addSuppressed(e);
+    }
   }
 
   /**
