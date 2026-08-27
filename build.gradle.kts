@@ -7,12 +7,12 @@ plugins {
 }
 
 group = "org.unicitylabs"
-// Use version property if provided, otherwise use default
-version = if (project.hasProperty("version")) {
-    project.property("version").toString()
-} else {
-    "3.0-SNAPSHOT"
-}
+// Use version property if provided, otherwise use default. hasProperty("version") is always true
+// because Gradle defines it, so check for the "unspecified" it holds when -Pversion was not passed.
+version = project.property("version")
+    ?.takeIf { it.toString() != "unspecified" }
+    ?.toString()
+    ?: "3.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
