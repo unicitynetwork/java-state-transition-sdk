@@ -98,33 +98,23 @@ public class InclusionProofUtils {
     StateId stateId = StateId.fromTransaction(transaction);
     client.getInclusionProof(stateId).thenAccept(response -> {
       InclusionProof inclusionProof = response.getInclusionProof();
-      VerificationResult<InclusionProofVerificationStatus> result;
-      if (!inclusionProof.getCertificationData().isPresent()
-              || inclusionProof.getInclusionCertificate() == null) {
-        result = new VerificationResult<>("InclusionProofVerificationRule",
-                InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING);
-      } else if (!inclusionProof.getReferenceTime().isPresent()) {
-        result = new VerificationResult<>("InclusionProofVerificationRule",
-                InclusionProofVerificationStatus.MISSING_REFERENCE_TIME);
-      } else {
-        long referenceTime = inclusionProof.getReferenceTime().get();
-        result = InclusionProofVerificationRule.verify(
-                trustBase, predicateVerifier, inclusionProof, transaction, referenceTime);
+      // The aggregator has not certified this state yet. The response type is what says so; by the
+      // time a proof exists it is complete, so there is nothing else to poll through.
+      if (inclusionProof == null) {
+        CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
+                .execute(() -> checkInclusionProof(client, trustBase, predicateVerifier, transaction,
+                        future, startTime, timeoutMillis, intervalMillis));
+        return;
       }
-      switch (result.getStatus()) {
-        case OK:
-          future.complete(inclusionProof);
-          break;
-        case INCLUSION_CERTIFICATE_MISSING:
-          CompletableFuture.delayedExecutor(intervalMillis, TimeUnit.MILLISECONDS)
-                  .execute(() -> checkInclusionProof(client, trustBase, predicateVerifier, transaction,
-                          future, startTime,
-                          timeoutMillis,
-                          intervalMillis));
-          break;
-        default:
-          future.completeExceptionally(
-                  new VerificationException("Inclusion proof verification failed", result));
+
+      VerificationResult<InclusionProofVerificationStatus> result =
+              InclusionProofVerificationRule.verify(
+                      trustBase, predicateVerifier, inclusionProof, transaction);
+      if (result.getStatus() == InclusionProofVerificationStatus.OK) {
+        future.complete(inclusionProof);
+      } else {
+        future.completeExceptionally(
+                new VerificationException("Inclusion proof verification failed", result));
       }
     }).exceptionally(e -> {
       future.completeExceptionally(e);

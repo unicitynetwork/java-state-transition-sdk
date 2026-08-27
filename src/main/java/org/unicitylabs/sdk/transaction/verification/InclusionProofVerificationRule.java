@@ -1,6 +1,7 @@
 package org.unicitylabs.sdk.transaction.verification;
 
 import org.unicitylabs.sdk.api.CertificationData;
+import org.unicitylabs.sdk.api.InclusionCertificate;
 import org.unicitylabs.sdk.api.InclusionProof;
 import org.unicitylabs.sdk.api.LeafValue;
 import org.unicitylabs.sdk.api.StateId;
@@ -12,7 +13,6 @@ import org.unicitylabs.sdk.predicate.verification.PredicateVerifierService;
 import org.unicitylabs.sdk.transaction.Transaction;
 import org.unicitylabs.sdk.util.verification.VerificationResult;
 import org.unicitylabs.sdk.util.verification.VerificationStatus;
-import java.util.Optional;
 
 /**
  * This class provides the functionality to verify an inclusion proof against a given trust base
@@ -36,26 +36,15 @@ public class InclusionProofVerificationRule {
    * @param predicateVerifier the service responsible for evaluating transaction predicates
    * @param inclusionProof the inclusion proof containing certification data and merkle tree path
    * @param transaction the transaction that is being verified against the proof
-   * @param referenceTime reference time the transition was validated under
    *
    * @return a {@code VerificationResult} object containing the {@code InclusionProofVerificationStatus}
    *         and additional details about the verification outcome
    */
   public static VerificationResult<InclusionProofVerificationStatus> verify(RootTrustBase trustBase,
                                                                             PredicateVerifierService predicateVerifier, InclusionProof inclusionProof,
-                                                                            Transaction transaction, long referenceTime) {
-    if (inclusionProof.getInclusionCertificate() == null) {
-      return new VerificationResult<>(
-              "InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.INCLUSION_CERTIFICATE_MISSING
-      );
-    }
-
-    CertificationData certificationData = inclusionProof.getCertificationData().orElse(null);
-    if (certificationData == null) {
-      return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.MISSING_CERTIFICATION_DATA);
-    }
+                                                                            Transaction transaction) {
+    CertificationData certificationData = inclusionProof.getCertificationData();
+    long referenceTime = inclusionProof.getReferenceTime();
 
     if (!certificationData.getTransactionHash().equals(transaction.calculateTransactionHash())) {
       return new VerificationResult<>("InclusionProofVerificationRule",
@@ -69,25 +58,25 @@ public class InclusionProofVerificationRule {
               InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH);
     }
 
-    // The request was admissible only in a round strictly before its deadline. A request that
-    // carried no deadline was admitted under a service-assigned one, which is not recorded and is
-    // not re-checked here.
-    if (transaction.getExpiresAt().isPresent() && referenceTime >= transaction.getExpiresAt().get()) {
+    // Admissible only in a round strictly below the deadline; both sides are Unix seconds of
+    // consensus time. Unsigned: a CBOR uint at or above 2^63 arrives as a negative long, and a
+    // signed comparison would wave an expired request through.
+    if (transaction.getExpiresAt().isPresent()
+            && Long.compareUnsigned(referenceTime, transaction.getExpiresAt().get()) >= 0) {
       return new VerificationResult<>("InclusionProofVerificationRule",
               InclusionProofVerificationStatus.REQUEST_EXPIRED);
     }
 
-    // An absent reference time on the proof also fails this comparison.
-    if (!inclusionProof.getReferenceTime().equals(Optional.of(referenceTime))) {
+    // A leaf cannot postdate the round that certified it, and consensus signs that timestamp.
+    // One-sided: it does not detect back-dating. See aggregator-go#186.
+    if (Long.compareUnsigned(
+            referenceTime,
+            inclusionProof.getUnicityCertificate().getInputRecord().getTimestamp()) > 0) {
       return new VerificationResult<>("InclusionProofVerificationRule",
-              InclusionProofVerificationStatus.REFERENCE_TIME_MISMATCH);
+              InclusionProofVerificationStatus.REFERENCE_TIME_AFTER_ROUND);
     }
 
     StateId stateId = StateId.fromTransaction(transaction);
-    // The leaf value binds the reference time the transition was validated under. It is taken
-    // from the caller, not from the proof's own unicity certificate: the tree is append-only,
-    // so the proof may have been issued against a later root whose input record carries a
-    // later reference time.
     DataHash leafValue = LeafValue.calculate(certificationData.getTransactionHash(), referenceTime);
     if (!inclusionProof.getInclusionCertificate().verify(stateId, leafValue, new DataHash(HashAlgorithm.SHA256, inclusionProof.getUnicityCertificate().getInputRecord().getHash()))) {
       return new VerificationResult<>("InclusionProofVerificationRule",

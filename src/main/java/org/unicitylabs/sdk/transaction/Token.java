@@ -20,7 +20,13 @@ import java.util.Objects;
  */
 public final class Token {
   public static final long CBOR_TAG = 39040;
-  private static final int VERSION = 1;
+  /**
+   * The only accepted wire version. Bumped with the certified-transaction element counts and the
+   * transaction encodings below them: without it a token written by an older SDK passes the
+   * version check here and then dies deeper down on a CBOR array-length error that never mentions
+   * versioning.
+   */
+  private static final int VERSION = 2;
 
   private final CertifiedMintTransaction genesis;
   private final List<CertifiedTransferTransaction> transactions;
@@ -108,9 +114,16 @@ public final class Token {
     CertifiedMintTransaction genesis = CertifiedMintTransaction.fromCbor(data.get(1));
     List<byte[]> transactionsCbor = CborDeserializer.decodeArray(data.get(2));
 
+    // Each transfer spends the state the previous one produced. Deriving that here, rather than
+    // handing the decoder a half-built token to read it back off, is what makes the chain
+    // explicit — and lets a Token be constructed once, from a finished list.
     List<CertifiedTransferTransaction> transactions = new ArrayList<>();
+    Transaction previous = genesis;
     for (byte[] transaction : transactionsCbor) {
-      transactions.add(CertifiedTransferTransaction.fromCbor(transaction, new Token(genesis, transactions)));
+      CertifiedTransferTransaction decoded = CertifiedTransferTransaction.fromCbor(
+              transaction, previous.calculateStateHash(), previous.getRecipient());
+      transactions.add(decoded);
+      previous = decoded;
     }
 
     return new Token(genesis, transactions);

@@ -77,19 +77,17 @@ public class CertificationDataBindingTest {
     InclusionProof proofA = InclusionProofUtils.waitInclusionProof(
             client, trustBase, predicateVerifier, transferA).get();
 
-    long referenceTime = proofA.getReferenceTime().orElseThrow();
+    long referenceTime = proofA.getReferenceTime();
 
     // A's certification data verifies against A...
     Assertions.assertEquals(
             InclusionProofVerificationStatus.OK,
-            InclusionProofVerificationRule.verify(trustBase, predicateVerifier, proofA, transferA,
-                    referenceTime).getStatus());
+            InclusionProofVerificationRule.verify(trustBase, predicateVerifier, proofA, transferA).getStatus());
 
     // ...but must be rejected when substituted onto B, which shares the transaction hash but has a
     // different lock script and source state hash.
     VerificationResult<InclusionProofVerificationStatus> result =
-            InclusionProofVerificationRule.verify(trustBase, predicateVerifier, proofA, transferB,
-                    referenceTime);
+            InclusionProofVerificationRule.verify(trustBase, predicateVerifier, proofA, transferB);
     Assertions.assertEquals(
             InclusionProofVerificationStatus.CERTIFICATION_DATA_MISMATCH, result.getStatus());
   }

@@ -4,3 +4,6 @@
 .claude
 build
 src/test/resources/docker/aggregator/mongo-data
+
+# Genesis the integration stack generates per run
+src/test/resources/integration/data/

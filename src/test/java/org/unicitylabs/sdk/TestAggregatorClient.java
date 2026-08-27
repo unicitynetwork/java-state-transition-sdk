@@ -36,6 +36,7 @@ public class TestAggregatorClient implements AggregatorClient {
     this.predicateVerifier = PredicateVerifierService.create();
   }
 
+
   public RootTrustBase getTrustBase() {
     return this.trustBase;
   }
@@ -104,8 +105,8 @@ public class TestAggregatorClient implements AggregatorClient {
     SparseMerkleTreeRootNode root = this.sparseMerkleTree.calculateRoot();
 
     if (!requests.containsKey(stateId)) {
-      return CompletableFuture.completedFuture(InclusionProofFixture.createResponse(null, null,
-              null, root.getHash(), this.signingService, this.referenceTime));
+      return CompletableFuture.completedFuture(InclusionProofFixture.createPendingResponse(
+              root.getHash(), this.signingService, this.referenceTime));
     }
 
     CertificationData certificationData = requests.get(stateId);

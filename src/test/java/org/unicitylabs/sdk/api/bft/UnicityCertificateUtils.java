@@ -14,11 +14,21 @@ import java.util.Set;
 
 public class UnicityCertificateUtils {
 
+  /**
+   * Reference time the fixtures pin a certified leaf to.
+   *
+   * <p>A real service sets the round's input record timestamp to the very reference time its
+   * leaves are built from, so a fixture certificate defaults to certifying a round with this
+   * clock. Pairing a leaf with a round whose timestamp precedes it is not something any aggregator
+   * can produce, and the verification rule rejects it.
+   */
+  public static final long REFERENCE_TIME = 1755000000L;
+
   public static UnicityCertificate generateCertificate(
           SigningService signingService,
           DataHash rootHash
   ) {
-    return generateCertificate(signingService, rootHash, 0);
+    return generateCertificate(signingService, rootHash, REFERENCE_TIME);
   }
 
   public static UnicityCertificate generateCertificate(
@@ -35,7 +45,7 @@ public class UnicityCertificateUtils {
           DataHash rootHash,
           ShardId shardId
   ) {
-    return generateCertificate(signingService, rootHash, shardId, 0);
+    return generateCertificate(signingService, rootHash, shardId, REFERENCE_TIME);
   }
 
   public static UnicityCertificate generateCertificate(
